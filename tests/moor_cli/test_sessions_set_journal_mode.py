@@ -1,4 +1,4 @@
-"""`hermes sessions set-journal-mode` converts an existing WAL store offline and refuses under a foreign holder.
+"""`moor sessions set-journal-mode` converts an existing WAL store offline and refuses under a foreign holder.
 
 #100896 (@ruangraung): `database.journal_mode: delete` never self-applies to a store that is already WAL because
 open never live-downgrades; this command is the sanctioned offline path and must fail closed while any other
@@ -11,8 +11,8 @@ import sys
 
 import pytest
 
-from hermes_cli.sessions_cmd import cmd_sessions
-from hermes_cli.sessions_cmd_journal_mode import _refusal
+from moor_cli.sessions_cmd import cmd_sessions
+from moor_cli.sessions_cmd_journal_mode import _refusal
 
 
 def _wal_store(path):
@@ -31,7 +31,7 @@ def _args(mode, db=None, force=True):
 def test_set_journal_mode_converts_wal_store_offline(tmp_path, monkeypatch, capsys):
     db = tmp_path / "state.db"
     _wal_store(db)
-    monkeypatch.setattr("hermes_state.DEFAULT_DB_PATH", db)
+    monkeypatch.setattr("moor_state.DEFAULT_DB_PATH", db)
 
     assert cmd_sessions(_args("delete")) == 0
 
@@ -50,7 +50,7 @@ def test_set_journal_mode_refuses_while_another_process_holds_the_store(
 ):
     db = tmp_path / "state.db"
     _wal_store(db)
-    monkeypatch.setattr("hermes_state.DEFAULT_DB_PATH", db)
+    monkeypatch.setattr("moor_state.DEFAULT_DB_PATH", db)
     holder = subprocess.Popen(
         [
             sys.executable, "-c",
@@ -79,7 +79,7 @@ def test_set_journal_mode_refuses_while_another_process_holds_the_store(
     assert db.read_bytes()[18:20] == b"\x02\x02", "a refused switch must leave the file untouched"
 
     # A failed scan (pid <= 0 sentinel) is refused too, and is the ONLY thing --force waives.
-    monkeypatch.setattr("hermes_state_holders.foreign_state_db_holders", lambda path: [(-1, "scan failed")])
+    monkeypatch.setattr("moor_state_holders.foreign_state_db_holders", lambda path: [(-1, "scan failed")])
     assert cmd_sessions(_args("delete", force=force)) == (0 if force else 1)
     assert db.read_bytes()[18:20] == (b"\x01\x01" if force else b"\x02\x02")
     assert ("scan: scan failed" in capsys.readouterr().out) is not force
@@ -91,8 +91,8 @@ def test_set_journal_mode_refuses_while_another_process_holds_the_store(
     ("wal", "delete", True, "cross-VM filesystems"),
     ("delete", "wal", True, None),
     # A garbage or unrecognised header is reported, never handed to sqlite3 for a raw traceback.
-    ("delete", "not-a-database", False, "not a Hermes SQLite store"),
-    ("delete", "unknown(3/3)", False, "not a Hermes SQLite store"),
+    ("delete", "not-a-database", False, "not a Moor SQLite store"),
+    ("delete", "unknown(3/3)", False, "not a Moor SQLite store"),
 ])
 def test_refusal_admission_invariants(target, current, cross_vm, expected):
     reason = _refusal(target, current, on_cross_vm_fs=cross_vm)

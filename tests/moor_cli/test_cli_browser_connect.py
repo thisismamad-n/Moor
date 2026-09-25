@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from hermes_cli.browser_connect import (
+from moor_cli.browser_connect import (
     _wait_for_browser_debug_ready_or_exit,
     get_chrome_debug_candidates,
     is_browser_debug_ready,

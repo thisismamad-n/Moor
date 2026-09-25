@@ -124,7 +124,7 @@ async function probesUntilSettled(alreadyBound: boolean): Promise<number> {
   let probes = 0
   let currentTime = 0
 
-  await waitForHermesReady('http://127.0.0.1:2802', {
+  await waitForMoorReady('http://127.0.0.1:2802', {
     fetchPublicJson: async () => {
       probes += 1
       throw connectionRefused(2802)
@@ -438,7 +438,7 @@ test('isMoorCloudAgentUrl detects cloud agent hosts', () => {
   assert.equal(isMoorCloudAgentUrl('not-a-url'), false)
 })
 
-test('waitForHermesReady classifies a persistent cloud agent 503 as cloud-backend-down', async () => {
+test('waitForMoorReady classifies a persistent cloud agent 503 as cloud-backend-down', async () => {
   let attempts = 0
   const currentTime = { value: 0 }
 

@@ -9,8 +9,8 @@ import asyncio
 import pytest
 
 from agent.secret_scope import current_secret_scope, set_multiplex_active
-from hermes_cli import env_loader
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from moor_cli import env_loader
+from moor_constants import reset_moor_home_override, set_moor_home_override
 from tools import mcp_tool_discovery as discovery
 from tools.mcp_tool_config import _build_safe_env
 
@@ -28,13 +28,13 @@ def profile_home(tmp_path, monkeypatch):
     # process-wide; the VALUE must come from the active profile's scope.
     monkeypatch.setitem(env_loader._SECRET_SOURCES, TOKEN_NAME, "command")
 
-    home_token = set_hermes_home_override(str(home))
+    home_token = set_moor_home_override(str(home))
     set_multiplex_active(True)
     try:
         yield home
     finally:
         set_multiplex_active(False)
-        reset_hermes_home_override(home_token)
+        reset_moor_home_override(home_token)
 
 
 @pytest.fixture

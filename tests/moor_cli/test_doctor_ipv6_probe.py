@@ -1,4 +1,4 @@
-"""``hermes doctor`` dead-IPv6 probe (#114265 secondary finding 1).
+"""``moor doctor`` dead-IPv6 probe (#114265 secondary finding 1).
 
 An advertised-but-blackholed IPv6 route stalls every serial connect for the full timeout;
 the racer hides most of it, but nothing told the user that ``network.force_ipv4`` exists.
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import socket
 
-from hermes_cli import doctor_connectivity as dc
+from moor_cli import doctor_connectivity as dc
 
 _AAAA = [(socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("2001:db8::1", 443, 0, 0))]
 

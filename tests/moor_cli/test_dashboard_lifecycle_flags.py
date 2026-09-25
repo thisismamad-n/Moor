@@ -79,9 +79,9 @@ class TestDashboardStop:
         process again: a launchd KeepAlive job respawns its backend on a fresh PID, and that
         respawn is not a failed stop (the kill path already warns about it)."""
         scans = iter([[12345, 12346], [12347]])
-        with patch("hermes_cli.main._find_stale_dashboard_pids",
+        with patch("moor_cli.main._find_stale_dashboard_pids",
                    side_effect=lambda **_: next(scans)), \
-             patch("hermes_cli.dashboard_procs._kill_stale_dashboard_processes",
+             patch("moor_cli.dashboard_procs._kill_stale_dashboard_processes",
                    return_value={"matched": [12345, 12346], "killed": [12345, 12346],
                                  "failed": [], "unrecovered": [12345, 12346]}) as mock_kill, \
              pytest.raises(SystemExit) as exc:
@@ -95,21 +95,21 @@ class TestDashboardStop:
         assert "stop" in kwargs["reason"].lower()
         assert exc.value.code == 0
 
-    def test_stop_scopes_scan_and_kill_to_the_invoking_hermes_home(self, tmp_path, monkeypatch, capsys):
+    def test_stop_scopes_scan_and_kill_to_the_invoking_moor_home(self, tmp_path, monkeypatch, capsys):
         """``--stop`` targets only this profile's backends (#113978): both the pre-check and the
         kill run with ``scope_home`` = the invoking home, and an empty scan says so."""
         own_home = tmp_path / "profiles" / "work"
-        monkeypatch.setenv("HERMES_HOME", str(own_home))
-        with patch("hermes_cli.main._find_stale_dashboard_pids", return_value=[12345]) as scan, \
-             patch("hermes_cli.dashboard_procs._kill_stale_dashboard_processes",
+        monkeypatch.setenv("MOOR_HOME", str(own_home))
+        with patch("moor_cli.main._find_stale_dashboard_pids", return_value=[12345]) as scan, \
+             patch("moor_cli.dashboard_procs._kill_stale_dashboard_processes",
                    return_value={"matched": [12345], "killed": [12345], "failed": [], "unrecovered": []}) as kill, \
              pytest.raises(SystemExit):
             cmd_dashboard(_ns(stop=True))
         assert scan.call_args.kwargs["scope_home"] == str(own_home)
         assert kill.call_args.kwargs["scope_home"] == str(own_home)
 
-        with patch("hermes_cli.main._find_stale_dashboard_pids", return_value=[]), \
-             patch("hermes_cli.dashboard_procs._kill_stale_dashboard_processes") as kill, \
+        with patch("moor_cli.main._find_stale_dashboard_pids", return_value=[]), \
+             patch("moor_cli.dashboard_procs._kill_stale_dashboard_processes") as kill, \
              pytest.raises(SystemExit) as exc:
             cmd_dashboard(_ns(stop=True))
         kill.assert_not_called()

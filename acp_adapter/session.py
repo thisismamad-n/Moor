@@ -103,7 +103,7 @@ def _register_task_cwd(task_id: str, cwd: str) -> None:
 def _expand_acp_enabled_toolsets(toolsets: List[str] | None = None,
                                  mcp_server_names: List[str] | None = None) -> List[str]:
     """Return ACP toolsets plus explicit MCP server toolsets for this session."""
-    names = [n for n in (["hermes-acp"] if toolsets is None else toolsets) if n]
+    names = [n for n in (["moor-acp"] if toolsets is None else toolsets) if n]
     names += [f"mcp-{s}" for s in (mcp_server_names or []) if s]
     return list(dict.fromkeys(names))
 
@@ -464,10 +464,10 @@ class SessionManager:
 
         from run_agent import AIAgent
         from agent.skill_utils import parse_config_string_list
-        from hermes_cli.config import load_config
-        from hermes_cli.runtime_provider import resolve_runtime_provider
-        from hermes_cli.tools_config import _get_platform_tools, enabled_mcp_server_names
-        from hermes_constants import resolve_reasoning_config
+        from moor_cli.config import load_config
+        from moor_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.tools_config import _get_platform_tools, enabled_mcp_server_names
+        from moor_constants import resolve_reasoning_config
 
         config = load_config()
         model_cfg = config.get("model")
@@ -479,7 +479,7 @@ class SessionManager:
 
         if enabled_toolsets is None:
             # The same per-platform resolver as the gateway/cron/api_server: platform_toolsets.acp wins, else
-            # hermes-acp; its MCP half (every enabled server, a listed-name allowlist, or none for ``no_mcp``)
+            # moor-acp; its MCP half (every enabled server, a listed-name allowlist, or none for ``no_mcp``)
             # comes back as bare server names, which ACP keys as ``mcp-<server>`` like its session servers.
             resolved = _get_platform_tools(config, "acp")
             mcp_servers = resolved & enabled_mcp_server_names(config)
@@ -529,7 +529,7 @@ class SessionManager:
         try:
             agent = AIAgent(**kwargs)
         except Exception as exc:
-            # The bare-AIAgent fallback dies with "No LLM provider configured. Run `hermes setup`" on a
+            # The bare-AIAgent fallback dies with "No LLM provider configured. Run `moor setup`" on a
             # machine that is configured and was working a call earlier; the swallowed resolution
             # failure (revoked OAuth, disabled provider, ...) is the actionable error (#91090).
             if resolve_error is not None:

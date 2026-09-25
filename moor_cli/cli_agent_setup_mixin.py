@@ -86,7 +86,7 @@ def _credential_pool_notice(provider: str) -> tuple:
     dead = [e for e in entries if e.last_status == STATUS_DEAD]
     if dead:
         reason = dead[0].last_error_message or dead[0].last_error_reason or "sign-in lost"
-        lines.append(f"The {provider} sign-in was lost ({reason}); run `hermes auth add {provider}` "
+        lines.append(f"The {provider} sign-in was lost ({reason}); run `moor auth add {provider}` "
                      "to sign in again.")
     return next_at is not None, lines
 
@@ -235,9 +235,9 @@ class CLIAgentSetupMixin:
         _model_at_entry = self.model
         self._credentials_rate_limited = False
         try:
-            # target_model: the ladder's model-keyed rungs (Zen/Go api_mode, Copilot/Nous
+            # target_model: the ladder's model-keyed rungs (Zen/Go api_mode, Copilot/Moor
             # api_mode) must see the model this CLI will actually send, not config's `default`,
-            # or `hermes -m mimo-v2.5 --provider opencode-go` resolves an api_mode/base_url the
+            # or `moor -m mimo-v2.5 --provider opencode-go` resolves an api_mode/base_url the
             # sent model cannot use (#112600).
             runtime = resolve_runtime_provider(
                 requested=self.requested_provider, explicit_api_key=self._explicit_api_key,
@@ -249,7 +249,7 @@ class CLIAgentSetupMixin:
             if runtime is not None:
                 _primary_exc = None
         if runtime is None:
-            from hermes_cli.auth import is_rate_limited_auth_error
+            from moor_cli.auth import is_rate_limited_auth_error
             self._credentials_rate_limited = bool(_primary_exc) and is_rate_limited_auth_error(_primary_exc)
             message = format_runtime_provider_error(_primary_exc) if _primary_exc else "Provider resolution failed."
             if getattr(self, "tool_progress_mode", "full") == "off":
@@ -331,7 +331,7 @@ class CLIAgentSetupMixin:
         # 400s on the primary's effort). Same chokepoint as /model, /new and --resume; an explicit
         # --reasoning is the user's intent for this run and outranks the new model's config.
         if self.model != _model_at_entry and getattr(self, "_explicit_reasoning_config", None) is None:
-            from hermes_cli.cli_model_switch_mixin import _resolve_cli_reasoning
+            from moor_cli.cli_model_switch_mixin import _resolve_cli_reasoning
             _resolve_cli_reasoning(self)
             logger.info("Model moved to %s: reasoning_config resolved: %s", self.model, self.reasoning_config)
 
@@ -360,8 +360,8 @@ class CLIAgentSetupMixin:
         order and switch the CLI's requested_provider/model to the first that resolves.
         None when the error is not auth-related or no fallback resolves."""
         from cli import _cprint, logger
-        from hermes_cli.auth import AuthError, primary_failure_wording
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.auth import AuthError, primary_failure_wording
+        from moor_cli.runtime_provider import resolve_runtime_provider
         if not isinstance(primary_exc, AuthError):
             return None
         _fb_chain = self._fallback_model if isinstance(self._fallback_model, list) else []
@@ -371,7 +371,7 @@ class CLIAgentSetupMixin:
             if not _fb_provider or not _fb_model:
                 continue
             try:
-                from hermes_cli.fallback_config import resolve_entry_api_key
+                from moor_cli.fallback_config import resolve_entry_api_key
                 # target_model: the fallback entry names the model that will be sent; without it the
                 # ladder keys off config `default` (see _ensure_runtime_credentials, #112600).
                 _fb_kwargs = {"requested": _fb_provider, "target_model": _fb_model}
@@ -411,7 +411,7 @@ class CLIAgentSetupMixin:
         """``(ready, error)``: *error* is the exception that stopped resolution — raised, or
         swallowed by the "auto" ladder and stamped on a keyless fallback — ``None`` when a provider
         resolved (usable or merely keyless). Never prints or mutates CLI state."""
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
         try:
             runtime = resolve_runtime_provider(
                 requested=self.requested_provider, explicit_api_key=self._explicit_api_key,
@@ -444,7 +444,7 @@ class CLIAgentSetupMixin:
         True when the failure was explained; False when nothing is configured (the wizard's case).
         """
         from cli import _cprint
-        from hermes_cli.auth import format_auth_error
+        from moor_cli.auth import format_auth_error
         if error is None or getattr(error, "code", None) == "no_provider_configured":
             return False
         provider = getattr(error, "provider", None) or self.requested_provider
@@ -501,7 +501,7 @@ class CLIAgentSetupMixin:
                 # The picker's model has its own per-model reasoning contract (see
                 # _resolve_cli_reasoning); an explicit --reasoning stays the user's intent.
                 if _new_model and getattr(self, "_explicit_reasoning_config", None) is None:
-                    from hermes_cli.cli_model_switch_mixin import _resolve_cli_reasoning
+                    from moor_cli.cli_model_switch_mixin import _resolve_cli_reasoning
                     _resolve_cli_reasoning(self)
         except Exception as exc:
             logger.debug("first-run config re-sync failed: %s", exc)

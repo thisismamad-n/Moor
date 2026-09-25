@@ -6,18 +6,18 @@ import sys
 
 import pytest
 
-from hermes_cli.desktop_console import desktop_console_output, desktop_launch_notice
+from moor_cli.desktop_console import desktop_console_output, desktop_launch_notice
 
 
 @pytest.mark.platforms("windows")
 def test_packaged_console_output_drains_both_streams(caplog, monkeypatch):
-    caplog.set_level(logging.INFO, logger="hermes_cli.desktop")
+    caplog.set_level(logging.INFO, logger="moor_cli.desktop")
 
     def blocked_console(*args, **kwargs):
         raise AssertionError("packaged startup attempted a synchronous console write")
 
     monkeypatch.setattr("builtins.print", blocked_console)
-    desktop_launch_notice("Starting Hermes")
+    desktop_launch_notice("Starting Moor")
     with desktop_console_output(source_mode=False) as streams:
         result = subprocess.run(
             [sys.executable, "-c", "import sys; sys.stdout.write('x'*131072); "
@@ -33,7 +33,7 @@ def test_packaged_console_output_drains_both_streams(caplog, monkeypatch):
 @pytest.mark.platforms("windows")
 @pytest.mark.parametrize("level", [logging.WARNING, logging.ERROR])
 def test_stderr_survives_logging_threshold(caplog, level):
-    caplog.set_level(level, logger="hermes_cli.desktop")
+    caplog.set_level(level, logger="moor_cli.desktop")
     with desktop_console_output(source_mode=False) as streams:
         result = subprocess.run(
             [sys.executable, "-c", "import sys; print('ordinary-output'); "
@@ -49,12 +49,12 @@ def test_stderr_survives_logging_threshold(caplog, level):
 @pytest.mark.platforms("windows")
 @pytest.mark.parametrize("stream", ["stdout", "stderr"])
 def test_complete_records_reach_redacted_logs(tmp_path, monkeypatch, caplog, stream):
-    import hermes_logging
+    import moor_logging
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    hermes_logging._reset_queued_handlers()
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    moor_logging._reset_queued_handlers()
     caplog.set_level(logging.INFO)
-    caplog.set_level(logging.INFO, logger="hermes_cli.desktop")
+    caplog.set_level(logging.INFO, logger="moor_cli.desktop")
     secret = "synthetic-boundary-credential"
     payload = (
         b" " * (8192 - len(b"API_KEY=")) + b"API_KEY=" + secret.encode() + b"\n"
@@ -65,7 +65,7 @@ def test_complete_records_reach_redacted_logs(tmp_path, monkeypatch, caplog, str
     payload_path = tmp_path / "child-output.bin"
     payload_path.write_bytes(payload)
     try:
-        log_dir = hermes_logging.setup_logging(hermes_home=tmp_path, log_level="INFO", mode="gui")
+        log_dir = moor_logging.setup_logging(moor_home=tmp_path, log_level="INFO", mode="gui")
         with desktop_console_output(source_mode=False) as streams:
             result = subprocess.run(
                 [sys.executable, "-c", "import pathlib, sys; "
@@ -76,7 +76,7 @@ def test_complete_records_reach_redacted_logs(tmp_path, monkeypatch, caplog, str
                 timeout=15, check=False, **streams,
             )
         assert result.returncode == 0
-        hermes_logging.flush_log_queue()
+        moor_logging.flush_log_queue()
         text = (log_dir / "agent.log").read_text(encoding="utf-8")
         assert secret not in text
         assert "u" * 8191 + "\u20ac" in text
@@ -87,7 +87,7 @@ def test_complete_records_reach_redacted_logs(tmp_path, monkeypatch, caplog, str
         gui_text = (log_dir / "gui.log").read_text(encoding="utf-8")
         assert "recovered" in gui_text and secret not in gui_text
     finally:
-        hermes_logging._reset_queued_handlers()
+        moor_logging._reset_queued_handlers()
 
 
 def test_source_launch_keeps_interactive_streams():

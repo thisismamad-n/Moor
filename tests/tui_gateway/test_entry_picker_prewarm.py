@@ -27,7 +27,7 @@ from __future__ import annotations
 import io
 
 from tui_gateway import entry
-from hermes_cli import model_switch_providers
+from moor_cli import model_switch_providers
 
 
 def _run_main(monkeypatch, events, *, prewarm=None):

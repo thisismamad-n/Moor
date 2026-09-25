@@ -90,8 +90,8 @@ class TestUnifiedDashboardRouting:
         reroute into the machine dashboard. The reroute re-execs as the default
         profile and exits, so the desktop never sees a ready backend → boot
         loop. The guard keeps desktop pool backends per-profile."""
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
+        monkeypatch.setenv("MOOR_DESKTOP", "1")
+        monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
         monkeypatch.setattr(
             "moor_cli.profiles.get_active_profile_name", lambda: "worker_x"
         )

@@ -2,7 +2,7 @@
 
 import sys
 
-from hermes_cli.runtime_provider import _resolve_named_custom_runtime
+from moor_cli.runtime_provider import _resolve_named_custom_runtime
 
 
 def test_chat_provider_argparse_acceptance(monkeypatch):

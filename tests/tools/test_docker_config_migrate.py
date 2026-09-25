@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.config import DEFAULT_CONFIG
 

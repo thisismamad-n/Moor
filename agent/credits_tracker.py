@@ -397,32 +397,32 @@ def _rerun_notice_policy(agent) -> None:
         emit()
 
 
-def _warm_nous_pricing_cache() -> None:
-    """Fill the in-process Nous pricing catalog so :func:`is_free_tier_model`'s peek can answer.
+def _warm_moor_pricing_cache() -> None:
+    """Fill the in-process Moor pricing catalog so :func:`is_free_tier_model`'s peek can answer.
     The peek never fetches and nothing else warms it during session start, so a cold process reads
     an EMPTY catalog and a subscription-billed model — which spends no credits — still draws the
     depleted banner. Fail-open: a miss leaves the peek exactly as it was."""
     try:
-        from hermes_cli.models_pricing import get_pricing_for_provider
+        from moor_cli.models_pricing import get_pricing_for_provider
 
-        get_pricing_for_provider("nous")
+        get_pricing_for_provider("moor")
     except Exception:
-        logger.debug("credits ▸ nous pricing warm failed", exc_info=True)
+        logger.debug("credits ▸ moor pricing warm failed", exc_info=True)
 
 
 def rewarm_pricing_before_depleted_notice(agent) -> bool:
-    """Depleted account, model the peek cannot vouch for, Nous catalog cold: start a background warm
+    """Depleted account, model the peek cannot vouch for, Moor catalog cold: start a background warm
     whose completion re-runs the policy and return True so the caller defers the depleted decision
     to it — the session-start warm is one-shot but the catalog expires after
-    ``_NOUS_CATALOG_TTL_SECONDS``, and a cold peek would bring the banner back for a
-    subscription-billed model. False = decide now: peek warm, not on Nous, a warm in flight (the
+    ``_MOOR_CATALOG_TTL_SECONDS``, and a cold peek would bring the banner back for a
+    subscription-billed model. False = decide now: peek warm, not on Moor, a warm in flight (the
     warm's own re-run included — fail-open, a failed fetch leaves the peek cold and the banner
     shows), or a fetch already failed and the cache is still refusing to dial. May raise; the notice
     path that calls it catches."""
     base_url = getattr(agent, "base_url", "") or ""
-    if getattr(agent, "provider", "") != "nous" or not base_url:
+    if getattr(agent, "provider", "") != "moor" or not base_url:
         return False
-    from hermes_cli.models_pricing import peek_cached_pricing, pricing_fetch_suppressed
+    from moor_cli.models_pricing import peek_cached_pricing, pricing_fetch_suppressed
 
     if peek_cached_pricing(base_url) or pricing_fetch_suppressed(base_url):
         return False
@@ -431,7 +431,7 @@ def rewarm_pricing_before_depleted_notice(agent) -> bool:
         return False
 
     def _warm_then_rerun() -> None:
-        _warm_nous_pricing_cache()
+        _warm_moor_pricing_cache()
         _rerun_notice_policy(agent)
 
     from agent.memory_provider import spawn_context_thread
@@ -458,12 +458,12 @@ def seed_credits_at_session_start(agent) -> bool:
 
         def _bg_seed() -> None:  # FIRE-AND-FORGET: a slow portal must never delay "ready"
             try:
-                from hermes_cli.nous_account import get_nous_portal_account_info
+                from moor_cli.moor_account import get_moor_portal_account_info
                 # BEFORE the policy runs (either branch below): the free-model gate only PEEKS the
                 # pricing cache, and this thread is the first thing a chat session runs that can
                 # afford to fill it.
-                _warm_nous_pricing_cache()
-                info = get_nous_portal_account_info(force_fresh=True)
+                _warm_moor_pricing_cache()
+                info = get_moor_portal_account_info(force_fresh=True)
                 if getattr(agent, "_credits_state", None) is not None:
                     # A live inference header beat us — don't clobber it, but DO re-run the policy:
                     # it evaluated against the cold cache and may be showing a banner the warm

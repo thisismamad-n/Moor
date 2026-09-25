@@ -1,6 +1,6 @@
 """OpenAI Codex browser login: authorization-code + PKCE on a loopback listener (opt-in).
 
-``hermes auth add openai-codex --browser`` (or ``auth.codex_login_flow: browser``) sends the
+``moor auth add openai-codex --browser`` (or ``auth.codex_login_flow: browser``) sends the
 system browser to OpenAI's authorize endpoint and receives the code on
 ``http://localhost:1455/auth/callback`` — the redirect URI fixed by the public Codex client
 registration, so the port is not negotiable. Organizations that disable the device-code grant can
@@ -23,12 +23,12 @@ import webbrowser
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
-from hermes_cli.auth_constants import AuthError, CODEX_OAUTH_CLIENT_ID, CODEX_OAUTH_TOKEN_URL, _codex_err
-from hermes_cli.auth_device_flow import (
+from moor_cli.auth_constants import AuthError, CODEX_OAUTH_CLIENT_ID, CODEX_OAUTH_TOKEN_URL, _codex_err
+from moor_cli.auth_device_flow import (
     _bind_loopback_callback_server, _can_open_graphical_browser, _make_loopback_callback_handler,
     _pkce_code_challenge, _pkce_code_verifier, _print_loopback_ssh_hint, _serve_loopback_callback)
 
-logger = logging.getLogger("hermes_cli.auth")
+logger = logging.getLogger("moor_cli.auth")
 
 CODEX_OAUTH_AUTHORIZE_URL = "https://auth.openai.com/oauth/authorize"
 CODEX_OAUTH_BROWSER_SCOPE = "openid profile email offline_access"
@@ -49,7 +49,7 @@ def _codex_login_flow(args: Any) -> str:
     """``browser`` only when the user asked for it: ``--browser`` or ``auth.codex_login_flow``."""
     if getattr(args, "browser", False):
         return "browser"
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     auth_cfg = (load_config_readonly() or {}).get("auth")
     flow = str((auth_cfg or {}).get("codex_login_flow", "device_code") if isinstance(auth_cfg, dict) else "device_code")
     flow = flow.strip().lower() or "device_code"
@@ -61,7 +61,7 @@ def _codex_login_flow(args: Any) -> str:
 
 def codex_oauth_login(args: Any) -> Dict[str, Any]:
     """Run the Codex OAuth flow selected by *args*/config; port-busy browser attempts fall back."""
-    from hermes_cli import auth as auth_mod  # late: ``hermes_cli.auth.<name>`` patches must intercept
+    from moor_cli import auth as auth_mod  # late: ``moor_cli.auth.<name>`` patches must intercept
     if _codex_login_flow(args) == "browser":
         try:
             return _codex_browser_login(
@@ -73,7 +73,7 @@ def codex_oauth_login(args: Any) -> Dict[str, Any]:
             print(_PORT_BUSY_NOTICE)
             print()
     print("Signing in to OpenAI Codex...")
-    print("(Hermes creates its own session — won't affect Codex CLI or VS Code)")
+    print("(Moor creates its own session — won't affect Codex CLI or VS Code)")
     print()
     return auth_mod._codex_device_code_login()
 
@@ -87,7 +87,7 @@ def _codex_browser_authorize_url(*, redirect_uri: str, state: str, code_challeng
 
 def _codex_browser_exchange_code(code: str, *, redirect_uri: str, code_verifier: str) -> Dict[str, Any]:
     """Swap the authorization code for tokens at the token endpoint the device flow also uses."""
-    from hermes_cli.auth_codex import _codex_login_post, _codex_login_rate_limited_error
+    from moor_cli.auth_codex import _codex_login_post, _codex_login_rate_limited_error
     token_resp = _codex_login_post(
         CODEX_OAUTH_TOKEN_URL,
         data={
@@ -114,8 +114,8 @@ def _codex_browser_login(
     Raises ``AuthError(code=CODEX_BROWSER_PORT_BUSY_CODE)`` when :1455 cannot be bound so the caller
     can fall back to the device-code flow instead of failing the login.
     """
-    from hermes_cli.auth import _utc_now_z
-    from hermes_cli.auth_codex import _codex_base_url
+    from moor_cli.auth import _utc_now_z
+    from moor_cli.auth_codex import _codex_base_url
     code_verifier = _pkce_code_verifier()
     state = secrets.token_urlsafe(32)
     handler_cls, result = _make_loopback_callback_handler(CODEX_BROWSER_CALLBACK_PATH, display_name="OpenAI Codex")
@@ -128,9 +128,9 @@ def _codex_browser_login(
 
     print()
     print("Signing in to OpenAI Codex (browser authorization)...")
-    print("(Hermes creates its own session — won't affect Codex CLI or VS Code)")
+    print("(Moor creates its own session — won't affect Codex CLI or VS Code)")
     print()
-    print(f"Open this URL to authorize Hermes:\n  {auth_url}\n")
+    print(f"Open this URL to authorize Moor:\n  {auth_url}\n")
     _print_loopback_ssh_hint(redirect_uri)
     if open_browser and _can_open_graphical_browser():
         try:

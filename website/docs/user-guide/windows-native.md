@@ -12,7 +12,7 @@ Moor runs natively on Windows 10 and Windows 11 — no WSL, no Cygwin, no Docker
 If you just want to install, the one-liner on the [landing page](../index.mdx) or [Installation page](../getting-started/installation#windows-native) is all you need. Come back here when something surprises you.
 
 :::tip Want WSL instead?
-If you prefer a POSIX environment for `fork` semantics or Linux-style file watchers, see the **[Windows (WSL2) Guide](./windows-wsl-quickstart.md)**. Both coexist cleanly: native data lives under `%LOCALAPPDATA%\hermes`, WSL data lives under `~/.hermes`.
+If you prefer a POSIX environment for `fork` semantics or Linux-style file watchers, see the **[Windows (WSL2) Guide](./windows-wsl-quickstart.md)**. Both coexist cleanly: native data lives under `%LOCALAPPDATA%\moor`, WSL data lives under `~/.moor`.
 :::
 
 ## Quick install
@@ -35,7 +35,7 @@ No admin rights required. The installer goes to `%LOCALAPPDATA%\moor\` and adds 
 |---|---|
 | `-Branch NAME` | Select the source branch; default `main`. |
 | `-Commit SHA` | Select a commit after the branch checkout. |
-| `-HermesHome PATH` | Select the data directory. |
+| `-MoorHome PATH` | Select the data directory. |
 | `-InstallDir PATH` | Select the source checkout directory. |
 | `-NonInteractive` | Skip setup and gateway stages that need input. |
 | `-IncludeDesktop` | Build the desktop app and create shortcuts. |
@@ -58,21 +58,21 @@ a signed universal bundle and records the update source. The package includes
 Python, Node, supported dependencies, and prebuilt interfaces. It does not clone
 a checkout or build the base runtime on first launch.
 
-The MSIX execution aliases expose `hermes`, `hermes-agent`, and `hermes-acp`.
-If another installation shadows an alias, inspect `Get-Command hermes -All`.
+The MSIX execution aliases expose `moor`, `moor-agent`, and `moor-acp`.
+If another installation shadows an alias, inspect `Get-Command moor -All`.
 Windows Settings → Apps → Advanced app settings → App execution aliases
 controls the aliases.
 
 Sideload updates use the app's Update control and Windows App Installer.
-Hermes downloads a local descriptor before teardown and registers automatic
+Moor downloads a local descriptor before teardown and registers automatic
 relaunch. It does not require the `ms-appinstaller:` URL protocol. An unknown
 update-check result is not a claim that the package is current.
 
 The Microsoft Store variant uses its Partner Center package identity and Store
-updates. It does not use the sideload feed. `hermes update` inside either
+updates. It does not use the sideload feed. `moor update` inside either
 bundled runtime does not run Git against package files.
 
-`Hermes-Setup.exe` is a different, bootstrap installer. It provisions a source
+`moor-setup.exe` is a different, bootstrap installer. It provisions a source
 checkout through the scripts. Do not confuse it with the self-contained MSIX
 package. See [Updating & Uninstalling](../getting-started/updating.md).
 
@@ -86,8 +86,8 @@ recorded state; a missing optional tool is fetched on demand only when
 permits it. `install.ps1` has no `-Ensure` mode.
 
 ```powershell
-hermes pm doctor
-hermes pm install
+moor pm doctor
+moor pm install
 ```
 
 ## What the source installer does
@@ -107,7 +107,7 @@ replacing libraries already loaded by a running process. There is no tiered
 pip fallback to silently reduce the installed feature set.
 
 :::tip Skip provider hunting on Windows
-On Windows, per-tool API key setup (Firecrawl, FAL, Browser Use, OpenAI TTS) is the highest-friction part of getting a useful agent. A [Nous Portal](./features/tool-gateway.md) subscription covers the model **and** all of those tools through one OAuth login. After the installer finishes, run `hermes setup --portal` to wire everything up.
+On Windows, per-tool API key setup (Firecrawl, FAL, Browser Use, OpenAI TTS) is the highest-friction part of getting a useful agent. A [Moor Portal](./features/tool-gateway.md) subscription covers the model **and** all of those tools through one OAuth login. After the installer finishes, run `moor setup --portal` to wire everything up.
 :::
 
 ## Feature matrix
@@ -158,7 +158,7 @@ process can fail to start a WindowsApps payload executable with `WinError 5`.
 Use the package's own launcher, or use conventional tools for a source checkout.
 Do not disable Windows security controls to work around that boundary.
 
-The current installer does not set `HERMES_GIT_BASH_PATH`. MinGit is not a
+The current installer does not set `MOOR_GIT_BASH_PATH`. MinGit is not a
 replacement for Git for Windows with Bash.
 
 ## UTF-8 console on Windows
@@ -229,33 +229,33 @@ Flags used when spawning: `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_
 ### Manage
 
 ```powershell
-hermes gateway status      # Merged view: schtasks + Startup folder + running PID
-hermes gateway start       # Starts the gateway in the background (asks about login auto-start only on a TTY when nothing is installed)
-hermes gateway stop        # Writes the planned-stop marker, waits for the gateway to drain (≤ agent.restart_drain_timeout, capped at 30 s), then force-kills only if it is still alive
-hermes gateway restart     # Same drain-first stop, then a fresh start
-hermes gateway uninstall   # Removes schtasks entry, Startup shortcut, pid file
+moor gateway status      # Merged view: schtasks + Startup folder + running PID
+moor gateway start       # Starts the gateway in the background (asks about login auto-start only on a TTY when nothing is installed)
+moor gateway stop        # Writes the planned-stop marker, waits for the gateway to drain (≤ agent.restart_drain_timeout, capped at 30 s), then force-kills only if it is still alive
+moor gateway restart     # Same drain-first stop, then a fresh start
+moor gateway uninstall   # Removes schtasks entry, Startup shortcut, pid file
 ```
 
 `moor gateway status` is idempotent — call it a thousand times in a row and it will never accidentally kill the gateway. (Pre-PR #21561 it silently did, via `os.kill(pid, 0)` colliding with `CTRL_C_EVENT` at the C level — see "process management internals" below if you care about the story.)
 
-Login auto-start is only ever installed on an explicit answer: `hermes gateway install`, a `Y` on a real terminal, or `HERMES_GATEWAY_INSTALL_START_ON_LOGIN=1`. A scripted or piped `hermes gateway start` (no TTY, or `HERMES_NONINTERACTIVE=1`) starts the gateway without touching the Scheduled Task or the Startup folder; set `HERMES_GATEWAY_INSTALL_START_ON_LOGIN=0` to skip the question on a terminal too.
+Login auto-start is only ever installed on an explicit answer: `moor gateway install`, a `Y` on a real terminal, or `MOOR_GATEWAY_INSTALL_START_ON_LOGIN=1`. A scripted or piped `moor gateway start` (no TTY, or `MOOR_NONINTERACTIVE=1`) starts the gateway without touching the Scheduled Task or the Startup folder; set `MOOR_GATEWAY_INSTALL_START_ON_LOGIN=0` to skip the question on a terminal too.
 
 ### Why not a Windows Service?
 
-Services require admin rights to install and tie the gateway's lifecycle to machine boot, not user login. The typical Hermes user wants: log in → gateway available, log out → gateway gone. Scheduled Tasks do exactly that without elevation. If you genuinely want a service, use `nssm` or `sc create` manually — but you probably don't. If you do, name it `Hermes*` or point its binary path inside the Hermes install (`venv\Scripts\hermes.exe`, the checkout, or `gateway-service\`): `hermes update` stops and restarts only services it can positively identify as Hermes-owned through the Service Control Manager, and pauses a Scheduled-Task-launched gateway by PID (Task Scheduler itself is never touched).
+Services require admin rights to install and tie the gateway's lifecycle to machine boot, not user login. The typical Moor user wants: log in → gateway available, log out → gateway gone. Scheduled Tasks do exactly that without elevation. If you genuinely want a service, use `nssm` or `sc create` manually — but you probably don't. If you do, name it `Moor*` or point its binary path inside the Moor install (`venv\Scripts\moor.exe`, the checkout, or `gateway-service\`): `moor update` stops and restarts only services it can positively identify as moor-owned through the Service Control Manager, and pauses a Scheduled-Task-launched gateway by PID (Task Scheduler itself is never touched).
 
 ## Data layout
 
 | Path | Contents |
 |---|---|
-| `%LOCALAPPDATA%\hermes\hermes-agent\` | Source checkout for the script installation; absent from an MSIX-only install. |
-| `%LOCALAPPDATA%\hermes\tools\` | Writable managed-tool store. MSIX base tools remain inside the package. |
-| `%LOCALAPPDATA%\hermes\installs\` | Per-install runtime selection, journals, and Python generations. |
-| `%LOCALAPPDATA%\hermes\bin\` | Source-install CLI launchers. MSIX instead provides execution aliases. |
-| `%LOCALAPPDATA%\hermes\` | User configuration, credentials, sessions, plugins, skills, and logs. |
+| `%LOCALAPPDATA%\moor\moor-agent\` | Source checkout for the script installation; absent from an MSIX-only install. |
+| `%LOCALAPPDATA%\moor\tools\` | Writable managed-tool store. MSIX base tools remain inside the package. |
+| `%LOCALAPPDATA%\moor\installs\` | Per-install runtime selection, journals, and Python generations. |
+| `%LOCALAPPDATA%\moor\bin\` | Source-install CLI launchers. MSIX instead provides execution aliases. |
+| `%LOCALAPPDATA%\moor\` | User configuration, credentials, sessions, plugins, skills, and logs. |
 
-These are default paths. `HERMES_HOME` and installer path arguments can change
-them. A full deletion of `%LOCALAPPDATA%\hermes` also deletes user data and
+These are default paths. `MOOR_HOME` and installer path arguments can change
+them. A full deletion of `%LOCALAPPDATA%\moor` also deletes user data and
 can affect other installations that share it. Use the uninstall command or
 Windows package removal instead of deleting that root to repair an app.
 
@@ -263,7 +263,7 @@ Windows package removal instead of deleting that root to repair an app.
 
 Browser setup depends on the selected backend. PM supplies the pinned
 `agent-browser` and Chromium packages for the built-in backend. Browser Use
-has its own managed CLI installation through `hermes tools`. A self-contained
+has its own managed CLI installation through `moor tools`. A self-contained
 MSIX includes supported browser tools in its payload.
 
 On Windows ARM64, the pinned Chromium and `agent-browser` binaries can use
@@ -300,8 +300,8 @@ These only affect native Windows installs:
 
 | Variable | Effect |
 |---|---|
-| `HERMES_DISABLE_WINDOWS_UTF8` | Set to `1` to disable the UTF-8 stdio shim and fall back to the locale code page. Useful for bisecting an encoding bug. |
-| `EDITOR` / `VISUAL` | Your editor for `/edit` and `Ctrl-X Ctrl-E`. Hermes defaults to `notepad` if both are unset. |
+| `MOOR_DISABLE_WINDOWS_UTF8` | Set to `1` to disable the UTF-8 stdio shim and fall back to the locale code page. Useful for bisecting an encoding bug. |
+| `EDITOR` / `VISUAL` | Your editor for `/edit` and `Ctrl-X Ctrl-E`. Moor defaults to `notepad` if both are unset. |
 
 ## Uninstall
 
@@ -312,16 +312,16 @@ moor uninstall
 ```
 
 For source installs, the uninstaller removes owned launchers, service entries,
-and application files. Review `hermes uninstall --dry-run` before removal.
+and application files. Review `moor uninstall --dry-run` before removal.
 `--full` also removes data; `--data` removes data without removing packaged code.
 For MSIX or Store installations, remove the app through Windows Settings →
 Apps → Installed apps. The CLI refuses to delete package-owned code.
 
 :::caution User-data deletion
-Before deleting data, stop every Hermes process that uses the selected `HERMES_HOME` and make a backup.
-Review `hermes uninstall --dry-run` before choosing a data-removal mode.
+Before deleting data, stop every Moor process that uses the selected `MOOR_HOME` and make a backup.
+Review `moor uninstall --dry-run` before choosing a data-removal mode.
 Do not recursively delete the default data root to repair one application or profile.
-A custom `HERMES_HOME` can be elsewhere, and package removal does not remove that data.
+A custom `MOOR_HOME` can be elsewhere, and package removal does not remove that data.
 :::
 
 The `moor uninstall` CLI subcommand also handles the case where the schtasks entry was registered under a different task name (older installs) — it searches by install path rather than by hardcoded task name.
@@ -354,14 +354,14 @@ Check `moor gateway status` — it merges the schtasks entry, the Startup-folder
 You set it in the current process only; close and reopen the shell, or set it at User scope in System Properties → Environment Variables. Verify with `echo $env:EDITOR` in a new PowerShell window.
 
 **Browser tool launches but tools time out.**
-Run `hermes doctor` and `hermes pm doctor`. Use `hermes tools` to inspect the
+Run `moor doctor` and `moor pm doctor`. Use `moor tools` to inspect the
 selected browser backend. Do not install an unrelated Playwright revision into
 a signed app payload.
 
 **`agent-browser` reports a Node version error.**
-Run `hermes pm doctor` and inspect which Hermes launcher started the process.
+Run `moor pm doctor` and inspect which Moor launcher started the process.
 PM supplies the managed Node version. Do not delete an unrelated system Node
-installation to repair Hermes.
+installation to repair Moor.
 
 **Chinese / Japanese / Arabic characters show as `?` in the CLI.**
 The UTF-8 stdio shim didn't activate. Check that `MOOR_DISABLE_WINDOWS_UTF8` is NOT set (`Get-ChildItem env:MOOR_DISABLE_WINDOWS_UTF8`). If it's empty and you still see `?`, the console host (very old `cmd.exe`) may not support UTF-8 at all — switch to Windows Terminal.

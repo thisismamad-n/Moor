@@ -16,7 +16,7 @@ from __future__ import annotations
 import sys
 from unittest.mock import patch
 
-from hermes_cli.main import (
+from moor_cli.main import (
     _resolve_deferred_platform_cli_command,
 )
 

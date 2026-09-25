@@ -153,15 +153,15 @@ class TestCallbackSubprocess:
     def test_approve_reaches_the_human_gate_through_plugin_manager(self, tmp_path, monkeypatch):
         """End to end: a shell hook's approve directive escalates to request_tool_approval with its
         message and rule_key, and the gate's denial blocks the tool (#92553)."""
-        from hermes_cli import plugins
+        from moor_cli import plugins
 
         script = _write_script(
             tmp_path, "approve.sh",
             "#!/usr/bin/env bash\n"
             'printf \'{"action": "approve", "message": "risky", "rule_key": "terminal:rm"}\\n\'\n',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-        monkeypatch.setenv("HERMES_ACCEPT_HOOKS", "1")
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("MOOR_ACCEPT_HOOKS", "1")
         plugins._plugin_manager = plugins.PluginManager()
         cfg = {"hooks": {"pre_tool_call": [{"matcher": "terminal", "command": str(script)}]}}
         assert len(shell_hooks.register_from_config(cfg, accept_hooks=True)) == 1

@@ -58,13 +58,13 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   pool worker's `finally` sits OUTSIDE `ctx.run` and resolves the LAUNCH home. Pass the
   registering home (`release_running_job(job_id, home=...)`), or every secondary profile's claim
   leaks — the job skips a fire window until the force-release backstop sweeps it, and the drain
-  sees phantom work. Never rebuild a home from a key half (`Path(key[0])`): `hermes_home_key`
+  sees phantom work. Never rebuild a home from a key half (`Path(key[0])`): `moor_home_key`
   normcases, so use `_inflight_home_path`.
 - **Ticked-home state is reclaimed when a home leaves the set.** `register_ticked_homes` is
   republished every cycle and reaps the departed homes' parallel pools; pools used to live until
   `atexit`, so each home ever ticked kept a ThreadPoolExecutor and its worker threads forever.
 - **The host gateway stands down for a profile that runs its OWN gateway.** `run.py::
-  _cron_profile_gate` (the same gate `hermes_cli/web_server.py` passes) keeps the launch process
+  _cron_profile_gate` (the same gate `moor_cli/web_server.py` passes) keeps the launch process
   and a per-profile gateway off one store: the tick lock stops a simultaneous double-run but not
   the race, and when the launch process wins, delivery goes through `SharedRouteAdapters`/
   fail-closed instead of that profile's live adapters. The gate compares the liveness PID against
@@ -124,7 +124,7 @@ recycled PID gets killed on reclaim.
   scrubbed child env (`build_subprocess_env` + `strip_launch_profile_env`); they never inherit the
   default profile's `.env`.
 - **Prompt injection sites gate on ownership, not tool access.** Tool access (`kanban_show` visible
-  via a profile's toolset) and an inherited `HERMES_KANBAN_TASK` (delegate children, cron runs beside
+  via a profile's toolset) and an inherited `MOOR_KANBAN_TASK` (delegate children, cron runs beside
   a worker) are not ownership. The kanban guidance (`agent_init`, `system_prompt` fallback) and the
   stop nudge resolve the task via `agent/delegation_context.py::owned_kanban_task()`; other readers
   pair their env read with `is_dispatcher_owned_worker_context()`.

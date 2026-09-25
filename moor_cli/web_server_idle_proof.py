@@ -1,4 +1,4 @@
-"""Diagnostic work snapshot for a Desktop-pooled ``hermes serve`` child.
+"""Diagnostic work snapshot for a Desktop-pooled ``moor serve`` child.
 
 Reads process admission, session/worker, delegation, cron and human-input ledgers. Unreadable
 state is indeterminate, never idle. This snapshot alone is NOT permission to retire: only
@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Callable, Optional
 
-from hermes_cli.web_server_idle_exit import busy_ledger
+from moor_cli.web_server_idle_exit import busy_ledger
 
 _log = logging.getLogger(__name__)
 

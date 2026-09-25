@@ -26,7 +26,7 @@ description: "构建一个自动化每日简报机器人，研究主题、汇总
 
 开始之前，请确保：
 
-- **已安装 Hermes Agent** — 参见[安装指南](../getting-started/installation.md)
+- **已安装 Moor Agent** — 参见[安装指南](../getting-started/installation.md)
 - **Gateway 正在运行** — gateway 守护进程负责处理 cron 执行：
   ```bash
   moor gateway install   # Install as a user service

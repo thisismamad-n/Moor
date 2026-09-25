@@ -7,7 +7,7 @@ description: "Moor 终端命令及命令族的权威参考"
 # CLI 命令参考
 
 本页的 Python 依赖命令使用 [PM 准备的源码环境](./package-management.md#developer-workflow)。
-依赖变更后，请重新激活该 checkout 并重启 Hermes。
+依赖变更后，请重新激活该 checkout 并重启 Moor。
 
 本页介绍从 shell 运行的**终端命令**。
 
@@ -39,51 +39,51 @@ moor [global-options] <command> [subcommand/options]
 
 | 命令 | 用途 |
 |---------|---------|
-| `hermes chat` | 与 agent 进行交互式或单次聊天。 |
-| `hermes model` | 交互式选择默认 provider 和模型。 |
-| `hermes fallback` | 管理主模型出错时依次尝试的 fallback provider。 |
-| `hermes gateway` | 运行或管理消息 gateway 服务。 |
-| `hermes proxy` | 本地 OpenAI 兼容代理，附加 OAuth provider 凭据。参见 [订阅代理](../user-guide/features/subscription-proxy.md)。 |
-| `hermes lsp` | 管理 Language Server Protocol 集成（为 write_file/patch 提供语义诊断）。 |
-| `hermes setup` | 全部或部分配置的交互式设置向导。 |
-| `hermes whatsapp` | 配置并配对 WhatsApp 桥接。 |
-| `hermes slack` | Slack 辅助工具（当前功能：生成将每条命令注册为原生斜杠命令的 app manifest）。 |
-| `hermes auth` | 管理凭据——添加、列出、删除、重置、设置策略。处理 Codex/Nous/Anthropic 的 OAuth 流程。 |
-| `hermes login` / `logout` | **已弃用** — 请改用 `hermes auth`。 |
-| `hermes status` | 显示 agent、auth 和平台状态。 |
-| `hermes cron` | 检查并触发 cron 调度器。 |
-| `hermes kanban` | 多 profile 协作看板（任务、链接、调度器）。 |
-| `hermes webhook` | 管理用于事件驱动激活的动态 webhook 订阅。 |
-| `hermes hooks` | 检查、审批或删除 `config.yaml` 中声明的 shell 脚本 hook。 |
-| `hermes doctor` | 诊断配置和依赖问题。 |
-| `hermes security audit` | 对 venv、plugin 依赖和固定 MCP 服务器进行按需供应链审计（OSV.dev）。 |
-| `hermes dump` | 可直接复制粘贴的设置摘要，用于支持/调试。 |
-| `hermes debug` | 调试工具——上传日志和系统信息以获取支持。 |
-| `hermes backup` | 将 Hermes 主目录备份为 zip 文件。 |
-| `hermes checkpoints` | 检查/修剪/清除 `~/.hermes/checkpoints/`（`/rollback` 使用的影子存储）。不带参数运行可查看状态概览。 |
-| `hermes import` | 从 zip 文件恢复 Hermes 备份。 |
-| `hermes logs` | 查看、跟踪和过滤 agent/gateway/错误日志文件。 |
-| `hermes config` | 显示、编辑、迁移和查询配置文件。 |
-| `hermes pairing` | 审批或撤销消息配对码。 |
-| `hermes skills` | 浏览、安装、发布、审计和配置 skill。 |
-| `hermes bundles` | 将多个 skill 归组到单个 `/<name>` 斜杠命令下。参见 [Skill Bundles](../user-guide/features/skills.md#skill-捆绑包)。 |
-| `hermes curator` | 后台 skill 维护——状态、运行、暂停、固定。参见 [Curator](../user-guide/features/curator.md)。 |
-| `hermes memory` | 配置外部 memory provider。当对应 provider 激活时，特定于 plugin 的子命令（如 `hermes honcho`）会自动注册。 |
-| `hermes acp` | 将 Hermes 作为 ACP 服务器运行，用于编辑器集成。 |
-| `hermes mcp` | 管理 MCP 服务器配置，并将 Hermes 作为 MCP 服务器运行。 |
-| `hermes plugins` | 管理 Hermes Agent plugin（安装、启用、禁用、删除）。 |
-| `hermes portal` | Nous Portal 状态、订阅链接和 Tool Gateway 路由。参见 [Tool Gateway](../user-guide/features/tool-gateway.md)。 |
-| `hermes tools` | 按平台配置已启用的工具。 |
-| `hermes computer-use` | 安装或检查 cua-driver 后端（macOS Computer Use）。 |
-| `hermes sessions` | 浏览、导出、修剪、重命名和删除会话。 |
-| `hermes insights` | 显示 token/费用/活动分析。 |
-| `hermes claw` | OpenClaw 迁移辅助工具。 |
-| `hermes dashboard` | 启动用于管理配置、API 密钥和会话的 Web 控制台。 |
-| `hermes profile` | 管理 profile——多个隔离的 Hermes 实例。 |
-| `hermes completion` | 打印 shell 补全脚本（bash/zsh/fish）。 |
-| `hermes --version` | 显示版本信息。 |
-| `hermes update` | 拉取最新代码并重新安装依赖。`--check` 预览而不安装；`--backup` 在拉取前对 `HERMES_HOME` 进行快照。 |
-| `hermes uninstall` | 从系统中删除 Hermes。 |
+| `moor chat` | 与 agent 进行交互式或单次聊天。 |
+| `moor model` | 交互式选择默认 provider 和模型。 |
+| `moor fallback` | 管理主模型出错时依次尝试的 fallback provider。 |
+| `moor gateway` | 运行或管理消息 gateway 服务。 |
+| `moor proxy` | 本地 OpenAI 兼容代理，附加 OAuth provider 凭据。参见 [订阅代理](../user-guide/features/subscription-proxy.md)。 |
+| `moor lsp` | 管理 Language Server Protocol 集成（为 write_file/patch 提供语义诊断）。 |
+| `moor setup` | 全部或部分配置的交互式设置向导。 |
+| `moor whatsapp` | 配置并配对 WhatsApp 桥接。 |
+| `moor slack` | Slack 辅助工具（当前功能：生成将每条命令注册为原生斜杠命令的 app manifest）。 |
+| `moor auth` | 管理凭据——添加、列出、删除、重置、设置策略。处理 Codex/Moor/Anthropic 的 OAuth 流程。 |
+| `moor login` / `logout` | **已弃用** — 请改用 `moor auth`。 |
+| `moor status` | 显示 agent、auth 和平台状态。 |
+| `moor cron` | 检查并触发 cron 调度器。 |
+| `moor kanban` | 多 profile 协作看板（任务、链接、调度器）。 |
+| `moor webhook` | 管理用于事件驱动激活的动态 webhook 订阅。 |
+| `moor hooks` | 检查、审批或删除 `config.yaml` 中声明的 shell 脚本 hook。 |
+| `moor doctor` | 诊断配置和依赖问题。 |
+| `moor security audit` | 对 venv、plugin 依赖和固定 MCP 服务器进行按需供应链审计（OSV.dev）。 |
+| `moor dump` | 可直接复制粘贴的设置摘要，用于支持/调试。 |
+| `moor debug` | 调试工具——上传日志和系统信息以获取支持。 |
+| `moor backup` | 将 Moor 主目录备份为 zip 文件。 |
+| `moor checkpoints` | 检查/修剪/清除 `~/.moor/checkpoints/`（`/rollback` 使用的影子存储）。不带参数运行可查看状态概览。 |
+| `moor import` | 从 zip 文件恢复 Moor 备份。 |
+| `moor logs` | 查看、跟踪和过滤 agent/gateway/错误日志文件。 |
+| `moor config` | 显示、编辑、迁移和查询配置文件。 |
+| `moor pairing` | 审批或撤销消息配对码。 |
+| `moor skills` | 浏览、安装、发布、审计和配置 skill。 |
+| `moor bundles` | 将多个 skill 归组到单个 `/<name>` 斜杠命令下。参见 [Skill Bundles](../user-guide/features/skills.md#skill-捆绑包)。 |
+| `moor curator` | 后台 skill 维护——状态、运行、暂停、固定。参见 [Curator](../user-guide/features/curator.md)。 |
+| `moor memory` | 配置外部 memory provider。当对应 provider 激活时，特定于 plugin 的子命令（如 `moor honcho`）会自动注册。 |
+| `moor acp` | 将 Moor 作为 ACP 服务器运行，用于编辑器集成。 |
+| `moor mcp` | 管理 MCP 服务器配置，并将 Moor 作为 MCP 服务器运行。 |
+| `moor plugins` | 管理 Moor Agent plugin（安装、启用、禁用、删除）。 |
+| `moor portal` | Moor Portal 状态、订阅链接和 Tool Gateway 路由。参见 [Tool Gateway](../user-guide/features/tool-gateway.md)。 |
+| `moor tools` | 按平台配置已启用的工具。 |
+| `moor computer-use` | 安装或检查 cua-driver 后端（macOS Computer Use）。 |
+| `moor sessions` | 浏览、导出、修剪、重命名和删除会话。 |
+| `moor insights` | 显示 token/费用/活动分析。 |
+| `moor claw` | OpenClaw 迁移辅助工具。 |
+| `moor dashboard` | 启动用于管理配置、API 密钥和会话的 Web 控制台。 |
+| `moor profile` | 管理 profile——多个隔离的 Moor 实例。 |
+| `moor completion` | 打印 shell 补全脚本（bash/zsh/fish）。 |
+| `moor --version` | 显示版本信息。 |
+| `moor update` | 拉取最新代码并重新安装依赖。`--check` 预览而不安装；`--backup` 在拉取前对 `MOOR_HOME` 进行快照。 |
+| `moor uninstall` | 从系统中删除 Moor。 |
 
 ## `moor chat`
 
@@ -230,7 +230,7 @@ moor gateway <subcommand>
 | `--no-supervise` | 在 `run` 时：在 s6-overlay Docker 镜像内部，跳过 s6 自动监管，退回到 pre-s6 前台语义——gateway 作为容器主进程运行，无自动重启。在 s6 镜像之外为空操作。等同于设置 `MOOR_GATEWAY_NO_SUPERVISE=1`。 |
 
 :::tip WSL 用户
-使用 `hermes gateway run` 而非 `hermes gateway start`——WSL 的 systemd 支持不稳定。用 tmux 包裹以保持持久运行：`tmux new -s hermes 'hermes gateway run'`。详见 [WSL FAQ](./faq.md#wsl网关持续断开连接或-hermes-gateway-start-失败)。
+使用 `moor gateway run` 而非 `moor gateway start`——WSL 的 systemd 支持不稳定。用 tmux 包裹以保持持久运行：`tmux new -s moor 'moor gateway run'`。详见 [WSL FAQ](./faq.md#wsl网关持续断开连接或-moor-gateway-start-失败)。
 :::
 
 ## `moor lsp`
@@ -396,7 +396,7 @@ moor kanban [--board <slug>] <action> [options]
 |------|---------|
 | `--board <slug>` | 操作特定看板。默认为当前看板（通过 `moor kanban boards switch`、`MOOR_KANBAN_BOARD` 环境变量或 `default` 设置）。 |
 
-**这是人工/脚本操作界面。** 调度器生成的 agent worker 通过专用的 `kanban_*` [toolset](../user-guide/features/kanban.md#how-workers-interact-with-the-board)（`kanban_show`、`kanban_complete`、`kanban_block`、`kanban_create`、`kanban_link`、`kanban_comment`、`kanban_heartbeat`；编排器 profile 还可使用 `kanban_list` 和 `kanban_unblock`）驱动看板，而非调用 `hermes kanban`。Worker 的环境中固定了 `HERMES_KANBAN_BOARD`，因此物理上无法看到其他看板。
+**这是人工/脚本操作界面。** 调度器生成的 agent worker 通过专用的 `kanban_*` [toolset](../user-guide/features/kanban.md#how-workers-interact-with-the-board)（`kanban_show`、`kanban_complete`、`kanban_block`、`kanban_create`、`kanban_link`、`kanban_comment`、`kanban_heartbeat`；编排器 profile 还可使用 `kanban_list` 和 `kanban_unblock`）驱动看板，而非调用 `moor kanban`。Worker 的环境中固定了 `MOOR_KANBAN_BOARD`，因此物理上无法看到其他看板。
 
 | 操作 | 用途 |
 |--------|---------|
@@ -846,7 +846,7 @@ moor skills reset google-workspace --restore --yes
 moor bundles <subcommand>
 ```
 
-Skill bundle 将多个 skill 归组到一个 `/<bundle-name>` 斜杠命令下。调用 bundle 会将每个引用的 skill 加载到单个合并的用户消息中。存储位置：`~/.hermes/skill-bundles/<slug>.yaml`。YAML schema 和行为请参阅 [Skill Bundles](../user-guide/features/skills.md#skill-捆绑包)。
+Skill bundle 将多个 skill 归组到一个 `/<bundle-name>` 斜杠命令下。调用 bundle 会将每个引用的 skill 加载到单个合并的用户消息中。存储位置：`~/.moor/skill-bundles/<slug>.yaml`。YAML schema 和行为请参阅 [Skill Bundles](../user-guide/features/skills.md#skill-捆绑包)。
 
 子命令：
 
@@ -978,7 +978,7 @@ python -m acp_adapter
 首先安装支持：
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"
 ```
 
 参见 [ACP 编辑器集成](../user-guide/features/acp.md) 和 [ACP 内部原理](../developer-guide/acp-internals.md)。
@@ -1001,7 +1001,7 @@ moor mcp <subcommand>
 | `configure <name>`（别名：`config`） | 切换服务器的工具选择。 |
 | `login <name>` | 强制重新认证基于 OAuth 的 MCP 服务器。 |
 
-参见 [MCP 配置参考](./mcp-config-reference.md)、[在 Hermes 中使用 MCP](../guides/use-mcp-with-hermes.md) 和 [MCP 服务器模式](../user-guide/features/mcp.md#将-hermes-作为-mcp-服务器运行)。
+参见 [MCP 配置参考](./mcp-config-reference.md)、[在 Moor 中使用 MCP](../guides/use-mcp-with-moor.md) 和 [MCP 服务器模式](../user-guide/features/mcp.md#将-moor-作为-mcp-服务器运行)。
 
 ## `moor plugins`
 
@@ -1148,7 +1148,7 @@ moor claw migrate --source /home/user/old-openclaw
 moor dashboard [options]
 ```
 
-启动 Web 控制台，用于管理配置、API 密钥和会话。FastAPI、Uvicorn 和平台 PTY 辅助库是核心依赖。`web` extra 提供 HTTP 栈的精确约束，标准 PM 安装通过 `all` 选择它。如依赖损坏，请运行 `hermes pm repair`。内嵌 Chat 标签页需要 POSIX PTY 环境，例如 Linux、macOS 或 WSL2。请参阅 [Web 控制台](../user-guide/features/web-dashboard.md)。
+启动 Web 控制台，用于管理配置、API 密钥和会话。FastAPI、Uvicorn 和平台 PTY 辅助库是核心依赖。`web` extra 提供 HTTP 栈的精确约束，标准 PM 安装通过 `all` 选择它。如依赖损坏，请运行 `moor pm repair`。内嵌 Chat 标签页需要 POSIX PTY 环境，例如 Linux、macOS 或 WSL2。请参阅 [Web 控制台](../user-guide/features/web-dashboard.md)。
 
 | 选项 | 默认值 | 说明 |
 |--------|---------|-------------|
@@ -1225,14 +1225,14 @@ moor completion zsh >> ~/.zshrc
 moor completion fish > ~/.config/fish/completions/moor.fish
 ```
 
-## `hermes pm`
+## `moor pm`
 
 PM 管理工具和 Python 依赖，不负责替换应用发布包。
 源码开发先运行一次 setup 脚本，然后用 Bash `source ./activate` 或 PowerShell `. .\activate.ps1` 激活已有环境。
 使用 `deactivate` 恢复激活前的环境。
 详见[PM 开发工作流](./package-management.md#developer-workflow)，包括依赖更新和测试环境。
 
-## `hermes update`
+## `moor update`
 
 ```bash
 moor update [--check] [--backup] [--restart-gateway]

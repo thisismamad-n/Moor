@@ -4,8 +4,8 @@ validation, migration, and the ``moor config`` command."""
 # Stale-module bridge — must run before ANY import below can bind a root-level symbol.
 # A pre-handoff updater purges only package prefixes after the pull, so a root module
 # (``utils``) stays cached from the OLD tree; the first fresh consumer of its new symbols
-# dies with ImportError before any later heal point is reached. See hermes_cli.stale_modules.
-from hermes_cli.stale_modules import drop_stale_root_modules
+# dies with ImportError before any later heal point is reached. See moor_cli.stale_modules.
+from moor_cli.stale_modules import drop_stale_root_modules
 
 drop_stale_root_modules()
 
@@ -31,23 +31,23 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple, Set
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_cli.cli_output import line_input
-from hermes_cli.colors import Colors, color
-from hermes_cli import managed_scope
-from hermes_cli.default_soul import DEFAULT_SOUL_MD, is_legacy_template_soul
-from hermes_cli.secret_prompt import masked_secret_prompt
-# Managed-mode, container and HERMES_UID/GID policy live in hermes_constants (import-safe);
+from moor_cli.cli_output import line_input
+from moor_cli.colors import Colors, color
+from moor_cli import managed_scope
+from moor_cli.default_soul import DEFAULT_SOUL_MD, is_legacy_template_soul
+from moor_cli.secret_prompt import masked_secret_prompt
+# Managed-mode, container and MOOR_UID/GID policy live in moor_constants (import-safe);
 # re-exported here so existing callers/patch targets keep working.
-from hermes_constants import (  # noqa: F401
+from moor_constants import (  # noqa: F401
     _IGNORED_MANAGED_VALUES, _LEGACY_MANAGED_SYSTEM, _MANAGED_FALSE_VALUES, _MANAGED_TRUE_VALUES,
-    _chown_to_hermes_uid, _container_or_chmod_skipped, _resolve_hermes_uid_gid,
+    _chown_to_moor_uid, _container_or_chmod_skipped, _resolve_moor_uid_gid,
     apply_secure_dir_policy, get_managed_system)
-# Re-export from hermes_constants — canonical definition lives there.
-from hermes_constants import get_hermes_home, get_process_hermes_home  # noqa: F401
+# Re-export from moor_constants — canonical definition lives there.
+from moor_constants import get_moor_home, get_process_moor_home  # noqa: F401
 from utils import atomic_replace, fast_safe_load, file_signature
-from hermes_cli.config_read_errors import (
+from moor_cli.config_read_errors import (
     _CONFIG_PARSE_FAILURES, _FIX_PERMS, _FIX_YAML, FailedConfigRead, _backups_dir_display,
     _refuse_failed_read, _refuse_overwrite, _warn_config_parse_failure, _yaml_error_details,
     _yaml_error_location)
@@ -119,9 +119,9 @@ _ENV_VAR_NAME_DENYLIST: frozenset[str] = frozenset({
     "GIT_PROXY_COMMAND", "GIT_TEMPLATE_DIR", "GIT_DIR",
     # Shell init files / interactive hooks — sourced before or during execution
     "BASH_ENV", "ENV", "ZDOTDIR", "PROMPT_COMMAND", "VIMINIT", "EXINIT",
-    # Hermes runtime location
-    "HERMES_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV",
-    "HERMES_CONFIG_PATH", "HERMES_ENV_PATH",
+    # Moor runtime location
+    "MOOR_HOME", "MOOR_PROFILE", "MOOR_CONFIG", "MOOR_ENV",
+    "MOOR_CONFIG_PATH", "MOOR_ENV_PATH",
     # MCP catalog trust root; package-manager wrappers may still set it in the process env.
     "MOOR_OPTIONAL_MCPS",
     # Local ACP subprocess selection (executable/argv authority).
@@ -158,7 +158,7 @@ def validate_env_var_name_for_write(key: str) -> None:
 # C extension is not thread-safe for concurrent safe_load() on one file, and tool threads
 # (approval, browser, setup flows) load/save config concurrently during long agent runs.
 # RLock because callers hold it across a read-modify-write and then call save_config(), which
-# acquires it again (hermes_cli/plugins.py: `with ..., config_mod._CONFIG_LOCK:` then
+# acquires it again (moor_cli/plugins.py: `with ..., config_mod._CONFIG_LOCK:` then
 # read_user_config_raw() + save_config()). save_config itself no longer re-enters via
 # read_raw_config; it takes its raw mapping from require_readable_config_before_write.
 _CONFIG_LOCK = threading.RLock()
@@ -276,7 +276,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
     Source installers clone a git checkout and publish ``install-stamp.json``;
     the ``.git`` fallback identifies it as a source install. Older installations
     may carry ``.install_method``, which remains authoritative for compatibility.
-    The published image bakes a ``docker`` marker into ``/opt/hermes``. A manual
+    The published image bakes a ``docker`` marker into ``/opt/moor``. A manual
     clone in a container still resolves via ``.git``, not container presence alone.
     See issue #34397.
     """
@@ -375,7 +375,7 @@ Notes:
   • On a ``-desktop`` tag (the one carrying Bot Screen)?  Keep the suffix:
     the unsuffixed image has no Xvnc/Xfce and no sudo to add them, so
     pulling it stops the bots' screens from starting.
-  • Your config and session history live under ``$HERMES_HOME`` (``/opt/data``
+  • Your config and session history live under ``$MOOR_HOME`` (``/opt/data``
     in the container, typically bind-mounted from the host) and persist
     across image upgrades — re-pulling doesn't lose any state.
   • Running a fork?  Build your own image with this repo's ``Dockerfile``
@@ -415,7 +415,7 @@ def get_container_exec_info() -> Optional[dict]:
 
     try:
         info = {}
-        with open(get_hermes_home() / ".container-mode", "r", encoding="utf-8-sig") as f:
+        with open(get_moor_home() / ".container-mode", "r", encoding="utf-8-sig") as f:
             for line in f:
                 line = line.strip()
                 if "=" in line and not line.startswith("#"):
@@ -494,7 +494,7 @@ def _secure_dir(path):
     deployments need this so profile subdirs created at runtime by kanban workers don't land as root:root
     and block subsequent uid-mapped workers).
 
-    Delegates to the canonical import-safe primitive ``hermes_constants.apply_secure_dir_policy``
+    Delegates to the canonical import-safe primitive ``moor_constants.apply_secure_dir_policy``
     so callers outside this package (``get_scratch_dir``) share one implementation (#117347).
     """
     return apply_secure_dir_policy(path)
@@ -516,7 +516,7 @@ def seed_config_file(config_path: Path, template: Optional[Path] = None) -> bool
     """Create a missing config.yaml the way the installers do: copy cli-config.yaml.example (the display keys
     there are commented out), else write stripped DEFAULT_CONFIG. Never DEFAULT_CONFIG verbatim -- the gateway
     merges no defaults, so every written display key becomes a global that beats each platform's own default
-    (#121230). Shared by ``hermes config edit`` and ``hermes doctor --fix`` so the seeders cannot drift.
+    (#121230). Shared by ``moor config edit`` and ``moor doctor --fix`` so the seeders cannot drift.
     Returns True when the template was copied (the fallback, like save_config, writes get_config_path())."""
     template = template or get_project_root() / "cli-config.yaml.example"
     config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1219,9 +1219,9 @@ def _validate_quoted_containers(config: Dict[str, Any], issues: List[ConfigIssue
             continue
         if isinstance(parsed, (list, dict)):
             _issue(issues, "warning",
-                   f"{key} is the quoted string {value!r} — Hermes expects a YAML {kind} here "
+                   f"{key} is the quoted string {value!r} — Moor expects a YAML {kind} here "
                    "and every reader ignores the string",
-                   f"Run: hermes config set {key} {shlex.quote(value)}  (stores a real {kind}), "
+                   f"Run: moor config set {key} {shlex.quote(value)}  (stores a real {kind}), "
                    "or remove the quotes in config.yaml")
 
 
@@ -2262,7 +2262,7 @@ def _merge_managed_overlay(expanded: Dict[str, Any]) -> Tuple[Dict[str, Any], An
 def _load_config_cache_hit(path_key: str, cache_sig: Any) -> Optional[Dict[str, Any]]:
     """Lookup: the cached expanded config for ``path_key`` if its signature equals
     ``cache_sig`` AND every ``${VAR}`` it was expanded against still has the same value, else
-    ``None``. Signatures matching is not enough: a load before load_hermes_dotenv() would otherwise
+    ``None``. Signatures matching is not enough: a load before load_moor_dotenv() would otherwise
     pin unexpanded literals (e.g. auxiliary.<task>.api_key) for the process lifetime (#58514).
     Shared by the lock-free fast path and the locked re-check of ``_load_config_impl``."""
     cached = _LOAD_CONFIG_CACHE.get(path_key)
@@ -2453,7 +2453,7 @@ def save_config(
         _refuse_failed_read(config_path, config)
         config = _strip_managed_keys_for_save(config)
 
-        ensure_hermes_home()
+        ensure_moor_home()
         # Explicit user paths come from the RAW dict BEFORE normalisation (which may inject
         # agent.max_turns) so _strip_default_values keeps exactly what the user set. The
         # fail-closed read is the single authority here: ``read_raw_config()`` is cached and
@@ -2482,7 +2482,7 @@ def save_config(
 
 
 def load_env() -> Dict[str, str]:
-    """Load ~/.hermes/.env as a dict. Memoised inside ``load_env_file`` (``get_env_value()`` runs
+    """Load ~/.moor/.env as a dict. Memoised inside ``load_env_file`` (``get_env_value()`` runs
     hundreds of times per interactive menu render). Each assignment's value is opaque data for
     boundary discovery."""
     from agent.secret_scope import load_env_file  # the one .env tokenizer; also installs profile scopes
@@ -2493,7 +2493,7 @@ def load_env() -> Dict[str, str]:
 def _parse_env_value(raw_value: str) -> str:
     """Frozen compat surface name (tests/compat/old_updater_surface.json).
 
-    Pre-PM updaters lazy-import ``hermes_cli.config._parse_env_value`` after the
+    Pre-PM updaters lazy-import ``moor_cli.config._parse_env_value`` after the
     checkout swap. The tokenizer moved to ``agent.secret_scope._parse_env_value``
     (c849bc383a), so this forwards there — behavior-preserving by construction.
     """
@@ -3376,7 +3376,7 @@ def _refuse_container_type_mismatch(key: str, value: Any, user_config: Dict[str,
     literal = "[item, ...]" if expected == "list" else "{key: value}"
     _exit_invalid(
         f"✗ Cannot set '{key}': it must be a {expected}, got a {got} — nothing was written.\n"
-        f"  Pass a YAML/JSON literal, e.g.:\n    hermes config set {key} '{literal}'\n"
+        f"  Pass a YAML/JSON literal, e.g.:\n    moor config set {key} '{literal}'\n"
         "  or edit config.yaml directly.")
 
 
@@ -3491,7 +3491,7 @@ def _exit_invalid(msg: str) -> None:
 
 def _write_user_config(config_path: Path, user_config: Dict[str, Any]) -> None:
     """Write only the user's raw config back (never the merged defaults)."""
-    ensure_hermes_home()
+    ensure_moor_home()
     atomic_config_write(config_path, user_config)
 
 
@@ -3600,7 +3600,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     _route_notice = ""
     _old_provider = str(_old_provider or "").strip() or "the previous provider"
     if key == "model.provider" and _old_provider.lower() != str(value).strip().lower():
-        from hermes_cli.route_identity import drop_stale_model_route
+        from moor_cli.route_identity import drop_stale_model_route
         _popped, _unverified = drop_stale_model_route(user_config.get("model"), value, user_config)
         if _popped:
             _route_notice = (
@@ -3611,7 +3611,7 @@ def set_config_value(key: str, value: str, force: bool = False):
             _route_notice = color(
                 f"⚠ model.base_url ({user_config['model'].get('base_url')}) was set under {_old_provider} and "
                 f"still applies to {value} — requests go there. If it is not {value}'s endpoint: "
-                "`hermes config unset model.base_url` (and model.api_mode).", Colors.YELLOW)
+                "`moor config unset model.base_url` (and model.api_mode).", Colors.YELLOW)
     # api_base -> base_url alias at set-time too (mirrors _normalize_root_model_keys).
     if key.strip().lower() in ("model.api_base", "api_base"):
         # Normalize the api_base → base_url alias at set-time too (issue #8919), so a fresh `moor config
@@ -3692,7 +3692,7 @@ def get_config_value(key: str, *, as_json: bool = False, raw: bool = False):
         is_known, suggestion = _validate_config_key(key)
         if not is_known:
             print(color(
-                f"⚠ '{key}' is not a recognized config key — Hermes may not read it; the value "
+                f"⚠ '{key}' is not a recognized config key — Moor may not read it; the value "
                 "printed above comes from your config file.", Colors.YELLOW), file=sys.stderr)
             if suggestion:
                 print(color(f"  Did you mean: {suggestion}", Colors.YELLOW), file=sys.stderr)
@@ -3952,9 +3952,9 @@ _inject_profile_env_vars()
 
 def _platform_plugin_manifests():
     """Yield ``(dir_name, manifest_dict)`` for every platform plugin manifest: bundled
-    ``plugins/platforms/*``, the user's ``<HERMES_HOME>/plugins/platforms/*`` category dir, and flat
-    user installs ``<HERMES_HOME>/plugins/*`` that declare ``kind: platform`` (#46600)."""
-    user_plugins = get_hermes_home() / "plugins"
+    ``plugins/platforms/*``, the user's ``<MOOR_HOME>/plugins/platforms/*`` category dir, and flat
+    user installs ``<MOOR_HOME>/plugins/*`` that declare ``kind: platform`` (#46600)."""
+    user_plugins = get_moor_home() / "plugins"
     roots = (
         (get_project_root() / "plugins" / "platforms", False),
         (user_plugins / "platforms", False),
@@ -3980,7 +3980,7 @@ def _platform_plugin_manifests():
 
 def _inject_platform_plugin_env_vars() -> None:
     """Populate OPTIONAL_ENV_VARS from platform plugin manifests (bundled AND user-installed) so
-    Teams / IRC / Google Chat and third-party platforms are configurable in the ``hermes config`` /
+    Teams / IRC / Google Chat and third-party platforms are configurable in the ``moor config`` /
     Desktop Gateway form without the core knowing they exist.
 
     ``requires_env`` / ``optional_env`` entries are a bare name or a dict with ``name`` plus

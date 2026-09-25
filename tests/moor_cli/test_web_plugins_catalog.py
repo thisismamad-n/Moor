@@ -4,7 +4,7 @@ installer-owned install-metadata ``catalog`` record; the install endpoint has no
 from __future__ import annotations
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli import plugin_catalog as pc_cat
 
@@ -41,10 +41,10 @@ def client(monkeypatch, tmp_path, _isolate_moor_home):
 
 def _install(name: str, sidecar: dict | None):
     """A user-dir plugin; *sidecar* records catalog provenance the way the installer does — on the
-    installer-owned ``.install-metadata.json`` record (an in-tree ``.hermes-catalog.json`` is inert)."""
-    from hermes_constants import get_hermes_home
-    from hermes_cli.plugins_cmd import _read_install_metadata, _write_install_metadata
-    d = get_hermes_home() / "plugins" / name
+    installer-owned ``.install-metadata.json`` record (an in-tree ``.moor-catalog.json`` is inert)."""
+    from moor_constants import get_moor_home
+    from moor_cli.plugins_cmd import _read_install_metadata, _write_install_metadata
+    d = get_moor_home() / "plugins" / name
     d.mkdir(parents=True)
     (d / "plugin.yaml").write_text(yaml.safe_dump({"name": name, "version": "1.0", "description": "x"}))
     if sidecar:

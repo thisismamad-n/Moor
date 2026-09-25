@@ -224,7 +224,7 @@ class TestHandoffSurvivesBrickAB:
     def _make_moor(self, root: Path) -> Path:
         moor = root / "venv/bin/moor"
         _write_exe(
-            hermes,
+            moor,
             "#!/usr/bin/env bash\n"
             'exec "$(cd "$(dirname "$0")" && pwd)/python3" -c "import encodings"\n',
         )

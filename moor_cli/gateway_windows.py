@@ -115,31 +115,31 @@ def _moor_home() -> Path:
     return Path(get_moor_home())
 
 
-def hermes_service_roots() -> tuple[str, ...]:
-    """Directories a Hermes-owned SCM service binary lives under: the checkout (its ``venv`` included),
-    the running interpreter's ``Scripts`` dir (``hermes.exe`` shim) and the ``gateway-service`` launcher dir."""
+def moor_service_roots() -> tuple[str, ...]:
+    """Directories a moor-owned SCM service binary lives under: the checkout (its ``venv`` included),
+    the running interpreter's ``Scripts`` dir (``moor.exe`` shim) and the ``gateway-service`` launcher dir."""
     project_root = Path(__file__).resolve().parent.parent
-    return (str(project_root), str(Path(sys.executable).parent), str(_hermes_home() / "gateway-service"))
+    return (str(project_root), str(Path(sys.executable).parent), str(_moor_home() / "gateway-service"))
 
 
 def _normalize_windows_path(value: str) -> str:
     return value.strip().lstrip('"').replace("\\", "/").rstrip("/").casefold()
 
 
-def hermes_owns_windows_service(name: str, binpath: str, hermes_roots: tuple[str, ...]) -> bool:
-    """Positive ownership of an SCM service: Hermes-named (``hermes*``) or its binary path starts under a
-    Hermes root. Pure so it is testable off-Windows. A Scheduled-Task-launched gateway descends from
+def moor_owns_windows_service(name: str, binpath: str, moor_roots: tuple[str, ...]) -> bool:
+    """Positive ownership of an SCM service: moor-named (``moor*``) or its binary path starts under a
+    Moor root. Pure so it is testable off-Windows. A Scheduled-Task-launched gateway descends from
     ``svchost.exe`` hosting ``Schedule``; without this gate the updater took Task Scheduler for the
     gateway's supervisor and ``sc.exe stop Schedule`` aborted every update (#97208)."""
     normalized_name = "".join(char for char in name.casefold() if char.isalnum())
-    if normalized_name.startswith("hermes"):
+    if normalized_name.startswith("moor"):
         return True
     candidate = _normalize_windows_path(binpath)
-    return any(candidate.startswith(_normalize_windows_path(root) + "/") for root in hermes_roots if root)
+    return any(candidate.startswith(_normalize_windows_path(root) + "/") for root in moor_roots if root)
 
 
-def _preserve_hermes_home_path(path: str | Path) -> str:
-    r"""Render Hermes-owned paths under the configured HERMES_HOME spelling.
+def _preserve_moor_home_path(path: str | Path) -> str:
+    r"""Render moor-owned paths under the configured MOOR_HOME spelling.
 
     ``%LOCALAPPDATA%\moor`` may be a symlink/junction to another drive; launcher files must not
     bake in the resolved target for paths under MOOR_HOME.
@@ -479,7 +479,7 @@ def _atomic_write(path: Path, content: str, tmp: Path) -> None:
 
     The staging file is removed even when the rename fails: the Startup-folder caller stages
     inside the Startup folder itself, and Windows opens every file there at login — a leftover
-    ``Hermes_Gateway.tmp`` pops up in Notepad after every sign-in (#114093).
+    ``Moor_Gateway.tmp`` pops up in Notepad after every sign-in (#114093).
     """
     try:
         tmp.write_text(content, encoding="utf-8", newline="")
@@ -750,7 +750,7 @@ def _spawn_detached(script_path: Path | None = None, home: Path | None = None) -
 
 def _stdin_is_interactive(*, isatty: bool, console_mode_ok: bool | None) -> bool:
     """A human can answer a prompt only on a real console. The Windows CRT reports isatty()==True for
-    every character device — the NUL device included (`hermes gateway start < NUL`, stdin=DEVNULL) — so
+    every character device — the NUL device included (`moor gateway start < NUL`, stdin=DEVNULL) — so
     isatty must be confirmed by GetConsoleMode accepting the handle (#113977). ``console_mode_ok`` is
     None where that fact does not exist (not Windows) and isatty alone decides."""
     return isatty and console_mode_ok is not False
@@ -873,21 +873,21 @@ def install(
             _start_or_report_running()
         else:
             print("ℹ Gateway not started and no auto-start service installed.")
-            print("  Run in the foreground later with: hermes gateway run")
+            print("  Run in the foreground later with: moor gateway run")
         return
 
     task_name = get_task_name()
     script_path = _write_task_script()
-    # A pre-fix install that failed its Startup-folder swap left `Hermes_Gateway.tmp` there, and the
+    # A pre-fix install that failed its Startup-folder swap left `Moor_Gateway.tmp` there, and the
     # Scheduled Task path below never touches that folder — sweep it so a re-run clears the debris.
     try:
         _startup_staging_path().unlink(missing_ok=True)
     except OSError:
         pass
     if force:
-        # Pre-suffix strays (task ``Hermes_Gateway``, Startup ``Hermes_Gateway.vbs``) are unreachable by
+        # Pre-suffix strays (task ``Moor_Gateway``, Startup ``Moor_Gateway.vbs``) are unreachable by
         # the current names, so a plain reconcile never heals them (#116157).
-        from hermes_cli.gateway_windows_legacy import remove_legacy_launchers
+        from moor_cli.gateway_windows_legacy import remove_legacy_launchers
         remove_legacy_launchers()
 
     # On locked-down accounts schtasks can sit for the full timeout before returning Access Denied.
@@ -1108,7 +1108,7 @@ def _attested_pid_exited_cleanly(pid: int, create_time: float | None = None, hom
     try:
         from gateway.lifecycle_ledger import get_lifecycle_sentinel_path
 
-        sentinel = get_lifecycle_sentinel_path(home if home is not None else _hermes_home())
+        sentinel = get_lifecycle_sentinel_path(home if home is not None else _moor_home())
         data = json.loads(sentinel.read_text(encoding="utf-8-sig"))
     except OSError:
         return False
@@ -1282,7 +1282,7 @@ def uninstall() -> None:
         except FileNotFoundError:
             pass
 
-    from hermes_cli.gateway_windows_legacy import remove_legacy_launchers
+    from moor_cli.gateway_windows_legacy import remove_legacy_launchers
     remove_legacy_launchers()
 
     if is_task_registered() and not scheduled_task_removed:
@@ -1372,18 +1372,18 @@ def scheduled_task_drift(task_name: str) -> list[str]:
 
 def _print_scheduled_task_drift(task_name: str) -> None:
     """Warn when the registered task predates the current template (status is read-only; the
-    repair runs from ``start()`` / ``hermes update`` via ``reconcile_scheduled_task``)."""
+    repair runs from ``start()`` / ``moor update`` via ``reconcile_scheduled_task``)."""
     drift = scheduled_task_drift(task_name)
     if drift:
         print(f"⚠ Scheduled Task registration predates the current template ({'; '.join(drift)})")
-        print("  Repair: hermes gateway start  (or: hermes gateway install)")
+        print("  Repair: moor gateway start  (or: moor gateway install)")
 
 
 def reconcile_scheduled_task(task_name: str) -> bool:
     """Re-register the task from the current template when it drifts (#113670) — the Windows sibling
     of ``gateway.py::refresh_systemd_unit_if_needed``. Template hardening (``RestartOnFailure``, logon
     ``Delay``) otherwise only ever reaches fresh installs. False when aligned/unqueryable or when
-    ``schtasks`` refused (typically Access Denied — the elevating ``hermes gateway install`` is the fallback)."""
+    ``schtasks`` refused (typically Access Denied — the elevating ``moor gateway install`` is the fallback)."""
     drift = scheduled_task_drift(task_name)
     if not drift:
         return False
@@ -1391,7 +1391,7 @@ def reconcile_scheduled_task(task_name: str) -> bool:
     ok, detail = _install_scheduled_task(task_name, _write_task_script())
     print(f"{'✓' if ok else '⚠'} {detail}")
     if not ok:
-        print("  Repair manually: hermes gateway install")
+        print("  Repair manually: moor gateway install")
     return ok
 
 
@@ -1565,7 +1565,7 @@ def status(deep: bool = False) -> None:
         print(f"✓ Windows login item installed: {entry if entry.exists() else _legacy_startup_entry_path()}")
     else:
         print("✗ Gateway service not installed")
-    from hermes_cli.gateway_windows_legacy import warn_legacy_launchers
+    from moor_cli.gateway_windows_legacy import warn_legacy_launchers
     warn_legacy_launchers()
 
     print(f"✓ Gateway process running (PID: {', '.join(map(str, pids))})" if pids else "✗ No gateway process detected")
@@ -1592,11 +1592,11 @@ def start() -> None:
 
     if not is_task_registered() and not is_startup_entry_installed():
         # Login persistence is a lasting system change: a bare ``start`` installs it only on an explicit
-        # answer — the HERMES_GATEWAY_INSTALL_START_ON_LOGIN override or a real TTY prompt — never on a
+        # answer — the MOOR_GATEWAY_INSTALL_START_ON_LOGIN override or a real TTY prompt — never on a
         # non-TTY default (#113977). Declining still starts the gateway; the command is ``start``.
-        start_on_login = _install_choice_from_env("HERMES_GATEWAY_INSTALL_START_ON_LOGIN")
+        start_on_login = _install_choice_from_env("MOOR_GATEWAY_INSTALL_START_ON_LOGIN")
         if start_on_login is None:
-            from hermes_cli.setup import is_interactive_stdin, is_noninteractive, prompt_yes_no
+            from moor_cli.setup import is_interactive_stdin, is_noninteractive, prompt_yes_no
 
             print("✗ Gateway service is not installed")
             if is_noninteractive() or not _stdout_isatty() or not _stdin_is_interactive(
@@ -1610,7 +1610,7 @@ def start() -> None:
             # hand-off to an elevated child — so there is nothing left to spawn or to warn about here.
             install(force=False, start_now=True, start_on_login=True)
             return
-        print("ℹ Login auto-start not installed; add it later with: hermes gateway install")
+        print("ℹ Login auto-start not installed; add it later with: moor gateway install")
     elif is_task_registered():
         reconcile_scheduled_task(get_task_name())   # like systemd's regenerate-on-stale before a start
 
@@ -1778,7 +1778,7 @@ def restart() -> None:
                 "start a duplicate. Investigate stray PIDs before retrying."
             )
 
-    from hermes_cli.gateway import _wait_for_api_server_port_free  # avoid circular init
+    from moor_cli.gateway import _wait_for_api_server_port_free  # avoid circular init
 
     _wait_for_api_server_port_free()
     start()

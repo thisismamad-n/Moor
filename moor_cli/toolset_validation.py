@@ -12,10 +12,10 @@ _NO_TOOLS = "the agent will have no tools on this platform. Run `moor tools` to 
 def parse_platform_toolsets_value(value: object) -> Optional[List[str]]:
     """The toolset list a saved ``platform_toolsets.<platform>`` value encodes, or None.
 
-    Older ``hermes config set`` builds stored a bare ``[...]`` argument as a plain string, so an
+    Older ``moor config set`` builds stored a bare ``[...]`` argument as a plain string, so an
     explicit selection like ``'["browser", "terminal"]'`` parses as str, not list (#115866).
     Every reader and writer of the section goes through this one parser so the runtime,
-    ``hermes doctor`` and ``hermes plugins enable`` agree on what the user configured. Any other
+    ``moor doctor`` and ``moor plugins enable`` agree on what the user configured. Any other
     shape (null, scalar, unparseable string) is None: the caller decides how to report it.
     """
     if isinstance(value, list):

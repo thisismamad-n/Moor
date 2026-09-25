@@ -59,7 +59,7 @@ def test_is_destructive_command_treats_cp_as_mutating():
 def _mock_plugin_discovery(monkeypatch):
     # Tool definitions are supplied by these unit fixtures. Scanning every
     # bundled plugin again for each isolated test home adds no coverage.
-    monkeypatch.setattr("hermes_cli.plugins.discover_plugins", lambda: None)
+    monkeypatch.setattr("moor_cli.plugins.discover_plugins", lambda: None)
 
 
 @pytest.fixture()
@@ -2346,12 +2346,12 @@ class TestRuntimeToolTransformToolResult:
     @staticmethod
     def _install_rewriting_transform(agent, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.plugins._dispatch_pre_tool_call_hooks",
+            "moor_cli.plugins._dispatch_pre_tool_call_hooks",
             lambda *args, **kwargs: (None, None),
         )
-        monkeypatch.setattr("hermes_cli.lifecycle.has_hook", lambda name: True)
+        monkeypatch.setattr("moor_cli.lifecycle.has_hook", lambda name: True)
         monkeypatch.setattr(
-            "hermes_cli.lifecycle.invoke_hook",
+            "moor_cli.lifecycle.invoke_hook",
             lambda hook_name, **kwargs: (
                 [f'REWRITTEN[{kwargs["tool_name"]}]{kwargs["result"]}']
                 if hook_name == "transform_tool_result"
@@ -4008,7 +4008,7 @@ class TestRunConversation:
         assert all(len(n) <= 64 and n.replace("_", "").replace("-", "").isalnum() for n in wire_names)
         assert [tc["function"]["name"] for tc in history[1]["tool_calls"]] == ["multi_tool_use.parallel", long_name, ""]
 
-    def test_nous_401_refreshes_after_remint_and_retries(self, agent):
+    def test_moor_401_refreshes_after_remint_and_retries(self, agent):
         self._setup_agent(agent)
         agent.provider = "moor"
         agent.api_mode = "chat_completions"

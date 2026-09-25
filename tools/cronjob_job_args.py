@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from cron.jobs import effective_job_state
 
-import hermes_time
+import moor_time
 
 # Logger parity with the origin module.
 logger = logging.getLogger("tools.cronjob_tools")
@@ -45,7 +45,7 @@ def _first_fire_within_thread_horizon(
         fire_at = datetime.fromisoformat(str(run_at).replace("Z", "+00:00"))
     except ValueError:
         return False
-    now = hermes_time.now()
+    now = moor_time.now()
     if fire_at.tzinfo is None:
         fire_at = fire_at.replace(tzinfo=now.tzinfo)
     # Bounded interval: an already-expired run_at gives a negative delta that would
@@ -60,8 +60,8 @@ def _origin_from_env(
     schedule: Union[str, Dict[str, Any], None] = None,
 ) -> Optional[Dict[str, str]]:
     from gateway.session_context import async_delivery_supported, get_session_env
-    origin_platform = get_session_env("HERMES_SESSION_PLATFORM")
-    origin_chat_id = get_session_env("HERMES_SESSION_CHAT_ID")
+    origin_platform = get_session_env("MOOR_SESSION_PLATFORM")
+    origin_chat_id = get_session_env("MOOR_SESSION_CHAT_ID")
     if not (origin_platform and origin_chat_id):
         return None
     # A non-push surface (api_server: request/response, ``send()`` is a stub) cannot receive a
@@ -69,7 +69,7 @@ def _origin_from_env(
     # fire (#69304). No origin => the home-channel fallback + creation-time notice apply.
     if not async_delivery_supported():
         return None
-    thread_id = get_session_env("HERMES_SESSION_THREAD_ID") or None
+    thread_id = get_session_env("MOOR_SESSION_THREAD_ID") or None
     # Slack stamps every TOP-LEVEL message's own id as the session thread (a per-message
     # KEY, not a location); persisting it would pin all future deliveries inside an
     # ephemeral thread, so thread == creating message id is synthetic and dropped — unless
@@ -129,7 +129,7 @@ def _local_delivery_notice(job: Dict[str, Any], user_deliver: Optional[str]) -> 
             # home channel: tell the creating client where the report goes (#69304).
             from gateway.session_context import async_delivery_supported, get_session_env
             fallback = [t for t in targets if t.get("_resolved_from") == "origin_fallback"]
-            if fallback and get_session_env("HERMES_SESSION_PLATFORM") and not async_delivery_supported():
+            if fallback and get_session_env("MOOR_SESSION_PLATFORM") and not async_delivery_supported():
                 return ("Note: this stateless HTTP API session cannot receive cron delivery, so this "
                         f"job will report to the home channel {fallback[0]['platform']}:"
                         f"{fallback[0]['chat_id']} instead of back here.")

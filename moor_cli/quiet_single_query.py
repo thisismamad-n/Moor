@@ -23,7 +23,7 @@ from typing import Any, Callable, MutableMapping
 _MAX_QUIET_NOTIFY_ROUNDS = 8
 
 # Last line a Kanban worker leaves in its own log: ``[kanban-worker-exit] rc=<code>``. A per-tick
-# ``hermes kanban dispatch`` process never reaped the worker, so ``os.waitpid`` cannot tell it how
+# ``moor kanban dispatch`` process never reaped the worker, so ``os.waitpid`` cannot tell it how
 # the worker exited; the trailer is the process-independent witness the dead-worker sweep reads
 # instead, so a clean exit without a terminal board call is booked as the same protocol violation
 # (and a 75 as the same rate-limit requeue) whichever process notices the death.
@@ -32,7 +32,7 @@ KANBAN_WORKER_EXIT_TRAILER = "[kanban-worker-exit] rc="
 
 def exit_single_query(code: int) -> None:
     """``sys.exit(code)`` for a one-shot turn; a Kanban worker first writes the exit trailer to its log."""
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("MOOR_KANBAN_TASK"):
         with contextlib.suppress(Exception):
             # stderr: stdout may be the ``--stream-json`` record stream, and the worker log
             # captures both streams.
@@ -44,9 +44,9 @@ def exit_single_query(code: int) -> None:
 # path here. The child records the turn's outcome there the moment the turn ends, BEFORE the
 # one-shot exit linger, so the spawner can book the delivery and stop waiting while the linger
 # keeps protecting nested ``notify_on_complete`` replies. Popped before the turn runs (same
-# contract as HERMES_TURN_AUTHOR): nothing the turn spawns inherits it, and a nested one-shot
+# contract as MOOR_TURN_AUTHOR): nothing the turn spawns inherits it, and a nested one-shot
 # never writes over its host's report — the record also carries the writer's pid.
-TURN_REPORT_FILE_ENV = "HERMES_QUIET_TURN_REPORT_FILE"
+TURN_REPORT_FILE_ENV = "MOOR_QUIET_TURN_REPORT_FILE"
 
 
 def take_turn_report_path(environ: MutableMapping[str, str] = os.environ) -> str | None:
@@ -89,7 +89,7 @@ REPORTED_TURN_EXIT_GRACE_SECONDS = 2.0
 def run_reported_turn(argv: list, *, env: MutableMapping[str, str], report_path: str, timeout: float,
                       exit_grace: float | None = REPORTED_TURN_EXIT_GRACE_SECONDS, cwd: str | None = None,
                       encoding: str | None = None) -> subprocess.CompletedProcess:
-    """Run one ``hermes chat -Q`` delivery child; *timeout* bounds the TURN, not the process.
+    """Run one ``moor chat -Q`` delivery child; *timeout* bounds the TURN, not the process.
 
     The child records its turn at *report_path* (``write_turn_report``) the moment the turn ends,
     then runs the one-shot exit linger for nested ``notify_on_complete`` replies — bounded by
@@ -107,12 +107,12 @@ def run_reported_turn(argv: list, *, env: MutableMapping[str, str], report_path:
     everywhere: a stray non-UTF-8 byte (a grandchild sharing the pipe interleaving a partial
     multi-byte write) must not raise in the drain thread and take the reply and the failure tail
     with it (#105582). Without an explicit *encoding* they decode as UTF-8 only on win32, where
-    the child is guaranteed UTF-8 (hermes_bootstrap reconfigures its streams even under
+    the child is guaranteed UTF-8 (moor_bootstrap reconfigures its streams even under
     PYTHONIOENCODING=cp1252) while the gateway parent is not started in UTF-8 mode, so the
     locale default mangled or lost accented replies (#115894); on POSIX the child keeps the
     locale codec, so the locale default stays correct there (#66566).
     """
-    from hermes_cli._subprocess_compat import windows_hide_flags
+    from moor_cli._subprocess_compat import windows_hide_flags
 
     if encoding is None and sys.platform == "win32":
         encoding = "utf-8"

@@ -2,7 +2,7 @@
 
 Capture via sounddevice, WAV via stdlib wave, STT via tools.transcription_tools,
 playback via sounddevice or system players. Optional deps: the ``audio-io`` / ``stt-whisper``
-extras, installed through PM (``hermes tools`` configures speech-to-text).
+extras, installed through PM (``moor tools`` configures speech-to-text).
 """
 
 import logging
@@ -24,8 +24,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-from hermes_constants import is_termux as _is_termux_environment
-from hermes_platform.host.runtime import is_wsl
+from moor_constants import is_termux as _is_termux_environment
+from moor_platform.host.runtime import is_wsl
 from tools.voice_mode_transcript import _voice_config, is_voice_stop_phrase, is_whisper_hallucination
 
 # ── Recording parameters ──
@@ -1496,7 +1496,7 @@ def check_voice_requirements() -> Dict[str, Any]:
         else f"Audio capture: MISSING ({_audio_unavailable_reason()})",
         "STT provider: DISABLED in config (stt.enabled: false)" if not stt_enabled
         else f"STT provider: {stt_label}" if stt_label
-        else ("STT provider: MISSING (run `hermes tools` and configure "
+        else ("STT provider: MISSING (run `moor tools` and configure "
               "Speech-to-Text: Local Whisper or a cloud provider)"),
     ]
     details += [f"Environment: {w}" for w in env_check["warnings"]]

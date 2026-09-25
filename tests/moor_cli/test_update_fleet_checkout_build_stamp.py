@@ -5,11 +5,11 @@ pending-restart catch-up printed "every gateway already serves the checkout" and
 code" in the same run. The stamp IS the checkout there.
 """
 
-from hermes_cli import update_cmd_fleet_checkout as chk
+from moor_cli import update_cmd_fleet_checkout as chk
 
 
 def _identity(monkeypatch, sha, source):
-    import hermes_cli.build_info as bi
+    import moor_cli.build_info as bi
     monkeypatch.setattr(bi, "get_code_identity", lambda refresh=False: {"sha": sha, "short_sha": sha[:8], "source": source})
 
 

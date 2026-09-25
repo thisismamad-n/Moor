@@ -771,7 +771,7 @@ async def test_one_raising_replay_neither_wedges_gate_nor_eats_queue(monkeypatch
     runner._startup_restore_in_progress = True
     runner._startup_restore_queue = []
     runner._startup_restore_tasks = []
-    monkeypatch.setenv("HERMES_STARTUP_WARMUP_TIMEOUT", "0")
+    monkeypatch.setenv("MOOR_STARTUP_WARMUP_TIMEOUT", "0")
     runner._start_startup_warmup()
 
     handled: list[str] = []
@@ -805,7 +805,7 @@ async def test_post_drain_inbound_processes_instead_of_queueing(monkeypatch):
     runner._startup_restore_in_progress = True
     runner._startup_restore_queue = []
     runner._startup_restore_tasks = []
-    monkeypatch.setenv("HERMES_STARTUP_WARMUP_TIMEOUT", "0")
+    monkeypatch.setenv("MOOR_STARTUP_WARMUP_TIMEOUT", "0")
     runner._start_startup_warmup()
 
     async def exploding_handle_message(event: MessageEvent) -> None:

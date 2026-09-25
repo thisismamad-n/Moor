@@ -71,7 +71,7 @@ class WakeWordInUse(RuntimeError):
 # frames via wake.feed), or "auto" (local when a device exists, else client).
 _DEFAULTS: Dict[str, Any] = {
     "enabled": False, "surface": "auto", "input_device": None, "capture": "auto",
-    "provider": "auto", "phrase": "hey hermes", "sensitivity": 0.6,
+    "provider": "auto", "phrase": "hey moor", "sensitivity": 0.6,
     "confirmation_frames": _DEFAULT_CONFIRMATION_FRAMES, "start_new_session": True,
 }
 
@@ -86,7 +86,7 @@ _BUNDLED_MODEL_ALIASES = frozenset({"", "hey_moor", "hey moor", "moor"})
 
 
 def _bundled_wakeword_path() -> str:
-    """Path to the shipped hey_hermes.tflite — pyopen-wakeword runs TFLite only."""
+    """Path to the shipped hey_moor.tflite — pyopen-wakeword runs TFLite only."""
     return os.path.join(os.path.dirname(__file__), "wakewords", f"{_BUNDLED_MODEL_NAME}.tflite")
 
 
@@ -403,7 +403,7 @@ def check_wake_word_requirements(cfg: Optional[Dict[str, Any]] = None, *,
         missing = " and ".join(
             name for name, ok in (("speech-to-text", stt_ok), ("text-to-speech", tts_ok)) if not ok
         )
-        hint = (f"Wake word needs {missing} configured — run `hermes tools` "
+        hint = (f"Wake word needs {missing} configured — run `moor tools` "
                 f"(Voice section) or see the voice-mode docs.")
 
     capture_mode = resolve_capture_mode(cfg)

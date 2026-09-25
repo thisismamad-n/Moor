@@ -1,6 +1,6 @@
 import { resolveSessionRpcOwner } from '@/app/contrib/wiring-routing'
 import { textWithoutReferenceLines } from '@/components/assistant-ui/reference-kinds'
-import { getSession } from '@/hermes'
+import { getSession } from '@/moor'
 import {
   assistantTextPart,
   type ChatMessage,

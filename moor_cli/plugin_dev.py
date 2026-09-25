@@ -91,7 +91,7 @@ def _doctor_runtime(plugin_path: Path):
             registered_hooks=tuple(loaded.hooks_registered), registered_providers=())
     finally:
         # Dispose the plugin's own registrations FIRST, while the temporary
-        # HERMES_HOME still exists. This runs the host-owned ctx.on_unload(...)
+        # MOOR_HOME still exists. This runs the host-owned ctx.on_unload(...)
         # callbacks — e.g. closing a SQLite handle a context-engine plugin
         # opened under that home. Without it the DB stays open and stack.close()
         # below (TemporaryDirectory removal) fails with WinError 32 on Windows
@@ -320,8 +320,8 @@ def _check_manifest_v2(report: "DoctorReport", manifest: Any) -> None:
     if missing:
         report.warning(
             "declared python_dependencies not installed: " + ", ".join(missing)
-            + " — install and enable the plugin with hermes plugins. "
-            "For an enabled plugin, run hermes pm repair, then restart Hermes.")
+            + " — install and enable the plugin with moor plugins. "
+            "For an enabled plugin, run moor pm repair, then restart Moor.")
 
     schema = getattr(manifest, "config_schema", {}) or {}
     if schema:

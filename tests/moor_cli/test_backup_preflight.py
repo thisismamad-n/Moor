@@ -10,12 +10,12 @@ def test_preflight_captures_committed_wal_without_application_imports(tmp_path):
     home = tmp_path / "home"
     home.mkdir()
     db = home / "state.db"
-    script = Path(__file__).resolve().parents[2] / "hermes_cli" / "backup_sqlite.py"
+    script = Path(__file__).resolve().parents[2] / "moor_cli" / "backup_sqlite.py"
     runner = """
 import runpy, sys
 class NoApplicationImports:
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.startswith(('hermes', 'utils', 'yaml')):
+        if fullname.startswith(('moor', 'utils', 'yaml')):
             raise ImportError('application imports are broken')
 sys.meta_path.insert(0, NoApplicationImports())
 sys.argv = [sys.argv[1], sys.argv[2]]

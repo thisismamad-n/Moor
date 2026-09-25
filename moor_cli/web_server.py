@@ -22,9 +22,9 @@ import threading
 import time
 import urllib.parse
 
-from hermes_cli.install_identity import get_install_id as _shared_get_install_id
-from hermes_cli.process_identity import is_desktop_owned_backend
-from hermes_cli.pty_session import run_reaper
+from moor_cli.install_identity import get_install_id as _shared_get_install_id
+from moor_cli.process_identity import is_desktop_owned_backend
+from moor_cli.pty_session import run_reaper
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -33,8 +33,8 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from hermes_cli.config import load_config
-from hermes_cli.version_info import get_version_info
+from moor_cli.config import load_config
+from moor_cli.version_info import get_version_info
 
 try:
     from fastapi import FastAPI, HTTPException, Request
@@ -55,7 +55,7 @@ except ImportError:
     except Exception:
         raise SystemExit(
             "Web UI requires fastapi and uvicorn.\n"
-            "Run hermes pm repair, then restart Hermes."
+            "Run moor pm repair, then restart Moor."
         )
 
 WEB_DIST = Path(os.environ["MOOR_WEB_DIST"]) if "MOOR_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
@@ -210,7 +210,7 @@ async def _lifespan(app: "FastAPI"):
     hosted_room_start_thread.start()
 
     # Desktop-spawned backends fire cron jobs themselves, since the app has no
-    # gateway running the scheduler. Server `hermes dashboard` is unaffected —
+    # gateway running the scheduler. Server `moor dashboard` is unaffected —
     # it relies on its own gateway.
     cron_stop: "threading.Event | None" = None
     cron_thread: "threading.Thread | None" = None
@@ -317,7 +317,7 @@ def _get_pty_active_session_files(app: "FastAPI") -> dict[str, Path]:
     return _app_state_default(app, "pty_active_session_files", dict)
 
 
-app = FastAPI(title="Hermes Agent", version=get_version_info().base_version, lifespan=_lifespan)
+app = FastAPI(title="Moor Agent", version=get_version_info().base_version, lifespan=_lifespan)
 
 
 # Memory-provider OAuth connect routes live in the memory layer, not here.
@@ -1231,7 +1231,7 @@ def _publish_host_rendezvous(host: str, port: int) -> None:
     # Desktop shell) are loopback, random-port and per-profile. Recording one as the HOST owner
     # made a later independently supervised `dashboard --host 0.0.0.0 --port N` refuse behind
     # the private child on every restart (#119824): the attach/refuse ladder reads ROLE_SERVE
-    # only. They still publish under their own role so `hermes plugins install` from a terminal
+    # only. They still publish under their own role so `moor plugins install` from a terminal
     # can reach the backend hosting the open chats on a Desktop-only box (#119644).
     from gateway import host_rendezvous as hr
 
@@ -1321,7 +1321,7 @@ def _on_server_started(
 
     actual_port = _read_bound_port(server, fallback=port)
     app.state.bound_port = actual_port
-    # Published by /api/host/identity: an attaching `hermes dashboard` must never be routed to a
+    # Published by /api/host/identity: an attaching `moor dashboard` must never be routed to a
     # headless backend (a URL with no UI behind it).
     app.state.serves_spa = not headless
 
@@ -1340,7 +1340,7 @@ def _on_server_started(
 
     _best_effort("process-identity registration", _register_identity)
 
-    # Host rendezvous (multiplex-only): the host lock + record that let a SECOND `hermes serve`
+    # Host rendezvous (multiplex-only): the host lock + record that let a SECOND `moor serve`
     # for any profile find this process and attach instead of binding a second port. Published
     # after the bind so the record carries the real port, and beside — not instead of — the
     # spawn-ledger entry above, which Desktop's attach ladder reads.
@@ -1602,7 +1602,7 @@ import shutil  # noqa: F401,E402
 import stat  # noqa: F401,E402
 import tempfile  # noqa: F401,E402
 from datetime import timezone  # noqa: F401,E402
-import hermes_yaml as yaml  # noqa: F401,E402
+import moor_yaml as yaml  # noqa: F401,E402
 import zipfile  # noqa: F401,E402
 
 
@@ -1673,67 +1673,67 @@ _PLUGIN_COMPAT_LAZY = {
     'RawConfigUpdate': ('moor_cli.web_models', 'RawConfigUpdate'),
     'RegistryFull': ('moor_cli.pty_session', 'RegistryFull'),
     'STORAGE_HONCHO_HOST_BLOCK': ('plugins.memory.config_schema', 'STORAGE_HONCHO_HOST_BLOCK'),
-    'SessionImport': ('hermes_cli.web_models', 'SessionImport'),
-    'SessionPrune': ('hermes_cli.web_models', 'SessionPrune'),
-    'SessionRename': ('hermes_cli.web_models', 'SessionRename'),
-    'SkillContentUpdate': ('hermes_cli.web_models', 'SkillContentUpdate'),
-    'SkillCreate': ('hermes_cli.web_models', 'SkillCreate'),
-    'SkillInstallRequest': ('hermes_cli.web_models', 'SkillInstallRequest'),
-    'SkillToggle': ('hermes_cli.web_models', 'SkillToggle'),
-    'SkillUninstallRequest': ('hermes_cli.web_models', 'SkillUninstallRequest'),
-    'SkillsUpdateRequest': ('hermes_cli.web_models', 'SkillsUpdateRequest'),
-    'TTSLeaseRequest': ('hermes_cli.web_models', 'TTSLeaseRequest'),
-    'TTSSpeakRequest': ('hermes_cli.web_models', 'TTSSpeakRequest'),
-    'TelegramOnboardingApply': ('hermes_cli.web_models', 'TelegramOnboardingApply'),
-    'TelegramOnboardingStart': ('hermes_cli.web_models', 'TelegramOnboardingStart'),
-    'TerminalBackendSelect': ('hermes_cli.web_models', 'TerminalBackendSelect'),
-    'ThemeSetBody': ('hermes_cli.web_models', 'ThemeSetBody'),
-    'ToolsetEnvUpdate': ('hermes_cli.web_models', 'ToolsetEnvUpdate'),
-    'ToolsetModelSelect': ('hermes_cli.web_models', 'ToolsetModelSelect'),
-    'ToolsetPostSetup': ('hermes_cli.web_models', 'ToolsetPostSetup'),
-    'ToolsetProviderSelect': ('hermes_cli.web_models', 'ToolsetProviderSelect'),
-    'ToolsetToggle': ('hermes_cli.web_models', 'ToolsetToggle'),
-    'WebhookCreate': ('hermes_cli.web_models', 'WebhookCreate'),
-    'WebhookEnabledToggle': ('hermes_cli.web_models', 'WebhookEnabledToggle'),
-    'WhatsAppOnboardingApply': ('hermes_cli.web_models', 'WhatsAppOnboardingApply'),
-    'WhatsAppOnboardingStart': ('hermes_cli.web_models', 'WhatsAppOnboardingStart'),
-    'activate_custom_endpoint': ('hermes_cli.web_routers.config_env', 'activate_custom_endpoint'),
-    'add_credential_pool_entry': ('hermes_cli.web_routers.ops', 'add_credential_pool_entry'),
-    'add_mcp_server': ('hermes_cli.web_routers.mcp', 'add_mcp_server'),
-    'apply_telegram_onboarding': ('hermes_cli.web_routers.messaging', 'apply_telegram_onboarding'),
-    'apply_whatsapp_onboarding': ('hermes_cli.web_routers.messaging', 'apply_whatsapp_onboarding'),
-    'approve_pairing': ('hermes_cli.web_routers.ops', 'approve_pairing'),
-    'auth_mcp_server': ('hermes_cli.web_routers.mcp', 'auth_mcp_server'),
-    'bulk_delete_sessions_endpoint': ('hermes_cli.web_routers.sessions', 'bulk_delete_sessions_endpoint'),
-    'cancel_oauth_session': ('hermes_cli.web_routers.oauth', 'cancel_oauth_session'),
-    'cancel_telegram_onboarding': ('hermes_cli.web_routers.messaging', 'cancel_telegram_onboarding'),
-    'cancel_whatsapp_onboarding': ('hermes_cli.web_routers.messaging', 'cancel_whatsapp_onboarding'),
-    'cfg_get': ('hermes_cli.config', 'cfg_get'),
-    'check_config_version': ('hermes_cli.config', 'check_config_version'),
-    'check_hermes_update': ('hermes_cli.web_routers.actions', 'check_hermes_update'),
-    'clear_model_endpoint_credentials': ('hermes_cli.config', 'clear_model_endpoint_credentials'),
-    'clear_pending_pairing': ('hermes_cli.web_routers.ops', 'clear_pending_pairing'),
-    'coerce_provider_id': ('hermes_cli.config', 'coerce_provider_id'),
-    'console_ws': ('hermes_cli.web_routers.chat_ws', 'console_ws'),
-    'count_empty_sessions_endpoint': ('hermes_cli.web_routers.sessions', 'count_empty_sessions_endpoint'),
-    'create_cron_job': ('hermes_cli.web_routers.cron', 'create_cron_job'),
-    'create_hook': ('hermes_cli.web_routers.ops', 'create_hook'),
-    'create_managed_directory': ('hermes_cli.web_routers.files', 'create_managed_directory'),
-    'create_profile_endpoint': ('hermes_cli.web_routers.profiles', 'create_profile_endpoint'),
-    'create_skill': ('hermes_cli.web_routers.skills', 'create_skill'),
-    'create_webhook': ('hermes_cli.web_routers.ops', 'create_webhook'),
-    'cron_fire_webhook': ('hermes_cli.web_routers.cron', 'cron_fire_webhook'),
-    'custom_endpoint_key_env': ('hermes_cli.config', 'custom_endpoint_key_env'),
-    'delete_agent_plugin': ('hermes_cli.web_routers.dashboard_ui', 'delete_agent_plugin'),
-    'delete_cron_job': ('hermes_cli.web_routers.cron', 'delete_cron_job'),
-    'delete_custom_endpoint': ('hermes_cli.web_routers.config_env', 'delete_custom_endpoint'),
-    'delete_empty_sessions_endpoint': ('hermes_cli.web_routers.sessions', 'delete_empty_sessions_endpoint'),
-    'delete_hook': ('hermes_cli.web_routers.ops', 'delete_hook'),
-    'delete_learning_node': ('hermes_cli.web_routers.status', 'delete_learning_node'),
-    'delete_managed_file': ('hermes_cli.web_routers.files', 'delete_managed_file'),
-    'delete_profile_endpoint': ('hermes_cli.web_routers.profiles', 'delete_profile_endpoint'),
-    'delete_session_endpoint': ('hermes_cli.web_routers.sessions', 'delete_session_endpoint'),
-    'delete_webhook': ('hermes_cli.web_routers.ops', 'delete_webhook'),
+    'SessionImport': ('moor_cli.web_models', 'SessionImport'),
+    'SessionPrune': ('moor_cli.web_models', 'SessionPrune'),
+    'SessionRename': ('moor_cli.web_models', 'SessionRename'),
+    'SkillContentUpdate': ('moor_cli.web_models', 'SkillContentUpdate'),
+    'SkillCreate': ('moor_cli.web_models', 'SkillCreate'),
+    'SkillInstallRequest': ('moor_cli.web_models', 'SkillInstallRequest'),
+    'SkillToggle': ('moor_cli.web_models', 'SkillToggle'),
+    'SkillUninstallRequest': ('moor_cli.web_models', 'SkillUninstallRequest'),
+    'SkillsUpdateRequest': ('moor_cli.web_models', 'SkillsUpdateRequest'),
+    'TTSLeaseRequest': ('moor_cli.web_models', 'TTSLeaseRequest'),
+    'TTSSpeakRequest': ('moor_cli.web_models', 'TTSSpeakRequest'),
+    'TelegramOnboardingApply': ('moor_cli.web_models', 'TelegramOnboardingApply'),
+    'TelegramOnboardingStart': ('moor_cli.web_models', 'TelegramOnboardingStart'),
+    'TerminalBackendSelect': ('moor_cli.web_models', 'TerminalBackendSelect'),
+    'ThemeSetBody': ('moor_cli.web_models', 'ThemeSetBody'),
+    'ToolsetEnvUpdate': ('moor_cli.web_models', 'ToolsetEnvUpdate'),
+    'ToolsetModelSelect': ('moor_cli.web_models', 'ToolsetModelSelect'),
+    'ToolsetPostSetup': ('moor_cli.web_models', 'ToolsetPostSetup'),
+    'ToolsetProviderSelect': ('moor_cli.web_models', 'ToolsetProviderSelect'),
+    'ToolsetToggle': ('moor_cli.web_models', 'ToolsetToggle'),
+    'WebhookCreate': ('moor_cli.web_models', 'WebhookCreate'),
+    'WebhookEnabledToggle': ('moor_cli.web_models', 'WebhookEnabledToggle'),
+    'WhatsAppOnboardingApply': ('moor_cli.web_models', 'WhatsAppOnboardingApply'),
+    'WhatsAppOnboardingStart': ('moor_cli.web_models', 'WhatsAppOnboardingStart'),
+    'activate_custom_endpoint': ('moor_cli.web_routers.config_env', 'activate_custom_endpoint'),
+    'add_credential_pool_entry': ('moor_cli.web_routers.ops', 'add_credential_pool_entry'),
+    'add_mcp_server': ('moor_cli.web_routers.mcp', 'add_mcp_server'),
+    'apply_telegram_onboarding': ('moor_cli.web_routers.messaging', 'apply_telegram_onboarding'),
+    'apply_whatsapp_onboarding': ('moor_cli.web_routers.messaging', 'apply_whatsapp_onboarding'),
+    'approve_pairing': ('moor_cli.web_routers.ops', 'approve_pairing'),
+    'auth_mcp_server': ('moor_cli.web_routers.mcp', 'auth_mcp_server'),
+    'bulk_delete_sessions_endpoint': ('moor_cli.web_routers.sessions', 'bulk_delete_sessions_endpoint'),
+    'cancel_oauth_session': ('moor_cli.web_routers.oauth', 'cancel_oauth_session'),
+    'cancel_telegram_onboarding': ('moor_cli.web_routers.messaging', 'cancel_telegram_onboarding'),
+    'cancel_whatsapp_onboarding': ('moor_cli.web_routers.messaging', 'cancel_whatsapp_onboarding'),
+    'cfg_get': ('moor_cli.config', 'cfg_get'),
+    'check_config_version': ('moor_cli.config', 'check_config_version'),
+    'check_moor_update': ('moor_cli.web_routers.actions', 'check_moor_update'),
+    'clear_model_endpoint_credentials': ('moor_cli.config', 'clear_model_endpoint_credentials'),
+    'clear_pending_pairing': ('moor_cli.web_routers.ops', 'clear_pending_pairing'),
+    'coerce_provider_id': ('moor_cli.config', 'coerce_provider_id'),
+    'console_ws': ('moor_cli.web_routers.chat_ws', 'console_ws'),
+    'count_empty_sessions_endpoint': ('moor_cli.web_routers.sessions', 'count_empty_sessions_endpoint'),
+    'create_cron_job': ('moor_cli.web_routers.cron', 'create_cron_job'),
+    'create_hook': ('moor_cli.web_routers.ops', 'create_hook'),
+    'create_managed_directory': ('moor_cli.web_routers.files', 'create_managed_directory'),
+    'create_profile_endpoint': ('moor_cli.web_routers.profiles', 'create_profile_endpoint'),
+    'create_skill': ('moor_cli.web_routers.skills', 'create_skill'),
+    'create_webhook': ('moor_cli.web_routers.ops', 'create_webhook'),
+    'cron_fire_webhook': ('moor_cli.web_routers.cron', 'cron_fire_webhook'),
+    'custom_endpoint_key_env': ('moor_cli.config', 'custom_endpoint_key_env'),
+    'delete_agent_plugin': ('moor_cli.web_routers.dashboard_ui', 'delete_agent_plugin'),
+    'delete_cron_job': ('moor_cli.web_routers.cron', 'delete_cron_job'),
+    'delete_custom_endpoint': ('moor_cli.web_routers.config_env', 'delete_custom_endpoint'),
+    'delete_empty_sessions_endpoint': ('moor_cli.web_routers.sessions', 'delete_empty_sessions_endpoint'),
+    'delete_hook': ('moor_cli.web_routers.ops', 'delete_hook'),
+    'delete_learning_node': ('moor_cli.web_routers.status', 'delete_learning_node'),
+    'delete_managed_file': ('moor_cli.web_routers.files', 'delete_managed_file'),
+    'delete_profile_endpoint': ('moor_cli.web_routers.profiles', 'delete_profile_endpoint'),
+    'delete_session_endpoint': ('moor_cli.web_routers.sessions', 'delete_session_endpoint'),
+    'delete_webhook': ('moor_cli.web_routers.ops', 'delete_webhook'),
     'derive_gateway_busy': ('gateway.status', 'derive_gateway_busy'),
     'derive_gateway_drainable': ('gateway.status', 'derive_gateway_drainable'),
     'describe_profile_auto_endpoint': ('moor_cli.web_routers.profiles', 'describe_profile_auto_endpoint'),
@@ -1881,17 +1881,17 @@ _PLUGIN_COMPAT_LAZY = {
     'read_managed_file': ('moor_cli.web_routers.files', 'read_managed_file'),
     'read_raw_config': ('moor_cli.config', 'read_raw_config'),
     'read_runtime_status': ('gateway.status', 'read_runtime_status'),
-    'recommended_update_command_for_method': ('hermes_cli.config', 'recommended_update_command_for_method'),
-    'redact_key': ('hermes_cli.config', 'redact_key'),
-    'remove_credential_pool_entry': ('hermes_cli.web_routers.ops', 'remove_credential_pool_entry'),
-    'remove_env_value': ('hermes_cli.config', 'remove_env_value'),
-    'remove_env_var': ('hermes_cli.web_routers.config_env', 'remove_env_var'),
-    'remove_mcp_server': ('hermes_cli.web_routers.mcp', 'remove_mcp_server'),
-    'rename_profile_endpoint': ('hermes_cli.web_routers.profiles', 'rename_profile_endpoint'),
-    'rename_session_endpoint': ('hermes_cli.web_routers.sessions', 'rename_session_endpoint'),
-    'replace_mcp_servers': ('hermes_cli.web_routers.mcp', 'replace_mcp_servers'),
-    'rescan_dashboard_plugins': ('hermes_cli.web_routers.dashboard_ui', 'rescan_dashboard_plugins'),
-    'reset_memory': ('hermes_cli.web_routers.ops', 'reset_memory'),
+    'recommended_update_command_for_method': ('moor_cli.config', 'recommended_update_command_for_method'),
+    'redact_key': ('moor_cli.config', 'redact_key'),
+    'remove_credential_pool_entry': ('moor_cli.web_routers.ops', 'remove_credential_pool_entry'),
+    'remove_env_value': ('moor_cli.config', 'remove_env_value'),
+    'remove_env_var': ('moor_cli.web_routers.config_env', 'remove_env_var'),
+    'remove_mcp_server': ('moor_cli.web_routers.mcp', 'remove_mcp_server'),
+    'rename_profile_endpoint': ('moor_cli.web_routers.profiles', 'rename_profile_endpoint'),
+    'rename_session_endpoint': ('moor_cli.web_routers.sessions', 'rename_session_endpoint'),
+    'replace_mcp_servers': ('moor_cli.web_routers.mcp', 'replace_mcp_servers'),
+    'rescan_dashboard_plugins': ('moor_cli.web_routers.dashboard_ui', 'rescan_dashboard_plugins'),
+    'reset_memory': ('moor_cli.web_routers.ops', 'reset_memory'),
     'resolve_gateway_liveness': ('gateway.status', 'resolve_gateway_liveness'),
     'restart_gateway': ('moor_cli.web_routers.actions', 'restart_gateway'),
     'resume_cron_job': ('moor_cli.web_routers.cron', 'resume_cron_job'),

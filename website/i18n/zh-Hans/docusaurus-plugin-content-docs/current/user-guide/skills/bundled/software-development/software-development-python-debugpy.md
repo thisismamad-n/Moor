@@ -173,7 +173,7 @@ python -m pm.build_env --source . --out .venv --group dev --group test
 ```
 
 输出目录必须不存在。重建前停止其进程，并明确删除仅用于调试的可丢弃环境。
-调试目标使用相同的独立 `HERMES_HOME`。`.venv/bin/python` 就是刚构建的独立环境，
+调试目标使用相同的独立 `MOOR_HOME`。`.venv/bin/python` 就是刚构建的独立环境，
 不是猜测的应用 venv，下面的模式都通过它运行。不要向正在运行的生产环境安装
 debugpy；请在准备好的调试目标复现，或安排在开发环境重启。
 
@@ -270,7 +270,7 @@ send({"type": "request", "command": "configurationDone"})
   "connect": { "host": "127.0.0.1", "port": 5678 },
   "justMyCode": false,
   "pathMappings": [
-    { "localRoot": "${workspaceFolder}", "remoteRoot": "<hermes-agent-repo>" }
+    { "localRoot": "${workspaceFolder}", "remoteRoot": "<moor-agent-repo>" }
   ]
 }
 ```
@@ -278,7 +278,7 @@ send({"type": "request", "command": "configurationDone"})
 **选项 3：放弃 DAP，使用 `remote-pdb`** — 通常这才是终端 agent 真正需要的：
 
 独立 Python 项目可以在其开发依赖中声明 `remote-pdb`，再用该项目的包管理器
-准备调试环境。这不是 Hermes SDK 安装方法。Hermes 优先使用已声明的 debugpy；
+准备调试环境。这不是 Moor SDK 安装方法。Moor 优先使用已声明的 debugpy；
 下面的 remote-pdb 示例需要另行声明并全新构建的调试环境，绝不能向选中的应用环境
 原地 pip 安装。
 
@@ -302,7 +302,7 @@ nc 127.0.0.1 4444
 参见方案 3。wrapper 会捕获子进程输出，交互式 pdb 请直接运行 pytest。
 
 ### `run_agent.py` / CLI — 一次性运行
-在准备好的调试检出中，在可疑行附近添加 `breakpoint()`，然后运行 `python hermes`。
+在准备好的调试检出中，在可疑行附近添加 `breakpoint()`，然后运行 `python moor`。
 控制权将在暂停点返回到你的终端。
 
 ### `tui_gateway` 子进程（由 `moor --tui` 启动）
@@ -315,7 +315,7 @@ import debugpy
 debugpy.listen(("127.0.0.1", 5678))
 debugpy.wait_for_client()
 ```
-从准备好的调试检出启动 `python hermes --tui`。TUI 将显示为冻结状态（其后端正在等待）。
+从准备好的调试检出启动 `python moor --tui`。TUI 将显示为冻结状态（其后端正在等待）。
 附加客户端后，执行在你 `continue` 时恢复。先检查子进程的解释器和导入路径，
 不要假定它继承了调试环境。
 

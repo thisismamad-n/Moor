@@ -65,7 +65,7 @@ function makeFakeUnixTerminal(srcRoot) {
 // ─── optional native helper tests ───────────────────────────────────
 
 test('a missing Linux HUD toolchain leaves no empty package directories', () => {
-  const tmp = fs.mkdtempSync(join(os.tmpdir(), 'hermes-hud-'))
+  const tmp = fs.mkdtempSync(join(os.tmpdir(), 'moor-hud-'))
   const warnings = []
   const originalWarn = console.warn
   console.warn = message => warnings.push(String(message))
@@ -348,7 +348,7 @@ test.skipIf(process.platform === 'win32')(
 // restage exercises the delete-then-recopy path — to keep it that way.
 
 test('non-ASCII paths: staging into an accented tree works and restages cleanly', () => {
-  const tmp = fs.mkdtempSync(join(os.tmpdir(), 'hermes-stage-'))
+  const tmp = fs.mkdtempSync(join(os.tmpdir(), 'moor-stage-'))
   try {
     const accented = join(tmp, 'áccentéd ünïcødé-pŕöfílé')
     const srcRoot = join(accented, 'node-pty')
@@ -462,7 +462,7 @@ test('win32 staging rejects a binding dir that claims win32 but holds a foreign 
 })
 
 test('win32-x64 staging degrades to the fail-soft JS surface when only foreign bindings exist', () => {
-  const tmp = fs.mkdtempSync(join(os.tmpdir(), 'hermes-stage-'))
+  const tmp = fs.mkdtempSync(join(os.tmpdir(), 'moor-stage-'))
   const warnings = []
   const origWarn = console.warn
   console.warn = (msg) => warnings.push(String(msg))
@@ -543,7 +543,7 @@ test('win32 staging self-heals through the native installer when the binding is 
 })
 
 test('darwin staging degrades (not staged) when the helper binary is missing', () => {
-  const tmp = fs.mkdtempSync(join(os.tmpdir(), 'hermes-stage-'))
+  const tmp = fs.mkdtempSync(join(os.tmpdir(), 'moor-stage-'))
   const warnings = []
   const origWarn = console.warn
   console.warn = (msg) => warnings.push(String(msg))
@@ -703,7 +703,7 @@ test('a half-installed get-windows dir is found and named in a repair hint', () 
       console.warn = origWarn
     }
     assert.equal(warnings.length, 1)
-    assert.match(warnings[0], /hermes desktop --force-build/)
+    assert.match(warnings[0], /moor desktop --force-build/)
     assert.ok(warnings[0].includes(join(tmp, 'node_modules', 'get-windows')))
 
     fs.rmSync(join(tmp, 'node_modules'), { recursive: true, force: true })

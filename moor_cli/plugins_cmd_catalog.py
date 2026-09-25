@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from hermes_cli.plugin_catalog import (
+from moor_cli.plugin_catalog import (
     PluginCatalogEntry, RemovedEntry, cached_removed_entries, entry_capability_summary, filter_entries,
     find_removed, get_live_catalog_entry, load_catalog_live, match_removed, resolved_removed_entries,
     _NAME_RE, _normalize_repo,
@@ -62,7 +62,7 @@ def resolve_catalog_name(identifier: str, console) -> PluginCatalogEntry:
 
 
 def write_catalog_sidecar_record(target: Path, catalog: dict, sha: str) -> None:
-    """Human/Desktop-readable ``.hermes-catalog.json`` inside the install dir. It is a CONVENIENCE COPY:
+    """Human/Desktop-readable ``.moor-catalog.json`` inside the install dir. It is a CONVENIENCE COPY:
     the authoritative provenance is the ``catalog`` block on the ``.install-metadata.json`` record (see
     :func:`read_catalog_sidecar`), because anything inside the tree is under the repo's control."""
     sidecar = {
@@ -87,7 +87,7 @@ def write_catalog_sidecar(target: Path, entry: PluginCatalogEntry, sha: Optional
 
 def _install_record(plugin_dir: Path) -> Optional[dict]:
     """The installer-owned ``.install-metadata.json`` record for a dir under the plugins dir, else ``None``."""
-    from hermes_cli.plugins_cmd import PluginOperationError, _plugins_dir, _read_install_metadata
+    from moor_cli.plugins_cmd import PluginOperationError, _plugins_dir, _read_install_metadata
     if plugin_dir.parent != _plugins_dir():
         return None
     try:
@@ -99,7 +99,7 @@ def _install_record(plugin_dir: Path) -> Optional[dict]:
 
 def _write_catalog_block(plugin_dir: Path, record: dict, block: dict) -> dict:
     """Migrate one trusted installer record to the nested catalog contract."""
-    from hermes_cli.plugins_cmd import _update_install_record
+    from moor_cli.plugins_cmd import _update_install_record
 
     def migrate(current: Optional[dict]) -> Optional[dict]:
         if current is None:
@@ -139,7 +139,7 @@ def _adopt_legacy_sidecar(plugin_dir: Path, record: dict) -> Optional[dict]:
 def read_catalog_sidecar(plugin_dir) -> Optional[dict]:
     """Catalog provenance of an installed plugin (``catalog_name``/``repo``/``sha``/``tier``/``pin``), or
     ``None`` for a non-catalog install. Read from the installer-owned metadata record, never from the
-    tree: a URL-installed repo that ships its own ``.hermes-catalog.json`` must not render as a reviewed
+    tree: a URL-installed repo that ships its own ``.moor-catalog.json`` must not render as a reviewed
     catalog install nor mark the real entry installed."""
     if not plugin_dir:
         return None
@@ -221,8 +221,8 @@ def normalized_platforms(platforms: List[str]) -> set[str]:
 def _refuse_unsupported_catalog_platform(entry: PluginCatalogEntry) -> None:
     if not entry.platforms:
         return
-    from hermes_cli.plugins_cmd import PluginOperationError
-    from hermes_platform.host.facts import os_family
+    from moor_cli.plugins_cmd import PluginOperationError
+    from moor_platform.host.facts import os_family
 
     current = os_family()
     if current not in normalized_platforms(entry.platforms):
@@ -238,7 +238,7 @@ def install_catalog_entry(entry: PluginCatalogEntry, *, force: bool, ref: Option
     """``_install_plugin_core`` at the catalog pin (an explicit *ref* wins) + provenance recorded on the
     install-metadata record at the sha ACTUALLY checked out (a ``--ref`` install is not at the reviewed
     pin, so ``update_available`` must say so). Returns the core's ``(target, manifest, installed_name)``."""
-    from hermes_cli.plugins_cmd import _install_plugin_core
+    from moor_cli.plugins_cmd import _install_plugin_core
     if not allow_removed:
         raise_if_removed(entry.name, entry.repo)
     _refuse_unsupported_catalog_platform(entry)
@@ -272,13 +272,13 @@ def installed_plugin_removal(name: str, plugin_dir) -> Optional[RemovedEntry]:
 def refuse_if_installed_removed(name: str, plugin_dir) -> None:
     """``PluginOperationError`` form of :func:`installed_plugin_removal` for ``update``/``enable``, which
     otherwise keep pulling and activating code the catalog recalled."""
-    from hermes_cli.plugins_cmd import PluginOperationError
+    from moor_cli.plugins_cmd import PluginOperationError
     removed = installed_plugin_removal(name, plugin_dir)
     if removed is not None:
         raise PluginOperationError(
-            f"Plugin '{name}' was removed from the Hermes plugin catalog: "
-            f"{removed.reason or 'no reason recorded'}. Remove it with `hermes plugins remove {name}`, "
-            "or reinstall with `hermes plugins install <source> --force --allow-removed` if you trust it.")
+            f"Plugin '{name}' was removed from the Moor plugin catalog: "
+            f"{removed.reason or 'no reason recorded'}. Remove it with `moor plugins remove {name}`, "
+            "or reinstall with `moor plugins install <source> --force --allow-removed` if you trust it.")
 
 
 _PRESERVE_SKIP = ("__pycache__", CATALOG_SIDECAR)
@@ -287,7 +287,7 @@ _PRESERVE_SKIP = ("__pycache__", CATALOG_SIDECAR)
 def _local_changes(target: Path) -> tuple[list[str], list[str]]:
     """``(untracked_or_ignored, modified_tracked)`` relative paths in a git checkout; empty for a
     non-git tree (subdir installs carry no ``.git``, so nothing can be told apart from the clone)."""
-    from hermes_cli.plugins_cmd import _resolve_git_executable, _run_plugin_git
+    from moor_cli.plugins_cmd import _resolve_git_executable, _run_plugin_git
     git_exe = _resolve_git_executable()
     if not git_exe or not (target / ".git").exists():
         return [], []
@@ -330,7 +330,7 @@ _SURFACE_LABELS = {"capabilities": "host capabilities", "tools": "tools", "hooks
 
 def plugin_surface(manifest: dict, tree: Path) -> Dict[str, set]:
     """What an installed tree exposes: declared host capabilities, tools, hooks, Python deps, Desktop half."""
-    from hermes_cli.plugins_cmd import _declared_capabilities_from_manifest
+    from moor_cli.plugins_cmd import _declared_capabilities_from_manifest
     manifest = manifest or {}
 
     def _list(key: str, *alts: str) -> set:
@@ -379,7 +379,7 @@ def repin_catalog_plugin(
 
     Publication stays PM-owned and recoverable. Untracked/ignored user files are copied into the
     staged replacement before publication; tracked edits are backed up under
-    ``<HERMES_HOME>/plugins-backup/<name>-<sha8>/``. A manifest rename moves the selection and removes
+    ``<MOOR_HOME>/plugins-backup/<name>-<sha8>/``. A manifest rename moves the selection and removes
     the stale directory.
 
     A pin that widens the plugin (new tools, hooks, Python deps, host capabilities or a Desktop half)
@@ -387,7 +387,7 @@ def repin_catalog_plugin(
     :class:`RepinConsentRequired` with the installed tree untouched. The immutable catalog pin is
     previewed separately because the PM update transaction owns and publishes its own staged clone.
     """
-    from hermes_cli.plugins_cmd import (
+    from moor_cli.plugins_cmd import (
         PluginOperationError,
         _clone_plugin_repo,
         _plugins_dir,
@@ -403,7 +403,7 @@ def repin_catalog_plugin(
     if entry is None:
         raise PluginOperationError(
             f"Plugin '{catalog_name}' is no longer in the catalog — it may have been removed. "
-            "See `hermes plugins info` and the removed blocklist.")
+            "See `moor plugins info` and the removed blocklist.")
     refuse_if_installed_removed(catalog_name, target)
     if at_catalog_pin(sidecar, entry.sha):
         return RepinResult(entry.sha, False, target.name, [])
@@ -433,7 +433,7 @@ def repin_catalog_plugin(
         # Outside the plugins dir: the discovery scanners recurse into every subdirectory there.
         backup = _plugins_dir().parent / "plugins-backup" / f"{target.name}-{old_sha8}"
         _stash_local_files(target, modified, backup)
-        from hermes_cli.plugins_transaction import update_plugin
+        from moor_cli.plugins_transaction import update_plugin
 
         update_plugin(target, catalog_entry=entry, interactive=interactive, preserved_files=stash)
         matches = []
@@ -458,7 +458,7 @@ def repin_catalog_plugin(
         warnings.append(f"Local edits to {len(modified)} tracked file(s) were not carried over; copies are under "
                         f"{backup} (the previous version's files, re-apply by hand).")
     if new_target != target and target.exists():
-        from hermes_cli.plugins_cmd import (
+        from moor_cli.plugins_cmd import (
             _admit_and_save_plugin_sets, _get_disabled_set, _get_enabled_set, _remove_plugin_core)
         enabled, disabled = _get_enabled_set(), _get_disabled_set()
         selection_changed = False
@@ -477,7 +477,7 @@ def repin_catalog_plugin(
 
 
 def cmd_update_catalog(name: str, target: Path, sidecar: dict, console, *, interactive: bool = True) -> None:
-    from hermes_cli.plugins_cmd import (
+    from moor_cli.plugins_cmd import (
         PluginOperationError, _ask_yes, _declared_capabilities_from_manifest, _fail, _is_tty, _read_manifest,
         _run_capability_consent)
     console.print(f"[dim]Checking catalog pin for {name}...[/dim]")
@@ -488,7 +488,7 @@ def cmd_update_catalog(name: str, target: Path, sidecar: dict, console, *, inter
             console.print(f"    {line}")
         if not interactive or not _is_tty():
             console.print("  [yellow]Non-interactive session: update NOT applied (fail closed). "
-                          "Re-run `hermes plugins update` in a terminal to review and confirm.[/yellow]")
+                          "Re-run `moor plugins update` in a terminal to review and confirm.[/yellow]")
             return False
         return _ask_yes("  Apply this update? [y/N]: ")
 
@@ -515,14 +515,14 @@ def cmd_update_catalog(name: str, target: Path, sidecar: dict, console, *, inter
         new_target = target.parent / result.installed_name
         declared = _declared_capabilities_from_manifest(_read_manifest(new_target), result.installed_name)
         if declared:
-            from hermes_cli.plugin_capabilities import declared_set_changed, pending_capabilities
+            from moor_cli.plugin_capabilities import declared_set_changed, pending_capabilities
             if pending_capabilities(result.installed_name, declared) or declared_set_changed(result.installed_name, declared):
                 if interactive:
                     _run_capability_consent(console, result.installed_name, declared, context="update")
                 else:
                     console.print(
                         f"[yellow]Plugin {result.installed_name} has new capabilities; review them with "
-                        f"`hermes plugins capabilities {result.installed_name}`.[/yellow]")
+                        f"`moor plugins capabilities {result.installed_name}`.[/yellow]")
 
 
 
@@ -588,7 +588,7 @@ def cmd_info(name: str) -> None:
     console.print()
     rows = [("Repo", entry.repo), ("Subdir", entry.subdir), ("Version", entry.version), ("Pinned SHA", entry.sha),
             ("Image", entry.image),
-            ("Maintainer", entry.maintainer), ("Requires", f"hermes {entry.requires_hermes}" if entry.requires_hermes else ""),
+            ("Maintainer", entry.maintainer), ("Requires", f"moor {entry.requires_moor}" if entry.requires_moor else ""),
             ("Platforms", ", ".join(entry.platforms)), ("Docs", entry.docs_url)]
     for label, value in rows:
         if value:
@@ -610,8 +610,8 @@ def cmd_info(name: str) -> None:
 def cmd_validate(path: str, as_json: bool = False, install_deps: bool = False) -> None:
     """Catalog-admission validation of a plugin directory (the CI gate); exits 0/1. *install_deps*
     installs the declared Python deps first so the capability probe imports what an install would."""
-    from hermes_cli.plugin_validate import validate_plugin_dir
-    from hermes_cli.plugins_cmd import _console
+    from moor_cli.plugin_validate import validate_plugin_dir
+    from moor_cli.plugins_cmd import _console
     if install_deps:
         import pm
         from pm.plugin_inputs import Candidates

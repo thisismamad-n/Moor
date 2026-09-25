@@ -1070,10 +1070,10 @@ class TestChildCredentialPoolResolution(unittest.TestCase):
     def test_named_custom_child_pool_follows_requested_provider_not_endpoint_order(self):
         """#45763 (salvage #89021): two named custom providers on one gateway URL keep separate pools; the child
         leases the pool of the identity it inherited, not the first entry registered for that URL."""
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         url = "https://gateway.invalid/v1"
-        get_hermes_home().joinpath("config.yaml").write_text(
+        get_moor_home().joinpath("config.yaml").write_text(
             f"providers:\n  claude-ai:\n    api: {url}\n  open-ai:\n    api: {url}\n", encoding="utf-8",
         )
         parent = _make_mock_parent()
@@ -2017,7 +2017,7 @@ class TestAtomicChildCredentialBundle(unittest.TestCase):
         self.assertEqual(kwargs["base_url"], "https://fallback.example/v1")
         self.assertEqual(kwargs["api_key"], "FAKE-KEY-FALLBACK")
 
-    @patch("hermes_cli.runtime_provider.resolve_runtime_provider")
+    @patch("moor_cli.runtime_provider.resolve_runtime_provider")
     def test_provider_without_base_url_is_refused(self, mock_resolve):
         mock_resolve.return_value = {"provider": "copilot", "base_url": "", "api_key": "gh-x", "api_mode": None}
         parent = _make_mock_parent(depth=0)

@@ -1,6 +1,6 @@
 """Tests: plugin provenance reconciliation — the 2x2.
 
-Row-presence says "hermes installed this"; `.git`-presence cross-checks
+Row-presence says "moor installed this"; `.git`-presence cross-checks
 it. The reconciliation IS the disambiguation (settled 2026-09-03,
 plugin-auto-update plan Task 1):
   row+git   = git install         (updatable via the recorded source)
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.plugins_provenance import (
+from moor_cli.plugins_provenance import (
     Provenance,
     ProvenanceClass,
     plugins_provenance,
@@ -104,7 +104,7 @@ def test_origin_url_uses_the_resolved_git_and_survives_no_git_at_all(tmp_path, m
     same resolved git as install/update, and with no git anywhere the .git/config parse still
     yields the origin (never a bare ``git`` spawn that raises or picks up a stray binary)."""
     import subprocess
-    from hermes_cli import plugins_cmd, plugins_provenance
+    from moor_cli import plugins_cmd, plugins_provenance
 
     plugin = tmp_path / "plugins" / "p"
     plugin.mkdir(parents=True)

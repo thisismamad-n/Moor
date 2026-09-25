@@ -12,9 +12,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_cli.plugins import SUPPORTED_MANIFEST_VERSION
+from moor_cli.plugins import SUPPORTED_MANIFEST_VERSION
 from tests.pm._fixtures import client, isolated_python  # noqa: F401
 
 
@@ -43,7 +43,7 @@ def _plugin_repo(root: Path, manifest: dict) -> Path:
 def test_install_accepts_every_loader_supported_manifest_version(
     client, monkeypatch, tmp_path, manifest_version
 ):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
 
     monkeypatch.setattr(plugins_cmd, "_scan_on_install_enabled", lambda: False)
     repo = _plugin_repo(
@@ -51,7 +51,7 @@ def test_install_accepts_every_loader_supported_manifest_version(
         {"name": "demo", "version": "1.0.0", "manifest_version": manifest_version},
     )
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     target, manifest, name = plugins_cmd._install_plugin_core(repo.as_uri(), force=False)
 
@@ -63,7 +63,7 @@ def test_install_accepts_every_loader_supported_manifest_version(
 def test_manifest_version_above_shared_support_is_refused_cleanly(
     client, monkeypatch, tmp_path
 ):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
 
     monkeypatch.setattr(plugins_cmd, "_scan_on_install_enabled", lambda: False)
     repo = _plugin_repo(
@@ -75,7 +75,7 @@ def test_manifest_version_above_shared_support_is_refused_cleanly(
         },
     )
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     with pytest.raises(
         plugins_cmd.PluginOperationError,

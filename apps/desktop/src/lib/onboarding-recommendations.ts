@@ -1,4 +1,4 @@
-import type { McpCatalogEntry } from '@/types/hermes'
+import type { McpCatalogEntry } from '@/types/moor'
 
 export interface OnboardingInterests {
   apps?: readonly string[]

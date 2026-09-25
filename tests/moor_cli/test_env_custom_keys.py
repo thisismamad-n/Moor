@@ -10,9 +10,9 @@ NOT mislabelled custom.
 
 from fastapi.testclient import TestClient
 
-import hermes_cli.config as _cfg_mod
-import hermes_cli.web_server_messaging as _web_server_messaging
-from hermes_cli.web_server import _SESSION_TOKEN, app
+import moor_cli.config as _cfg_mod
+import moor_cli.web_server_messaging as _web_server_messaging
+from moor_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
 HEADERS = {"X-moor-session-Token": _SESSION_TOKEN}

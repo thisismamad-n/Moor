@@ -13,7 +13,7 @@ Coming from **Claude Code** or **OpenAI Codex CLI** instead? Use [`moor import-a
 :::
 
 :::tip
-If your OpenClaw setup was multi-provider, `hermes setup --portal` collapses it to one OAuth — 300+ models plus the Tool Gateway in a single login. See [Nous Portal](../integrations/nous-portal.md).
+If your OpenClaw setup was multi-provider, `moor setup --portal` collapses it to one OAuth — 300+ models plus the Tool Gateway in a single login. See [Moor Portal](../integrations/moor-portal.md).
 :::
 
 ## Quick start
@@ -170,11 +170,11 @@ These are saved to `~/.moor/migration/openclaw/<timestamp>/archive/` for manual 
 | `TOOLS.md` | `archive/workspace/TOOLS.md` | Moor has built-in tool instructions |
 | `HEARTBEAT.md` | `archive/workspace/HEARTBEAT.md` | Use cron jobs for periodic tasks |
 | `BOOTSTRAP.md` | `archive/workspace/BOOTSTRAP.md` | Use context files or skills |
-| Cron jobs | `archive/cron-config.json` | Recreate with `hermes cron create` |
+| Cron jobs | `archive/cron-config.json` | Recreate with `moor cron create` |
 | Plugins | `archive/plugins-config.json` | See [plugins guide](../user-guide/features/hooks.md) |
-| Hooks/webhooks | `archive/hooks-config.json` | Use `hermes webhook` or gateway hooks |
-| Memory backend | `archive/memory-backend-config.json` | Configure via `hermes honcho` |
-| Skills registry | `archive/skills-registry-config.json` | Use `hermes skills config` |
+| Hooks/webhooks | `archive/hooks-config.json` | Use `moor webhook` or gateway hooks |
+| Memory backend | `archive/memory-backend-config.json` | Configure via `moor honcho` |
+| Skills registry | `archive/skills-registry-config.json` | Use `moor skills config` |
 | UI/identity | `archive/ui-identity-config.json` | Use `/skin` command |
 | Logging | `archive/logging-diagnostics-config.json` | Set in `config.yaml` logging section |
 | Multi-agent list | `archive/agents-list.json` | Use Moor profiles |

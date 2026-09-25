@@ -24,7 +24,7 @@ pytest.importorskip("fastapi")
 
 
 def test_delivery_targets_route_binds_profile_scope(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("TELEGRAM_HOME_CHANNEL=12345\n")
 
     from agent import secret_scope
@@ -41,7 +41,7 @@ def test_delivery_targets_route_binds_profile_scope(tmp_path, monkeypatch):
 
     monkeypatch.setattr(scheduler_delivery, "cron_delivery_targets", _fake_targets)
 
-    from hermes_cli.web_routers import cron as cron_router
+    from moor_cli.web_routers import cron as cron_router
 
     result = asyncio.run(cron_router.get_cron_delivery_targets())
 

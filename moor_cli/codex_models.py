@@ -46,7 +46,7 @@ _FORWARD_COMPAT_TEMPLATE_MODELS: List[tuple[str, tuple[str, ...]]] = [
     ("gpt-5.6-terra", ("gpt-5.5", "gpt-5.4")),
     ("gpt-5.6-luna", ("gpt-5.5", "gpt-5.4")),
     ("gpt-5.5", ("gpt-5.4", "gpt-5.4-mini")),
-    # Spark surfaces whenever a compatible template is present; the backend (not Hermes)
+    # Spark surfaces whenever a compatible template is present; the backend (not Moor)
     # gates real availability by ChatGPT Pro entitlement.
     ("gpt-5.3-codex-spark", ("gpt-5.4", "gpt-5.5"))]
 
@@ -111,7 +111,7 @@ def codex_catalog_credential_identity() -> str:
     fallback must not outlive the refresh under the healthy principal's key. Opaque non-JWT tokens
     fall back to the token itself (the caller hashes every part before anything is persisted).
     """
-    from hermes_cli.auth import _codex_access_token_is_expiring, resolve_codex_runtime_credentials
+    from moor_cli.auth import _codex_access_token_is_expiring, resolve_codex_runtime_credentials
 
     try:
         token = str(resolve_codex_runtime_credentials(read_only=True).get("api_key") or "")

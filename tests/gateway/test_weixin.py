@@ -709,7 +709,7 @@ class TestWeixinPollLoopSyncBuf:
                 adapter._running = False
                 return {"ret": 0, "msgs": []}
 
-        def _save(hermes_home, account_id, sync_buf):
+        def _save(moor_home, account_id, sync_buf):
             saves.append((sync_buf, threading.get_ident()))
 
         monkeypatch.setattr(weixin, "_get_updates", _get_updates)

@@ -295,7 +295,7 @@ def fire_overdue_jobs(
         return 0
 
     from cron.jobs import (
-        ONESHOT_GRACE_SECONDS, _elapsed_seconds, _ensure_aware, _hermes_now,
+        ONESHOT_GRACE_SECONDS, _elapsed_seconds, _ensure_aware, _moor_now,
         is_job_runnable, load_jobs,
     )
 
@@ -420,7 +420,7 @@ class InProcessCronScheduler(CronScheduler):
         from cron.scheduler import tick as cron_tick
         from cron.jobs import clear_ticker_error, record_ticker_error, record_ticker_heartbeat
         from cron.scheduler_ownership import register_ticked_homes
-        from hermes_constants import get_process_hermes_home
+        from moor_constants import get_process_moor_home
 
         logger.info("In-process cron scheduler started (interval=%ds)", interval)
 
@@ -439,7 +439,7 @@ class InProcessCronScheduler(CronScheduler):
             return
 
         # Single-profile ticker: the launch home is the only home this process owns cron for.
-        register_ticked_homes([get_process_hermes_home()])
+        register_ticked_homes([get_process_moor_home()])
 
         # Startup recovery and the initial heartbeat run before the guarded loop; a broken
         # store here must not take the whole ticker thread down (#111010) — the loop's own

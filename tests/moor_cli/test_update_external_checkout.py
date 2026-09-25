@@ -3,12 +3,12 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from hermes_cli import update_cmd_fleet, update_receipt
+from moor_cli import update_cmd_fleet, update_receipt
 
 
 def _checkout(tmp_path: Path, name: str) -> Path:
     root = tmp_path / name
-    module = root / "hermes_cli" / "main.py"
+    module = root / "moor_cli" / "main.py"
     module.parent.mkdir(parents=True)
     module.write_text("", encoding="utf-8")
     return root
@@ -41,14 +41,14 @@ def test_code_root_requires_absolute_path(tmp_path, monkeypatch):
     _checkout(tmp_path, "updated")
     monkeypatch.chdir(tmp_path / "updated")
     assert update_receipt._code_root_for_path("-m") is None
-    assert update_receipt._code_root_for_path("hermes_cli/main.py") is None
+    assert update_receipt._code_root_for_path("moor_cli/main.py") is None
 
 
 def test_gateway_root_uses_pid_guarded_status_argv(tmp_path, monkeypatch):
     root = _checkout(tmp_path, "pinned")
     monkeypatch.setattr(
         "gateway.status.read_runtime_status",
-        lambda _path: {"pid": 42, "argv": [str(root / "hermes_cli" / "main.py")]},
+        lambda _path: {"pid": 42, "argv": [str(root / "moor_cli" / "main.py")]},
     )
     assert update_receipt._gateway_code_root(42, tmp_path / "home") == root.resolve()
 
@@ -60,7 +60,7 @@ def test_gateway_root_uses_virtualenv_when_module_path_is_absent(tmp_path, monke
     fake_process = SimpleNamespace(
         environ=lambda: {"VIRTUAL_ENV": str(venv)},
         exe=lambda: "/usr/bin/python",
-        cmdline=lambda: ["python", "-m", "hermes_cli.main"],
+        cmdline=lambda: ["python", "-m", "moor_cli.main"],
     )
     monkeypatch.setattr("psutil.Process", lambda _pid: fake_process)
     assert update_receipt._gateway_code_root(42, tmp_path / "home") == root.resolve()
@@ -88,13 +88,13 @@ def test_external_gateway_does_not_fail_matrix(capsys):
     failed = update_receipt.print_fleet_version_matrix([
         {
             "profile": "pinned", "pid": 42, "code_sha": "foreign",
-            "state": "external", "code_root": "/srv/hermes-pinned",
+            "state": "external", "code_root": "/srv/moor-pinned",
         }
     ])
     output = capsys.readouterr().out
     assert failed is False
     assert "separate checkout" in output
-    assert "/srv/hermes-pinned" in output
+    assert "/srv/moor-pinned" in output
 
 
 def test_collect_fleet_versions_classifies_separate_checkout_gateway(tmp_path, monkeypatch):
@@ -109,16 +109,16 @@ def test_collect_fleet_versions_classifies_separate_checkout_gateway(tmp_path, m
     home = tmp_path / "fleet_home"
     home.mkdir()
     (home / "gateway_state.json").write_text(json.dumps({
-        "gateway_state": "running", "kind": "hermes-gateway", "pid": 4242,
-        "argv": [str(pinned / "hermes_cli" / "main.py"), "gateway", "run"],
+        "gateway_state": "running", "kind": "moor-gateway", "pid": 4242,
+        "argv": [str(pinned / "moor_cli" / "main.py"), "gateway", "run"],
         "code_sha": "f" * 40, "code_version": "0.0.1",
     }), encoding="utf-8")
     monkeypatch.setattr(
-        "hermes_cli.build_info.get_code_identity",
+        "moor_cli.build_info.get_code_identity",
         lambda refresh=False: {"sha": "a" * 40, "short_sha": "a" * 8, "version": "1.0", "source": "git"},
     )
-    monkeypatch.setattr("hermes_cli.profiles._get_default_hermes_home", lambda: home)
-    monkeypatch.setattr("hermes_cli.profiles._get_profiles_root", lambda: tmp_path / "no_profiles")
+    monkeypatch.setattr("moor_cli.profiles._get_default_moor_home", lambda: home)
+    monkeypatch.setattr("moor_cli.profiles._get_profiles_root", lambda: tmp_path / "no_profiles")
     monkeypatch.setattr(update_receipt, "_socket_identity", lambda _home: None)
     monkeypatch.setattr("gateway.status.live_gateway_pid_for_home", lambda _home: 4242)
 

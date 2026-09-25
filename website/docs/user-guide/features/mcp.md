@@ -8,9 +8,9 @@ description: "Connect Moor Agent to external tool servers via MCP — and contro
 
 Python dependency commands on this page use a
 [PM-prepared source checkout](../../reference/package-management.md#developer-workflow).
-After a dependency change, reactivate the checkout and restart Hermes.
+After a dependency change, reactivate the checkout and restart Moor.
 
-MCP lets Hermes Agent connect to external tool servers so the agent can use tools that live outside Hermes itself — GitHub, databases, file systems, browser stacks, internal APIs, and more.
+MCP lets Moor Agent connect to external tool servers so the agent can use tools that live outside Moor itself — GitHub, databases, file systems, browser stacks, internal APIs, and more.
 
 If you have ever wanted Moor to use a tool that already exists somewhere else, MCP is usually the cleanest way to do it.
 
@@ -64,7 +64,7 @@ want.
 You can also ask in chat: "add the Linear MCP". The agent calls
 `manage_connections` with an `mcp: true` target and a setup card appears. The
 card works the same way in the desktop app (a dialog), the terminal UI
-(`hermes --tui`, a callout above the composer) and the classic CLI (a panel):
+(`moor --tui`, a callout above the composer) and the classic CLI (a panel):
 
 1. **Fields.** If the entry declares setup values, the card shows all of them
    at once. A plain value is prefilled with its default. A secret is masked.
@@ -72,17 +72,17 @@ card works the same way in the desktop app (a dialog), the terminal UI
 2. **Connect or Cancel.** Cancel skips that one server; other servers in the
    same request continue.
 3. **Authorization.** For an OAuth entry the card shows the authorization link.
-   Hermes never opens the browser by itself: click **Open in browser** on the
+   Moor never opens the browser by itself: click **Open in browser** on the
    desktop, or press Enter in the terminal. Over SSH the card tells you how to
    reach the callback port or paste the redirected URL.
-4. **Save.** Hermes saves the server configuration, the tokens and your setup
+4. **Save.** Moor saves the server configuration, the tokens and your setup
    values together, once the server has accepted the new token and the first
    connection has returned. If the server rejects the token, or you cancel
    before that point, nothing from the attempt is kept, your earlier
    configuration and tokens stay as they were, and a failed form reopens with
    what you typed. A server that is already authorized connects with its saved
-   tokens; Hermes asks you to authorize again only when they no longer work.
-5. **Tools.** Hermes then lists the server's tools and registers them. The
+   tokens; Moor asks you to authorize again only when they no longer work.
+5. **Tools.** Moor then lists the server's tools and registers them. The
    agent can call them in the same turn. If authorization worked and the tool
    list failed, the card says "Authorized. Tools unavailable." and the agent can
    run discovery again later without asking you to authorize again.
@@ -90,9 +90,9 @@ card works the same way in the desktop app (a dialog), the terminal UI
 In messaging apps there is no card; the agent relays the commands below.
 
 ```bash
-hermes mcp                   # interactive picker (default)
-hermes mcp catalog           # plain-text list, scriptable
-hermes mcp install deepwiki  # install a catalog entry by name
+moor mcp                   # interactive picker (default)
+moor mcp catalog           # plain-text list, scriptable
+moor mcp install deepwiki  # install a catalog entry by name
 ```
 
 The picker shows each entry with its current status:
@@ -136,13 +136,13 @@ API key is required.
 2. Open **Connect** and copy the full **Server URL** ending in
    `/mcp-server/http`, not the editor URL. Older versions show the endpoint
    directly on the MCP settings page.
-3. Run `hermes mcp install n8n-official` and enter that URL when prompted.
-4. Complete browser OAuth. If needed, run `hermes mcp login n8n-official`
+3. Run `moor mcp install n8n-official` and enter that URL when prompted.
+4. Complete browser OAuth. If needed, run `moor mcp login n8n-official`
    or use **Authorize** on the configured server in Desktop or the dashboard.
-5. Review tools with `hermes mcp configure n8n-official`, then start a new
+5. Review tools with `moor mcp configure n8n-official`, then start a new
    session or use `/reload-mcp`.
 
-The Hermes backend must be able to reach the URL. n8n controls permissions
+The Moor backend must be able to reach the URL. n8n controls permissions
 and workflow exposure; some tools modify or run workflows. See
 [n8n's connection guide](https://docs.n8n.io/connect/connect-to-n8n-mcp-server/).
 
@@ -200,7 +200,7 @@ the moor-agent repo, so Moor has reviewed each entry before it shipped —
 `transport.command:` invocation.
 
 Manifests live at
-[`optional-mcps/<name>/manifest.yaml`](https://github.com/NousResearch/hermes-agent/tree/main/optional-mcps)
+[`optional-mcps/<name>/manifest.yaml`](https://github.com/thisismamad-n/Moor/tree/main/optional-mcps)
 on GitHub. The picker also prints the manifest's `source:` URL at install
 time so you can quickly verify the upstream repo. The web dashboard's MCP
 page surfaces the same detail per catalog entry — transport, auth type, the
@@ -261,13 +261,13 @@ mcp_servers:
 ```
 
 Read the entry's `post_install` notes for the exact app type and redirect URL
-to register, then run `hermes mcp login <name>` and restart (or
+to register, then run `moor mcp login <name>` and restart (or
 `/reload-mcp`) the session or gateway that should expose the tools. The
 dashboard / Desktop **Authorize** button works too: because the client is
-pre-registered with a pinned `redirect_port`, Hermes keeps the registered
+pre-registered with a pinned `redirect_port`, Moor keeps the registered
 loopback callback (`http://localhost:27890/callback`) instead of the
 dashboard's own callback URL — so the browser you approve in must run on the
-same machine as the Hermes process. For a remote host, use `hermes mcp login`
+same machine as the Moor process. For a remote host, use `moor mcp login`
 over SSH port-forwarding.
 
 ### Updating tool selection later
@@ -286,7 +286,7 @@ MCPs are never auto-updated. Re-run `moor mcp install <name>` to refresh
 after a Moor update if a manifest version changed.
 
 To add an MCP to the catalog, open a PR against
-[`optional-mcps/`](https://github.com/NousResearch/hermes-agent/tree/main/optional-mcps).
+[`optional-mcps/`](https://github.com/thisismamad-n/Moor/tree/main/optional-mcps).
 
 ### Suggestion metadata (`suggest:`)
 
@@ -378,9 +378,9 @@ The redirect back from the authorization server is checked against RFC 9207: whe
 
 The authorization server's metadata document must name the server the resource advertised (RFC 8414 §3.3); a document for a different server is rejected before any registration or login. One shape is accepted without an exact match: a server advertised with a path (`https://host/path`) whose document, fetched from `https://host/.well-known/oauth-authorization-server/path`, names the origin `https://host` as its issuer — Strava's MCP connector publishes exactly that pair. Only the origin's operator controls that well-known location, so the document is treated as the advertised server's own; a document naming another origin or another path, or one reached only through a redirect or a fallback location, still fails with `Authorization server metadata issuer mismatch`.
 
-**Google-hosted servers (Gmail, Calendar).** Google only issues a refresh token when the authorization request carries `access_type=offline`, which MCP discovery never advertises. Hermes adds it (plus `prompt=consent`, so a repeat login is re-granted one) whenever the discovered authorization server is `accounts.google.com`, so the connection persists across restarts and works from `hermes gateway`. Other issuers' requests are untouched.
+**Google-hosted servers (Gmail, Calendar).** Google only issues a refresh token when the authorization request carries `access_type=offline`, which MCP discovery never advertises. Moor adds it (plus `prompt=consent`, so a repeat login is re-granted one) whenever the discovered authorization server is `accounts.google.com`, so the connection persists across restarts and works from `moor gateway`. Other issuers' requests are untouched.
 
-**Remote / headless hosts.** When Hermes runs on a different machine than your browser, the loopback callback can't reach your laptop. Ways to complete the flow:
+**Remote / headless hosts.** When Moor runs on a different machine than your browser, the loopback callback can't reach your laptop. Ways to complete the flow:
 
 - **Moor Desktop (automatic):** when you run the OAuth sign-in from the Desktop app's MCP setup UI against a remote backend, Desktop hosts the callback listener on *your* machine and relays the authorization back to the gateway automatically — no tunnel, paste, or proxy needed. Requires both the Desktop app and the backend to be up to date.
 - **Paste-back (no setup):** on an interactive terminal Moor prints "Or paste the redirect URL here…" alongside the authorize URL. Open the URL in your browser, approve, copy the full URL the browser ends up on (the redirect will show a connection error — that's expected), paste it at the prompt. Bare `?code=…&state=…` query strings work too.
@@ -420,7 +420,7 @@ Then run `moor mcp login googledrive` — with the pre-registered client, Moor s
 
 **Pitfall — config auto-reload race.** When you edit `~/.moor/config.yaml` from inside a running Moor session, the CLI auto-reloads MCP connections with a 30s timeout. That's not enough for an interactive OAuth flow. Add the entry, then run `moor mcp login <server>` from a fresh terminal — it waits the full 5 minutes for you to complete auth.
 
-**Need longer than 5 minutes to approve?** Set `oauth.timeout` on the server entry (seconds). `hermes mcp login`, the dashboard and Desktop re-auth all wait `oauth.timeout` + 15 s (or the entry's `connect_timeout`, whichever is longer); a login that still runs out of time reports `Connecting to MCP server '<name>' timed out after Ns` naming both knobs instead of a blank failure line.
+**Need longer than 5 minutes to approve?** Set `oauth.timeout` on the server entry (seconds). `moor mcp login`, the dashboard and Desktop re-auth all wait `oauth.timeout` + 15 s (or the entry's `connect_timeout`, whichever is longer); a login that still runs out of time reports `Connecting to MCP server '<name>' timed out after Ns` naming both knobs instead of a blank failure line.
 
 ## mTLS / client certificates
 
@@ -487,7 +487,7 @@ Moor reads MCP config from `~/.moor/config.yaml` under `mcp_servers`.
 | `command` | string | Executable for a stdio MCP server |
 | `args` | list | Arguments for the stdio server |
 | `env` | mapping | Environment variables passed to the stdio server |
-| `cwd` | string | Working directory for the stdio server process. Default: the session working directory when one is pinned (ACP/gateway sessions, `terminal.cwd`), else the Hermes process directory |
+| `cwd` | string | Working directory for the stdio server process. Default: the session working directory when one is pinned (ACP/gateway sessions, `terminal.cwd`), else the Moor process directory |
 | `url` | string | HTTP MCP endpoint |
 | `headers` | mapping | HTTP headers for remote servers |
 | `client_cert` | string \| list | Client certificate for mTLS — a combined PEM path, or `[cert, key]` / `[cert, key, password]` |
@@ -777,7 +777,7 @@ If you change MCP config, use:
 
 This reloads MCP servers from config and refreshes the available tool list. It is also the explicit way to re-probe availability-gated tools (Docker, `HASS_TOKEN`, OAuth…): a session's tool set is otherwise frozen, so a credential or daemon that appears mid-session is only picked up on `/reload-mcp`, `/new`, or context compaction. For runtime tool changes pushed by the server itself, see [Dynamic Tool Discovery](#dynamic-tool-discovery) above.
 
-A running messaging gateway (`hermes gateway run`) also watches `config.yaml` on its own: within about a minute of you removing an `mcp_servers` entry or setting `enabled: false`, that server's connection is torn down; a newly added entry is connected. A server whose first connect failed (an unreachable host, or an OAuth server on a headless box that had no token yet) is retried automatically on its connect cooldown schedule (30 s, doubling up to 10 min) once you fix the cause. No restart or `/reload-mcp` needed for the edit to take effect.
+A running messaging gateway (`moor gateway run`) also watches `config.yaml` on its own: within about a minute of you removing an `mcp_servers` entry or setting `enabled: false`, that server's connection is torn down; a newly added entry is connected. A server whose first connect failed (an unreachable host, or an OAuth server on a headless box that had no token yet) is retried automatically on its connect cooldown schedule (30 s, doubling up to 10 min) once you fix the cause. No restart or `/reload-mcp` needed for the edit to take effect.
 
 **Expired OAuth tokens in the background.** The gateway, `/reload-mcp`, and the periodic self-probe of a parked server never open a browser — nobody is there to complete the flow. When a refresh token dies, the server parks with a warning in `gateway.log` and you re-authorize once with `moor mcp login <server>` (or the Desktop/dashboard *Authorize* button); the parked server picks the new token up on its next probe.
 
@@ -870,7 +870,7 @@ Check:
 
 ```bash
 # Verify MCP deps are installed (already included in standard install)
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['mcp'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['mcp'], explicit=True)"
 
 node --version
 npx --version
@@ -890,8 +890,8 @@ failure is listed as `not attempted (in retry cooldown)`.
 
 ### Remote (HTTP) server rejects the connection
 
-`hermes mcp test <name>` reports what the server actually answered. When the MCP SDK can only say
-`Server returned an error response` (a 4xx/5xx whose body is not a JSON-RPC error), Hermes appends
+`moor mcp test <name>` reports what the server actually answered. When the MCP SDK can only say
+`Server returned an error response` (a 4xx/5xx whose body is not a JSON-RPC error), Moor appends
 the HTTP status, the URL it requested and the start of the response body:
 
 ```
@@ -902,7 +902,7 @@ Streamable HTTP: Server returned an error response (HTTP 400 from POST http://ho
 Read the status and body first: a `400`/`405` on the `initialize` POST usually means the endpoint
 speaks SSE only (set `transport: sse`) or a proxy in front of it rejects the request; a `401`/`403`
 means the token or OAuth grant is wrong; an HTML body means the URL points at a web page, not an MCP
-endpoint. `hermes logs --level debug` additionally shows the exact endpoint each connect attempt used.
+endpoint. `moor logs --level debug` additionally shows the exact endpoint each connect attempt used.
 
 ### Tools not appearing
 
@@ -1091,7 +1091,7 @@ The gateway does NOT need to be running for read operations (listing conversatio
 
 ## Related docs
 
-- [Use MCP with Hermes](../../guides/use-mcp-with-hermes.md)
+- [Use MCP with Moor](../../guides/use-mcp-with-moor.md)
 - [CLI Commands](../../reference/cli-commands.md)
 - [Slash Commands](../../reference/slash-commands.md)
 - [FAQ](../../reference/faq.md)

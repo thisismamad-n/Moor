@@ -24,9 +24,9 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import main as cli_main
-from hermes_cli import main_desktop
-from hermes_platform.host import facts
+from moor_cli import main as cli_main
+from moor_cli import main_desktop
+from moor_platform.host import facts
 
 PE_AMD64 = 0x8664
 PE_ARM64 = 0xAA64
@@ -216,20 +216,20 @@ def test_expected_machines_prefers_user_runnable_api_over_arch_name(monkeypatch)
 def test_corrupt_staged_app_keeps_live_bytes_without_backup_recovery(tmp_path, monkeypatch, capsys):
     """Exercise publication and PE parsing, not Windows host/architecture discovery."""
     desktop_dir = tmp_path / "apps" / "desktop"
-    live_exe = desktop_dir / "release" / "linux-unpacked" / "hermes"
+    live_exe = desktop_dir / "release" / "linux-unpacked" / "moor"
     make_pe(live_exe)
     live_bytes = live_exe.read_bytes()
     assert main_desktop._parse_pe_machine(live_exe) == PE_AMD64
     # The host-native layout makes discovery/swap real; PE is just fixture data.
     staging = main_desktop._desktop_staging_dir(desktop_dir)
-    staged_exe = make_pe(staging / "linux-unpacked" / "hermes", truncate_to=0x300)
+    staged_exe = make_pe(staging / "linux-unpacked" / "moor", truncate_to=0x300)
     staged_bytes = staged_exe.read_bytes()
-    backup_exe = make_pe(staging / "linux-unpacked.bak" / "hermes")
+    backup_exe = make_pe(staging / "linux-unpacked.bak" / "moor")
     old_diagnostic = staging / "linux-unpacked.corrupt" / "diagnostic"
     old_diagnostic.parent.mkdir()
     old_diagnostic.write_bytes(b"previous diagnostic")
     # Raw in-place pack recovery material is not owned by this transaction.
-    live_backup = make_pe(live_exe.parent.with_name("linux-unpacked.bak") / "hermes")
+    live_backup = make_pe(live_exe.parent.with_name("linux-unpacked.bak") / "moor")
 
     checked = []
 
@@ -271,7 +271,7 @@ def test_gate_fails_clearly_without_backup(tmp_path, capsys):
     """Exercise the default Windows PE check, without injecting a validator."""
     desktop_dir = tmp_path / "apps" / "desktop"
     staging = main_desktop._desktop_staging_dir(desktop_dir)
-    exe = staging / "win-unpacked" / "Hermes.exe"
+    exe = staging / "win-unpacked" / "Moor.exe"
     exe.parent.mkdir(parents=True)
     exe.write_bytes(b"<html>proxy error</html>" + b" " * 600)
 
@@ -343,14 +343,14 @@ def test_build_only_fails_when_pack_produces_corrupt_exe(tmp_path, monkeypatch, 
         assert name == "git"
         return SimpleNamespace(env={**base_env, "PATH": "C:\\pm-pinned-git\\cmd;" + base_env["PATH"]})
 
-    with patch("hermes_cli.main_desktop.shutil.which", return_value="/usr/bin/npm"), \
-         patch("hermes_cli.source_build.source_build_env", return_value={"PATH": "/usr/bin"}), \
-         patch("hermes_cli.source_build.prepare_source_dependencies"), \
+    with patch("moor_cli.main_desktop.shutil.which", return_value="/usr/bin/npm"), \
+         patch("moor_cli.source_build.source_build_env", return_value={"PATH": "/usr/bin"}), \
+         patch("moor_cli.source_build.prepare_source_dependencies"), \
          patch("pm.ensure", side_effect=pinned_git), \
-         patch("hermes_cli.main_desktop._desktop_build_needed", return_value=True), \
-         patch("hermes_cli.main_desktop._stop_desktop_processes_locking_build", return_value=[]), \
-         patch("hermes_cli.main_desktop._windows_native_machine", return_value="AMD64"), \
-         patch("hermes_cli.main_desktop.subprocess.run", side_effect=pack_into_staging), \
+         patch("moor_cli.main_desktop._desktop_build_needed", return_value=True), \
+         patch("moor_cli.main_desktop._stop_desktop_processes_locking_build", return_value=[]), \
+         patch("moor_cli.main_desktop._windows_native_machine", return_value="AMD64"), \
+         patch("moor_cli.main_desktop.subprocess.run", side_effect=pack_into_staging), \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns())
 

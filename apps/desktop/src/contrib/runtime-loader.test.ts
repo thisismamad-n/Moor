@@ -365,7 +365,7 @@ describe('plugin source reads (512 KiB preview-cap bug)', () => {
 
     try {
       const source = `
-        import { host } from '@hermes/plugin-sdk'
+        import { host } from '@moor/plugin-sdk'
         export default {
           id: 'runtime-event-reload',
           register() {
@@ -423,7 +423,7 @@ describe('uninstallDiskPlugin (Plugins hub trash button)', () => {
 
   /** One standalone folder `gone-soon` at the root, loaded as plugin id `gone`. */
   const seedStandalone = async () => {
-    const root = '/local/.hermes/desktop-plugins'
+    const root = '/local/.moor/desktop-plugins'
     desktopPluginsRoot.mockResolvedValue(root)
     readDir.mockImplementation(async dir => {
       if (dir === root) {
@@ -439,7 +439,7 @@ describe('uninstallDiskPlugin (Plugins hub trash button)', () => {
     readFileText.mockResolvedValue({ text: 'export default { id: "gone", register() {} }' })
     watchPreviewFile.mockResolvedValue({ id: 'w-gone' })
     removeDesktopPlugin.mockReset()
-    ;(window.hermesDesktop as unknown as { removeDesktopPlugin: unknown }).removeDesktopPlugin = removeDesktopPlugin
+    ;(window.moorDesktop as unknown as { removeDesktopPlugin: unknown }).removeDesktopPlugin = removeDesktopPlugin
 
     await discoverRuntimePlugins()
     expect($pluginRecords.get().gone).toMatchObject({ kind: 'disk', status: 'loaded' })
@@ -636,13 +636,13 @@ describe('specifier scanning is limited to code (strings/comments never load-blo
       ;(globalThis as unknown as { __captured?: string }).__captured = undefined
 
       const id = await loadRuntimePlugin(
-        `const doc = "from '@hermes/plugin-sdk'"
+        `const doc = "from '@moor/plugin-sdk'"
 export default { id: 'quoted-spec', register: () => { globalThis.__captured = doc } }`,
         'quoted-spec'
       )
 
       expect(id).toBe('quoted-spec')
-      expect((globalThis as unknown as { __captured?: string }).__captured).toBe("from '@hermes/plugin-sdk'")
+      expect((globalThis as unknown as { __captured?: string }).__captured).toBe("from '@moor/plugin-sdk'")
     } finally {
       unloadRuntimePlugin('quoted-spec')
       delete (globalThis as unknown as { __captured?: string }).__captured
@@ -656,7 +656,7 @@ export default { id: 'quoted-spec', register: () => { globalThis.__captured = do
 
     try {
       const id = await loadRuntimePlugin(
-        "import { host } from '@hermes/plugin-sdk'\nexport default { id: 'real-mapped', register() { void host } }",
+        "import { host } from '@moor/plugin-sdk'\nexport default { id: 'real-mapped', register() { void host } }",
         'real-mapped'
       )
 
@@ -705,7 +705,7 @@ describe('register() failure isolation', () => {
 
     try {
       const source = `
-        import { host } from '@hermes/plugin-sdk'
+        import { host } from '@moor/plugin-sdk'
         export default {
           id: 'register-throw',
           register() {
@@ -772,7 +772,7 @@ describe('remote static imports are refused (catalog trust)', () => {
 })
 
 describe('loader hardening: hangs, leaks, duplicate ids, stale incarnations', () => {
-  const root = '/local/.hermes/desktop-plugins'
+  const root = '/local/.moor/desktop-plugins'
   const counters = globalThis as unknown as Record<string, number | undefined>
 
   const withBlobReroute = () => {
@@ -872,7 +872,7 @@ describe('loader hardening: hangs, leaks, duplicate ids, stale incarnations', ()
           id: 'scoped-lifetime',
           register(ctx) {
             ctx.setInterval(() => { globalThis.__scopedTicks++ }, 1000)
-            ctx.addEventListener(window, 'hermes-probe', () => { globalThis.__scopedEvents++ })
+            ctx.addEventListener(window, 'moor-probe', () => { globalThis.__scopedEvents++ })
           }
         }`,
         'scoped-lifetime'
@@ -880,13 +880,13 @@ describe('loader hardening: hangs, leaks, duplicate ids, stale incarnations', ()
 
       expect($pluginRecords.get()['scoped-lifetime']).toMatchObject({ status: 'loaded' })
       await vi.advanceTimersByTimeAsync(3_000)
-      window.dispatchEvent(new Event('hermes-probe'))
+      window.dispatchEvent(new Event('moor-probe'))
       expect(counters.__scopedTicks).toBe(3)
       expect(counters.__scopedEvents).toBe(1)
 
       unloadRuntimePlugin('scoped-lifetime')
       await vi.advanceTimersByTimeAsync(3_000)
-      window.dispatchEvent(new Event('hermes-probe'))
+      window.dispatchEvent(new Event('moor-probe'))
       expect(counters.__scopedTicks).toBe(3)
       expect(counters.__scopedEvents).toBe(1)
     } finally {
@@ -932,7 +932,7 @@ describe('loader hardening: hangs, leaks, duplicate ids, stale incarnations', ()
     counters.__staleHits = 0
 
     let source = `
-      import { host } from '@hermes/plugin-sdk'
+      import { host } from '@moor/plugin-sdk'
       export default {
         id: 'stale',
         register() { host.onEvent('bot_relay.outbox.pending', () => { globalThis.__staleHits++ }) }
@@ -965,7 +965,7 @@ describe('loader hardening: hangs, leaks, duplicate ids, stale incarnations', ()
 
 describe('manual "Reload desktop plugins" (#91503)', () => {
   it('re-reads an already-known plugin.js path and swaps in the new module', async () => {
-    const root = '/local/.hermes/desktop-plugins'
+    const root = '/local/.moor/desktop-plugins'
     desktopPluginsRoot.mockResolvedValue(root)
     readDir.mockImplementation(async dir => {
       if (dir === root) {

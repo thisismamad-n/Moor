@@ -14,7 +14,7 @@ Agent-native web search, deep research, and enrichment.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/research/parallel-cli` |
+| Source | Optional — install with `moor skills install official/research/parallel-cli` |
 | Path | `optional-skills/research/parallel-cli` |
 | Version | `1.1.0` |
 | Author | Moor Agent |
@@ -187,7 +187,7 @@ Useful constraints:
 If you expect follow-up questions, save output:
 
 ```bash
-parallel-cli search "latest React 19 changes" --json -o ~/.hermes/cache/scratch/react-19-search.json
+parallel-cli search "latest React 19 changes" --json -o ~/.moor/cache/scratch/react-19-search.json
 ```
 
 When summarizing results:
@@ -406,6 +406,6 @@ parallel-cli config auto-update-check off
 - Do not cite sources not present in the CLI output.
 - `login` may require PTY/browser interaction.
 - Prefer foreground execution for short tasks; do not overuse background processes.
-- For large result sets, save JSON to `~/.hermes/cache/scratch/*.json` (the Hermes scratch dir) instead of stuffing everything into context.
-- Do not silently choose Parallel when Hermes native tools are already sufficient.
+- For large result sets, save JSON to `~/.moor/cache/scratch/*.json` (the Moor scratch dir) instead of stuffing everything into context.
+- Do not silently choose Parallel when Moor native tools are already sufficient.
 - Remember this is a vendor workflow that usually requires account auth and paid usage beyond the free tier.

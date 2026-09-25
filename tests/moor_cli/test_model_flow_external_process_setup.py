@@ -1,4 +1,4 @@
-"""`hermes model` for a process provider gates on the CLI's login and lists its live picker.
+"""`moor model` for a process provider gates on the CLI's login and lists its live picker.
 
 The generic plugin flow (``_model_flow_plugin_provider``) drives a registered ``external_process``
 profile end to end: credential resolution, the optional ``setup_status`` login gate, and the
@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import model_setup_flows as flows
+from moor_cli import model_setup_flows as flows
 from providers import register_provider
 from providers.base import ProviderProfile
 

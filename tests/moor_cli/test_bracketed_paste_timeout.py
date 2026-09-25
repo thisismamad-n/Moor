@@ -8,7 +8,7 @@ import importlib
 import time
 from unittest.mock import MagicMock
 
-from hermes_cli.cli_terminal_input import _apply_bracketed_paste_timeout_patch
+from moor_cli.cli_terminal_input import _apply_bracketed_paste_timeout_patch
 
 
 def _reset_and_apply_production_patch():
@@ -17,11 +17,11 @@ def _reset_and_apply_production_patch():
 
     vt100_mod = importlib.reload(vt100_mod)
     # importlib.reload() preserves module dict entries that the reloaded source
-    # does not redefine, so clear Hermes' sentinel before re-applying.
-    if hasattr(vt100_mod, "_hermes_bp_timeout_patched"):
-        delattr(vt100_mod, "_hermes_bp_timeout_patched")
+    # does not redefine, so clear Moor' sentinel before re-applying.
+    if hasattr(vt100_mod, "_moor_bp_timeout_patched"):
+        delattr(vt100_mod, "_moor_bp_timeout_patched")
     _apply_bracketed_paste_timeout_patch()
-    assert getattr(vt100_mod, "_hermes_bp_timeout_patched", False)
+    assert getattr(vt100_mod, "_moor_bp_timeout_patched", False)
     return vt100_mod
 
 

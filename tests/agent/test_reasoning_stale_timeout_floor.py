@@ -113,8 +113,8 @@ def test_non_reasoning_model_keeps_default(monkeypatch, tmp_path):
 
 def test_gpt_5_6_floor_reaches_non_stream_and_stream_resolvers(monkeypatch, tmp_path):
     """Small GPT-5.6 requests get the reasoning floor on both request paths."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_API_CALL_STALE_TIMEOUT", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.delenv("MOOR_API_CALL_STALE_TIMEOUT", raising=False)
     _write_config(tmp_path, "")
 
     import run_agent
@@ -144,8 +144,8 @@ def test_explicit_provider_stale_timeout_wins_over_context_tier_and_reasoning_fl
     same request with no explicit value still gets the 240s tier / 600s floor (control)."""
     from types import SimpleNamespace
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_STREAM_STALE_TIMEOUT", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.delenv("MOOR_STREAM_STALE_TIMEOUT", raising=False)
     from agent.chat_completion_helpers import _derive_stream_stale_timeout
 
     api_kwargs = {"model": "gpt-5.6-sol", "messages": [{"role": "user", "content": "word " * 60_000}]}

@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 
 # ---------------------------------------------------------------------------
@@ -124,8 +124,8 @@ class TestManifestParsing:
         assert e.connector_slug is None
 
     def test_connector_slug_metadata_reaches_the_catalog_payload(self, catalog_dir):
-        from hermes_cli.mcp_catalog import _parse_manifest
-        from hermes_cli.web_routers.mcp import _catalog_entry_json
+        from moor_cli.mcp_catalog import _parse_manifest
+        from moor_cli.web_routers.mcp import _catalog_entry_json
 
         path = _write_manifest(catalog_dir, "demo", _basic_manifest(connector_slug="demo-connector"))
         entry = _parse_manifest(path)
@@ -154,8 +154,8 @@ class TestManifestParsing:
         assert sg.hosts == ["atlassian.net", "atlassian.com"]
 
     def test_suggest_onboarding_metadata_is_additive(self, catalog_dir):
-        from hermes_cli.mcp_catalog import _build_server_config, _parse_manifest
-        from hermes_cli.web_routers.mcp import _catalog_entry_json
+        from moor_cli.mcp_catalog import _build_server_config, _parse_manifest
+        from moor_cli.web_routers.mcp import _catalog_entry_json
 
         triggers = {"keywords": ["Demo "], "hosts": [".Example.com"]}
         path = _write_manifest(catalog_dir, "demo", _basic_manifest(suggest=triggers))
@@ -180,8 +180,8 @@ class TestManifestParsing:
         assert _parse_manifest(path).suggest.applications == ["Blender"]
 
     def test_suggest_discovery_metadata_is_bounded_data(self, catalog_dir):
-        from hermes_cli.mcp_catalog import CatalogError, _parse_manifest
-        from hermes_cli.web_routers.mcp import _catalog_entry_json
+        from moor_cli.mcp_catalog import CatalogError, _parse_manifest
+        from moor_cli.web_routers.mcp import _catalog_entry_json
 
         def parse(**metadata):
             path = _write_manifest(catalog_dir, "demo", _basic_manifest(
@@ -583,8 +583,8 @@ class TestInstall:
         _write_manifest(catalog_dir, "demo", _basic_manifest(
             transport={"type": "http", "url": "https://mcp.example.com/v2/mcp"}, auth=auth))
 
-        from hermes_cli import mcp_catalog
-        from hermes_cli.config import get_config_path, get_env_value, load_config
+        from moor_cli import mcp_catalog
+        from moor_cli.config import get_config_path, get_env_value, load_config
 
         monkeypatch.setattr(mcp_catalog, "_prompt_input", lambda prompt, **kw: f"val-for-{prompt}")
         mcp_catalog.install_entry(_entry("demo"), enable=True)
@@ -637,7 +637,7 @@ class TestUninstall:
 
     def test_uninstall_removes_read_only_git_clone(self, monkeypatch):
         """Loose objects are read-only in a clone: the purge must clear that, not abort (#117176)."""
-        import hermes_cli.mcp_catalog as mc
+        import moor_cli.mcp_catalog as mc
 
         monkeypatch.setattr(mc, "remove_server", lambda name: False)
         clone = mc._install_root() / "demo"
@@ -920,10 +920,10 @@ class TestToolsConfigIncludeMode:
 class TestShippedCatalog:
 
     def test_manifest_connector_slugs_are_valid_and_unique(self, monkeypatch):
-        from hermes_cli.mcp_catalog import catalog_diagnostics, list_catalog
+        from moor_cli.mcp_catalog import catalog_diagnostics, list_catalog
 
         source_catalog = Path(__file__).parents[2] / "optional-mcps"
-        monkeypatch.setattr("hermes_cli.mcp_catalog._catalog_root", lambda: source_catalog)
+        monkeypatch.setattr("moor_cli.mcp_catalog._catalog_root", lambda: source_catalog)
         slugs = [entry.connector_slug for entry in list_catalog() if entry.connector_slug is not None]
 
         assert catalog_diagnostics() == []

@@ -211,7 +211,7 @@ def _anthropic_messages_probe(base: str, key: str):
     from agent.anthropic_endpoints import _requires_bearer_auth
     normalized, kwargs = _base_client_kwargs(base, None)
     auth = {"Authorization": f"Bearer {key}"} if _requires_bearer_auth(normalized) else {"x-api-key": key}
-    headers = {"anthropic-version": "2023-06-01", "User-Agent": _HERMES_USER_AGENT, **auth}
+    headers = {"anthropic-version": "2023-06-01", "User-Agent": _MOOR_USER_AGENT, **auth}
     model = str(_model_cfg().get("default") or "").strip() or "claude-sonnet-4-5"
     body = {"model": model, "max_tokens": 1, "messages": [{"role": "user", "content": "ping"}]}
     return httpx.post(normalized + "/v1/messages", headers=headers, params=kwargs.get("default_query"), json=body, timeout=10)
@@ -219,7 +219,7 @@ def _anthropic_messages_probe(base: str, key: str):
 
 def _model_cfg() -> dict:
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         model_cfg = (load_config_readonly() or {}).get("model")
     except Exception:
         return {}
@@ -279,9 +279,9 @@ def _probe_bedrock() -> ProbeResult:
         n = len(client.list_foundation_models().get("modelSummaries", []))
         return _row(name, "ok", f"({auth_var}, {region}, {n} models)", label=label)
     except ImportError:
-        hint = ("From the Hermes environment, run: "
+        hint = ("From the Moor environment, run: "
                 f"{install_hint('bedrock')}. "
-                "Then restart Hermes.")
+                "Then restart Moor.")
         return _row(name, "warn", "(boto3 not installed)", [hint], label=label)
     except Exception as e:
         err_name = type(e).__name__
@@ -313,9 +313,9 @@ def _probe_azure_entra() -> ProbeResult:
     except Exception as exc:
         return _row(name, "warn", f"(adapter import failed: {exc})", [f"Azure Foundry adapter import failed: {exc}"], label=label)
     if not has_azure_identity_installed():
-        return _row(name, "warn", "(azure-identity not installed)", ["From the Hermes environment, run: "
+        return _row(name, "warn", "(azure-identity not installed)", ["From the Moor environment, run: "
                      f"{install_hint('azure-identity')}. "
-                     "Then restart Hermes."], label=label)
+                     "Then restart Moor."], label=label)
     entra_cfg = model_cfg.get("entra") or {}
     scope = (str(entra_cfg.get("scope") or "").strip() if isinstance(entra_cfg, dict) else "") or SCOPE_AI_AZURE_DEFAULT
     info = describe_active_credential(config=EntraIdentityConfig(scope=scope), timeout_seconds=10.0)
@@ -329,7 +329,7 @@ def _probe_azure_entra() -> ProbeResult:
 
 def _load_network_config() -> dict:
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         net = (load_config_readonly() or {}).get("network")
     except Exception:
         return {}
@@ -386,16 +386,16 @@ def _probe_github_token() -> ProbeResult:
     still carries the stale token so they can remove it.
     """
     name = "GitHub token"
-    from hermes_cli.config import get_env_value, load_env
+    from moor_cli.config import get_env_value, load_env
     var = next((v for v in ("GITHUB_TOKEN", "GH_TOKEN") if get_env_value(v)), None)
     if var is None:
         return _skip(name)  # the Skills Hub section already reports gh-CLI / no-token state
-    from hermes_cli.doctor import _DHH
+    from moor_cli.doctor import _DHH
     where = f"{_DHH}/.env" if var in load_env() else "the environment"
     try:
         import httpx
         r = httpx.get(GITHUB_API_PROBE_URL, timeout=10, headers={
-            "Authorization": f"Bearer {get_env_value(var)}", "User-Agent": _HERMES_USER_AGENT,
+            "Authorization": f"Bearer {get_env_value(var)}", "User-Agent": _MOOR_USER_AGENT,
             "Accept": "application/vnd.github+json"})
     except Exception as e:
         return _row(name, "fail", f"({e})", ["Check network connectivity"])

@@ -1,18 +1,18 @@
-"""Model-provider plugins as first-class citizens of ``hermes auth`` and the credential pool.
+"""Model-provider plugins as first-class citizens of ``moor auth`` and the credential pool.
 
 A ``plugins/model-providers/<name>/`` profile (``providers.base.ProviderProfile``) is mirrored into
-``hermes_cli.auth.PROVIDER_REGISTRY`` with the ``auth_type`` it declares, so ``resolve_provider()``
+``moor_cli.auth.PROVIDER_REGISTRY`` with the ``auth_type`` it declares, so ``resolve_provider()``
 accepts it whatever its auth shape. Non-api-key plugins own their login through two optional profile
 callables that core consults BEFORE any built-in, name-keyed path:
 
-- ``auth_handler(action, args) -> bool`` for ``hermes auth add|status|logout|refresh <name>``
+- ``auth_handler(action, args) -> bool`` for ``moor auth add|status|logout|refresh <name>``
   (``args`` is the parsed CLI namespace; truthy = the plugin owned the action, falsy = built-in path).
 - ``refresh_credential(entry) -> Mapping | None`` for the credential pool: given the pooled
   ``PooledCredential`` it returns the rotated fields (``access_token``, ``refresh_token``,
   ``expires_at_ms`` …) or raises. A separate hook rather than ``auth_handler("refresh", …)`` because
   the pool has a credential row, not an argparse namespace, and needs tokens back, not a bool.
 
-Every function here late-imports ``hermes_cli.auth`` names: this module is imported by the auth facade
+Every function here late-imports ``moor_cli.auth`` names: this module is imported by the auth facade
 right after ``PROVIDER_REGISTRY`` exists, and by ``agent.credential_pool``.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ _REGISTRY_PLUGIN_SKIP = frozenset({"copilot", "kimi-coding", "kimi-coding-cn", "
 PLUGIN_AUTH_ACTIONS = ("add", "status", "logout", "refresh")
 
 # Names whose PROVIDER_REGISTRY row came from a plugin profile (not the built-in rows). Only these
-# can be "OAuth-shaped with nobody to log them in": a bundled OAuth provider (nous, openai-codex …)
+# can be "OAuth-shaped with nobody to log them in": a bundled OAuth provider (moor, openai-codex …)
 # declares the same auth_type but its login lives in core.
 PLUGIN_MIRRORED_PROVIDERS: set[str] = set()
 
@@ -48,7 +48,7 @@ def register_plugin_provider(pp: Any) -> None:
     Registering is what lets an out-of-tree provider pass ``resolve_provider()``'s known-provider
     gate ("Unknown provider"); OAuth-shaped plugins carry their own login via ``auth_handler``.
     """
-    from hermes_cli.auth import PROVIDER_REGISTRY, ProviderConfig, _api_key_provider
+    from moor_cli.auth import PROVIDER_REGISTRY, ProviderConfig, _api_key_provider
 
     if pp.name in _REGISTRY_PLUGIN_SKIP:
         return
@@ -64,7 +64,7 @@ def register_plugin_provider(pp: Any) -> None:
 
 
 def _user_owns_alias(pp: Any, alias: str) -> bool:
-    """True when *alias* resolves to the ``$HERMES_HOME`` plugin *pp* in the ``providers`` layer."""
+    """True when *alias* resolves to the ``$MOOR_HOME`` plugin *pp* in the ``providers`` layer."""
     try:
         from providers import get_provider_profile, provider_source
     except Exception:
@@ -76,12 +76,12 @@ def _user_owns_alias(pp: Any, alias: str) -> bool:
 def mirror_aliases(pconfig: Any, pp: Any) -> None:
     """Point ``pp.aliases`` at *pconfig* so ``resolve_provider()`` resolves them too.
 
-    A bundled plugin never steals an alias another row already holds; a ``$HERMES_HOME`` plugin
+    A bundled plugin never steals an alias another row already holds; a ``$MOOR_HOME`` plugin
     whose alias the ``providers`` layer already resolves to it does — the same ownership rule as
     :func:`override_registry_row`, otherwise the alias kept resolving to the built-in row while
     ``providers.get_provider_profile`` followed the user's profile (#116668).
     """
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.auth import PROVIDER_REGISTRY
 
     for alias in pp.aliases:
         if alias not in PROVIDER_REGISTRY or _user_owns_alias(pp, alias):
@@ -89,7 +89,7 @@ def mirror_aliases(pconfig: Any, pp: Any) -> None:
 
 
 def override_registry_row(pconfig: Any, pp: Any) -> None:
-    """A ``$HERMES_HOME`` plugin re-registering a name that already has a row wins for the fields
+    """A ``$MOOR_HOME`` plugin re-registering a name that already has a row wins for the fields
     it declares — ``display_name``, ``base_url`` and, on api-key rows, ``env_vars`` (#48450, #116668). ``register_provider()``
     is last-writer-wins for the profile; without this the runtime kept reading the built-in
     endpoint. In place, so alias rows sharing the object follow; idempotent, so re-sync is free.
@@ -112,10 +112,10 @@ def sync_plugin_provider_registry() -> int:
     resolution paths. It runs at
     auth import and again whenever a name is missing (:func:`registry_lookup`) or when ``providers``
     finishes discovery, because the import-time pass can observe a *partial* profile list: a plugin
-    whose own imports pull ``hermes_cli.auth`` in mid-``_discover_providers()`` sees only what was
+    whose own imports pull ``moor_cli.auth`` in mid-``_discover_providers()`` sees only what was
     registered so far, and every later plugin would otherwise fail with "Unknown provider" (#102123).
     """
-    from hermes_cli.auth import BUILTIN_PROVIDER_IDS, PROVIDER_REGISTRY
+    from moor_cli.auth import BUILTIN_PROVIDER_IDS, PROVIDER_REGISTRY
 
     try:
         from providers import list_providers, provider_source
@@ -139,7 +139,7 @@ def sync_plugin_provider_registry() -> int:
 
 def registry_lookup(provider_id: str) -> Optional[Any]:
     """``PROVIDER_REGISTRY.get`` that re-syncs plugin profiles on a miss."""
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.auth import PROVIDER_REGISTRY
 
     pconfig = PROVIDER_REGISTRY.get(provider_id)
     if pconfig is None and sync_plugin_provider_registry():
@@ -178,7 +178,7 @@ def is_refreshable_oauth_provider(provider: str) -> bool:
 
 
 def dispatch_plugin_auth(action: str, args: Any, provider: str) -> bool:
-    """Offer ``hermes auth <action> <provider>`` to the provider's ``auth_handler``.
+    """Offer ``moor auth <action> <provider>`` to the provider's ``auth_handler``.
 
     True = the plugin owned the action (core prints nothing more). False = run the built-in path. A
     handler exception becomes a readable ``SystemExit`` naming provider and action.
@@ -207,14 +207,14 @@ def plugin_missing_auth_handler_error(provider: str, action: str) -> Optional[Sy
         return None
     return SystemExit(
         f"Provider '{provider}' declares auth_type '{profile.auth_type}' but its plugin ships no "
-        f"auth_handler, so `hermes auth {action} {provider}` cannot be handled. Add "
+        f"auth_handler, so `moor auth {action} {provider}` cannot be handled. Add "
         "`auth_handler=` to its ProviderProfile (see the model-provider plugin guide).")
 
 
 def _pool_entry_expired(entry: Any) -> bool:
     """A pooled OAuth row is expired when its ``expires_at_ms`` / ISO ``expires_at`` is in the past."""
     import time
-    from hermes_cli.auth import _parse_iso_timestamp
+    from moor_cli.auth import _parse_iso_timestamp
 
     if entry.expires_at_ms is not None:
         return int(entry.expires_at_ms) <= int(time.time() * 1000)
@@ -243,4 +243,4 @@ def get_plugin_oauth_auth_status(provider_id: str) -> dict[str, Any]:
         "configured": True, "provider": provider_id, "logged_in": bool(live),
         "needs_refresh": bool(refreshable), "accounts": len(entries),
         "base_url": next((e.base_url for e in live + refreshable if e.base_url), "") or "",
-        "hint": "" if live else f"Run `hermes auth add {provider_id}` to sign in."}
+        "hint": "" if live else f"Run `moor auth add {provider_id}` to sign in."}

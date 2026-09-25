@@ -6,7 +6,7 @@ Claude Code credentials are available. The fast-path silently proceeds to
 model selection with a broken token instead of offering re-auth.
 """
 
-from hermes_cli.config import save_env_value
+from moor_cli.config import save_env_value
 
 class TestStaleOAuthTokenDetection:
     """Bug 3: stale OAuth token must trigger needs_auth=True in _model_flow_anthropic."""

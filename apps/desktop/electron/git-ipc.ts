@@ -100,7 +100,7 @@ export function registerGitIpc({ resolveGitBinary, resolveGhBinary }: GitIpcDeps
   ipcMain.handle('moor:git:review:prList', async (_event, repoPath, branches, numbers) =>
     reviewPrList(repoPath, resolveGhBinary(), branches, numbers)
   )
-  ipcMain.handle('hermes:git:review:createPr', async (_event, repoPath) =>
+  ipcMain.handle('moor:git:review:createPr', async (_event, repoPath) =>
     reviewCreatePr(repoPath, resolveGitBinary(), resolveGhBinary())
   )
 

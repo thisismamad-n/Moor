@@ -14,14 +14,14 @@ Neutral arbiter for merge conflicts between two agents.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/autonomous-ai-agents/agent-merge-conflict-arbiter` |
+| Source | Optional — install with `moor skills install official/autonomous-ai-agents/agent-merge-conflict-arbiter` |
 | Path | `optional-skills/autonomous-ai-agents/agent-merge-conflict-arbiter` |
 | Version | `1.0.0` |
 | Author | Moor Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Multi-Agent`, `Git`, `Merge-Conflict`, `Kanban`, `Arbitration` |
-| Related skills | [`hermes-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent.md) |
+| Related skills | [`moor-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-moor-agent.md) |
 
 ## Reference: full SKILL.md
 

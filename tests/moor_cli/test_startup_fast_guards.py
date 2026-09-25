@@ -46,27 +46,27 @@ def test_cli_starts_from_a_deleted_cwd(tmp_path):
     """A child spawned into a directory that was removed since (a cron delivery from a reaped
     kanban workspace) must still reach argv parsing: a relative ``sys.path`` entry made
     ``ensure_project_root_on_path`` die in ``realpath`` → ``getcwd`` (#102941)."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     gone = tmp_path / "scratch"
     gone.mkdir()
     # The child needs the checkout on sys.path by absolute name; the cwd is exactly what is gone.
-    env = {**os.environ, "HERMES_HOME": str(home), "TERMUX_VERSION": "",
+    env = {**os.environ, "MOOR_HOME": str(home), "TERMUX_VERSION": "",
            "PYTHONPATH": os.pathsep.join(p for p in (str(REPO_ROOT), os.environ.get("PYTHONPATH")) if p)}
-    env.pop("HERMES_DEV", None)
+    env.pop("MOOR_DEV", None)
     fd = os.open(gone, os.O_RDONLY)
     try:
         gone.rmdir()
         # ``cwd=`` of a removed path is refused by Popen, so start in the dead dir via a
         # preexec fchdir onto its still-open handle — the shape a reaped workspace leaves behind.
         result = subprocess.run(
-            [sys.executable, "-m", "hermes_cli.main", "--version"],
+            [sys.executable, "-m", "moor_cli.main", "--version"],
             capture_output=True, text=True, timeout=60, env=env,
             cwd=REPO_ROOT, preexec_fn=lambda: os.fchdir(fd))
     finally:
         os.close(fd)
     assert result.returncode == 0, result.stderr
-    assert "Hermes Agent v" in result.stdout
+    assert "Moor Agent v" in result.stdout
     assert "FileNotFoundError" not in result.stderr
 
 
@@ -124,13 +124,13 @@ def test_fast_version_reports_install_method_stamp(tmp_path):
     home = tmp_path / ".moor"
     home.mkdir()
     (home / ".install_method").write_text("git\n", encoding="utf-8")
-    result = _run_version({"HERMES_HOME": str(home)})
+    result = _run_version({"MOOR_HOME": str(home)})
     assert result.returncode == 0, result.stderr
     assert "Install method: git" in result.stdout
 
 
-def test_literal_tilde_hermes_home_expands_before_any_reader(tmp_path):
-    """A literal ``~`` in HERMES_HOME (fish, or any quoted value) is expanded at process entry.
+def test_literal_tilde_moor_home_expands_before_any_reader(tmp_path):
+    """A literal ``~`` in MOOR_HOME (fish, or any quoted value) is expanded at process entry.
 
     Before the fix ``Path("~/.x")`` was relative, so the real CLI resolved it against cwd and
     scaffolded a full home under ``<cwd>/~/.x``. The negative assertion on cwd is the
@@ -140,44 +140,44 @@ def test_literal_tilde_hermes_home_expands_before_any_reader(tmp_path):
     cwd = tmp_path / "project"
     fake_home.mkdir()
     cwd.mkdir()
-    env = {**os.environ, "HOME": str(fake_home), "USERPROFILE": str(fake_home), "HERMES_HOME": "~/.x"}
-    env.pop("HERMES_DEV", None)
+    env = {**os.environ, "HOME": str(fake_home), "USERPROFILE": str(fake_home), "MOOR_HOME": "~/.x"}
+    env.pop("MOOR_DEV", None)
     env["PYTHONPATH"] = str(REPO_ROOT)
     result = subprocess.run(
-        [sys.executable, "-m", "hermes_cli.main", "config", "path"],
+        [sys.executable, "-m", "moor_cli.main", "config", "path"],
         capture_output=True, text=True, timeout=120, cwd=cwd, env=env,
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == str(fake_home / ".x" / "config.yaml")
     assert not (cwd / "~").exists(), sorted(p.name for p in cwd.iterdir())
 
-    # Raw-reader observable: the ~30 ``os.environ["HERMES_HOME"]`` readers in hermes_cli/ never
-    # call the resolver, so the entry-point hunk in main.py (not hermes_constants) must have
+    # Raw-reader observable: the ~30 ``os.environ["MOOR_HOME"]`` readers in moor_cli/ never
+    # call the resolver, so the entry-point hunk in main.py (not moor_constants) must have
     # rewritten the env var by the time the module import finishes.
     probe = subprocess.run(
-        [sys.executable, "-c", "import hermes_cli.main, os; print(os.environ['HERMES_HOME'])"],
+        [sys.executable, "-c", "import moor_cli.main, os; print(os.environ['MOOR_HOME'])"],
         capture_output=True, text=True, timeout=120, cwd=cwd, env=env,
     )
     assert probe.returncode == 0, probe.stderr
     assert probe.stdout.strip() == str(fake_home / ".x")
 
 
-def test_normalize_hermes_home_env_rewrites_tilde_and_leaves_absolute_alone(tmp_path, monkeypatch):
-    from hermes_cli import _startup_fast
+def test_normalize_moor_home_env_rewrites_tilde_and_leaves_absolute_alone(tmp_path, monkeypatch):
+    from moor_cli import _startup_fast
 
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", "~/.x")
-    _startup_fast.normalize_hermes_home_env()
-    assert os.environ["HERMES_HOME"] == str(tmp_path / ".x")
+    monkeypatch.setenv("MOOR_HOME", "~/.x")
+    _startup_fast.normalize_moor_home_env()
+    assert os.environ["MOOR_HOME"] == str(tmp_path / ".x")
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "abs"))
-    _startup_fast.normalize_hermes_home_env()
-    assert os.environ["HERMES_HOME"] == str(tmp_path / "abs")
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "abs"))
+    _startup_fast.normalize_moor_home_env()
+    assert os.environ["MOOR_HOME"] == str(tmp_path / "abs")
 
-    monkeypatch.delenv("HERMES_HOME")
-    _startup_fast.normalize_hermes_home_env()
-    assert "HERMES_HOME" not in os.environ
+    monkeypatch.delenv("MOOR_HOME")
+    _startup_fast.normalize_moor_home_env()
+    assert "MOOR_HOME" not in os.environ
 
 
 @pytest.mark.platforms("linux")
@@ -190,12 +190,12 @@ def test_bootstrap_preserves_live_cwd_and_recovers_deleted_cwd(tmp_path, remove_
         "os.chdir(sys.argv[1])\n"
         "if sys.argv[2] == 'deleted':\n"
         "    os.rmdir(sys.argv[1])\n"
-        "import hermes_bootstrap\n"
+        "import moor_bootstrap\n"
         "print(os.getcwd())\n"
     )
-    env = {**os.environ, "HERMES_HOME": str(tmp_path / ".hermes"),
+    env = {**os.environ, "MOOR_HOME": str(tmp_path / ".moor"),
            "PYTHONPATH": str(REPO_ROOT)}
-    env.pop("HERMES_DEV", None)
+    env.pop("MOOR_DEV", None)
     result = subprocess.run(
         [sys.executable, "-c", probe, str(cwd), "deleted" if remove_cwd else "live"],
         stdin=subprocess.DEVNULL, capture_output=True, text=True,
@@ -207,21 +207,21 @@ def test_bootstrap_preserves_live_cwd_and_recovers_deleted_cwd(tmp_path, remove_
 
 
 def test_fast_version_parity(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    result = _run_version({"HERMES_HOME": str(home)})
+    result = _run_version({"MOOR_HOME": str(home)})
     assert result.returncode == 0, result.stderr
     out = result.stdout
-    for field in ("Hermes Agent v", "Install directory:", "Python:", "OpenAI SDK:"):
+    for field in ("Moor Agent v", "Install directory:", "Python:", "OpenAI SDK:"):
         assert field in out, f"fast --version output missing {field!r}:\n{out}"
     assert "Traceback" not in result.stderr
 
 
 @pytest.mark.parametrize("argv", [["update"], ["pm", "doctor"], ["gateway", "status"]])
 def test_termux_chat_shortcut_leaves_subcommands_to_dispatch(monkeypatch, argv):
-    from hermes_cli import main
+    from moor_cli import main
 
     monkeypatch.setenv("PREFIX", "/data/data/com.termux/files/usr")
-    monkeypatch.delenv("HERMES_TERMUX_DISABLE_FAST_CLI", raising=False)
-    monkeypatch.setattr(sys, "argv", ["hermes", *argv])
+    monkeypatch.delenv("MOOR_TERMUX_DISABLE_FAST_CLI", raising=False)
+    monkeypatch.setattr(sys, "argv", ["moor", *argv])
     assert main._try_termux_fast_cli_launch() is False

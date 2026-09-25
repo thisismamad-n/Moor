@@ -432,8 +432,8 @@ def _install_provider_deps(llm_id: str, embedder_id: str, vector_id: str) -> Non
     """Point at the pip deps the selected OSS backends need.
 
     These are third-party backend SDKs (ollama, qdrant-client, ...), not
-    hermes dependencies — pm does not install arbitrary specs into the
-    hermes venv. Print the exact command instead."""
+    moor dependencies — pm does not install arbitrary specs into the
+    moor venv. Print the exact command instead."""
     deps: set[str] = set()
     for registry, pid in [(LLM_PROVIDERS, llm_id), (EMBEDDER_PROVIDERS, embedder_id),
                           (VECTOR_PROVIDERS, vector_id)]:
@@ -449,7 +449,7 @@ def _install_provider_deps(llm_id: str, embedder_id: str, vector_id: str) -> Non
     if missing:
         print("\n  The selected backends need extra packages:")
         print(f"    Missing: {', '.join(missing)}")
-        print("  Declare these requirements in the plugin's pyproject.toml, then run `hermes pm install` and restart Hermes.")
+        print("  Declare these requirements in the plugin's pyproject.toml, then run `moor pm install` and restart Moor.")
 
 
 def _probe(fn, ok: str, fail: str, exc=Exception) -> tuple[bool, str]:
@@ -510,7 +510,7 @@ def post_setup(moor_home: str, config: dict) -> None:
         import mem0
         installed_ver = getattr(mem0, "__version__", None)
         if installed_ver and tuple(int(x) for x in installed_ver.split(".")[:3]) < (2, 0, 7):
-            print(f"\n  ⚠ mem0ai {installed_ver} installed but >=2.0.7 required.\n  Run `hermes pm repair`, then restart Hermes.")
+            print(f"\n  ⚠ mem0ai {installed_ver} installed but >=2.0.7 required.\n  Run `moor pm repair`, then restart Moor.")
     flags = parse_flags(sys.argv[1:])
     handler = _MODE_HANDLERS.get(flags["mode"])
     flags["_mode_from_flag"] = handler is not None

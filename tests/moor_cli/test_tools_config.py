@@ -7,9 +7,9 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.nous_account import NousPortalAccountInfo, NousToolAccessInfo
-from hermes_cli.nous_subscription import NousSubscriptionFeatures
-from hermes_cli.tools_config import (
+from moor_cli.moor_account import MoorPortalAccountInfo, MoorToolAccessInfo
+from moor_cli.moor_subscription import MoorSubscriptionFeatures
+from moor_cli.tools_config import (
     _DEFAULT_OFF_TOOLSETS,
     _RECENTLY_SHIPPED_TOOLSETS,
     _apply_toolset_change,
@@ -91,12 +91,12 @@ def test_scalar_platform_toolsets_fall_back_to_platform_default():
 
 
 def test_enable_on_string_platform_toolsets_keeps_listed_entries():
-    """#115866: `hermes tools enable` must operate on the selection a list-literal
+    """#115866: `moor tools enable` must operate on the selection a list-literal
     string encodes — not re-baseline it on the platform default, which silently
     dropped the user's default-off entries (video, video_gen) on write."""
     config = {"platform_toolsets": {"telegram": '["browser", "terminal", "video", "video_gen"]'}}
 
-    with patch("hermes_cli.tools_config.save_config"):
+    with patch("moor_cli.tools_config.save_config"):
         _apply_toolset_change(config, "telegram", ["computer_use"], "enable")
 
     saved = config["platform_toolsets"]["telegram"]
@@ -107,12 +107,12 @@ def test_enable_on_string_platform_toolsets_keeps_listed_entries():
 def test_malformed_list_string_platform_toolsets_warns_then_falls_back(caplog):
     """A string that does not parse as a list falls back to the platform default
     loudly: one warning naming the expected shape, never a silent substitution (#115866)."""
-    import hermes_cli.tools_config as tc
+    import moor_cli.tools_config as tc
 
     config = {"platform_toolsets": {"cli": '["web", terminal'}}
     tc._warned_invalid_platform_toolsets.discard("cli")
 
-    with caplog.at_level("WARNING", logger="hermes_cli.tools_config"):
+    with caplog.at_level("WARNING", logger="moor_cli.tools_config"):
         enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
     default_enabled = _get_platform_tools({}, "cli", include_default_mcp_servers=False)
 
@@ -205,7 +205,7 @@ def test_toolset_has_keys_for_vision_accepts_codex_auth(tmp_path, monkeypatch):
 def test_save_platform_tools_preserves_mcp_server_names():
     """Ensure MCP server names are preserved when saving platform tools.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/1247
+    Regression test for https://github.com/thisismamad-n/Moor/issues/1247
     """
     config = {
         "platform_toolsets": {
@@ -363,7 +363,7 @@ def test_numeric_mcp_server_name_does_not_crash_sorted():
     _get_platform_tools must normalise them to str so that sorted()
     on the returned set never raises TypeError on mixed int/str.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/6901
+    Regression test for https://github.com/thisismamad-n/Moor/issues/6901
     """
     config = {
         "platform_toolsets": {"cli": ["web", 12306]},
@@ -398,7 +398,7 @@ class TestAgentBrowserPostSetup:
 
     @pytest.fixture(autouse=True)
     def _stub_browser_use_install(self):
-        with patch("hermes_cli.tools_config_post_setup._ensure_browser_use_cli") as stub:
+        with patch("moor_cli.tools_config_post_setup._ensure_browser_use_cli") as stub:
             yield stub
 
     @pytest.fixture(autouse=True)
@@ -416,13 +416,13 @@ class TestAgentBrowserPostSetup:
                  else subprocess.TimeoutExpired(cmd=["agent-browser"], timeout=600))
         with patch("pm.ensure", side_effect=error), patch(
             "tools.browser_tool_install._running_in_docker", return_value=False
-        ), patch("hermes_cli.tools_config_post_setup._print_warning") as warn, patch(
-            "hermes_cli.tools_config_post_setup._print_info"
+        ), patch("moor_cli.tools_config_post_setup._print_warning") as warn, patch(
+            "moor_cli.tools_config_post_setup._print_info"
         ) as info:
             _run_post_setup("agent_browser")
 
         assert any(str(error) in c.args[0] for c in warn.call_args_list)
-        assert any("hermes tools post-setup agent_browser" in c.args[0] for c in info.call_args_list)
+        assert any("moor tools post-setup agent_browser" in c.args[0] for c in info.call_args_list)
 
 
 class TestBrowserUseCliInstalledForAllNonCamofoxBackends:
@@ -488,7 +488,7 @@ class TestImagegenBackendRegistry:
     def test_image_gen_providers_tagged_with_registered_backend(self):
         """Every hardcoded image_gen row must name a backend in IMAGEGEN_BACKENDS
         so _configure_provider can fire that backend's model picker."""
-        from hermes_cli.tools_config import IMAGEGEN_BACKENDS, TOOL_CATEGORIES
+        from moor_cli.tools_config import IMAGEGEN_BACKENDS, TOOL_CATEGORIES
         providers = TOOL_CATEGORIES["image_gen"]["providers"]
         for p in providers:
             assert p.get("imagegen_backend") in IMAGEGEN_BACKENDS, (
@@ -507,7 +507,7 @@ class TestImagegenModelPicker:
         with patch("moor_cli.tools_config._prompt_choice", return_value=1):
             _configure_imagegen_model("fal", config)
         # ordered[0] == current (default klein), ordered[1] == first non-default
-        from hermes_cli.tools_config import IMAGEGEN_BACKENDS
+        from moor_cli.tools_config import IMAGEGEN_BACKENDS
         catalog, default_model = IMAGEGEN_BACKENDS["fal"]["catalog_fn"]({})
         assert config["image_gen"]["model"] != default_model
         assert config["image_gen"]["model"] in catalog
@@ -544,7 +544,7 @@ class TestImagegenModelPicker:
     def test_picker_repairs_corrupt_config_section(self):
         """When image_gen is a non-dict (user-edit YAML), the picker should
         replace it with a fresh dict rather than crash."""
-        from hermes_cli.tools_config import IMAGEGEN_BACKENDS, _configure_imagegen_model
+        from moor_cli.tools_config import IMAGEGEN_BACKENDS, _configure_imagegen_model
         config = {"image_gen": "some-garbage-string"}
         with patch("moor_cli.tools_config._prompt_choice", return_value=0):
             _configure_imagegen_model("fal", config)
@@ -713,39 +713,39 @@ def test_visible_providers_reuses_pool_video_feature_snapshot(monkeypatch):
 
 # ── One managed image row ─────────────────────────────────────────────────────
 #
-# FAL, Krea and Portal models all live behind the single "Nous Subscription" row; the stored
+# FAL, Krea and Portal models all live behind the single "Moor Subscription" row; the stored
 # model id picks the gateway. Before, the Portal plugin rendered its own row that also wrote
-# `provider: nous`, so two rows read active at once and the Portal pick generated on FAL.
+# `provider: moor`, so two rows read active at once and the Portal pick generated on FAL.
 
 
 def _managed_image_row() -> dict:
-    return next(p for p in TOOL_CATEGORIES["image_gen"]["providers"] if p.get("managed_nous_feature") == "image_gen")
+    return next(p for p in TOOL_CATEGORIES["image_gen"]["providers"] if p.get("managed_moor_feature") == "image_gen")
 
 
 def test_exactly_one_image_row_is_active_for_a_managed_selection(monkeypatch):
-    import hermes_cli.tools_config as tools_config
-    from hermes_cli.tools_config_providers import _plugin_image_gen_providers
+    import moor_cli.tools_config as tools_config
+    from moor_cli.tools_config_providers import _plugin_image_gen_providers
 
     monkeypatch.setattr(
-        tools_config, "get_nous_subscription_features",
-        lambda config, **kwargs: SimpleNamespace(features={"image_gen": SimpleNamespace(managed_by_nous=True)}),
+        tools_config, "get_moor_subscription_features",
+        lambda config, **kwargs: SimpleNamespace(features={"image_gen": SimpleNamespace(managed_by_moor=True)}),
     )
     rows = TOOL_CATEGORIES["image_gen"]["providers"] + _plugin_image_gen_providers()
     for model in ("fal-ai/flux-2/klein/9b", "krea-2-medium", "google/gemini-3-pro-image"):
-        config = {"image_gen": {"provider": "nous", "model": model}}
+        config = {"image_gen": {"provider": "moor", "model": model}}
         active = [r["name"] for r in rows if tools_config._is_provider_active(r, config)]
         assert active == [_managed_image_row()["name"]], (model, active)
 
 
 def test_gui_model_catalog_for_the_managed_row_spans_every_managed_gateway(monkeypatch):
-    import hermes_cli.tools_config as tools_config
-    from hermes_cli.web_routers.tools import _resolve_toolset_model_plugin, _toolset_model_catalog
+    import moor_cli.tools_config as tools_config
+    from moor_cli.web_routers.tools import _resolve_toolset_model_plugin, _toolset_model_catalog
     from plugins.image_gen.krea import KREA_MODEL_IDS
     from tools.image_generation_catalog import FAL_MODELS
 
-    paid = NousPortalAccountInfo(logged_in=True, source="jwt", fresh=False, paid_service_access=True)
+    paid = MoorPortalAccountInfo(logged_in=True, source="jwt", fresh=False, paid_service_access=True)
     monkeypatch.setattr(
-        tools_config, "get_nous_subscription_features",
+        tools_config, "get_moor_subscription_features",
         lambda *args, **kwargs: SimpleNamespace(features={}, account_info=paid))
     plugin = _resolve_toolset_model_plugin("image_gen", _managed_image_row())
     catalog, default_model = _toolset_model_catalog("image_gen", plugin, {})
@@ -756,14 +756,14 @@ def test_gui_model_catalog_for_the_managed_row_spans_every_managed_gateway(monke
 
 
 def test_pool_only_account_is_offered_fal_models_only(monkeypatch):
-    import hermes_cli.tools_config as tools_config
-    from hermes_cli.tools_config_providers import _managed_image_catalog
+    import moor_cli.tools_config as tools_config
+    from moor_cli.tools_config_providers import _managed_image_catalog
 
-    pool = NousPortalAccountInfo(
+    pool = MoorPortalAccountInfo(
         logged_in=True, source="jwt", fresh=False, paid_service_access=False,
-        tool_access=NousToolAccessInfo(enabled=True, coverage={"fal": True, "krea": False}))
+        tool_access=MoorToolAccessInfo(enabled=True, coverage={"fal": True, "krea": False}))
     monkeypatch.setattr(
-        tools_config, "get_nous_subscription_features",
+        tools_config, "get_moor_subscription_features",
         lambda *args, **kwargs: SimpleNamespace(features={}, account_info=pool))
     catalog, _ = _managed_image_catalog({})
 

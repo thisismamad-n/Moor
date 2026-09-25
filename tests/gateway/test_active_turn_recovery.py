@@ -530,7 +530,7 @@ async def test_unclean_restart_never_redelivers_a_reply_live_delivery_suppressed
     unexpected-silence notice for a human turn, never the raw marker."""
     from gateway.delivery_ledger import sweep_recoverable
 
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text("display: {suppress_warning_notifications: true}\n", encoding="utf-8")
+    (Path(os.environ["MOOR_HOME"]) / "config.yaml").write_text("display: {suppress_warning_notifications: true}\n", encoding="utf-8")
     runner, store = _db_runner(tmp_path)
     source = _turn(store, "quiet", marked=True, reply=reply, **prompt)
 

@@ -1257,7 +1257,7 @@
   animation: decode-cursor 1s step-end infinite;
 }
 /* 0.001 start mirrors ZonesOverlay::GetAnimationAlpha's clamp(t / 200ms, 0.001, 1). */
-@keyframes hermes-zone-fade {
+@keyframes moor-zone-fade {
   from {
     opacity: 0.001;
   }

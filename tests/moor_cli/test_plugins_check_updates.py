@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.plugins_provenance import Provenance, ProvenanceClass
-from hermes_cli.plugins_updates import (
+from moor_cli.plugins_provenance import Provenance, ProvenanceClass
+from moor_cli.plugins_updates import (
     CheckResult,
     check_pip_plugins,
     check_provenanced,
@@ -153,7 +153,7 @@ def test_url_mismatch_is_needs_fixing(tmp_path):
 FEED = """\
 version: 1.2.0
 released: 2026-09-03T00:00:00Z
-min_hermes: 0.27.0
+min_moor: 0.27.0
 artifacts:
   git: https://example/o/r
   bundle: https://example/o/r/plug-1.2.0.zip
@@ -181,7 +181,7 @@ def test_matching_tag_fetches_feed(tmp_path):
     assert fetched == ["https://feed.example/f.yml"]
     assert r.latest == "1.2.0"
     assert r.current == "1.0.0"
-    assert r.min_hermes == "0.27.0"
+    assert r.min_moor == "0.27.0"
     assert r.update_available is True  # installed 1.0.0 vs feed 1.2.0
 
 
@@ -297,8 +297,8 @@ def test_ls_remote_lifecycle_current_available_applied(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
     run, head = _local_repo(repo, "-b", "main")
     sha1 = head()
-    from hermes_cli.plugins_updates import default_ls_remote
-    monkeypatch.setattr('hermes_cli.plugins_cmd._resolve_git_executable', _git_exe)
+    from moor_cli.plugins_updates import default_ls_remote
+    monkeypatch.setattr('moor_cli.plugins_cmd._resolve_git_executable', _git_exe)
     ls_remote = default_ls_remote
 
     plug = tmp_path / "plug"
@@ -373,8 +373,8 @@ def test_real_ls_remote_against_bare_repo(tmp_path, monkeypatch):
         [git, "init", "--bare", "-q", str(source)],
         check=True, capture_output=True, env=env,
     )
-    from hermes_cli.plugins_updates import default_ls_remote
-    monkeypatch.setattr('hermes_cli.plugins_cmd._resolve_git_executable', _git_exe)
+    from moor_cli.plugins_updates import default_ls_remote
+    monkeypatch.setattr('moor_cli.plugins_cmd._resolve_git_executable', _git_exe)
     assert default_ls_remote(str(source)) == ""
 
 
@@ -421,7 +421,7 @@ def test_pip_uses_owning_distribution_not_import_root():
     """C17: the dist name comes from the entry point's owning distribution,
     never guessed from the value's first import module."""
     ep = _EP("mnemosyne", "some.module:register", None)
-    ep.dist = _Dist("mnemosyne-hermes")
+    ep.dist = _Dist("mnemosyne-moor")
     seen = []
 
     rs = check_pip_plugins(
@@ -429,7 +429,7 @@ def test_pip_uses_owning_distribution_not_import_root():
         pypi_latest=lambda d: None,
         entry_points=[ep],
     )
-    assert seen == ["mnemosyne-hermes"]
+    assert seen == ["mnemosyne-moor"]
     assert rs[0].current == "0.5.0"
 
 
@@ -474,7 +474,7 @@ def test_default_fetch_refuses_non_https_feeds_before_any_request(monkeypatch, u
     """Rows saved before the https rule (or hand-edited) still reach the real fetcher from the
     gateway tick; the sink refuses them instead of opening the URL."""
     import urllib.request
-    from hermes_cli.plugins_updates import default_fetch
+    from moor_cli.plugins_updates import default_fetch
 
     def never(*a, **k):
         raise AssertionError("urlopen must not be reached")
@@ -533,7 +533,7 @@ def feed_redirect_server(monkeypatch):
 
 
 def test_default_fetch_refuses_intermediate_plaintext_redirect(feed_redirect_server):
-    from hermes_cli.plugins_updates import default_fetch
+    from moor_cli.plugins_updates import default_fetch
 
     base, visited = feed_redirect_server
     with pytest.raises(ValueError, match="https://"):
@@ -542,7 +542,7 @@ def test_default_fetch_refuses_intermediate_plaintext_redirect(feed_redirect_ser
 
 
 def test_default_fetch_follows_https_redirect(feed_redirect_server):
-    from hermes_cli.plugins_updates import default_fetch
+    from moor_cli.plugins_updates import default_fetch
 
     base, visited = feed_redirect_server
     assert default_fetch(base + "/secure") == "version: 1.2.0\n"

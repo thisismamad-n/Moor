@@ -24,17 +24,17 @@ from moor_cli.web_routers._common import log as _log
 
 router = APIRouter()
 
-_find_cron_job_profile = late("_find_cron_job_profile", "hermes_cli.web_server_cron")
-_fire_cron_job_for_profile = late("_fire_cron_job_for_profile", "hermes_cli.web_server_cron")
-_forward_cron_fire_to_gateway = late("_forward_cron_fire_to_gateway", "hermes_cli.web_server_cron")
-_gateway_intentionally_stopped = late("_gateway_intentionally_stopped", "hermes_cli.web_server_cron")
-_notify_cron_provider_for_profile = late("_notify_cron_provider_for_profile", "hermes_cli.web_server_cron")
-_call_cron_for_profile = late("_call_cron_for_profile", "hermes_cli.web_server_cron")
-load_config = late("load_config", "hermes_cli.config")
-_cron_profile_dicts = late("_cron_profile_dicts", "hermes_cli.web_server_cron")
-_cron_profile_home = late("_cron_profile_home", "hermes_cli.web_server_cron")
-_open_session_db_for_profile = late("_open_session_db_for_profile", "hermes_cli.web_server_sessions")
-_config_profile_scope = late("_config_profile_scope", "hermes_cli.web_server_profiles")
+_find_cron_job_profile = late("_find_cron_job_profile", "moor_cli.web_server_cron")
+_fire_cron_job_for_profile = late("_fire_cron_job_for_profile", "moor_cli.web_server_cron")
+_forward_cron_fire_to_gateway = late("_forward_cron_fire_to_gateway", "moor_cli.web_server_cron")
+_gateway_intentionally_stopped = late("_gateway_intentionally_stopped", "moor_cli.web_server_cron")
+_notify_cron_provider_for_profile = late("_notify_cron_provider_for_profile", "moor_cli.web_server_cron")
+_call_cron_for_profile = late("_call_cron_for_profile", "moor_cli.web_server_cron")
+load_config = late("load_config", "moor_cli.config")
+_cron_profile_dicts = late("_cron_profile_dicts", "moor_cli.web_server_cron")
+_cron_profile_home = late("_cron_profile_home", "moor_cli.web_server_cron")
+_open_session_db_for_profile = late("_open_session_db_for_profile", "moor_cli.web_server_sessions")
+_config_profile_scope = late("_config_profile_scope", "moor_cli.web_server_profiles")
 
 def _job_not_found() -> HTTPException:
     return HTTPException(status_code=404, detail="Job not found")

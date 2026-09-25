@@ -169,7 +169,7 @@ class TestInstallerSeededConfigThroughGatewayResolver:
         from gateway.config import Platform
         from gateway.run import _load_gateway_config, _resolve_gateway_display_bool
 
-        seeded = _load_gateway_config(self._seed_like_installer(tmp_path / "hermes-home"))
+        seeded = _load_gateway_config(self._seed_like_installer(tmp_path / "moor-home"))
         assert "display" in seeded  # the loader fails open to {}, which would pass vacuously
 
         assert_keeps_platform_display_defaults(seeded)
@@ -201,7 +201,7 @@ class TestConfigMigration:
 
     def test_migration_creates_platforms_entries(self, tmp_path, monkeypatch):
         """Old overrides are migrated into display.platforms.<plat>.tool_progress."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         config_path = tmp_path / "config.yaml"
         config = {

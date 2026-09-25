@@ -192,8 +192,8 @@ async def test_full_dispatch_rejects_lease_timeout_without_running_goal_hook(
         "sess-dedup", owner_key="holder-key", generation=1, timeout=1
     )
     assert holder is not None
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", "120")
-    monkeypatch.setenv("HERMES_TURN_LEASE_TIMEOUT", "0.02")
+    monkeypatch.setenv("MOOR_AGENT_TIMEOUT", "120")
+    monkeypatch.setenv("MOOR_TURN_LEASE_TIMEOUT", "0.02")
 
     runner.session_store.load_transcript.side_effect = AssertionError(
         "transcript must not load after a turn-lease timeout"

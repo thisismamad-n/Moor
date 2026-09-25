@@ -895,7 +895,7 @@ describe('setOnboardingModel', () => {
     })
     $desktopOnboarding.set(confirmingModelState())
 
-    await setOnboardingModel('deepseek/deepseek-v4-flash-0731', 'nous', 'Nous Portal')
+    await setOnboardingModel('deepseek/deepseek-v4-flash-0731', 'moor', 'Moor Portal')
 
     const flow = $desktopOnboarding.get().flow
     expect(flow.status).toBe('confirming_model')

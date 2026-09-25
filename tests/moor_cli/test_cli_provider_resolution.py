@@ -6,10 +6,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.auth import AuthError
-from hermes_cli import main as hermes_main
-import hermes_cli.main_provider_setup as hermes_cli_main_provider_setup
-from hermes_cli import model_switch
+from moor_cli.auth import AuthError
+from moor_cli import main as moor_main
+import moor_cli.main_provider_setup as moor_cli_main_provider_setup
+from moor_cli import model_switch
 
 
 # ---------------------------------------------------------------------------
@@ -222,7 +222,7 @@ def test_startup_alias_base_url_reaches_runtime_resolution(
         },
     )
 
-    shell = cli.HermesCLI(
+    shell = cli.MoorCLI(
         model="myalias",
         base_url=explicit_base_url,
         compact=True,
@@ -297,7 +297,7 @@ def test_runtime_resolution_failure_is_not_sticky(monkeypatch):
 
 
 def test_ensure_runtime_credentials_passes_cli_model_as_target_model(monkeypatch):
-    """`hermes -m mimo-v2.5 --provider opencode-go` must resolve credentials for the model the
+    """`moor -m mimo-v2.5 --provider opencode-go` must resolve credentials for the model the
     CLI will send: the Zen/Go rungs key off the effective model, and without target_model a
     `*-free` config default decides the api_mode/base_url for an explicit paid model (#112600)."""
     cli = _import_cli()
@@ -313,8 +313,8 @@ def test_ensure_runtime_credentials_passes_cli_model_as_target_model(monkeypatch
             "source": "env",
         }
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    shell = cli.HermesCLI(model="mimo-v2.5", provider="opencode-go", compact=True, max_turns=1)
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    shell = cli.MoorCLI(model="mimo-v2.5", provider="opencode-go", compact=True, max_turns=1)
 
     assert shell._ensure_runtime_credentials() is True
     assert seen["requested"] == "opencode-go"
@@ -327,14 +327,14 @@ def test_fallback_runtime_resolves_the_fallback_entry_model(monkeypatch, tmp_pat
     """The auth-fallback rung must resolve credentials for the ENTRY's model, exactly like the
     primary path does for `-m`: a `*-free` config default must not decide the api_mode/base_url
     a Go-only fallback entry is built with (#112600)."""
-    from hermes_cli.auth import AuthError
-    from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
+    from moor_cli.auth import AuthError
+    from moor_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
     (home / "config.yaml").write_text(
         "model:\n  default: mimo-v2.5-free\n  provider: opencode\n  base_url: https://opencode.ai/zen/v1\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setenv("OPENCODE_GO_API_KEY", "sk-test-go")
     monkeypatch.setattr("cli._cprint", lambda *a, **k: None, raising=False)
 
@@ -348,7 +348,7 @@ def test_fallback_runtime_resolves_the_fallback_entry_model(monkeypatch, tmp_pat
 
 
 def _quota_auth_error():
-    from hermes_cli.auth import CODEX_RATE_LIMITED_CODE, AuthError
+    from moor_cli.auth import CODEX_RATE_LIMITED_CODE, AuthError
     return AuthError(
         "Codex provider quota exhausted (429); retry after 1839s. Credentials are still valid.",
         provider="openai-codex",
@@ -359,24 +359,24 @@ def _quota_auth_error():
 
 @pytest.mark.parametrize(("exc_factory", "expected", "absent"), [
     (_quota_auth_error, "quota exhausted", "auth failed"),
-    (lambda: __import__("hermes_cli.auth", fromlist=["AuthError"]).AuthError(
+    (lambda: __import__("moor_cli.auth", fromlist=["AuthError"]).AuthError(
         "no key", provider="openai-codex", code="missing_api_key"), "Primary auth failed", "quota exhausted"),
 ])
 def test_fallback_runtime_labels_quota_outage_and_bad_credentials_distinctly(monkeypatch, tmp_path, exc_factory, expected, absent):
     """A 429 at credential resolution is quota, not bad credentials (#117482); a real
     credential failure keeps the auth-failed wording."""
-    from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
+    from moor_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     printed = []
     monkeypatch.setattr("cli._cprint", printed.append, raising=False)
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {"provider": "custom", "base_url": "http://x/v1", "api_key": "k"},
     )
-    monkeypatch.setattr("hermes_cli.fallback_config.resolve_entry_api_key", lambda entry: "k")
+    monkeypatch.setattr("moor_cli.fallback_config.resolve_entry_api_key", lambda entry: "k")
 
     shell = CLIAgentSetupMixin.__new__(CLIAgentSetupMixin)
     shell._fallback_model = [{"provider": "custom", "model": "local-model"}]
@@ -390,18 +390,18 @@ def test_fallback_runtime_labels_quota_outage_and_bad_credentials_distinctly(mon
 
 def test_ensure_runtime_credentials_records_quota_vs_bad_key(monkeypatch, tmp_path):
     """Kanban workers need this flag: a quota wall at startup is not a worker failure (#117482)."""
-    from hermes_cli.auth import AuthError
-    from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
+    from moor_cli.auth import AuthError
+    from moor_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr("cli._cprint", lambda *a, **k: None, raising=False)
 
     def _raise_quota(**kw):
         raise _quota_auth_error()
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _raise_quota)
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", _raise_quota)
 
     quota_shell = CLIAgentSetupMixin.__new__(CLIAgentSetupMixin)
     quota_shell.model = "gpt-x"
@@ -416,7 +416,7 @@ def test_ensure_runtime_credentials_records_quota_vs_bad_key(monkeypatch, tmp_pa
     def _raise_missing(**kw):
         raise AuthError("no key", provider="openai-codex", code="missing_api_key")
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _raise_missing)
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", _raise_missing)
     bad_shell = CLIAgentSetupMixin.__new__(CLIAgentSetupMixin)
     bad_shell.model = "gpt-x"
     bad_shell.requested_provider = "openai-codex"
@@ -440,8 +440,8 @@ def test_ensure_runtime_credentials_records_quota_vs_bad_key(monkeypatch, tmp_pa
 
 
 
-def test_model_flow_nous_does_not_restore_stale_custom_api_key(tmp_path, monkeypatch):
-    import hermes_yaml as yaml
+def test_model_flow_moor_does_not_restore_stale_custom_api_key(tmp_path, monkeypatch):
+    import moor_yaml as yaml
 
     config_home = tmp_path / "moor"
     config_home.mkdir()
@@ -511,7 +511,7 @@ def test_model_flow_nous_does_not_restore_stale_custom_api_key(tmp_path, monkeyp
 
 
 def _seed_stale_custom_model(tmp_path, monkeypatch):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     config_home = tmp_path / "moor"
     config_home.mkdir()
@@ -608,8 +608,8 @@ def test_startup_fallback_re_resolves_reasoning_for_the_fallback_model(monkeypat
         return {"provider": "zai", "api_mode": "chat_completions",
                 "base_url": "https://api.z.ai/api/coding/paas/v4", "api_key": "sk-zai", "source": "env"}
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
-    shell = cli.HermesCLI(compact=True, max_turns=1, reasoning=reasoning_flag)
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", _runtime_resolve)
+    shell = cli.MoorCLI(compact=True, max_turns=1, reasoning=reasoning_flag)
     assert shell.reasoning_config["effort"] == ("medium" if reasoning_flag is None else reasoning_flag)
 
     assert shell._ensure_runtime_credentials() is True
@@ -618,7 +618,7 @@ def test_startup_fallback_re_resolves_reasoning_for_the_fallback_model(monkeypat
 
 
 def test_custom_entry_model_swap_re_resolves_reasoning(monkeypatch):
-    """`hermes chat --model <custom-provider-name>`: the runtime's explicit `model` replaces the
+    """`moor chat --model <custom-provider-name>`: the runtime's explicit `model` replaces the
     slug, so the CLI-level reasoning_config must follow to that model's per-model override."""
     cli = _import_cli()
     monkeypatch.setattr(cli, "_cprint", lambda *a, **k: None)
@@ -626,10 +626,10 @@ def test_custom_entry_model_swap_re_resolves_reasoning(monkeypatch):
         **cli.CLI_CONFIG.get("agent", {}), "reasoning_effort": "medium",
         "reasoning_overrides": {"real-model": "high"}})
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {"provider": "custom", "name": "my-lan", "model": "real-model", "api_mode": "chat_completions",
                       "base_url": "http://10.0.0.7:11434/v1", "api_key": "sk-lan", "source": "custom"})
-    shell = cli.HermesCLI(model="my-lan", compact=True, max_turns=1)
+    shell = cli.MoorCLI(model="my-lan", compact=True, max_turns=1)
     assert shell.reasoning_config["effort"] == "medium"
 
     assert shell._ensure_runtime_credentials() is True
@@ -679,7 +679,7 @@ def test_model_flow_custom_saves_verified_v1_base_url(monkeypatch):
     monkeypatch.setattr("moor_cli.secret_prompt.masked_secret_prompt", lambda _prompt="": next(answers))
 
     caller_cfg = {}
-    hermes_main._model_flow_custom(caller_cfg)
+    moor_main._model_flow_custom(caller_cfg)
 
     assert caller_cfg["model"]["base_url"] == "http://localhost:8000/v1"
     # OPENAI_BASE_URL is no longer saved to .env — config.yaml is authoritative
@@ -819,8 +819,8 @@ def test_cmd_model_forwards_moor_login_tls_options(monkeypatch):
 
 def test_save_custom_provider_uses_provided_name(monkeypatch, tmp_path):
     """When a display name is passed, it should appear in the saved entry."""
-    import hermes_yaml as yaml
-    from hermes_cli.main_provider_setup import _save_custom_provider
+    import moor_yaml as yaml
+    from moor_cli.main_provider_setup import _save_custom_provider
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({}))
@@ -841,8 +841,8 @@ def test_save_custom_provider_uses_provided_name(monkeypatch, tmp_path):
 
 def test_save_custom_provider_references_the_key_instead_of_inlining_it(monkeypatch, tmp_path):
     """With key_env set the entry must not carry the secret (#69449)."""
-    import hermes_yaml as yaml
-    from hermes_cli.main_provider_setup import _save_custom_provider
+    import moor_yaml as yaml
+    from moor_cli.main_provider_setup import _save_custom_provider
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({}))

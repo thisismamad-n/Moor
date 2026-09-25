@@ -24,19 +24,19 @@ from fastapi import APIRouter, HTTPException
 from gateway.status import (
     multiplexer_liveness_for_profile, profile_platforms_from_multiplexer, resolve_gateway_liveness,
     retained_gateway_state)
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.config import OPTIONAL_ENV_VARS, get_env_path
-from hermes_constants import get_process_hermes_home
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_gateway import _restart_gateway_after
-from hermes_cli.web_server_messaging import (
+from moor_cli._subprocess_compat import windows_hide_flags
+from moor_cli.config import OPTIONAL_ENV_VARS, get_env_path
+from moor_constants import get_process_moor_home
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_gateway import _restart_gateway_after
+from moor_cli.web_server_messaging import (
     _TelegramOnboardingPairing, _WhatsAppOnboardingSession, _messaging_platform_catalog, _telegram_onboarding_error_message, _telegram_onboarding_lock, _telegram_onboarding_pairings, _whatsapp_onboarding_payload, _whatsapp_onboarding_sessions,
 )
-from hermes_cli.web_routers._common import (
+from moor_cli.web_routers._common import (
     REDACTED_CREDENTIAL_WRITE_DETAIL, http_failure, is_redacted_credential_preview,
     redacted_credential_preview,
 )
-from hermes_cli.web_models import (
+from moor_cli.web_models import (
     MessagingPlatformUpdate, TelegramOnboardingApply, TelegramOnboardingStart,
     WhatsAppOnboardingApply, WhatsAppOnboardingStart,
 )
@@ -250,7 +250,7 @@ def _messaging_platform_payload(
     elif gateway_running and not state:
         state = "pending_restart"
     elif not gateway_running and not state:
-        # Same verdict /api/status gives: ``hermes gateway stop`` keeps the last failure on disk,
+        # Same verdict /api/status gives: ``moor gateway stop`` keeps the last failure on disk,
         # and a profile the operator stopped must not wear a "Start failed" badge for it.
         state = "startup_failed" if retained_gateway_state(rt) == "startup_failed" else "gateway_stopped"
 
@@ -289,8 +289,8 @@ def _platform_payloads(scoped_dir: Optional[Path], entries) -> list[dict[str, An
     # profile's standalone days outranks nothing: only a record proving a live own gateway does —
     # the same rung order ``resolve_gateway_liveness`` uses (own runtime PID before the multiplexer),
     # so the two surfaces cannot disagree. Unscoped, the profile is the process's own home (a pooled
-    # ``hermes --profile X serve``); the default home resolves to a name the multiplexer never serves.
-    own_home = scoped_dir if scoped_dir is not None else get_process_hermes_home()
+    # ``moor --profile X serve``); the default home resolves to a name the multiplexer never serves.
+    own_home = scoped_dir if scoped_dir is not None else get_process_moor_home()
     if (
         runtime is None
         or get_runtime_status_running_pid(runtime, expected_home=own_home) is None
@@ -376,7 +376,7 @@ def _ensure_whatsapp_bridge_dependencies(bridge_dir: Path) -> None:
     npm = find_node_executable("npm")
 
     try:
-        env = with_hermes_node_path()
+        env = with_moor_node_path()
         if npm is None:
             env = pm.ensure("npm", explicit=True).env
             installed = pm.installed_package("npm")
@@ -854,7 +854,7 @@ def _multiplex_port_binding_conflict(platform_id: str, requested_profile: Option
     # The flag that matters is the one the shared gateway settled at startup: its served record when
     # it runs, else the DEFAULT profile's explicit config (plus the process-wide
     # GATEWAY_MULTIPLEX_PROFILES override). An unset flag is decided by the gateway, not guessed here.
-    from hermes_cli.gateway_multiplex_mode import default_gateway_multiplexes
+    from moor_cli.gateway_multiplex_mode import default_gateway_multiplexes
     if not default_gateway_multiplexes():
         return None
 

@@ -34,7 +34,7 @@ from agent.turn_context import (
     compose_multimodal_context_part,
     compose_user_api_content,
 )
-from hermes_state import SessionDB
+from moor_state import SessionDB
 
 
 # ---------------------------------------------------------------------------
@@ -299,7 +299,7 @@ class TestPrologueStamping:
         agent = _FakeAgent()
         blocks = [{"type": "image_url", "image_url": {"url": "data:img"}}]
         with patch(
-            "hermes_cli.plugins.invoke_hook",
+            "moor_cli.plugins.invoke_hook",
             return_value=[{"context": "PLUGIN-CTX"}],
         ):
             ctx = _build(
@@ -1047,7 +1047,7 @@ class TestSessionRowExistsBeforePreflightCompaction:
         turn = [{"type": "text", "text": "what is this"}, image]
         try:
             agent, _seen = self._make_agent(db, sid, in_place=True, current_user_content=list(turn))
-            with patch("hermes_cli.plugins.invoke_hook", return_value=[{"context": "PLUGIN-CTX"}]):
+            with patch("moor_cli.plugins.invoke_hook", return_value=[{"context": "PLUGIN-CTX"}]):
                 ctx = _build(
                     agent, user_message=list(turn), conversation_history=self._oversized_history(),
                     summarize_user_message_for_log=lambda _m: "[image]",

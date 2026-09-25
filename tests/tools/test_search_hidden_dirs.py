@@ -119,11 +119,11 @@ class TestGrepExcludesHiddenDirs:
 class TestGrepSearchesRootsUnderHiddenDirs:
     """Regression for #18473: grep applies ``--exclude-dir='.*'`` to the command-line
     root as well (GNU grep: to every component of it), so a search rooted anywhere
-    under a dot-directory such as ``~/.hermes`` returned nothing on the fallback."""
+    under a dot-directory such as ``~/.moor`` returned nothing on the fallback."""
 
     @staticmethod
     def _hidden_tree(tmp_path):
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".moor"
         (home / "skills").mkdir(parents=True)
         (home / "skills" / "SKILL.md").write_text("visible document under a hidden home")
         (home / ".hub").mkdir()

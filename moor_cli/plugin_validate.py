@@ -23,8 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_cli.plugin_validate_desktop import check_desktop_surface
-from hermes_cli.plugins_manifest import _CONFIG_SCHEMA_TYPES
+from moor_cli.plugin_validate_desktop import check_desktop_surface
+from moor_cli.plugins_manifest import _CONFIG_SCHEMA_TYPES
 
 _UPPER_SNAKE_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 # Admission accepts exactly the ``config_schema`` types the loader type-checks at load time (and the
@@ -492,7 +492,7 @@ def validate_plugin_dir(plugin_dir: Path) -> ValidationReport:
         )
         return report
 
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     try:
         manifest = yaml.safe_load(
@@ -523,7 +523,7 @@ _LOADABLE_ENTRYPOINTS = ("__init__.py", "desktop/plugin.js", "plugin.json")
 
 
 def _check_loadable(report: ValidationReport, plugin_dir: Path) -> None:
-    """A plugin.yaml with nothing beside it that Hermes can load (no ``register()`` module, no
+    """A plugin.yaml with nothing beside it that Moor can load (no ``register()`` module, no
     desktop bundle, no portable manifest) installs "successfully" and does nothing — a pip-layout
     repo whose code lives under ``src/`` behind an entry point is the usual shape."""
     present = [rel for rel in _LOADABLE_ENTRYPOINTS if (plugin_dir / rel).is_file()]
@@ -585,8 +585,8 @@ def _validate_portable_plugin(report: ValidationReport, plugin_dir: Path) -> Val
     diagnostics (schema shape, name, supported subset).
     """
     try:
-        from hermes_cli.agent_plugins import load_agent_plugin
-        from hermes_platform.resolver.availability import availability
+        from moor_cli.agent_plugins import load_agent_plugin
+        from moor_platform.resolver.availability import availability
 
         with tempfile.TemporaryDirectory() as data_root:
             package = load_agent_plugin(plugin_dir, Path(data_root))

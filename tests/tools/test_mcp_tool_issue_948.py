@@ -121,7 +121,7 @@ def test_resolve_stdio_command_absent_path_is_a_miss(tmp_path, monkeypatch):
     node_tool.parent.mkdir(parents=True)
     node_tool.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     node_tool.chmod(0o755)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     # the parent PATH contains BOTH names: an ambient hit would resolve either
     monkeypatch.setenv("PATH", str(parent_bin))
 

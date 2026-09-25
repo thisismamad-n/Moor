@@ -84,7 +84,7 @@ def _resolve_profile(rid, params):
 def _read_profile_yaml(profile_dir) -> dict:
     """profile.yaml as a mapping; ``{}`` when missing, unreadable, unparseable, or not a mapping."""
     def load():
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         meta_path = profile_dir / "profile.yaml"
         return (yaml.safe_load(meta_path.read_text(encoding="utf-8")) or {}) if meta_path.is_file() else {}
     loaded = _try(load, {})
@@ -221,7 +221,7 @@ def _profile_session_fields(row, profile_path):
         db_path = Path(profile_path) / "state.db"
         db = None
         if _try(db_path.exists, False):
-            db = _try(lambda: _lazy("hermes_state", "SessionDB")(db_path=db_path, read_only=True), None)
+            db = _try(lambda: _lazy("moor_state", "SessionDB")(db_path=db_path, read_only=True), None)
         try:
             last, worker = _latest_profile_session_rows(db)
             # Resolved server-side on every listing so no client carries a session pointer.
@@ -296,7 +296,7 @@ def _(rid, params: dict) -> dict:
     if not name:
         return _err(rid, 4061, "name required")
     try:
-        from hermes_cli import profiles as profiles_mod
+        from moor_cli import profiles as profiles_mod
         clone_from = str(params.get("clone_from") or "").strip() or None
         clone_all = is_truthy_value(params.get("clone_all", False))
         path = profiles_mod.create_profile(
@@ -335,10 +335,10 @@ def _(rid, params: dict) -> dict:
     name, profile_dir, err = _resolve_profile(rid, params)
     if err is not None:
         return err
-    with _hermes_home_scope(profile_dir):
+    with _moor_home_scope(profile_dir):
         from agent.skill_utils import iter_skill_index_files
-        from hermes_cli.config import load_config
-        from hermes_cli.skills_config import get_disabled_skills
+        from moor_cli.config import load_config
+        from moor_cli.skills_config import get_disabled_skills
         cfg = load_config() or {}
         disabled = {s.lower() for s in get_disabled_skills(cfg)}
         skills_root = profile_dir / "skills"
@@ -356,7 +356,7 @@ def _(rid, params: dict) -> dict:
             if isinstance(entry, dict)
         ], []) if isinstance(mcp_cfg, dict) else []
         model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
-        meta = _try(lambda: _lazy("hermes_cli.profiles", "read_profile_meta")(profile_dir), {})
+        meta = _try(lambda: _lazy("moor_cli.profiles", "read_profile_meta")(profile_dir), {})
         return _ok(rid, {
             "name": name, "description": str(meta.get("description") or ""), "soul": soul,
             "model": {"provider": str(model_cfg.get("provider") or ""),
@@ -379,7 +379,7 @@ def _(rid, params: dict) -> dict:
     if isinstance(params.get("soul"), str):
         applied["soul"] = _best_effort(lambda: (profile_dir / "SOUL.md").write_text(params["soul"], encoding="utf-8"))
     if isinstance(params.get("description"), str):
-        write_meta = _lazy("hermes_cli.profiles", "write_profile_meta")
+        write_meta = _lazy("moor_cli.profiles", "write_profile_meta")
         applied["description"] = _best_effort(lambda: write_meta(
             profile_dir, description=params["description"].strip(), description_auto=False))
     confirm_message = _configure_model(profile_dir, params, applied)
@@ -508,10 +508,10 @@ def _inherit_launch_model(path) -> bool:
     # A custom `providers:` gateway travels with the model it backs (same seed as the CLI path). It is
     # written BEFORE the pin: the pin validates the pick inside the new profile, and an empty profile
     # rejects a provider it has not been told about ("Unknown provider").
-    custom = _lazy("hermes_cli.profiles", "launch_model_seed")(launch_cfg).get("providers")
+    custom = _lazy("moor_cli.profiles", "launch_model_seed")(launch_cfg).get("providers")
     if custom:
-        from hermes_cli.config import load_config, save_config
-        with _hermes_home_scope(path):
+        from moor_cli.config import load_config, save_config
+        with _moor_home_scope(path):
             cfg = load_config()
             cfg["providers"] = {**(cfg.get("providers") if isinstance(cfg.get("providers"), dict) else {}), **custom}
             save_config(cfg)
@@ -550,7 +550,7 @@ def _mirror_launch_credentials(path, params: dict) -> dict:
 def _describe_toolsets(cfg):
     """``(toolsets, pinned_set)`` as the `moor tools` checklist presents them (the raw registry
     leaks platform composites and reports everything enabled without a pin)."""
-    from hermes_cli.tools_config import (
+    from moor_cli.tools_config import (
         _coerce_platform_toolsets_value, _get_effective_configurable_toolsets, _get_platform_tools,
         _toolset_allowed_for_platform)
     from toolsets import resolve_toolset
@@ -644,9 +644,9 @@ def _clean_names(values) -> set:
 
 
 def _save_toolset_pin(cfg, enabled, save_config) -> None:
-    """Pin ``platform_toolsets.cli``: the key ``_load_enabled_toolsets`` reads and ``hermes tools`` writes.
+    """Pin ``platform_toolsets.cli``: the key ``_load_enabled_toolsets`` reads and ``moor tools`` writes.
     An empty selection clears the pin so the platform default applies again."""
-    from hermes_cli.tools_config import _save_platform_tools
+    from moor_cli.tools_config import _save_platform_tools
 
     wanted = _clean_names(enabled)
     if wanted:
@@ -659,7 +659,7 @@ def _save_toolset_pin(cfg, enabled, save_config) -> None:
 def _mcp_entry_enabled(entry: dict) -> bool:
     """The runtime's ``enabled`` reader; a legacy ``disabled: true`` (what older editors wrote,
     migrated by config v46) still reads as off."""
-    from hermes_cli.tools_config import _parse_enabled_flag
+    from moor_cli.tools_config import _parse_enabled_flag
     from tools.mcp_tool_common import mcp_server_enabled
     return mcp_server_enabled(entry) and not _parse_enabled_flag(entry.get("disabled", False), default=False)
 

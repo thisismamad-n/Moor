@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { capabilityScoped, hermesApi, type ProfileScope } from '@/api/client'
+import { capabilityScoped, moorApi, type ProfileScope } from '@/api/client'
 import {
   cachedTimelineIndex,
   previousPromptRowId,

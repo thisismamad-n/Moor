@@ -1,6 +1,6 @@
 """Serve-kind runtime inventory (#63206, campaign #91277).
 
-A network-bound `hermes serve --host <ip>` powering a remote Desktop used to
+A network-bound `moor serve --host <ip>` powering a remote Desktop used to
 be invisible to the update pipeline. The spawn ledger's structured launch
 identity (host/port/profile, registered at serve startup) now feeds the
 update inventory and the dashboard process scan.
@@ -12,8 +12,8 @@ import sys
 from types import SimpleNamespace
 from unittest.mock import patch
 
-import hermes_cli.update_inventory as update_inventory
-import hermes_cli.main_dashboard as main_dashboard
+import moor_cli.update_inventory as update_inventory
+import moor_cli.main_dashboard as main_dashboard
 
 def _ledger_entry(**over):
     entry = {
@@ -167,11 +167,11 @@ def test_inventory_classifies_launchd_job_owned_serve(monkeypatch):
         ledger_entries=lambda **k: [entry],
         spawner_is_dead=lambda e: True,  # bootstrap shell provably gone
     )
-    jobs = [("gui/501", "ai.hermes.dashboard",
-             ["hermes", "serve", "--host", "100.94.65.93", "--port", "9119"], None)]
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    jobs = [("gui/501", "ai.moor.dashboard",
+             ["moor", "serve", "--host", "100.94.65.93", "--port", "9119"], None)]
+    monkeypatch.setitem(sys.modules, "moor_cli.process_identity", fake_pi)
     with patch.object(main_dashboard, "_loaded_launchd_backend_jobs", return_value=jobs), \
-         patch("hermes_cli.dashboard_procs._process_ancestors", return_value=[]):
+         patch("moor_cli.dashboard_procs._process_ancestors", return_value=[]):
         plan = update_inventory.collect_runtime_inventory()
     serves = [r for r in plan.runtimes if r.kind == "serve"]
     assert serves, "launchd-owned serve must appear in the inventory"
@@ -179,4 +179,4 @@ def test_inventory_classifies_launchd_job_owned_serve(monkeypatch):
     assert row.supervisor == "launchd"
     assert row.restart_via == "launchd"
     assert row.detail["launchd_domain"] == "gui/501"
-    assert row.detail["launchd_label"] == "ai.hermes.dashboard"
+    assert row.detail["launchd_label"] == "ai.moor.dashboard"

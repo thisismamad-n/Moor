@@ -1,7 +1,7 @@
 """Gateway launchd (macOS LaunchAgent) backend: plist generation/refresh, bootstrap, start/stop/restart/status.
 
-Extracted from ``hermes_cli/gateway.py``. Bodies read facade helpers through ``_gw()`` (late
-binding on ``hermes_cli.gateway``) so the seams tests and callers patch on the facade keep
+Extracted from ``moor_cli/gateway.py``. Bodies read facade helpers through ``_gw()`` (late
+binding on ``moor_cli.gateway``) so the seams tests and callers patch on the facade keep
 intercepting the moved code.
 """
 from __future__ import annotations
@@ -18,14 +18,14 @@ from xml.sax.saxutils import escape
 
 
 def _gw():
-    from hermes_cli import gateway  # late: the facade imports this module
+    from moor_cli import gateway  # late: the facade imports this module
     return gateway
 
 
 def get_launchd_label() -> str:
     """Return the launchd service label, scoped per profile."""
     suffix = _gw()._profile_suffix()
-    return f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
+    return f"ai.moor.gateway-{suffix}" if suffix else "ai.moor.gateway"
 
 
 def _probe_launchd_domain_for_label(label: str) -> str:
@@ -59,7 +59,7 @@ def _launchd_domain() -> str:
 
     See #40831, #23387.
     """
-    # The cache lives on the facade: tests and callers reset ``hermes_cli.gateway._resolved_launchd_domain``.
+    # The cache lives on the facade: tests and callers reset ``moor_cli.gateway._resolved_launchd_domain``.
     gw = _gw()
     if gw._resolved_launchd_domain is None:
         gw._resolved_launchd_domain = _probe_launchd_domain_for_label(gw.get_launchd_label())
@@ -76,7 +76,7 @@ _LAUNCHD_JOB_UNLOADED_EXIT_CODES = frozenset({3, 113, 125})
 # services (macOS 26+). Only when the retry ALSO fails do callers degrade to a detached process.
 # launchctl returns 5 ("Input/output error") or a persistent 125 in two very different situations, so exit 5
 # is NOT on its own proof the domain is broken: 1. See #42914. 2. Here launchd cannot supervise the gateway
-# at all and we degrade to a detached background process (the `nohup hermes gateway run` workaround). See
+# at all and we degrade to a detached background process (the `nohup moor gateway run` workaround). See
 # #23387.
 _LAUNCHCTL_DOMAIN_UNSUPPORTED_CODES = frozenset({5, 125})
 
@@ -116,7 +116,7 @@ def _launchctl_bootstrap(domain: str, plist_path, label: str, *, timeout: int = 
 
 def _launchd_reload_log_path() -> Path:
     """Path the launchd reload watchdog tails for persistent-orphan detection."""
-    return _gw().get_hermes_home() / "logs" / "launchd-reload.log"
+    return _gw().get_moor_home() / "logs" / "launchd-reload.log"
 
 
 def _append_launchd_reload_log(message: str) -> None:
@@ -183,7 +183,7 @@ def _retry_launchctl_bootstrap_until_registered(
 # launchd-unsupported marker: written when the domain can't be managed (exit 5/125, macOS 26+) so
 # `launchd_status()` can explain missing supervision; cleared on successful bootstrap/kickstart.
 def _launchd_unsupported_marker_path() -> Path:
-    return _gw().get_hermes_home() / ".gateway-launchd-unsupported"
+    return _gw().get_moor_home() / ".gateway-launchd-unsupported"
 
 
 def _write_launchd_unsupported_marker() -> None:
@@ -208,7 +208,7 @@ def _launchd_unsupported_marker_exists() -> bool:
 
 
 def _gateway_run_command() -> list[str]:
-    from hermes_cli._launchers import runtime_command
+    from moor_cli._launchers import runtime_command
     return runtime_command(_gw().PROJECT_ROOT, [*shlex.split(_gw()._profile_arg()), "gateway", "run", "--replace"],
                            python=_gw().get_python_path())
 
@@ -238,12 +238,12 @@ def launchd_program_arguments(command: list[str], stdout_log: Path, stderr_log: 
 
 def _timestamped_stderr_gateway_command(error_log: Path, *, external_supervisor: bool = False) -> list[str]:
     """Wrap gateway run so raw stderr lines are timestamped before file write. ``external_supervisor``
-    (launchd ProgramArguments only) adds ``--external-supervisor`` so ``hermes update`` hands back to
+    (launchd ProgramArguments only) adds ``--external-supervisor`` so ``moor update`` hands back to
     launchd, and drops ``--replace``: KeepAlive respawns would re-arm takeover, so two profiles sharing
     a token would kill each other forever.
 
     ``external_supervisor=True`` is for launchd ProgramArguments only: the inner ``gateway run`` must carry
-    ``--external-supervisor`` so ``hermes update`` sees the flag on the live grandchild argv and hands the
+    ``--external-supervisor`` so ``moor update`` sees the flag on the live grandchild argv and hands the
     process back to launchd instead of starting a detached watcher (#86893 / #87005). The detached nohup
     fallback stays unmarked.
     Supervised starts also drop ``--replace`` (issue #79048): a launchd service is respawned by KeepAlive,
@@ -253,7 +253,7 @@ def _timestamped_stderr_gateway_command(error_log: Path, *, external_supervisor:
     bootout+bootstrap in install/refresh), which run before supervision resumes. Mirrors
     ``generate_systemd_unit``, whose ExecStart also runs ``gateway run`` without ``--replace``.
     """
-    from hermes_cli._launchers import installation_command, runtime_command
+    from moor_cli._launchers import installation_command, runtime_command
     inner = _gw()._gateway_run_command()
     if external_supervisor:
         inner = installation_command(_gw().PROJECT_ROOT, [*shlex.split(_gw()._profile_arg()), "gateway", "run"],
@@ -263,7 +263,7 @@ def _timestamped_stderr_gateway_command(error_log: Path, *, external_supervisor:
             inner.append("--external-supervisor")
     command = installation_command if external_supervisor else runtime_command
     return command(_gw().PROJECT_ROOT, ["--error-log", str(error_log), "--", *inner],
-                   module="hermes_cli.stderr_timestamp", python=_gw().get_python_path())
+                   module="moor_cli.stderr_timestamp", python=_gw().get_python_path())
 
 
 def _spawn_detached_gateway() -> bool:
@@ -271,12 +271,12 @@ def _spawn_detached_gateway() -> bool:
     stdout → gateway.log, timestamped stderr → gateway.error.log, PID via gateway.pid so stop/status work.
 
     Used when launchctl can no longer bootstrap/kickstart the gateway on macOS 26+ (issue #23387). Mirrors
-    the `nohup hermes gateway run --replace` workaround but keeps it CLI-managed: stdout goes to
+    the `nohup moor gateway run --replace` workaround but keeps it CLI-managed: stdout goes to
     gateway.log, stderr is timestamped into gateway.error.log, and the PID is tracked via the gateway.pid
     file that `run_gateway` writes, so stop/status/restart keep working.
     """
-    from hermes_cli._subprocess_compat import windows_detach_popen_kwargs
-    log_dir = _gw().get_hermes_home() / "logs"
+    from moor_cli._subprocess_compat import windows_detach_popen_kwargs
+    log_dir = _gw().get_moor_home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     try:
         with open(log_dir / "gateway.log", "ab") as out:
@@ -293,17 +293,17 @@ def _spawn_detached_gateway() -> bool:
 def _launchd_fallback_to_detached(reason: str, *, exit_on_failure: bool = True) -> bool:
     """Start the gateway detached when launchd can't manage it; on failure print the manual workaround
     and (by default) exit 1."""
-    from hermes_constants import display_hermes_home as _dhh
+    from moor_constants import display_moor_home as _dhh
     _gw()._write_launchd_unsupported_marker()
     print(f"⚠ launchd cannot manage the gateway on this macOS version ({reason}).")
     if _gw()._spawn_detached_gateway():
         print("✓ Started gateway as a background process instead")
         print("  It will NOT auto-start at login or auto-restart on crash.")
         print(f"  Logs: {_dhh()}/logs/gateway.log")
-        print("  Stop it with: hermes gateway stop")
+        print("  Stop it with: moor gateway stop")
         return True
     _gw().print_error("Failed to start the gateway as a background process.")
-    print(f"  Try manually: nohup hermes gateway run --replace > {_dhh()}/logs/gateway.log 2>&1 &")
+    print(f"  Try manually: nohup moor gateway run --replace > {_dhh()}/logs/gateway.log 2>&1 &")
     if exit_on_failure:
         sys.exit(1)
     return False
@@ -327,7 +327,7 @@ def _launchd_degrade_or_raise(exc: subprocess.CalledProcessError, what: str) -> 
     if _gw()._launchctl_label_supervising_process(label):
         print(f"⚠ {what} failed (exit {exc.returncode}), but launchd still supervises {label}")
         print("  Not switching to the detached fallback — this host manages the job.")
-        print("  Apply the definition with: hermes gateway stop && hermes gateway install --force")
+        print("  Apply the definition with: moor gateway stop && moor gateway install --force")
         raise exc
     _launchd_fallback_to_detached(f"{what} exit {exc.returncode}")
 
@@ -336,8 +336,8 @@ def generate_launchd_plist() -> str:
     from html import escape
     # Stable cwd anchor — never the volatile source checkout (same rot risk as systemd's WorkingDirectory).
     working_dir = _gw()._stable_service_working_dir()
-    hermes_home = str(_gw().get_hermes_home().resolve())
-    log_dir = _gw().get_hermes_home() / "logs"
+    moor_home = str(_gw().get_moor_home().resolve())
+    log_dir = _gw().get_moor_home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     label = _gw().get_launchd_label()
 
@@ -359,7 +359,7 @@ def generate_launchd_plist() -> str:
     # rewrite would otherwise strip a manual limit and reintroduce EMFILE crashes.
     nofile_block = ""
     try:
-        from hermes_cli.resource_limits import configured_nofile_soft_limit
+        from moor_cli.resource_limits import configured_nofile_soft_limit
         nofile_target = configured_nofile_soft_limit()
     except Exception:
         nofile_target = None
@@ -392,9 +392,9 @@ def generate_launchd_plist() -> str:
         <key>PATH</key>
         <string>{sane_path}</string>
 
-        <key>HERMES_HOME</key>
-        <string>{hermes_home}</string>
-        <key>HERMES_SUPERVISED_CHILD</key>
+        <key>MOOR_HOME</key>
+        <string>{moor_home}</string>
+        <key>MOOR_SUPERVISED_CHILD</key>
         <string>1</string>
     </dict>
 
@@ -580,7 +580,7 @@ def refresh_launchd_plist_if_needed() -> bool:
             target, int(_reload_budget), _launchd_reload_log_path(),
         )
         return False
-    print("↻ Updated gateway launchd service definition to match the current Hermes install")
+    print("↻ Updated gateway launchd service definition to match the current Moor install")
     return True
 
 
@@ -603,11 +603,11 @@ def launchd_install(force: bool = False, *, start_now: bool = True):
             else:
                 # The plist was rewritten but launchd never registered it (or the write was refused):
                 # a success line here would hide an unloaded service with no KeepAlive.
-                from hermes_constants import display_hermes_home
+                from moor_constants import display_moor_home
                 print(
                     "⚠ Service definition could not be reloaded with launchd. "
-                    "Run 'hermes gateway install --force' or check "
-                    f"{display_hermes_home()}/logs/launchd-reload.log for details."
+                    "Run 'moor gateway install --force' or check "
+                    f"{display_moor_home()}/logs/launchd-reload.log for details."
                 )
             return
 
@@ -621,7 +621,7 @@ def launchd_install(force: bool = False, *, start_now: bool = True):
 
     if not load:
         # A job left loaded but idle (a parked clean exit) keeps its old definition, and that is
-        # what `hermes gateway start` would kickstart instead of loading this plist.
+        # what `moor gateway start` would kickstart instead of loading this plist.
         subprocess.run(
             ["launchctl", "bootout", f"{_gw()._launchd_domain()}/{label}"],
             check=False, timeout=90, **_gw()._CAPTURE_TEXT)
@@ -629,8 +629,8 @@ def launchd_install(force: bool = False, *, start_now: bool = True):
         print("✓ Service installed, not started (launchd starts it at your next login)")
         print()
         print("Next steps:")
-        print("  hermes gateway start              # Start it now")
-        print("  hermes gateway status             # Check status")
+        print("  moor gateway start              # Start it now")
+        print("  moor gateway status             # Check status")
         return
 
     try:
@@ -644,8 +644,8 @@ def launchd_install(force: bool = False, *, start_now: bool = True):
     _gw()._clear_launchd_unsupported_marker()
     print()
     print("Next steps:")
-    print("  hermes gateway status             # Check status")
-    from hermes_constants import display_hermes_home as _dhh
+    print("  moor gateway status             # Check status")
+    from moor_constants import display_moor_home as _dhh
     print(f"  tail -f {_dhh()}/logs/gateway.log  # View logs")
 
 
@@ -715,7 +715,7 @@ def _launchd_ok(message: str) -> None:
 def launchd_stop():
     target = f"{_launchd_domain()}/{get_launchd_label()}"
     _gw()._mark_planned_stop()
-    # bootout unloads the definition so KeepAlive doesn't respawn; `hermes gateway start` re-bootstraps.
+    # bootout unloads the definition so KeepAlive doesn't respawn; `moor gateway start` re-bootstraps.
     try:
         # Captured: an already-unloaded job (3/113/125) is handled below, so launchctl's own
         # "Boot-out failed: 3" must not print around the ✓ line; e.stderr stays on the raised error.
@@ -772,7 +772,7 @@ def launchd_restart():
             return
         if pid is not None and _gw().probe_gateway_loop_liveness(pid) == _gw().GATEWAY_LOOP_WEDGED:
             # Event loop provably dead: it can't process a graceful shutdown, so a full drain wait
-            # only stalls the restart (and `hermes update`). Bounded SIGTERM → SIGKILL, ~10s.
+            # only stalls the restart (and `moor update`). Bounded SIGTERM → SIGKILL, ~10s.
             print(f"⚠ Gateway PID {pid} event loop is unresponsive — " "skipping drain and forcing a bounded stop...")
             _gw()._escalate_wedged_gateway(pid)
             pid = None
@@ -782,7 +782,7 @@ def launchd_restart():
             # surfaces with no other feedback (desktop updater) read silence as "update stuck".
             wait_budget = _gw()._get_restart_exit_wait_budget()
             print(f"→ Stopping gateway (PID {pid}) — draining in-flight runs (up to {wait_budget:.0f}s)...")
-            from hermes_cli.update_cmd_drain_report import drain_progress_reporter
+            from moor_cli.update_cmd_drain_report import drain_progress_reporter
             if _gw()._graceful_restart_via_sigusr1(pid, wait_budget, on_progress=drain_progress_reporter(budget_s=wait_budget)):
                 # KeepAlive revives a planned exit, so do NOT kickstart (-k would kill the replacement) —
                 # but a clean exit doesn't prove supervision, so verify a replacement PID appears first.
@@ -886,7 +886,7 @@ def launchd_status(deep: bool = False):
     # `launchctl list` exits 0 for any registered definition (even `state = not running`); only a PID proves a process.
     launchd_pid = _gw()._parse_launchd_pid_from_list_output(list_output) if service_listed else None
 
-    # Hermes PID may be a detached fallback process; when launchd IS supervising both PIDs match — don't double-count.
+    # Moor PID may be a detached fallback process; when launchd IS supervising both PIDs match — don't double-count.
     from gateway.status import get_running_pid
     fallback_pid = get_running_pid(cleanup_stale=False)
     if launchd_pid is not None and fallback_pid == launchd_pid:
@@ -897,15 +897,15 @@ def launchd_status(deep: bool = False):
 
     print(f"Launchd plist: {plist_path}")
     if _gw().launchd_plist_is_current():
-        print("✓ Service definition matches the current Hermes install")
+        print("✓ Service definition matches the current Moor install")
     else:
-        print("⚠ Service definition is stale relative to the current Hermes install")
-        print("  Run: hermes gateway start")
+        print("⚠ Service definition is stale relative to the current Moor install")
+        print("  Run: moor gateway start")
 
     if not service_listed:
         print("✗ Gateway service is not loaded")
         print("  Service definition exists locally but launchd has not loaded it.")
-        print("  Run: hermes gateway start")
+        print("  Run: moor gateway start")
         if fallback_pid:
             print(f"  Note: a detached gateway process is running (PID {fallback_pid})")
     elif launchd_pid is not None:
@@ -918,10 +918,10 @@ def launchd_status(deep: bool = False):
         print("  launchd cannot manage the gateway on this macOS version.")
         if fallback_pid:
             print(f"✓ Detached fallback process is running (PID {fallback_pid})")
-            print("  Cron jobs will fire. Stop with: hermes gateway stop")
+            print("  Cron jobs will fire. Stop with: moor gateway stop")
         else:
             print("✗ No fallback process is running")
-            print("  Run: hermes gateway start")
+            print("  Run: moor gateway start")
         print("  ⚠ Auto-start at login and auto-restart on crash are NOT available.")
     else:
         print("✓ Gateway service is registered with launchd")
@@ -930,7 +930,7 @@ def launchd_status(deep: bool = False):
             print(f"  Detached gateway process is running (PID {fallback_pid})")
 
     if deep:
-        log_file = _gw().get_hermes_home() / "logs" / "gateway.log"
+        log_file = _gw().get_moor_home() / "logs" / "gateway.log"
         if log_file.exists():
             print()
             print("Recent logs:")

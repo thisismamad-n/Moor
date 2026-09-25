@@ -130,7 +130,7 @@ test.each([
   ['resources/agent-payload/uv-cache/builds-v0/whatever/build.exe', true],
   ['resources/agent-payload/tools/something-1.0-win32-arm64/bin/thing.exe', false],
   ['resources/agent-payload/tools/uv-cache-1.0/tool.exe', false],
-  ['resources/agent-payload/hermes-agent/something.exe', false],
+  ['resources/agent-payload/moor-agent/something.exe', false],
 ])('foreign architecture exemption %s → %s', (file, exempt) => {
   assert.equal(isExemptPath(file), exempt)
 })

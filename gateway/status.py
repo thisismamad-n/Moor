@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, NamedTuple, Optional
 
-from hermes_constants import _get_platform_default_hermes_home, get_hermes_home, get_process_hermes_home
+from moor_constants import _get_platform_default_moor_home, get_moor_home, get_process_moor_home
 from utils import atomic_json_write
 
 if sys.platform == "win32":
@@ -233,7 +233,7 @@ def _get_process_moor_home() -> Path:
     """Launch-home MOOR_HOME for identity files (PID, lock, status, markers):
     ``get_moor_home()`` honors the per-session ``_MOOR_HOME_OVERRIDE`` and would misroute
     them."""
-    return get_process_hermes_home()
+    return get_process_moor_home()
 
 
 def _canonical_moor_home(path: Path | str) -> Path:
@@ -311,22 +311,22 @@ def _get_runtime_status_path() -> Path:
 
 
 def _get_lock_dir() -> Path:
-    """Cross-profile rendezvous dir for machine-local locks; ``HERMES_GATEWAY_LOCK_DIR`` overrides.
+    """Cross-profile rendezvous dir for machine-local locks; ``MOOR_GATEWAY_LOCK_DIR`` overrides.
 
     Scope is the **OS user**, not the kernel host: separate users have separate ``$HOME``s,
-    separate ``~/.hermes`` profile roots and separate credentials, so "one gateway per host"
+    separate ``~/.moor`` profile roots and separate credentials, so "one gateway per host"
     means "one per host per OS user". Holds the token-scoped locks (:func:`acquire_scoped_lock`)
     and the host-role lock + rendezvous record (``gateway/host_rendezvous.py``); the per-home
-    ``gateway.pid``/``gateway.lock`` above deliberately stay under each profile's HERMES_HOME.
+    ``gateway.pid``/``gateway.lock`` above deliberately stay under each profile's MOOR_HOME.
     """
-    override = os.getenv("HERMES_GATEWAY_LOCK_DIR")
+    override = os.getenv("MOOR_GATEWAY_LOCK_DIR")
     if override:
         return Path(override)
     # XDG spec: a relative $XDG_STATE_HOME is INVALID and must be ignored. Honouring one made the
     # lock dir CWD-relative, so two serves started from different directories shared no singleton.
     state_home_env = os.getenv("XDG_STATE_HOME") or ""
     state_home = Path(state_home_env) if os.path.isabs(state_home_env) else Path.home() / ".local" / "state"
-    return state_home / "hermes" / _LOCKS_DIRNAME
+    return state_home / "moor" / _LOCKS_DIRNAME
 
 
 def _utc_now_iso() -> str:
@@ -374,11 +374,11 @@ def retained_gateway_state(runtime: Any) -> str:
     ``"startup_failed"`` (or a watchdog-stamped ``"degraded"``) only while the operator still
     wants it running, else ``"stopped"``.
 
-    ``hermes gateway stop`` keeps the last ``startup_failed`` + ``exit_reason`` on disk for
+    ``moor gateway stop`` keeps the last ``startup_failed`` + ``exit_reason`` on disk for
     diagnostics and records the durable stop intent as ``desired_state``; a profile the operator
     stopped is "stopped", not a current failure. A watchdog exit (``degraded`` + an exit_reason in
     ``WATCHDOG_EXIT_REASONS``) is the same kind of current failure as ``startup_failed`` and is kept
-    under the same rule, so the dashboard agrees with ``hermes gateway status``. Any other retained
+    under the same rule, so the dashboard agrees with ``moor gateway status``. Any other retained
     state of a dead process (``running``, ``starting``, missing) is just "stopped". Shared by
     ``/api/status`` and ``/api/messaging/platforms`` so the sidebar strip and the Channels page
     cannot disagree."""
@@ -619,31 +619,31 @@ def profile_flag_value(command: str) -> Optional[str]:
     return None
 
 
-_HERMES_HOME_ASSIGNMENT_RE = re.compile(r"(?:^|\s)hermes_home=(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
+_MOOR_HOME_ASSIGNMENT_RE = re.compile(r"(?:^|\s)moor_home=(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
 
 
-def hermes_home_assignments(command: str) -> list[str]:
-    """Values of every ``HERMES_HOME=<value>`` assignment in ``command`` (the caller lowercases
+def moor_home_assignments(command: str) -> list[str]:
+    """Values of every ``MOOR_HOME=<value>`` assignment in ``command`` (the caller lowercases
     and normalizes separators). Values are token-bounded, quotes stripped: the substring test
-    this replaces let ``HERMES_HOME=/root/profiles/ops`` claim a ``/root/profiles/ops2`` gateway.
-    The name is token-bounded too (``FOO=hermes_home=/x`` is not an assignment), and a trailing
-    separator on the value is stripped -- ``HERMES_HOME=/root/.hermes/`` (systemd ``Environment=``
-    or a shell wrapper spelling) is the same home as ``/root/.hermes``; callers strip the profile
+    this replaces let ``MOOR_HOME=/root/profiles/ops`` claim a ``/root/profiles/ops2`` gateway.
+    The name is token-bounded too (``FOO=moor_home=/x`` is not an assignment), and a trailing
+    separator on the value is stripped -- ``MOOR_HOME=/root/.moor/`` (systemd ``Environment=``
+    or a shell wrapper spelling) is the same home as ``/root/.moor``; callers strip the profile
     home the same way."""
     return [
         next(g for g in m.groups() if g is not None).rstrip("/")
-        for m in _HERMES_HOME_ASSIGNMENT_RE.finditer(command)
+        for m in _MOOR_HOME_ASSIGNMENT_RE.finditer(command)
     ]
 
 
-def command_line_names_hermes_home(command_lc: str, home_lc: str) -> bool:
-    """True when ``command_lc`` carries ``HERMES_HOME=<home_lc>`` (both lowercased, ``/``-separated,
+def command_line_names_moor_home(command_lc: str, home_lc: str) -> bool:
+    """True when ``command_lc`` carries ``MOOR_HOME=<home_lc>`` (both lowercased, ``/``-separated,
     no trailing separator). Argv reaches us space-joined, so an unquoted value with a space in it
-    (``HERMES_HOME=C:/Users/John Doe/.hermes``) is cut at the space by the token parser; a
+    (``MOOR_HOME=C:/Users/John Doe/.moor``) is cut at the space by the token parser; a
     token-bounded literal match of the whole home recovers that spelling."""
-    if home_lc in hermes_home_assignments(command_lc):
+    if home_lc in moor_home_assignments(command_lc):
         return True
-    return re.search(rf"(?:^|\s)hermes_home={re.escape(home_lc)}/?(?=\s|$)", command_lc) is not None
+    return re.search(rf"(?:^|\s)moor_home={re.escape(home_lc)}/?(?=\s|$)", command_lc) is not None
 
 
 def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
@@ -657,14 +657,14 @@ def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
     if profile_name is not None and profile_name != "default":
         if profile_flag_value(command_lc) == profile_name.lower():
             return True
-        return command_line_names_hermes_home(command_lc, home_lc)
+        return command_line_names_moor_home(command_lc, home_lc)
     # Default profile: accept unless argv names another profile (any spelling the CLI pre-parser
     # accepts, ``--profile=ops`` included -- a substring test let that gateway pass as the default's)
     # or a conflicting explicit MOOR_HOME= (its absence is not disqualifying -- MOOR_HOME usually
     # arrives via the env).
     if profile_flag_value(command_lc) is not None:
         return False
-    return not hermes_home_assignments(command_lc) or command_line_names_hermes_home(command_lc, home_lc)
+    return not moor_home_assignments(command_lc) or command_line_names_moor_home(command_lc, home_lc)
 
 
 def _host_gateway_serves_home(pid: int, profile_home: Path) -> bool:
@@ -721,7 +721,7 @@ def _get_code_identity_fields() -> dict[str, Any]:
     degrades to absent fields.
     """
     try:
-        from hermes_cli.version_info import get_code_identity
+        from moor_cli.version_info import get_code_identity
 
         identity = get_code_identity()
         return {"code_sha": identity.get("sha"), "code_version": identity.get("version")}
@@ -1264,7 +1264,7 @@ class GatewayLiveness:
 
 
 def profile_name_for_home(profile_home: Path) -> Optional[str]:
-    """Profile id of any Hermes home: ``<root>/profiles/<name>`` → ``<name>``, the default root →
+    """Profile id of any Moor home: ``<root>/profiles/<name>`` → ``<name>``, the default root →
     ``"default"``, anything else → None. Multiplex-only makes ``default`` an ordinary served
     profile, so reporting surfaces need a name for it too."""
     home = Path(profile_home)
@@ -1272,8 +1272,8 @@ def profile_name_for_home(profile_home: Path) -> Optional[str]:
     if named:
         return named
     try:
-        from hermes_constants import get_default_hermes_root
-        if home.resolve() == Path(get_default_hermes_root()).resolve():
+        from moor_constants import get_default_moor_root
+        if home.resolve() == Path(get_default_moor_root()).resolve():
             return "default"
     except Exception:
         return None
@@ -1288,19 +1288,19 @@ def multiplexer_liveness_for_profile(profile_dir: Path) -> Optional[tuple[int, d
     resolving from the host rendezvous record (``gateway/host_topology.py``) is what lets it be
     reported as SERVED rather than only as owner. A served profile owns no
     ``gateway.pid``/``gateway_state.json`` (#97120), so every PID-file rung of the dashboard ladder
-    reports it stopped while ``hermes -p X status`` says running — the two must agree.
+    reports it stopped while ``moor -p X status`` says running — the two must agree.
     """
     name = profile_name_for_home(Path(profile_dir))
     if not name:
         return None
     from gateway.host_topology import host_gateway_topology
-    from hermes_cli.gateway import named_profile_served_by_running_multiplexer
-    from hermes_cli.gateway_multiplex_served import live_default_gateway_pid
-    from hermes_constants import get_default_hermes_root
+    from moor_cli.gateway import named_profile_served_by_running_multiplexer
+    from moor_cli.gateway_multiplex_served import live_default_gateway_pid
+    from moor_constants import get_default_moor_root
     # The roster is matched by NAME, and the multiplexer only serves ``<default root>/profiles/<name>``:
     # a profile directory copied to another root (sandbox, restore-from-backup) keeps the name but is
     # not the home being served, so it must not borrow the multiplexer's PID.
-    if name != "default" and not _same_hermes_home(profile_dir, get_default_hermes_root() / "profiles" / name):
+    if name != "default" and not _same_moor_home(profile_dir, get_default_moor_root() / "profiles" / name):
         return None
     topology = host_gateway_topology()
     if topology is not None and topology.serves(name):
@@ -1450,7 +1450,7 @@ def get_runtime_status_running_pid(
     pid = _live_pid_from_record(payload)
     if pid is None:
         return None
-    # The record's hermes_home must match the home asked about (this process unscoped) so a stale
+    # The record's moor_home must match the home asked about (this process unscoped) so a stale
     # or copied record cannot lend another home's gateway identity; legacy records without the
     # stamp prove nothing either way and fall through to the live command-line check.
     if expected_home is None and not _pid_record_belongs_to_current_profile(payload):

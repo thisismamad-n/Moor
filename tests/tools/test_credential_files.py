@@ -327,9 +327,9 @@ class TestPathTraversalSecurity:
 class TestConfigPathTraversal:
     """terminal.credential_files in config.yaml must also reject traversal."""
 
-    def _write_config(self, hermes_home: Path, cred_files: list):
-        import hermes_yaml as yaml
-        config_path = hermes_home / "config.yaml"
+    def _write_config(self, moor_home: Path, cred_files: list):
+        import moor_yaml as yaml
+        config_path = moor_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({"terminal": {"credential_files": cred_files}}))
 
     def test_config_traversal_rejected(self, tmp_path, monkeypatch):

@@ -2,8 +2,8 @@
 
 Hand-edited or legacy config.yaml files hold scalars where a migration step expects a
 mapping. Each step must guard the shapes it indexes, and ``run_migrations`` must isolate
-a step that still raises so one bad value cannot wedge ``hermes config migrate`` /
-``hermes update`` and leave the config unversioned.
+a step that still raises so one bad value cannot wedge ``moor config migrate`` /
+``moor update`` and leave the config unversioned.
 """
 
 import logging
@@ -11,7 +11,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 
 def _write_config(tmp_path, config):
@@ -48,11 +48,11 @@ def _read_config(tmp_path):
 )
 def test_malformed_nested_value_is_migrated_not_crashed(tmp_path, current_ver, config, path, expected):
     """Each cited step replaces the malformed slot and still lands the migrated value."""
-    from hermes_cli.config_migrations import run_migrations
+    from moor_cli.config_migrations import run_migrations
 
     _write_config(tmp_path, {"_config_version": current_ver, **config})
     results = {"env_added": [], "config_added": [], "warnings": []}
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+    with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}):
         run_migrations(current_ver, results, quiet=True)
 
     node = _read_config(tmp_path)
@@ -63,21 +63,21 @@ def test_malformed_nested_value_is_migrated_not_crashed(tmp_path, current_ver, c
 
 
 def test_failing_step_is_skipped_with_warning_and_config_still_migrates(tmp_path, caplog):
-    """``migrate_config`` (the ``hermes config migrate`` / ``hermes update`` path) keeps going
+    """``migrate_config`` (the ``moor config migrate`` / ``moor update`` path) keeps going
     past a raising step, records the skip in ``warnings`` and stamps the latest version. The
     quiet path (profile creation, unattended update) discards ``results``, so the skip must
     also reach the log or it is silent and, once stamped, permanent."""
-    from hermes_cli import config_migrations
-    from hermes_cli.config import migrate_config
+    from moor_cli import config_migrations
+    from moor_cli.config import migrate_config
 
     def _boom(results, quiet):
         raise RuntimeError("boom")
 
     _write_config(tmp_path, {"_config_version": 12, "model": {"default": "x/y"}})
     ladder = tuple((v, _boom if v == 13 else fn) for v, fn in config_migrations.MIGRATIONS)
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}), \
+    with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}), \
             patch.object(config_migrations, "MIGRATIONS", ladder), \
-            caplog.at_level(logging.WARNING, logger="hermes_cli.config_migrations"):
+            caplog.at_level(logging.WARNING, logger="moor_cli.config_migrations"):
         results = migrate_config(interactive=False, quiet=True)
 
     assert any(w.startswith("config migration to v13 failed and was skipped") for w in results["warnings"])

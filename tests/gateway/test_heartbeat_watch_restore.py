@@ -9,9 +9,9 @@ import pytest
 from gateway.config import GatewayConfig, Platform
 from gateway.run import GatewayRunner, _profile_runtime_scope
 from gateway.session import SessionStore, SessionSource
-from hermes_cli import goals
-from hermes_cli.heartbeat import HeartbeatManager, HeartbeatState
-from hermes_state import SessionDB
+from moor_cli import goals
+from moor_cli.heartbeat import HeartbeatManager, HeartbeatState
+from moor_state import SessionDB
 
 
 @pytest.mark.asyncio
@@ -86,12 +86,12 @@ async def test_restore_skips_session_sweep_when_no_heartbeats_exist(tmp_path, mo
     row, or a store the probe cannot read, brings the sweep back."""
     from gateway.run_heartbeat_restore import restore_heartbeat_watches
 
-    home = tmp_path / '.hermes'
+    home = tmp_path / '.moor'
     named = home / 'profiles' / 'work'
     named.mkdir(parents=True)
     (named / 'config.yaml').write_text('{}')
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('MOOR_HOME', str(home))
     dbs = {str(p): SessionDB(db_path=p / 'state.db') for p in (home, named)}
     monkeypatch.setattr(goals, '_DB_CACHE', dbs)
     config = GatewayConfig(multiplex_profiles=True)
@@ -181,12 +181,12 @@ async def test_restore_enters_each_profile_scope_once_per_scan(tmp_path, monkeyp
     from gateway import run_heartbeat_restore
     from gateway.run_heartbeat_restore import restore_heartbeat_watches
 
-    home = tmp_path / '.hermes'
+    home = tmp_path / '.moor'
     named = home / 'profiles' / 'work'
     named.mkdir(parents=True)
     (named / 'config.yaml').write_text('{}')
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('MOOR_HOME', str(home))
     dbs = {str(p): SessionDB(db_path=p / 'state.db') for p in (home, named)}
     monkeypatch.setattr(goals, '_DB_CACHE', dbs)
     config = GatewayConfig(multiplex_profiles=True)

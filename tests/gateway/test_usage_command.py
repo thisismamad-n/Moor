@@ -186,7 +186,7 @@ class TestUsageAccountSection:
             lambda snapshot, markdown=False: ["📈 **Account limits**", "Provider: openai-codex (Plus)",
                                               "Weekly: 91% remaining (9% used)"],
         )
-        monkeypatch.setattr("agent.account_usage.nous_credits_lines", lambda markdown=False: [])
+        monkeypatch.setattr("agent.account_usage.moor_credits_lines", lambda markdown=False: [])
 
         result = await runner._handle_usage_command(MagicMock())
 

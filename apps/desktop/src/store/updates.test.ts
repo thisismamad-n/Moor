@@ -157,12 +157,12 @@ describe('gateway version refresh', () => {
       electronVersion: '40',
       nodeVersion: '26',
       platform: 'win32',
-      hermesRoot: ''
+      moorRoot: ''
     }
 
     const getVersion = vi.fn().mockResolvedValue(version)
-    const previous = window.hermesDesktop
-    window.hermesDesktop = { ...previous, getVersion }
+    const previous = window.moorDesktop
+    window.moorDesktop = { ...previous, getVersion }
 
     try {
       expect(await refreshDesktopVersion()).toEqual(version)
@@ -182,7 +182,7 @@ describe('gateway version refresh', () => {
       expect(await pending).toBeNull()
       expect($desktopVersion.get()).toBeNull()
     } finally {
-      window.hermesDesktop = previous
+      window.moorDesktop = previous
     }
   })
 })
@@ -377,7 +377,7 @@ describe('checkBackendUpdates', () => {
 
     const result = await checkBackendUpdates()
 
-    expect(checkHermesUpdateSpy).toHaveBeenCalledWith(false)
+    expect(checkMoorUpdateSpy).toHaveBeenCalledWith(false)
     expect(result?.behind).toBe(2)
     expect(result?.updateAvailable).toBe(true)
     expect(result?.commits?.[0]?.sha).toBe('abc1234')
@@ -385,7 +385,7 @@ describe('checkBackendUpdates', () => {
     expect($backendUpdateStatus.get()?.commits?.[0]?.summary).toBe('feat: x')
 
     await checkBackendUpdates({ force: true })
-    expect(checkHermesUpdateSpy).toHaveBeenLastCalledWith(true)
+    expect(checkMoorUpdateSpy).toHaveBeenLastCalledWith(true)
   })
 
   it('preserves backend update_available when the backend cannot count commits', async () => {
@@ -1524,7 +1524,7 @@ describe('discontinued retirement notice', () => {
     $updateOverlayOpen.set(false)
     checkMock.mockImplementation(async () => discontinuedStatus())
     ;(globalThis as unknown as { window: unknown }).window = {
-      hermesDesktop: { updates: { apply: applyMock, check: checkMock } }
+      moorDesktop: { updates: { apply: applyMock, check: checkMock } }
     }
     vi.useRealTimers()
   })

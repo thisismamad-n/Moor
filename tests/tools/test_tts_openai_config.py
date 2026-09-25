@@ -75,7 +75,7 @@ class TestResolveOpenaiAudioClientConfig:
              patch.object(tts_tool_openai, "resolve_managed_tool_gateway", return_value=None):
             with pytest.raises(ValueError) as exc:
                 tts_tool_openai._resolve_openai_audio_client_config()
-        assert "nous" in str(exc.value)
+        assert "moor" in str(exc.value)
 
     def test_vendor_selection_missing_key_raises_selection_error(self):
         """A stored vendor selection with no credentials errors by name —

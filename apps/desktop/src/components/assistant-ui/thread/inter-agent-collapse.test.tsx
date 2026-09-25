@@ -104,21 +104,21 @@ function dispatch(id: string, target: string): ThreadMessage {
 
 describe('inter-agent collapse gate', () => {
   it('keeps the report after a relayed answer to this bot\u2019s own dispatch expanded', async () => {
-    // Bot Mode round trip seen from the DISPATCHING bot: it messaged @hermes,
+    // Bot Mode round trip seen from the DISPATCHING bot: it messaged @moor,
     // the answer came back as an inbound "Message from" row, and the next
-    // assistant message is its report to the human — not a reply to hermes.
+    // assistant message is its report to the human — not a reply to moor.
     render(
       <Harness
         messages={[
-          user('u1', 'ask hermes for the list'),
-          dispatch('a0', '@Hermes'),
+          user('u1', 'ask moor for the list'),
+          dispatch('a0', '@Moor'),
           user('u2', DELIVERY),
-          assistant('a1', 'here is the list hermes sent', false)
+          assistant('a1', 'here is the list moor sent', false)
         ]}
       />
     )
 
-    await screen.findByText('here is the list hermes sent')
+    await screen.findByText('here is the list moor sent')
     expect(screen.queryByText(/Replied to/)).toBeNull()
     expect(screen.queryByText('show reply')).toBeNull()
   })
@@ -139,13 +139,13 @@ describe('inter-agent collapse gate', () => {
     render(
       <Harness
         messages={[
-          user('u1', 'ask hermes for the list'),
-          dispatch('a0', '@Hermes'),
+          user('u1', 'ask moor for the list'),
+          dispatch('a0', '@Moor'),
           user('u2', DELIVERY),
-          assistant('a1', 'here is the list hermes sent', false),
+          assistant('a1', 'here is the list moor sent', false),
           user('u3', 'ok thanks'),
           assistant('a2', 'anytime', false),
-          user('u4', 'Message from 🤖 Hermes (@hermes): unsolicited: build broke'),
+          user('u4', 'Message from 🤖 Moor (@moor): unsolicited: build broke'),
           assistant('a3', 'on it, checking the build', false)
         ]}
       />

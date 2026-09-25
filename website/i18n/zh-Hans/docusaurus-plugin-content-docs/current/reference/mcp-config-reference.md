@@ -10,7 +10,7 @@ description: "Moor Agent MCP 配置键、过滤语义及工具策略参考"
 
 概念说明请参阅：
 - [MCP（Model Context Protocol）](../user-guide/features/mcp.md)
-- [在 Hermes 中使用 MCP](../guides/use-mcp-with-hermes.md)
+- [在 Moor 中使用 MCP](../guides/use-mcp-with-moor.md)
 
 ## 根配置结构
 

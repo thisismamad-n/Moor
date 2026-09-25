@@ -115,7 +115,7 @@ class TestSSHBulkDownload:
         """Live sockets are excluded up front, and an rc=2 whose stderr is solely
         'socket ignored' lines (a socket not named *.sock) does not fail the transfer."""
         dest = tmp_path / "backup.tar"
-        stderr = b"tar: home/testuser/.hermes/gateway.sock: socket ignored\n"
+        stderr = b"tar: home/testuser/.moor/gateway.sock: socket ignored\n"
         completed = subprocess.CompletedProcess([], 2, stderr=stderr)
 
         with patch.object(subprocess, "run", return_value=completed) as mock_run:
@@ -129,9 +129,9 @@ class TestSSHBulkDownload:
         from tools.environments.base import EnvironmentConnectionError
         dest = tmp_path / "backup.tar"
         failures = (
-            subprocess.CompletedProcess([], 1, stderr=b"tar: home/testuser/.hermes/state.db: file changed as we read it"),
-            subprocess.CompletedProcess([], 2, stderr=(b"tar: home/testuser/.hermes/gateway.sock: socket ignored\n"
-                                                      b"tar: home/testuser/.hermes/state.db: Cannot open: Permission denied\n")),
+            subprocess.CompletedProcess([], 1, stderr=b"tar: home/testuser/.moor/state.db: file changed as we read it"),
+            subprocess.CompletedProcess([], 2, stderr=(b"tar: home/testuser/.moor/gateway.sock: socket ignored\n"
+                                                      b"tar: home/testuser/.moor/state.db: Cannot open: Permission denied\n")),
             subprocess.CompletedProcess([], 2, stderr=b"\n"),
             subprocess.CompletedProcess([], 2, stderr=b"tar: socket ignored dir/state.db: Cannot open: Permission denied\n"),
         )
@@ -203,7 +203,7 @@ class TestModalBulkDownload:
         assert args[0] == "bash"
         assert args[1] == "-c"
         assert "tar cf -" in args[2]
-        assert "-C / root/.hermes" in args[2]
+        assert "-C / root/.moor" in args[2]
         # Live sockets cannot be archived; exclude them like the SSH backend.
         assert "--exclude='*.sock'" in args[2]
 

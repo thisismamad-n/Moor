@@ -151,8 +151,8 @@ def _admitted_models_max(mdir: Path, configured: int) -> int:
     block a boot.
     """
     try:
-        from hermes_cli.local_runtime.hardware import probe_budget
-        from hermes_cli.local_runtime.presets import admitted_residency_count
+        from moor_cli.local_runtime.hardware import probe_budget
+        from moor_cli.local_runtime.presets import admitted_residency_count
 
         cap = admitted_residency_count(mdir, probe_budget(planning=True), configured)
     except Exception as exc:  # noqa: BLE001
@@ -232,7 +232,7 @@ def _unlock_boot_fd(fd: int) -> None:
 
 @contextmanager
 def _cross_process_boot_lock(timeout_s: float = 130.0):
-    """Serialize the state-check-then-spawn sequence across every Hermes process on this
+    """Serialize the state-check-then-spawn sequence across every Moor process on this
     machine — the ``_SUPERVISOR`` singleton above only rules out a race within ONE process.
     Two profiles booting in the same second each see no ``server.json`` yet and each spawn a
     router on the stable port (#116682); an OS-held lock makes the second caller wait for the
@@ -290,7 +290,7 @@ def ensure_local_runtime(config: dict, force: bool = False) -> "object | None":
     # The state check and the spawn below run under a cross-process lock: two backends racing
     # to boot (#116682) must not both find no state file and both spawn a router on the stable
     # port — the loser waits here, then re-checks state and adopts the winner's server instead.
-    from hermes_cli.local_runtime.endpoint import _state_endpoint
+    from moor_cli.local_runtime.endpoint import _state_endpoint
 
     with _cross_process_boot_lock():
         state = _state_endpoint()
@@ -303,8 +303,8 @@ def ensure_local_runtime(config: dict, force: bool = False) -> "object | None":
             _stop_state_server(state)
 
         try:
-            from hermes_cli.local_runtime.binaries import installed_engine
-            from hermes_cli.local_runtime.supervisor import LlamaServerSupervisor
+            from moor_cli.local_runtime.binaries import installed_engine
+            from moor_cli.local_runtime.supervisor import LlamaServerSupervisor
 
             engine = installed_engine(section.get("backend", "auto"))
             if engine is None:

@@ -66,10 +66,10 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
     cron_create.add_argument("--model",
         help="Pin this job to a specific inference model (user-owned; the "
             "agent's cronjob tool cannot set this). Omit to follow "
-            "cron.model, then the main agent model (`hermes model`), at fire time.")
+            "cron.model, then the main agent model (`moor model`), at fire time.")
     cron_create.add_argument("--pin", dest="pinned", action="store_true", default=None,
         help="Lock the CURRENT main agent model (and its provider) onto this job so later "
-            "`hermes model` changes never touch it. Ignored when --model is given.")
+            "`moor model` changes never touch it. Ignored when --model is given.")
     cron_create.add_argument("--provider", dest="model_provider",
         help="Inference provider paired with --model (e.g. 'openrouter', 'moor').")
     cron_create.add_argument("--reasoning-effort", dest="reasoning_effort",

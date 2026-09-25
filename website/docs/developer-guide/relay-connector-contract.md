@@ -425,7 +425,7 @@ The gateway calls the transport with action dicts. Source of truth:
 
 **`metadata.profile` (multiplex round-trip).** Every chat-addressed outbound
 frame's `metadata` carries the tenant discriminators the gateway captured from
-the inbound (`scope_id`, `user_id`) and, on a multiplexed gateway, the Hermes
+the inbound (`scope_id`, `user_id`) and, on a multiplexed gateway, the Moor
 `profile` the connector routed that chat's inbound to; `follow_up` frames carry
 the profile encoded in their `session_key` namespace. The connector MUST stamp
 the same `profile` on the next `passthrough_forward` / `inbound` for that chat or

@@ -138,9 +138,9 @@ def test_notify_sub_chat_type_persists_and_last_write_wins(kanban_home):
         conn.close()
 
 def test_notify_sub_user_id_backfills_legacy_senderless_rows(kanban_home):
-    import hermes_cli.kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
-    from hermes_cli import kanban_db_notify as kbn
+    import moor_cli.kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db_notify as kbn
 
     conn = kbc.connect()
     try:
@@ -786,8 +786,8 @@ async def test_notifier_artifact_delivery_skips_missing_files(kanban_home, tmp_p
         conn.close()
 
     import os
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run_id))
-    os.environ["HERMES_KANBAN_TASK"] = tid
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(run_id))
+    os.environ["MOOR_KANBAN_TASK"] = tid
     try:
         kt._handle_complete({
             "summary": "one real, one ghost",

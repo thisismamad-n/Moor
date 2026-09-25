@@ -25,11 +25,11 @@ Moor 有多种不同的可插拔接口——有些使用 Python `register_*` API
 | **密钥管理器后端**（保险库 / 密码管理器 / 系统钥匙串） | [密钥源插件](../secret-source-plugin.md) |
 | **仪表盘 OIDC/认证提供商** | [Web 仪表盘 — 自定义提供商](https://hermes-agent.nousresearch.com/docs/user-guide/features/web-dashboard#custom-providers) — `ctx.register_dashboard_auth_provider()` |
 | **TTS 后端**（任意 CLI——Piper、VoxCPM、Kokoro、声音克隆等） | [TTS 自定义命令提供商](../../user-guide/features/tts.md#自定义命令提供商)——配置驱动，无需 Python |
-| **STT 后端**（自定义 whisper / ASR CLI） | [语音消息转录](../../user-guide/features/tts.md#语音消息转录stt)——将 `HERMES_LOCAL_STT_COMMAND` 设置为 shell 模板 |
+| **STT 后端**（自定义 whisper / ASR CLI） | [语音消息转录](../../user-guide/features/tts.md#语音消息转录stt)——将 `MOOR_LOCAL_STT_COMMAND` 设置为 shell 模板 |
 | **通过 MCP 接入外部工具**（文件系统、GitHub、Linear、任意 MCP 服务器） | [MCP](../../user-guide/features/mcp.md)——在 `config.yaml` 中声明 `mcp_servers.<name>` |
-| **网关事件钩子**（在启动、会话事件、命令时触发） | [事件钩子](../../user-guide/features/hooks.md#gateway-event-hooks)——将 `HOOK.yaml` + `handler.py` 放入 `~/.hermes/hooks/<name>/` |
+| **网关事件钩子**（在启动、会话事件、命令时触发） | [事件钩子](../../user-guide/features/hooks.md#gateway-event-hooks)——将 `HOOK.yaml` + `handler.py` 放入 `~/.moor/hooks/<name>/` |
 | **Shell 钩子**（在事件发生时运行 shell 命令） | [Shell 钩子](../../user-guide/features/hooks.md#shell-hooks)——在 `config.yaml` 的 `hooks:` 下声明 |
-| **额外技能来源**（自定义 GitHub 仓库、私有技能索引） | [技能](../../user-guide/features/skills.md)——`hermes skills tap add <repo>` · [发布 tap](../../user-guide/features/skills.md#发布自定义-skill-tap) |
+| **额外技能来源**（自定义 GitHub 仓库、私有技能索引） | [技能](../../user-guide/features/skills.md)——`moor skills tap add <repo>` · [发布 tap](../../user-guide/features/skills.md#发布自定义-skill-tap) |
 | 一流的**核心**推理提供商（非插件） | [添加提供商](../adding-providers.md) |
 
 查看完整的[可插拔接口表](../../user-guide/features/plugins.md#可插拔接口--各场景对应文档)，获取每种扩展接口的汇总视图，包括配置驱动（TTS、STT、MCP、shell 钩子）和放入目录（网关钩子）两种方式。
@@ -267,7 +267,7 @@ def register(ctx):
 - 在启动时恰好调用一次
 - `ctx.register_tool()` 将你的工具放入注册表——模型立即可见
 - `ctx.register_hook()` 订阅生命周期事件
-- `ctx.register_cli_command()` 注册 CLI 子命令（例如 `hermes my-plugin <subcommand>`）
+- `ctx.register_cli_command()` 注册 CLI 子命令（例如 `moor my-plugin <subcommand>`）
 - `ctx.register_command()` 注册会话内斜杠命令（例如在 CLI / 网关聊天中输入 `/myplugin <args>`）——详见下方[注册斜杠命令](#注册斜杠命令)
 - `ctx.dispatch_tool(name, arguments)` ——以父代理的上下文（审批、凭证、task_id 自动连接）调用任意其他工具（内置或来自其他插件）。适用于需要直接调用 `terminal`、`read_file` 或其他工具的斜杠命令处理器，效果等同于模型直接调用。
 - 如果此函数崩溃，插件将被禁用，但 Moor 继续正常运行
@@ -458,7 +458,7 @@ requires_env:
 
 ### 懒加载可选 Python 依赖 {#lazy-install-optional-python-dependencies}
 
-对于 Hermes 已声明的项目 extra，在实际需要 SDK 的操作中使用 `pm.ensure_import`。
+对于 Moor 已声明的项目 extra，在实际需要 SDK 的操作中使用 `pm.ensure_import`。
 可用性检查使用只读的 `pm.available`。不要从频繁调用的 `check_fn` 安装依赖。
 
 以下示例请求现有的 `bedrock` extra：
@@ -966,7 +966,7 @@ description: Custom image generation backend
 
 ## 非 Python 扩展接口
 
-Hermes 也接受完全不是 Python 插件的扩展。这些在[可插拔接口表](../../user-guide/features/plugins.md#可插拔接口--各场景对应文档)中有所展示；以下各节简要介绍每种编写方式。
+Moor 也接受完全不是 Python 插件的扩展。这些在[可插拔接口表](../../user-guide/features/plugins.md#可插拔接口--各场景对应文档)中有所展示；以下各节简要介绍每种编写方式。
 
 ### MCP 服务器——注册外部工具
 
@@ -985,7 +985,7 @@ mcp_servers:
       type: "oauth"
 ```
 
-Hermes 在启动时连接到每个服务器，列出其工具，并与内置工具一起注册。LLM 看到它们的方式与其他工具完全相同。**完整指南：** [MCP](../../user-guide/features/mcp.md)。
+Moor 在启动时连接到每个服务器，列出其工具，并与内置工具一起注册。LLM 看到它们的方式与其他工具完全相同。**完整指南：** [MCP](../../user-guide/features/mcp.md)。
 
 ### 网关事件钩子——在生命周期事件时触发
 
@@ -1073,8 +1073,8 @@ my-plugin = "my_plugin_package"
 当安装所有者提供的环境中包含该发行包时（例如 Nix 派生），entry-point 发现仍受支持。
 发现机制不代表可以向 PM 选中的环境直接注入 pip 包。对于 PM 管理的安装，
 请分发带有 `pyproject.toml` 或清单 Python 依赖声明的目录插件，并使用
-`hermes plugins install` / `enable` 进行事务式准入。新环境选定后重启 Hermes。
-`hermes pm install` 接受托管工具名称，不接受任意 PyPI 包名。
+`moor plugins install` / `enable` 进行事务式准入。新环境选定后重启 Moor。
+`moor pm install` 接受托管工具名称，不接受任意 PyPI 包名。
 
 ## 为 NixOS 分发
 
@@ -1083,8 +1083,8 @@ my-plugin = "my_plugin_package"
 **Entry-point 插件**（推荐用于分发）：
 ```nix
 # User's configuration.nix
-services.hermes-agent.extraPythonPackages = [
-  (config.services.hermes-agent.package.python.pkgs.buildPythonPackage {
+services.moor-agent.extraPythonPackages = [
+  (config.services.moor-agent.package.python.pkgs.buildPythonPackage {
     pname = "my-plugin";
     version = "1.0.0";
     src = pkgs.fetchFromGitHub {
@@ -1094,7 +1094,7 @@ services.hermes-agent.extraPythonPackages = [
       hash = "sha256-...";  # nix-prefetch-url --unpack
     };
     format = "pyproject";
-    build-system = [ config.services.hermes-agent.package.python.pkgs.setuptools ];
+    build-system = [ config.services.moor-agent.package.python.pkgs.setuptools ];
   })
 ];
 ```

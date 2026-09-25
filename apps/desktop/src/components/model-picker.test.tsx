@@ -17,7 +17,7 @@ import { ModelPickerDialog } from './model-picker'
 // whatever the backend answers; answering with the seeded jobs keeps the two equal.
 const seededJobs: { current: readonly LocalRuntimeJob[] } = vi.hoisted(() => ({ current: [] }))
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   getLocalModelsJobs: vi.fn(async () => ({ jobs: [...seededJobs.current] })),
   getLocalModelsStatus: vi.fn().mockResolvedValue({ loading: {} })
 }))

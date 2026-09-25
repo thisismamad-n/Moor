@@ -173,7 +173,7 @@ async def replace_mcp_servers(body: MCPServersReplace, profile: Optional[str] = 
 
 @router.delete("/api/mcp/servers/{name}")
 async def remove_mcp_server(name: str, profile: Optional[str] = None):
-    from hermes_cli.mcp_config import _get_mcp_servers, _remove_mcp_server
+    from moor_cli.mcp_config import _get_mcp_servers, _remove_mcp_server
 
     def _run():
         with config_write_scope(profile):
@@ -245,8 +245,8 @@ async def test_mcp_server(name: str, profile: Optional[str] = None):
 @router.post("/api/mcp/servers/{name}/auth")
 async def auth_mcp_server(name: str, request: Request, profile: Optional[str] = None):
     """Start MCP OAuth and hand the authorization URL to the dashboard browser."""
-    from hermes_cli.mcp_config import _get_mcp_servers
-    from hermes_constants import get_hermes_home
+    from moor_cli.mcp_config import _get_mcp_servers
+    from moor_constants import get_moor_home
     from tools.mcp_dashboard_oauth import DashboardOAuthFlow, exception_message
 
     _require_token(request)
@@ -429,7 +429,7 @@ def _catalog_entry_json(entry: Any, installed: bool, enabled: bool) -> Dict[str,
 
 @router.get("/api/mcp/catalog")
 async def list_mcp_catalog(profile: Optional[str] = None, detect_apps: bool = False):
-    """Browse the Nous-approved MCP catalog (optional-mcps/ manifests), each
+    """Browse the Moor-approved MCP catalog (optional-mcps/ manifests), each
     entry annotated with installed/enabled state for ``profile``. Opt-in app
     signals describe this backend machine, never the client or terminal sandbox."""
     with http_failure("mcp_catalog import failed", 500, "Catalog unavailable"):
@@ -462,7 +462,7 @@ async def list_mcp_catalog(profile: Optional[str] = None, detect_apps: bool = Fa
         import sys
 
         try:
-            from hermes_cli.mcp_app_detection import discover_catalog_apps, validate_applications
+            from moor_cli.mcp_app_detection import discover_catalog_apps, validate_applications
 
             applications = {}
             for entry in entries:

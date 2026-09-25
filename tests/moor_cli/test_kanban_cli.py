@@ -110,8 +110,8 @@ def test_worker_link_preserves_foreign_child_rules(kanban_home, monkeypatch):
         running_child = kb.create_task(conn, title="foreign running child")
         assert kb.claim_task(conn, running_child, claimer="other") is not None
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", worker)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(worker_run_id))
+    monkeypatch.setenv("MOOR_KANBAN_TASK", worker)
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(worker_run_id))
 
     assert kc._cmd_link(argparse.Namespace(
         parent_id=parent, child_id=ready_child,
@@ -121,7 +121,7 @@ def test_worker_link_preserves_foreign_child_rules(kanban_home, monkeypatch):
             parent_id=parent, child_id=running_child,
         ))
     # Owner handoff: the worker links its own running card, proving ownership
-    # with HERMES_KANBAN_RUN_ID — the one path _cmd_link forwards a run id for.
+    # with MOOR_KANBAN_RUN_ID — the one path _cmd_link forwards a run id for.
     assert kc._cmd_link(argparse.Namespace(
         parent_id=parent, child_id=worker,
     )) == 0
@@ -195,7 +195,7 @@ def test_run_slash_reclaim_running_task(kanban_home):
     import re
     import time
     import secrets
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db_connect as kbc
 
     out1 = kc.run_slash("create 'stuck worker task' --assignee broken-model")
     m = re.search(r"(t_[a-f0-9]+)", out1)

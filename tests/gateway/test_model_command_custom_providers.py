@@ -3,7 +3,7 @@
 import threading
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from gateway.config import Platform
 from gateway.platforms.event import MessageEvent, MessageType
@@ -31,11 +31,11 @@ def _make_event(text="/model"):
 async def test_direct_model_switch_runs_off_the_event_loop(tmp_path, monkeypatch):
     """A direct `/model <name>` switch must run switch_model() on a worker thread so the
     blocking models.dev HTTP fetch can't freeze the gateway event loop (#20525)."""
-    from hermes_cli.model_switch import ModelSwitchResult
+    from moor_cli.model_switch import ModelSwitchResult
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    moor_home = tmp_path / ".moor"
+    moor_home.mkdir()
+    (moor_home / "config.yaml").write_text(
         yaml.safe_dump({"model": {"default": "gpt-5.4", "provider": "openrouter"}}),
         encoding="utf-8",
     )

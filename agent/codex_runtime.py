@@ -38,7 +38,7 @@ def _stream_drain_timeout() -> float:
     ``0`` skips the drain entirely.
     """
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         agent_cfg = load_config_readonly().get("agent")
         value = agent_cfg.get("stream_drain_timeout") if isinstance(agent_cfg, dict) else None
         if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -275,8 +275,8 @@ _CODEX_PROGRESS_DELTA_METHODS = frozenset(m for m, _ in _CODEX_TEXT_DELTA_METHOD
     "item/commandExecution/outputDelta", "item/fileChange/outputDelta",
 }
 _CODEX_PROGRESS_ITEM_TYPES = _CODEX_TOOL_ITEM_TYPES | {"agentMessage", "reasoning"}
-# Internal MCP server wrapping Hermes' native tools: its inner dispatch has no tool_progress_callback, so the
-# codex-level mcpToolCall IS the display event and the mcp.hermes-tools.* prefix is stripped (users see Hermes tools).
+# Internal MCP server wrapping Moor' native tools: its inner dispatch has no tool_progress_callback, so the
+# codex-level mcpToolCall IS the display event and the mcp.moor-tools.* prefix is stripped (users see Moor tools).
 _STATIC_TOOL_NAMES = {"commandExecution": "exec_command", "fileChange": "apply_patch", "webSearch": "web_search"}
 _STABLE_ID_PREFIXES = {"commandExecution": "exec", "fileChange": "apply_patch"}
 _MCP_LIKE_ITEM_TYPES = {"mcpToolCall", "dynamicToolCall"}
@@ -495,10 +495,10 @@ def _codex_developer_instructions(agent) -> str:
     return developer_instructions
 
 
-# Durable codex thread binding: ``sessions.model_config.codex_thread_id`` (hermes_state), written after the
-# turn's projected rows were committed, read by the next AIAgent built for the same Hermes session so an
+# Durable codex thread binding: ``sessions.model_config.codex_thread_id`` (moor_state), written after the
+# turn's projected rows were committed, read by the next AIAgent built for the same Moor session so an
 # API-server restart (or the per-request agents of /api/sessions/{id}/chat) resumes the model-side thread
-# instead of starting an empty one while Hermes' own transcript continues (#100531).
+# instead of starting an empty one while Moor' own transcript continues (#100531).
 _CODEX_THREAD_ID_KEY = "codex_thread_id"
 _CODEX_THREAD_RESUME_NOTICE = "Codex thread could not be resumed; starting a new one."
 
@@ -551,9 +551,9 @@ def _ensure_codex_session(agent, messages: List[Dict[str, Any]] | None = None) -
     resume_thread_id = None if getattr(agent, "_codex_session_prompt", None) is not None else _stored_codex_thread_id(agent)
     from agent.runtime_cwd import resolve_agent_cwd
     from agent.transports.codex_app_server_session import CodexAppServerSession, _ServerRequestRouting
-    from hermes_cli.codex_runtime_switch import get_configured_codex_binary
-    from hermes_cli.config import load_config
-    # Approval callback: Hermes' standard prompt flow when a CLI thread installed one.
+    from moor_cli.codex_runtime_switch import get_configured_codex_binary
+    from moor_cli.config import load_config
+    # Approval callback: Moor' standard prompt flow when a CLI thread installed one.
     approval_callback = None
     with suppress(Exception):
         from tools.terminal_tool import _get_approval_callback
@@ -571,7 +571,7 @@ def _ensure_codex_session(agent, messages: List[Dict[str, Any]] | None = None) -
     # _emit_interim_assistant_message). Without this, Discord/Telegram users see no live tool-progress or
     # interim commentary while codex_app_server is running — only the final answer (#33200). Supersedes the
     # narrower item/started-only bridge from #38835.
-    # Hermes owns the prompt: the same composition the standard loop sends as its system message
+    # Moor owns the prompt: the same composition the standard loop sends as its system message
     # (cached per-session prompt + ephemeral additions such as channel overrides) rides along ONCE per
     # thread as developerInstructions. A retired/recreated session re-sends the current composition.
     # A thread started from scratch (no resumable codex thread) also receives the session's prior turns
@@ -582,10 +582,10 @@ def _ensure_codex_session(agent, messages: List[Dict[str, Any]] | None = None) -
     history_seed = render_history_seed(messages) or None
     # A named custom provider (``providers.<name>``) maps onto codex's own ``[model_providers.<name>]``
     # table: send the stable id plus the active model and let codex resolve base_url/env_key itself, so
-    # Hermes' credential never enters the JSON-RPC payload (#75186). openai/openai-codex keep codex's defaults.
+    # Moor' credential never enters the JSON-RPC payload (#75186). openai/openai-codex keep codex's defaults.
     model_provider = None
     if str(getattr(agent, "provider", "") or "").strip().lower() == "custom":
-        from hermes_cli.runtime_provider_custom import codex_model_provider_id
+        from moor_cli.runtime_provider_custom import codex_model_provider_id
         model_provider = codex_model_provider_id(str(getattr(agent, "requested_provider", "") or ""))
     agent._codex_session = CodexAppServerSession(
         cwd=getattr(agent, "session_cwd", None) or str(resolve_agent_cwd()), approval_callback=approval_callback,

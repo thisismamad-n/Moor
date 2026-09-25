@@ -29,7 +29,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import plugins.dashboard_auth.self_hosted as oidc_plugin
-from hermes_cli.dashboard_auth import (
+from moor_cli.dashboard_auth import (
     InvalidCodeError,
     ProviderError,
     Session,
@@ -272,7 +272,7 @@ class TestDiscovery:
         p = self._provider()
         resp = self._mock_get(
             200, dict(_DISCOVERY_DOC),
-            url="https://auth.example.com/.well-known/openid-configuration/application/o/hermes",
+            url="https://auth.example.com/.well-known/openid-configuration/application/o/moor",
         )
         with patch(
             "plugins.dashboard_auth.self_hosted.httpx.get", return_value=resp

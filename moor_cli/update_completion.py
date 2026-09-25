@@ -38,17 +38,17 @@ def _failed_result(request: dict, result_path: Path, code: int) -> int:
 def run_completion(request: dict) -> dict:
     """Wait for new code; zero exit without a correlated terminal result fails closed."""
     root = Path(request["source"])
-    env = dict(os.environ, HERMES_HOME=request["home"], PYTHONUNBUFFERED="1")
+    env = dict(os.environ, MOOR_HOME=request["home"], PYTHONUNBUFFERED="1")
     for key in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV"):
         env.pop(key, None)
-    with tempfile.TemporaryDirectory(prefix="hermes-completion-") as directory:
+    with tempfile.TemporaryDirectory(prefix="moor-completion-") as directory:
         request_path = Path(directory) / "request.json"
         result_path = Path(directory) / "result.json"
         request = {**request, "stdout_isatty": sys.stdout.isatty()}
         request["bytecode_cache"] = str(Path(directory) / "bytecode")
         _write_json(request_path, request)
         command = [sys.executable, "-I", "-S", "-u", "-X", f"pycache_prefix={request['bytecode_cache']}",
-                   str(root / "hermes_cli/update_completion.py"),
+                   str(root / "moor_cli/update_completion.py"),
                    str(request_path), str(result_path)]
         proc = subprocess.Popen(
             command, cwd=root, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -113,7 +113,7 @@ def run_completion(request: dict) -> dict:
 
 
 def _resume_receipt(data: dict) -> None:
-    from hermes_cli import update_receipt
+    from moor_cli import update_receipt
 
     # Hydrate the existing run, not a new receipt with a new identity/pre-update probe.
     receipt = object.__new__(update_receipt.UpdateReceipt)
@@ -140,7 +140,7 @@ def _prepare(request: dict, request_path: Path, result_path: Path) -> int:
 
     root = Path(request["source"])
     update_id = request["receipt"]["update_id"]
-    from hermes_cli.venv_sync import arm_completion, refuse_foreign_owned_venv
+    from moor_cli.venv_sync import arm_completion, refuse_foreign_owned_venv
 
     refuse_foreign_owned_venv(root)
     arm_completion(root)
@@ -156,7 +156,7 @@ def _prepare(request: dict, request_path: Path, result_path: Path) -> int:
             _write_json(request_path, request)
     command = [str(project_python(root)),
                "-I", "-S", "-u", "-X", f"pycache_prefix={request['bytecode_cache']}",
-               str(root / "hermes_cli/update_completion.py"),
+               str(root / "moor_cli/update_completion.py"),
                str(request_path), str(result_path), "--prepared"]
     # A second interpreter is mandatory: PM may have selected a different Python
     # and dependency graph. No application maintenance runs in this bootstrap.
@@ -167,9 +167,9 @@ def _prepare(request: dict, request_path: Path, result_path: Path) -> int:
 
 
 def _complete_selected(request: dict) -> None:
-    from hermes_cli import main, update_cmd, update_cmd_config
-    from hermes_cli.source_completion import complete_source_checkout
-    from hermes_cli.update_inventory import RuntimeRecord, UpdatePlan
+    from moor_cli import main, update_cmd, update_cmd_config
+    from moor_cli.source_completion import complete_source_checkout
+    from moor_cli.update_inventory import RuntimeRecord, UpdatePlan
 
     root = Path(request["source"])
     main.PROJECT_ROOT = root
@@ -187,14 +187,14 @@ def _complete_selected(request: dict) -> None:
         completion_message=request.get("completion_message"),
         announce=None if request.get("completion_message") else "\n✓ Code updated!")
     if complete:
-        from hermes_cli.venv_sync import clear_completion
+        from moor_cli.venv_sync import clear_completion
         clear_completion(root)
     # systemctl's KillMode=mixed fallback can kill this whole cgroup. Publish the
     # gateway watcher's status BEFORE that operation, and demote on later failure.
     if request["gateway_mode"]:
         update_cmd._write_gateway_update_exit_code(complete)
     if request.get("no_gateway_restart", False):
-        from hermes_cli.update_receipt import record_skip
+        from moor_cli.update_receipt import record_skip
 
         record_skip("gateway_restart", "--no-gateway-restart: deferred, marker kept")
         print("→ Gateway restart deferred (--no-gateway-restart); restart gateways separately.")
@@ -203,14 +203,14 @@ def _complete_selected(request: dict) -> None:
         return
     skip = update_cmd._fleet_restart_skip_reason(plan)
     if skip:
-        from hermes_cli.update_receipt import record_skip
+        from moor_cli.update_receipt import record_skip
 
         record_skip("gateway_restart", skip)
         print(f"  ✓ Gateway restart skipped: {skip}.")
         # Discharges the obligation this run armed when the live fleet vouches for it; a
         # fleet still owing the restart fails closed exactly like a stale matrix would.
         if update_cmd._pending_fleet_restart_needed():
-            print("  ⚠ Gateways are still off the checkout code. Recover with: hermes gateway restart")
+            print("  ⚠ Gateways are still off the checkout code. Recover with: moor gateway restart")
             raise SystemExit(1)
         if not complete:
             raise SystemExit(1)
@@ -235,7 +235,7 @@ class _ForwardedOutput:
 
 
 def _finish(request: dict, result_path: Path) -> int:
-    from hermes_cli import update_receipt
+    from moor_cli import update_receipt
     from pm.receipt import accept_worker_receipt
 
     _resume_receipt(request["receipt"])
@@ -252,12 +252,12 @@ def _finish(request: dict, result_path: Path) -> int:
         print(f"✗ Source update completion failed: {reason}")
     finally:
         if code and request["gateway_mode"]:
-            from hermes_cli.update_cmd import _write_gateway_update_exit_code
+            from moor_cli.update_cmd import _write_gateway_update_exit_code
             _write_gateway_update_exit_code(False)
         # The new interpreter owns recovery too. The original parent's atexit
         # token is updated from the response; it acts only if this process dies.
         try:
-            from hermes_cli.update_cmd import _resume_windows_gateways_after_update
+            from moor_cli.update_cmd import _resume_windows_gateways_after_update
             _resume_windows_gateways_after_update(request["windows_resume"])
         except Exception as exc:
             code, reason = 1, f"Windows gateway recovery failed: {exc}"

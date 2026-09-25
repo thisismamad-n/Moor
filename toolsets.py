@@ -149,7 +149,7 @@ TOOLSETS = {
     # Enabled per SESSION whose PROFILE carries ``role: setup`` in its backend-written
     # profile.yaml (tui_gateway/server.py::_load_enabled_toolsets); stripped from every
     # other profile's selection whatever the config, env pin or client asked for
-    # (model_tools._select_tool_names). Never configurable, never in `hermes tools`.
+    # (model_tools._select_tool_names). Never configurable, never in `moor tools`.
     "setup": _ts(
         "Onboarding-only surface for the setup profile: catalog plugin/skill install "
         "requests through the approval card",
@@ -455,9 +455,9 @@ def profile_role_toolsets(profile_home: Optional[Path] = None) -> Tuple[Set[str]
     """``(granted, denied)`` for the profile at *profile_home* (default: the in-scope home; a session's
     home override, when bound, IS its profile dir): toolsets reserved for the role in its backend-written
     ``profile.yaml``, and toolsets reserved for any other role. An ordinary profile is granted none."""
-    from hermes_cli.profiles import read_profile_meta
-    from hermes_constants import get_hermes_home
-    role = read_profile_meta(Path(profile_home or get_hermes_home())).get("role")
+    from moor_cli.profiles import read_profile_meta
+    from moor_constants import get_moor_home
+    role = read_profile_meta(Path(profile_home or get_moor_home())).get("role")
     granted = {name for name, spec in TOOLSETS.items() if role is not None and spec.get("role") == role}
     denied = {name for name, spec in TOOLSETS.items() if spec.get("role") not in (None, role)}
     return granted, denied

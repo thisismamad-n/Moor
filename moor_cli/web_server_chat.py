@@ -304,18 +304,18 @@ def _resolve_chat_argv(
     resume: Optional[str] = None, sidecar_url: Optional[str] = None, profile: Optional[str] = None,
     active_session_file: Optional[str] = None,
     workspace_cwd: Optional[str] = None) -> tuple[list[str], Optional[str], Optional[dict]]:
-    """Resolve the argv + cwd + env for the chat PTY (what ``hermes --tui`` runs).
+    """Resolve the argv + cwd + env for the chat PTY (what ``moor --tui`` runs).
 
     Tests monkeypatch this with a tiny fake command.  Env contract: resume goes
     through ``MOOR_TUI_RESUME`` (``ui-tui`` does not parse argv), resolved to
     the newest descendant; ``MOOR_TUI_GATEWAY_URL`` attaches to this process's
     in-memory gateway but is SKIPPED for profile-scoped chats (that gateway runs
     under the dashboard's own profile, so a scoped chat spawns its own);
-    ``profile`` scopes the ENTIRE chat by pointing ``HERMES_HOME`` at the profile
-    dir, the same propagation ``hermes -p <name>`` performs. ``workspace_cwd``
+    ``profile`` scopes the ENTIRE chat by pointing ``MOOR_HOME`` at the profile
+    dir, the same propagation ``moor -p <name>`` performs. ``workspace_cwd``
     (an already-validated host directory, ``chat_workspaces.resolve_chat_cwd``)
-    is the workspace the user picked for a FRESH chat: it becomes ``HERMES_CWD``
-    (where a self-spawned gateway starts) and ``HERMES_TUI_CWD`` (what the TUI
+    is the workspace the user picked for a FRESH chat: it becomes ``MOOR_CWD``
+    (where a self-spawned gateway starts) and ``MOOR_TUI_CWD`` (what the TUI
     passes as the explicit ``cwd`` of ``session.create`` when attached to the
     in-memory gateway, whose own cwd is the dashboard's launch dir).
     """
@@ -353,8 +353,8 @@ def _resolve_chat_argv(
     except Exception:
         _log.warning("Failed to apply terminal config bridge for dashboard chat", exc_info=True)
     if workspace_cwd:
-        env["HERMES_CWD"] = workspace_cwd
-        env["HERMES_TUI_CWD"] = workspace_cwd
+        env["MOOR_CWD"] = workspace_cwd
+        env["MOOR_TUI_CWD"] = workspace_cwd
     _apply_tui_python_env(env)
     env.setdefault("NODE_ENV", "production")
     # Mouse tracking would swallow wheel events the browser needs for

@@ -102,7 +102,7 @@ def _render_state_db_stats(stats: dict, holders=None, host_note: str = "") -> li
             lines.append(("warn", f"state.db FTS repair is blocked after {deferral.get('attempts') or '?'} deferral(s) "
                           f"by PID(s) {pids}",
                           "(stop the listed processes; the host gateway's own retry then rebuilds, or run "
-                          "'hermes sessions optimize-storage' with every holder stopped)"))
+                          "'moor sessions optimize-storage' with every holder stopped)"))
     # Oversized DB: suggest auto_prune, plus the offline optimize-storage pass when the FTS rebuild is
     # pending OR the DB predates the current trigram layout (fts_storage_version < FTS_STORAGE_VERSION).
     if logical is not None and logical > STATE_DB_SIZE_WARN_BYTES:
@@ -110,7 +110,7 @@ def _render_state_db_stats(stats: dict, holders=None, host_note: str = "") -> li
         stale_trigram = (fts is not None and fts.get("messages_fts_trigram")
                          and (stats.get("fts_storage_version") or 0) < FTS_STORAGE_VERSION)
         if stats.get("fts_rebuild_pending") or stale_trigram:
-            detail += "; run 'hermes sessions optimize-storage' offline (with the host gateway stopped) to compact FTS storage"
+            detail += "; run 'moor sessions optimize-storage' offline (with the host gateway stopped) to compact FTS storage"
         lines.append(("warn", f"state.db is large ({_human_bytes(logical)})", f"({detail})"))
     # WAL runaway is deliberately NOT warned here: _state_db_wal already warns above 50 MB and offers --fix.
     return lines
@@ -125,26 +125,26 @@ def check_legacy_desktop_checkout() -> None:
     """Report the unused legacy checkout under an embedded desktop install.
 
     Before the embedded runtime existed, the desktop app installed a git
-    checkout at $HERMES_HOME/hermes-agent. An embedded app never uses it,
+    checkout at $MOOR_HOME/moor-agent. An embedded app never uses it,
     so it sits on disk (1-2 GB of tree + venv). Doctor only REPORTS the
     checkout and its size — it never suggests a deletion command, and
     never deletes anything itself: a pristineness probe cannot prove no
     other client uses the tree or that every local commit is published,
     so the review-and-decide step belongs to the user.
     """
-    from hermes_cli.steward import STEWARD_DESKTOP, sealed_steward
+    from moor_cli.steward import STEWARD_DESKTOP, sealed_steward
 
     try:
-        from hermes_cli.main import PROJECT_ROOT
+        from moor_cli.main import PROJECT_ROOT
     except Exception:
         return
 
     if sealed_steward(Path(PROJECT_ROOT)) != STEWARD_DESKTOP:
         return
 
-    from hermes_cli.doctor import HERMES_HOME, _DHH
+    from moor_cli.doctor import MOOR_HOME, _DHH
 
-    checkout = HERMES_HOME / "hermes-agent"
+    checkout = MOOR_HOME / "moor-agent"
     if not (checkout / ".git").exists():
         return
 
@@ -180,13 +180,13 @@ def check_legacy_desktop_checkout() -> None:
 
     if pristine:
         check_warn(
-            f"Unused checkout at {_DHH}/hermes-agent{size_note}",
+            f"Unused checkout at {_DHH}/moor-agent{size_note}",
             "(the desktop app runs embedded and does not use it; the tree is clean)",
         )
         print("    Review it and decide whether to keep or remove it — doctor does not delete anything.")
     else:
         check_info(
-            f"A checkout exists at {_DHH}/hermes-agent but holds local work "
+            f"A checkout exists at {_DHH}/moor-agent but holds local work "
             "(changes, a branch, or stashes). The desktop app does not use "
             "it; review it before you remove anything."
         )
@@ -194,21 +194,21 @@ def check_legacy_desktop_checkout() -> None:
 
 @doctor_check()
 def _check_directory_structure(should_fix: bool, f: Finding) -> None:
-    """HERMES_HOME, expected subdirs, SOUL.md, and the enabled built-in memory files."""
+    """MOOR_HOME, expected subdirs, SOUL.md, and the enabled built-in memory files."""
     try:
         check_legacy_desktop_checkout()
     except Exception:
         pass  # best-effort report; must never break the directory check
-    from hermes_cli.doctor import HERMES_HOME, _DHH
-    hermes_home = HERMES_HOME
-    ensure_dir(f, should_fix, hermes_home, f"{_DHH} directory exists", f"Created {_DHH} directory", f"{_DHH} not found")
-    _memory_enabled, _user_profile_enabled = _memory_store_flags(hermes_home)
+    from moor_cli.doctor import MOOR_HOME, _DHH
+    moor_home = MOOR_HOME
+    ensure_dir(f, should_fix, moor_home, f"{_DHH} directory exists", f"Created {_DHH} directory", f"{_DHH} not found")
+    _memory_enabled, _user_profile_enabled = _memory_store_flags(moor_home)
     memory_on = bool(_memory_enabled or _user_profile_enabled)
     # The built-in file store neither creates nor consumes memories/ when both targets are disabled.
     for subdir_name in ["cron", "sessions", "logs", "skills"] + (["memories"] if memory_on else []):
         ensure_dir(f, should_fix, moor_home / subdir_name, f"{_DHH}/{subdir_name}/ exists",
                    f"Created {_DHH}/{subdir_name}/", f"{_DHH}/{subdir_name}/ not found")
-    _check_scratch_dir(hermes_home, _DHH)
+    _check_scratch_dir(moor_home, _DHH)
     # SOUL.md persona file
     soul_path = moor_home / "SOUL.md"
     if soul_path.exists():
@@ -245,14 +245,14 @@ _UNPRUNED_CACHE_WARN_BYTES = 1 << 30
 _PRUNED_CACHE_DIRS = frozenset({"scratch", "terminal"})
 
 
-def unpruned_cache_hogs(hermes_home: Path, min_bytes: int = _UNPRUNED_CACHE_WARN_BYTES) -> list[tuple[str, int]]:
+def unpruned_cache_hogs(moor_home: Path, min_bytes: int = _UNPRUNED_CACHE_WARN_BYTES) -> list[tuple[str, int]]:
     """``(name, bytes)`` for ``cache/`` entries outside the pruned dirs that exceed *min_bytes*.
 
     Finished campaign trees parked at the cache root sat for weeks (95 GB on one host)
     because only ``scratch/`` and ``terminal/`` are reaped; doctor is where that shows."""
-    from hermes_constants import scratch_dir_usage_bytes
+    from moor_constants import scratch_dir_usage_bytes
 
-    cache = hermes_home / "cache"
+    cache = moor_home / "cache"
     hogs: list[tuple[str, int]] = []
     try:
         entries = [e for e in cache.iterdir() if e.is_dir() and not e.is_symlink() and e.name not in _PRUNED_CACHE_DIRS]
@@ -265,14 +265,14 @@ def unpruned_cache_hogs(hermes_home: Path, min_bytes: int = _UNPRUNED_CACHE_WARN
     return sorted(hogs, key=lambda item: -item[1])
 
 
-def _check_scratch_dir(hermes_home: Path, _DHH: str) -> None:
+def _check_scratch_dir(moor_home: Path, _DHH: str) -> None:
     """Report the scratch dir (TMPDIR target) and its size; a user-set TMPDIR elsewhere is shown, not judged."""
-    from hermes_constants import (
+    from moor_constants import (
         SCRATCH_DIR_MARKER_ENV, SCRATCH_MAX_IDLE_HOURS, get_scratch_dir, scratch_dir_usage_bytes)
-    scratch = get_scratch_dir(hermes_home, prune=False)
+    scratch = get_scratch_dir(moor_home, prune=False)
     size = _human_bytes(scratch_dir_usage_bytes(scratch))
     check_ok(f"{_DHH}/cache/scratch/ is the scratch dir (TMPDIR; {size}, entries pruned after {SCRATCH_MAX_IDLE_HOURS}h idle)")
-    for name, nbytes in unpruned_cache_hogs(hermes_home):
+    for name, nbytes in unpruned_cache_hogs(moor_home):
         check_warn(
             f"{_DHH}/cache/{name}/ is {_human_bytes(nbytes)} and outside every pruner "
             f"(only cache/scratch/ and cache/terminal/ are reaped) — move task files under "
@@ -280,7 +280,7 @@ def _check_scratch_dir(hermes_home: Path, _DHH: str) -> None:
         )
     tmpdir = os.environ.get("TMPDIR", "")
     if tmpdir and tmpdir != os.environ.get(SCRATCH_DIR_MARKER_ENV, ""):
-        check_info(f"TMPDIR={tmpdir} is set by you or the OS, so Hermes leaves it alone")
+        check_info(f"TMPDIR={tmpdir} is set by you or the OS, so Moor leaves it alone")
 
 
 def _session_count(state_db_path: Path):
@@ -413,7 +413,7 @@ def _state_db_stats(issues: list, state_db_path: Path) -> None:
     """Health/stats snapshot: strictly read-only (mode=ro) so it is safe against a live DB held by
     the gateway; any failure degrades to one info line rather than failing doctor."""
     with warn_on_error("state.db stats unavailable ({e})", "", report=lambda t, _d: check_info(t)):
-        from hermes_state_dbfile import collect_state_db_stats, count_db_holders
+        from moor_state_dbfile import collect_state_db_stats, count_db_holders
         rows = _render_state_db_stats(collect_state_db_stats(state_db_path), holders=count_db_holders(state_db_path),
                                       host_note=host_gateway_note())
         for _kind, _text, _detail in rows:
@@ -437,10 +437,10 @@ def _state_db_wal(f: Finding, should_fix: bool, state_db_path: Path) -> None:
             # joins the live WAL — under a running gateway that second-writer handling corrupts state.db.
             # Holder scan first (any other process holding the DB, or an unknown, fails closed), then run the
             # checkpoint on the exclusive repair guard so an opener arriving in between is refused, not joined.
-            from hermes_state_repair import _exclusive_repair_db_guard, _live_writer_holds_db
+            from moor_state_repair import _exclusive_repair_db_guard, _live_writer_holds_db
             title = f"WAL file is large ({size // (1024*1024)} MB)"
             _SKIP = ("Large WAL file — cannot prove state.db is quiet (stop the profile's gateway first, then "
-                     "run 'hermes doctor --fix' to checkpoint)")
+                     "run 'moor doctor --fix' to checkpoint)")
             # Honest disjunction (gate C1): a True here means "held OR unprovable" — never assert a live
             # writer as fact.
             if _live_writer_holds_db(state_db_path):
@@ -452,7 +452,7 @@ def _state_db_wal(f: Finding, should_fix: bool, state_db_path: Path) -> None:
             check_warn(title, "(may indicate missed checkpoints)")
             if not should_fix:
                 return f.issues.append(
-                    "Large WAL file — stop the profile's gateway, then run 'hermes doctor --fix' to checkpoint")
+                    "Large WAL file — stop the profile's gateway, then run 'moor doctor --fix' to checkpoint")
             with _exclusive_repair_db_guard(state_db_path) as (guard, guard_error):
                 if guard is None:
                     check_warn("WAL checkpoint skipped: could not take exclusive ownership of state.db",
@@ -469,9 +469,9 @@ def _retired_wal_holders(f: Finding, state_db_path: Path, _DHH: str) -> bool:
     """Name the processes holding a retired -wal/-shm generation (#110054). Every SessionDB open is
     refused while they live, and the current inode has no holders, so the plain holder count says
     "0 holding the DB open" beside a green state.db line — the opposite of the truth."""
-    from hermes_constants import profile_cli_selector
-    from hermes_state_dbfile import iter_deleted_sqlite_sidecar_holders
-    from hermes_state_holders import describe_holder_pid
+    from moor_constants import profile_cli_selector
+    from moor_state_dbfile import iter_deleted_sqlite_sidecar_holders
+    from moor_state_holders import describe_holder_pid
     pids = list(dict.fromkeys(pid for pid, _ in iter_deleted_sqlite_sidecar_holders(state_db_path)))
     if not pids:
         return False
@@ -479,17 +479,17 @@ def _retired_wal_holders(f: Finding, state_db_path: Path, _DHH: str) -> bool:
     check_warn(f"{_DHH}/state.db: {len(pids)} process(es) still hold a retired WAL generation ({rendered})",
                "(every new session refuses to open until they exit; health/stats probes skipped)")
     f.issues.append(f"state.db retired WAL generation held by {rendered}{host_gateway_note()} — stop the host "
-                    f"gateway, dashboard and cron writers among them ('hermes {profile_cli_selector()}gateway "
+                    f"gateway, dashboard and cron writers among them ('moor {profile_cli_selector()}gateway "
                     "stop' stops the ONE host process serving every profile, quit the Desktop app), do not "
-                    "delete the WAL yourself, then rerun 'hermes doctor'")
+                    "delete the WAL yourself, then rerun 'moor doctor'")
     return True
 
 
 @doctor_check()
 def _check_state_db(should_fix: bool, f: Finding) -> None:
     """state.db session count, FTS write health, schema repair, stats snapshot, WAL size."""
-    from hermes_cli.doctor import HERMES_HOME, _DHH
-    state_db_path = HERMES_HOME / "state.db"
+    from moor_cli.doctor import MOOR_HOME, _DHH
+    state_db_path = MOOR_HOME / "state.db"
     # A read-only connect on the new generation is itself another opener, so nothing below may run.
     if _retired_wal_holders(f, state_db_path, _DHH):
         return
@@ -512,8 +512,8 @@ def _check_checkpoint_store(should_fix: bool, f: Finding) -> None:
 
 def _plugin_provenance_rows(plugins_dir) -> list:
     """Report local provenance using the update checker's admission rules."""
-    from hermes_cli.plugins_provenance import ProvenanceClass, plugins_provenance
-    from hermes_cli.plugins_updates import check_local_provenance
+    from moor_cli.plugins_provenance import ProvenanceClass, plugins_provenance
+    from moor_cli.plugins_updates import check_local_provenance
 
     if plugins_dir is None or not Path(plugins_dir).is_dir():
         return [("info", "No plugins directory yet (nothing to check provenance for)", "")]
@@ -539,10 +539,10 @@ def _plugin_provenance_rows(plugins_dir) -> list:
 @doctor_check("")
 def _check_update_provenance(should_fix: bool, f: Finding) -> None:
     """Inspect local plugin update provenance without network or writes."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     printers = {"warn": check_warn, "ok": check_ok, "info": lambda text, detail: check_info(f"{text} {detail}".rstrip())}
-    for kind, text, detail in _plugin_provenance_rows(get_hermes_home() / "plugins"):
+    for kind, text, detail in _plugin_provenance_rows(get_moor_home() / "plugins"):
         printers[kind](text, detail)
 
 
@@ -555,7 +555,7 @@ def _gh_authenticated() -> bool:
     launch failure (a Store/MSIX shim, a deleted binary) reads as "not authenticated" rather
     than crashing the Skills Hub check.
     """
-    from hermes_cli.doctor_tools import _safe_which
+    from moor_cli.doctor_tools import _safe_which
 
     if not _safe_which("gh"):
         return False
@@ -626,10 +626,10 @@ def _memory_provider_mem0(issues: list) -> None:
 
 # provider -> (checker, ImportError row, ImportError issue, label for "check failed")
 _MEMORY_PROVIDER_CHECKS = {
-    "honcho": (_memory_provider_honcho, ("honcho-ai not installed", "run hermes memory setup"),
-               "Honcho dependencies missing — run hermes memory setup, then restart Hermes", "Honcho"),
-    "mem0": (_memory_provider_mem0, ("Mem0 plugin not loadable", "run hermes memory setup"),
-             "Mem0 dependencies missing — run hermes memory setup, then restart Hermes", "Mem0"),
+    "honcho": (_memory_provider_honcho, ("honcho-ai not installed", "run moor memory setup"),
+               "Honcho dependencies missing — run moor memory setup, then restart Moor", "Honcho"),
+    "mem0": (_memory_provider_mem0, ("Mem0 plugin not loadable", "run moor memory setup"),
+             "Mem0 dependencies missing — run moor memory setup, then restart Moor", "Mem0"),
 }
 
 
@@ -647,9 +647,9 @@ def _memory_provider_generic(name: str) -> None:
 
 @doctor_check()
 def _check_memory_provider(should_fix: bool, f: Finding) -> None:
-    from hermes_cli.doctor import HERMES_HOME
+    from moor_cli.doctor import MOOR_HOME
     from agent.memory_provider import is_core_memory_provider
-    name = _doctor_memory_config(HERMES_HOME).get("provider", "")
+    name = _doctor_memory_config(MOOR_HOME).get("provider", "")
     if is_core_memory_provider(name):
         check_ok("Built-in memory active", "(no external provider configured — this is fine)")
         return
@@ -687,12 +687,12 @@ def _check_profiles(should_fix: bool, f: Finding) -> None:
             if not wrapper.is_file():
                 continue
             with warn_on_error(""):
-                _m = _re.search(r"hermes -p (\S+)", wrapper.read_text(encoding="utf-8-sig"))
+                _m = _re.search(r"moor -p (\S+)", wrapper.read_text(encoding="utf-8-sig"))
                 if _m and not profile_exists(_m.group(1)):
                     check_warn(f"Orphan alias: {wrapper.name} → profile '{_m.group(1)}' no longer exists")
     # Same helper as the multiplex migration preflight, so doctor names the duplicates that make
-    # `hermes gateway migrate --multiplex` refuse (and made pre-multiplex standalone gateways race).
-    from hermes_cli.gateway_migrate import duplicate_credential_findings
+    # `moor gateway migrate --multiplex` refuse (and made pre-multiplex standalone gateways race).
+    from moor_cli.gateway_migrate import duplicate_credential_findings
     for line in duplicate_credential_findings():
         check_warn("Duplicate platform credential across profiles", f"({line})")
         f.manual_issues.append(line)

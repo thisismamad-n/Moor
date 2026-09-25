@@ -426,16 +426,16 @@ class TestStubSchemaDrift(unittest.TestCase):
 
 
     def test_generated_module_accepts_all_params(self):
-        """Executing the generated hermes_tools module: every stub accepts all of
+        """Executing the generated moor_tools module: every stub accepts all of
         its parameters as keyword arguments and forwards each one, by name and
         value, to the RPC call (a dropped or renamed kwarg is a TypeError or a
         silently ignored argument in the sandbox)."""
         import inspect
 
         for transport in ("uds", "file"):
-            src = generate_hermes_tools_module(list(SANDBOX_ALLOWED_TOOLS), transport=transport)
-            namespace = {"__name__": "hermes_tools"}
-            exec(compile(src, "hermes_tools.py", "exec"), namespace)
+            src = generate_moor_tools_module(list(SANDBOX_ALLOWED_TOOLS), transport=transport)
+            namespace = {"__name__": "moor_tools"}
+            exec(compile(src, "moor_tools.py", "exec"), namespace)
             calls = []
             namespace["_call"] = lambda name, args: calls.append((name, args)) or "ok"
 

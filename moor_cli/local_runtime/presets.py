@@ -138,8 +138,8 @@ def _launch_footprint(gguf: Path, budget: HardwareBudget) -> int | None:
     """Estimated resident bytes for one staged model at the window this policy grants it, or None
     when it cannot be priced: an unreadable header, or a model the physics check refuses outright
     (it never loads, so it must not shrink the residency cap)."""
-    from hermes_cli.local_runtime.catalog import entry_for_model
-    from hermes_cli.local_runtime.growth import load_window_overrides
+    from moor_cli.local_runtime.catalog import entry_for_model
+    from moor_cli.local_runtime.growth import load_window_overrides
 
     model_id = model_id_from_stem(gguf.stem)
     try:
@@ -175,7 +175,7 @@ def admitted_residency_count(models_dir: Path, budget: HardwareBudget, configure
     number is honoured), and an unpriceable input (no usable device memory, no readable model)
     keeps today's behaviour.
     """
-    from hermes_cli.local_runtime.bootstrap import staged_in
+    from moor_cli.local_runtime.bootstrap import staged_in
 
     if configured <= 1 or budget.usable_vram_bytes <= 0:
         return configured

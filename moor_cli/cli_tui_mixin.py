@@ -37,7 +37,7 @@ from prompt_toolkit.styles import Style as PTStyle
 from prompt_toolkit.widgets import TextArea
 from typing import Optional
 
-from hermes_cli.cli_footer_split import FooterSplit
+from moor_cli.cli_footer_split import FooterSplit
 
 # Rows below an overlay panel taken by spinner/tool-progress, status bar, input, separators and
 # prompt symbol (measured ~6 during live PTY approval prompts) — shared by every panel budget.

@@ -10,8 +10,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import doctor_live
-from hermes_cli.doctor_live import (
+from moor_cli import doctor_live
+from moor_cli.doctor_live import (
     maybe_run_live_checks,
     run_live_checks,
 )

@@ -37,7 +37,7 @@ moor teams-pipeline maintain-subscriptions
 
 启用会议流水线前，请确保已具备：
 
-- 可正常运行的 Hermes 安装
+- 可正常运行的 Moor 安装
 - 若需要 Teams 出站投递，需完成现有的 [Microsoft Teams bot 配置](./teams.md)
 - 具备订阅所需会议资源权限的 Microsoft Graph 应用凭据
 - Microsoft Graph 可调用的公网 HTTPS URL，用于 webhook 投递
@@ -196,7 +196,7 @@ moor teams-pipeline subscribe \
 
 :::warning Graph 订阅在 72 小时后过期
 
-Microsoft Graph 将 webhook 订阅上限设为 72 小时，且不会自动续期。你**必须**在上线前调度 `hermes teams-pipeline maintain-subscriptions`，否则通知将在手动创建订阅三天后静默停止。请参阅运维手册中的[自动化订阅续期](../../guides/operate-teams-meeting-pipeline.md#automating-subscription-renewal-required-for-production)——提供三种方案（Hermes cron、systemd timer、普通 crontab）。
+Microsoft Graph 将 webhook 订阅上限设为 72 小时，且不会自动续期。你**必须**在上线前调度 `moor teams-pipeline maintain-subscriptions`，否则通知将在手动创建订阅三天后静默停止。请参阅运维手册中的[自动化订阅续期](../../guides/operate-teams-meeting-pipeline.md#automating-subscription-renewal-required-for-production)——提供三种方案（Moor cron、systemd timer、普通 crontab）。
 
 :::
 

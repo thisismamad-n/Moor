@@ -9,7 +9,7 @@ import shutil
 from pathlib import Path
 from tools import tool_backend_helpers
 from tools.environments.docker import docker_runtime_name, find_docker
-from hermes_cli import nous_subscription
+from moor_cli import moor_subscription
 
 logger = logging.getLogger("moor_cli.setup")
 
@@ -111,9 +111,9 @@ def _ensure_sdk(extra: str) -> None:
             pm.sync_venv([extra], explicit=True)
         except (pm.InstallError, OSError, ValueError) as exc:
             _setup.print_warning(f"Install failed: {exc}")
-            _setup.print_info("Retry with: hermes setup terminal")
+            _setup.print_info("Retry with: moor setup terminal")
         else:
-            _setup.print_success(f"{extra} SDK installed. Restart Hermes to use it.")
+            _setup.print_success(f"{extra} SDK installed. Restart Moor to use it.")
 
 
 def _report_binary(found: str | None, missing: str, install_hint: str, found_prefix: str = "Found: ") -> None:
@@ -138,7 +138,7 @@ def _setup_backend_docker(config: dict) -> None:
                    "Install Docker: https://docs.docker.com/get-docker/ "
                    "or Podman: https://podman.io/docs/installation",
                    f"{docker_runtime_name(docker_exe)} found: " if docker_exe else "")
-    # Image and resource limits use defaults; tune via `hermes setup terminal`.
+    # Image and resource limits use defaults; tune via `moor setup terminal`.
     config["terminal"].setdefault("docker_image", _SANDBOX_IMAGE)
     _setup._info(None, "Docker sandboxes can be protected with the egress credential firewall.",
                  "It routes sandbox traffic through iron-proxy so containers receive "
@@ -214,7 +214,7 @@ def _setup_backend_daytona(config: dict) -> None:
 def _setup_backend_vercel(config: dict) -> None:
     _setup.print_success("Terminal backend: Vercel Sandbox")
     _setup._info("Cloud microVM sandboxes with snapshot-backed filesystem persistence.",
-                 "Requires the optional Vercel SDK (installed through Hermes PM).")
+                 "Requires the optional Vercel SDK (installed through Moor PM).")
     _ensure_sdk("vercel")
     _prompt_vercel_sandbox_settings(config)
 

@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.agent_import import (
     ENTRY_DELIMITER,
@@ -719,8 +719,8 @@ class TestSyncManifest:
             dry_run=dry_run, overwrite=False, yes=True, sync=sync))
 
     def test_import_registers_source_and_unchanged_sync_is_noop(
-            self, claude_tree, hermes_home):
-        from hermes_cli.agent_import_sync import load_sync_manifest
+            self, claude_tree, moor_home):
+        from moor_cli.agent_import_sync import load_sync_manifest
 
         self._run_command("claude-code", claude_tree)
         entry = load_sync_manifest(moor_home)["agents"]["claude-code"]
@@ -729,9 +729,9 @@ class TestSyncManifest:
         # A token refresh in the credential file is invisible to the digest.
         (claude_tree / ".credentials.json").write_text(
             json.dumps({"api_key": "rotated-token"}), encoding="utf-8")
-        before = snapshot_tree(hermes_home)
+        before = snapshot_tree(moor_home)
         self._run_command(None, None, sync=True)
-        assert snapshot_tree(hermes_home) == before
+        assert snapshot_tree(moor_home) == before
 
     def test_sync_reimports_changed_source_but_never_clobbers_user_skill(
             self, claude_tree, moor_home):
@@ -764,14 +764,14 @@ class TestSyncManifest:
         self._run_command(None, None, sync=True)
         assert (imports / "deploy-helper" / "SKILL.md").read_text(encoding="utf-8") == "my local tweaks"
 
-    def test_sync_dry_run_previews_without_writing(self, claude_tree, hermes_home):
-        from hermes_cli.agent_import_sync import load_sync_manifest
+    def test_sync_dry_run_previews_without_writing(self, claude_tree, moor_home):
+        from moor_cli.agent_import_sync import load_sync_manifest
 
         self._run_command("claude-code", claude_tree)
         old_digest = load_sync_manifest(moor_home)["agents"]["claude-code"]["digest"]
         (claude_tree / "CLAUDE.md").write_text(
             CLAUDE_MD + "\n- Dry sync entry\n", encoding="utf-8")
-        before = snapshot_tree(hermes_home)
+        before = snapshot_tree(moor_home)
         self._run_command(None, None, sync=True, dry_run=True)
-        assert snapshot_tree(hermes_home) == before
-        assert load_sync_manifest(hermes_home)["agents"]["claude-code"]["digest"] == old_digest
+        assert snapshot_tree(moor_home) == before
+        assert load_sync_manifest(moor_home)["agents"]["claude-code"]["digest"] == old_digest

@@ -58,7 +58,7 @@ def _suppress_concurrent_moor_gate(request, monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _source_channels_resolve_locally(request, monkeypatch):
-    """Every unflagged ``hermes update`` resolves its channel through R2; tests must
+    """Every unflagged ``moor update`` resolves its channel through R2; tests must
     not reach the network for that. Default every channel to a ``source-branch``
     record delivering ``origin/<name>`` through the documented seam. Channel tests
     that model records themselves re-patch ``_resolve_channel`` after this runs;
@@ -66,8 +66,8 @@ def _source_channels_resolve_locally(request, monkeypatch):
     """
     if request.node.get_closest_marker("real_release_channels"):
         return
-    from hermes_cli import source_releases
-    from hermes_cli.release_channels import ChannelResolution
+    from moor_cli import source_releases
+    from moor_cli.release_channels import ChannelResolution
 
     def resolve(name, repository):
         record = {"schema": 1, "name": name, "repository": repository, "policy": "source-branch",
@@ -80,11 +80,11 @@ def _source_channels_resolve_locally(request, monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _discharge_host_update_obligation():
-    """Start and end every ``hermes_cli`` test with NO host update-restart obligation.
+    """Start and end every ``moor_cli`` test with NO host update-restart obligation.
 
     The record is host-scoped on purpose (one multiplexer per host), so it lives in the
-    per-OS-USER host state dir — not in the per-test ``HERMES_HOME``. The root conftest pins
-    that dir per test only when the caller supplied no ``HERMES_GATEWAY_LOCK_DIR`` (#118097
+    per-OS-USER host state dir — not in the per-test ``MOOR_HOME``. The root conftest pins
+    that dir per test only when the caller supplied no ``MOOR_GATEWAY_LOCK_DIR`` (#118097
     keeps the documented override working), so with one set every test in a file shares it and
     a test that arms the obligation makes the next one read a restart it never owed. Clearing
     the record — rather than re-pinning the dir — leaves that override rule untouched.
@@ -92,7 +92,7 @@ def _discharge_host_update_obligation():
 
     def _clear() -> None:
         try:
-            from hermes_cli.update_host_obligation import clear_host_obligation
+            from moor_cli.update_host_obligation import clear_host_obligation
 
             clear_host_obligation()
         except Exception:
@@ -107,10 +107,10 @@ def _discharge_host_update_obligation():
 @pytest.fixture
 def isolated_source_completion(monkeypatch):
     """Unit-test the completion tail in-process; real transport is tested separately."""
-    from hermes_cli import update_cmd, update_completion
+    from moor_cli import update_cmd, update_completion
 
-    monkeypatch.setattr("hermes_cli.source_build.build_update_products", lambda *a, **kw: None)
-    monkeypatch.setattr("hermes_cli.venv_sync.publish_launchers", lambda *a: None)
+    monkeypatch.setattr("moor_cli.source_build.build_update_products", lambda *a, **kw: None)
+    monkeypatch.setattr("moor_cli.venv_sync.publish_launchers", lambda *a: None)
 
     def complete(request):
         update_completion._complete_selected(request)
@@ -146,11 +146,11 @@ def _reset_prompt_toolkit_output_cache():
 def probe_root(tmp_path):
     """A fixture checkout the installation launcher can boot from.
 
-    ``runtime_command`` prepends the checkout root and runs ``import hermes_bootstrap``
+    ``runtime_command`` prepends the checkout root and runs ``import moor_bootstrap``
     before the probe body, exactly as production does. Tests that point the import
     guard at a scratch tree need that module present, or the probe dies before its
     health marker — a developer venv whose editable ``.pth`` shadows the root hides
     the dependency, CI's clean environment does not.
     """
-    (tmp_path / "hermes_bootstrap.py").write_text("", encoding="utf-8")
+    (tmp_path / "moor_bootstrap.py").write_text("", encoding="utf-8")
     return tmp_path

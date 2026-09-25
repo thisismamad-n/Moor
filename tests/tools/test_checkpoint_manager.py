@@ -49,7 +49,7 @@ def fake_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(home / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(home / ".moor"))
     monkeypatch.setenv("USERPROFILE", str(home))
     monkeypatch.delenv("HOMEDRIVE", raising=False)
     monkeypatch.delenv("HOMEPATH", raising=False)
@@ -1049,7 +1049,7 @@ class TestPruneSweepsTmpPackDebris:
     def test_sweeps_debris_even_when_no_ref_moved(self, checkpoint_base, tmp_path, monkeypatch):
         import tools.checkpoint_manager as cm
         monkeypatch.setattr(cm, "CHECKPOINT_BASE", checkpoint_base)
-        monkeypatch.setattr("hermes_cli.gitlock._git_proc_running", lambda: False)
+        monkeypatch.setattr("moor_cli.gitlock._git_proc_running", lambda: False)
         work = tmp_path / "proj"
         work.mkdir()
         (work / "f").write_text("f")

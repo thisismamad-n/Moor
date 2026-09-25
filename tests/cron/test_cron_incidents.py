@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 import cron.incidents as incidents
 import cron.jobs as cron_jobs
 import cron.scheduler as sched
-from hermes_time import now as _hermes_now
+from moor_time import now as _moor_now
 
 
 def _point_db(monkeypatch, tmp_path):
@@ -233,7 +233,7 @@ def test_repeat_failure_alerts_once_then_reminds_after_cooldown(monkeypatch, tmp
     # A real (non-local) lane: the ping leaves the process, so the incident is marked alerted.
     job = _job(deliver="telegram:123")
     (tmp_path / "config.yaml").write_text("cron:\n  preflight: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     with cron_jobs.use_cron_store(tmp_path):
         cron_jobs.save_jobs([job])
         _tick_failing(job, tmp_path, deliveries, error="repeat boom")
@@ -245,7 +245,7 @@ def test_repeat_failure_alerts_once_then_reminds_after_cooldown(monkeypatch, tmp
         assert stored["last_status"] == "error", "the withheld run is still recorded"
 
         # Cooldown elapsed: exactly one reminder, then silent again.
-        stale = (_hermes_now() - timedelta(hours=7)).isoformat()
+        stale = (_moor_now() - timedelta(hours=7)).isoformat()
         with inc._transaction() as conn:
             conn.execute("UPDATE cron_incidents SET alerted_at=?", (stale,))
         _tick_failing(job, tmp_path, deliveries, error="repeat boom")

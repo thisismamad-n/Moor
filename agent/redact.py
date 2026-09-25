@@ -116,12 +116,12 @@ def _redact_enabled() -> bool:
     try:
         from agent.secret_scope import current_secret_scope
         scope = current_secret_scope()
-        raw = scope.get("HERMES_REDACT_SECRETS") if scope else None
+        raw = scope.get("MOOR_REDACT_SECRETS") if scope else None
         if raw is None and scope is None:
             # No live scope (the log listener thread formats routed records): read the profile's own .env, as
             # its scope would, or a first call there would cache a config-only answer for the whole process.
-            from hermes_cli.config import load_env
-            raw = load_env().get("HERMES_REDACT_SECRETS")
+            from moor_cli.config import load_env
+            raw = load_env().get("MOOR_REDACT_SECRETS")
         if raw is None:
             from moor_cli.config import load_config_readonly
             cfg_val = (load_config_readonly().get("security") or {}).get("redact_secrets")

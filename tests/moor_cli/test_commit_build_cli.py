@@ -16,7 +16,7 @@ MESSAGE = "This build doesn't get updates. Ask the developer who gave it to you 
 def payload(tmp_path_factory):
     root = tmp_path_factory.mktemp("commit-payload")
     source = Path(__file__).resolve().parents[2]
-    shutil.copytree(source / "hermes_cli", root / "hermes_cli", ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(source / "moor_cli", root / "moor_cli", ignore=shutil.ignore_patterns("__pycache__"))
     (root / "install-stamp.json").write_text(json.dumps({
         "source": "commit-build", "distribution": "desktop-app", "payload": "bundled",
         "updateMechanism": "external", "commit": "a" * 40,
@@ -36,12 +36,12 @@ def test_sealed_cli_never_checks_or_spawns_updater(payload, tmp_path, args):
     root, source = payload
     home = tmp_path / "home"
     home.mkdir()
-    env = {**os.environ, "HERMES_HOME": str(home), "HERMES_INSTALL_ROOT": str(root)}
+    env = {**os.environ, "MOOR_HOME": str(home), "MOOR_INSTALL_ROOT": str(root)}
     # Real imports and parser, no admission mocks. Audit attempts even if a caller swallows the error.
     script = f"""
 import json, sys
 sys.path[:0] = [{str(root)!r}, {str(source)!r}]
-sys.argv = ['hermes', *{args!r}]
+sys.argv = ['moor', *{args!r}]
 attempts = []
 def audit(event, args):
     if event in ('socket.connect', 'subprocess.Popen', 'os.system'):
@@ -49,7 +49,7 @@ def audit(event, args):
         raise RuntimeError('forbidden update side effect: ' + event)
 sys.addaudithook(audit)
 try:
-    from hermes_cli.main import main
+    from moor_cli.main import main
     main()
 finally:
     print('AUDIT=' + json.dumps(attempts))

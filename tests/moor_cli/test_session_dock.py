@@ -7,24 +7,24 @@ from prompt_toolkit.utils import get_cwidth
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
+def moor_home(tmp_path, monkeypatch):
     from pathlib import Path
 
-    from hermes_cli import goals
+    from moor_cli import goals
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     goals._DB_CACHE.clear()
     yield home
     goals._DB_CACHE.clear()
 
 
-def test_dock_paints_goal_on_top_and_queue_last_and_follows_their_lifecycle(hermes_home):
+def test_dock_paints_goal_on_top_and_queue_last_and_follows_their_lifecycle(moor_home):
     from cli import _VoiceInputMessage
-    from hermes_cli.cli_subagent_monitor import SubagentMonitor
-    from hermes_cli.goals import GoalManager
+    from moor_cli.cli_subagent_monitor import SubagentMonitor
+    from moor_cli.goals import GoalManager
     from tools.process_registry_notifications import TimelineNotification
 
     mgr = GoalManager(session_id="sid-a", default_max_turns=20)
@@ -59,11 +59,11 @@ def test_dock_paints_goal_on_top_and_queue_last_and_follows_their_lifecycle(herm
     assert dock.refresh() and not dock.has_rows and dock.dock_text(columns=80, rows=40) == ""
 
 
-def test_dock_ignores_a_goal_manager_left_over_from_another_session(hermes_home):
+def test_dock_ignores_a_goal_manager_left_over_from_another_session(moor_home):
     """After /new the cached manager still names the old session until it is rebuilt; the dock
     must not paint the previous session's goal (and never opens state.db itself)."""
-    from hermes_cli.cli_session_dock import goal_line
-    from hermes_cli.goals import GoalManager
+    from moor_cli.cli_session_dock import goal_line
+    from moor_cli.goals import GoalManager
 
     mgr = GoalManager(session_id="old-sid")
     mgr.set("previous session objective")

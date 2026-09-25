@@ -42,8 +42,8 @@ automatically.
 ## Prerequisites
 
 - A Photon account — sign up at [app.photon.codes][app]
-- Node.js: Hermes uses its managed Node when available.
-  `hermes pm install node` provisions the pin; the adapter can fall back to PATH.
+- Node.js: Moor uses its managed Node when available.
+  `moor pm install node` provisions the pin; the adapter can fall back to PATH.
 - A phone number that can receive iMessage (used to bind your account)
 
 That's it — there is no public URL or tunnel to set up.

@@ -61,17 +61,17 @@ class TestSafeStrftime:
             datetime(2026, 7, 14, 13, 5, tzinfo=ZoneInfo("Europe/Paris")),
             datetime(2026, 7, 14, 13, 5, tzinfo=timezone(timedelta(hours=-3), "Hora estándar de Argentina")),
         ):
-            assert hermes_time.safe_strftime(value, fmt) == value.strftime(fmt)
+            assert moor_time.safe_strftime(value, fmt) == value.strftime(fmt)
 
     def test_surrogate_zone_name_renders_json_safe(self):
         import json
         value = datetime(2026, 7, 14, 13, 5, tzinfo=timezone(timedelta(hours=2), _ESCAPED_ZONE))
-        rendered = hermes_time.safe_strftime(value, "%a %Y-%m-%d %H:%M %Z %z %%Z")
+        rendered = moor_time.safe_strftime(value, "%a %Y-%m-%d %H:%M %Z %z %%Z")
         json.dumps(rendered, ensure_ascii=False).encode("utf-8")
         assert rendered.startswith("Tue 2026-07-14 13:05 Paris, Madrid (heure d'")
         assert rendered.endswith(") +0200 %Z")
         # The escaped bytes decode back through the Windows ANSI code page.
-        assert hermes_time._repair_surrogates(_ESCAPED_ZONE, "cp1252") == "Paris, Madrid (heure d'été)"
+        assert moor_time._repair_surrogates(_ESCAPED_ZONE, "cp1252") == "Paris, Madrid (heure d'été)"
 
 
 class TestGetTimezone:

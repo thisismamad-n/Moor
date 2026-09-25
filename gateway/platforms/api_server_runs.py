@@ -602,7 +602,7 @@ async def _handle_runs(self, request: "web.Request", *, _api_server) -> "web.Res
         selected_session_id = await _resolve_live_session_id(self, str(selected_session_id))
     session_id = selected_session_id or run_id
     # History loads for the session the request actually selected — including one resolved from
-    # a declared X-Hermes-Session-Key, whose persisted delivery rows must reach the next
+    # a declared X-moor-session-Key, whose persisted delivery rows must reach the next
     # same-key run's context (#98619).  previous_response_id continuations keep their
     # ResponseStore snapshot as history (they cannot consume a SessionDB delivery row and are
     # accordingly denied wake capability in _run_agent_sync); the fresh run_id fallback has

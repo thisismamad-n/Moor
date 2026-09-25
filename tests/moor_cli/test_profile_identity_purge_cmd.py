@@ -1,6 +1,6 @@
-"""The `hermes profile purge-identity` retry path: dispatched, and honest about failure.
+"""The `moor profile purge-identity` retry path: dispatched, and honest about failure.
 
-`hermes profile delete` reports a pending identity settlement when it cannot purge and names this
+`moor profile delete` reports a pending identity settlement when it cannot purge and names this
 command as the retry — so the command must actually reach a handler, and must fail loudly when the
 settlement still cannot be made. Regression for the delete side of #111926.
 """
@@ -10,21 +10,21 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import profile_cmd
+from moor_cli import profile_cmd
 
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".moor"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("MOOR_HOME", str(default_home))
     return tmp_path
 
 
 def test_every_profile_subcommand_has_a_dispatch_entry():
     """A subcommand that parses but has no entry in the dispatch table silently does nothing."""
-    from hermes_cli.subcommands.profile import build_profile_parser
+    from moor_cli.subcommands.profile import build_profile_parser
     top = argparse.ArgumentParser()
     subparsers = top.add_subparsers(dest="command")
     build_profile_parser(subparsers, cmd_profile=lambda args: None)
@@ -38,13 +38,13 @@ def test_every_profile_subcommand_has_a_dispatch_entry():
 
 def test_purge_identity_exits_nonzero_when_settlement_stays_pending(
         profile_env, monkeypatch, capsys):
-    monkeypatch.setattr("hermes_cli.profile_identity.purge_profile_identity", lambda name: False)
+    monkeypatch.setattr("moor_cli.profile_identity.purge_profile_identity", lambda name: False)
 
     with pytest.raises(SystemExit) as exc:
         profile_cmd.cmd_profile(Namespace(profile_action="purge-identity", profile_name="gone"))
 
     assert exc.value.code not in (0, None)
-    assert "hermes profile purge-identity gone" in capsys.readouterr().err
+    assert "moor profile purge-identity gone" in capsys.readouterr().err
 
 
 def test_purge_identity_refuses_a_same_name_profile_created_after_the_delete(profile_env, capsys):
@@ -57,12 +57,12 @@ def test_purge_identity_refuses_a_same_name_profile_created_after_the_delete(pro
     """
     import json
 
-    from hermes_cli.profiles import create_profile
-    from hermes_state import SessionDB
+    from moor_cli.profiles import create_profile
+    from moor_state import SessionDB
 
     create_profile("gone", no_alias=True)
-    scope = str(profile_env / ".hermes" / "sessions")
-    db = SessionDB(profile_env / ".hermes" / "state.db")
+    scope = str(profile_env / ".moor" / "sessions")
+    db = SessionDB(profile_env / ".moor" / "state.db")
     db.save_gateway_routing_entry(
         "agent:gone:feishu:dm:chatA",
         json.dumps({"session_key": "agent:gone:feishu:dm:chatA"}), scope=scope)
@@ -72,7 +72,7 @@ def test_purge_identity_refuses_a_same_name_profile_created_after_the_delete(pro
         profile_cmd.cmd_profile(Namespace(profile_action="purge-identity", profile_name="gone"))
 
     assert exc.value.code not in (0, None)
-    check = SessionDB(profile_env / ".hermes" / "state.db")
+    check = SessionDB(profile_env / ".moor" / "state.db")
     try:
         # The recreated profile still owns its routing key.
         assert set(check.load_gateway_routing_entries(scope=scope)) == {

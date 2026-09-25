@@ -250,8 +250,8 @@ def _engine_device_pool() -> "tuple[int, bool | None] | None":
     fallback when the driver API is unreachable: asks the exact binary that will do the
     allocating. Carries no integrated verdict — callers must gate it."""
     with suppress(Exception):  # a probe miss must never block budgeting
-        from hermes_cli.config import get_config_value
-        from hermes_cli.local_runtime.binaries import installed_engine
+        from moor_cli.config import get_config_value
+        from moor_cli.local_runtime.binaries import installed_engine
 
         engine = installed_engine(get_config_value("local_runtime.backend", "auto"))
         if engine is None:

@@ -291,10 +291,10 @@ def _is_supervised_gateway_process() -> bool:
     Supervisor markers and ``_MOOR_GATEWAY`` are inherited by every descendant (and
     importing ``gateway.run`` sets the latter), so also require ownership of the live
     gateway PID file — scopes are for the gateway, not terminal children or CLIs.
-    Reads the launch marker (``HERMES_SUPERVISED_CHILD`` included), not the restart-route
+    Reads the launch marker (``MOOR_SUPERVISED_CHILD`` included), not the restart-route
     probe: a Windows Scheduled-Task gateway sets only that marker, and the self-kill guards
     gated here must protect it too (#113667)."""
-    if os.environ.get("_HERMES_GATEWAY") != "1":
+    if os.environ.get("_MOOR_GATEWAY") != "1":
         return False
     try:
         from gateway.restart import is_supervised_gateway_launch
@@ -1128,7 +1128,7 @@ class ProcessRegistry(ProcessCheckpointMixin):
         return ProcessSession(
             id=f"proc_{uuid.uuid4().hex[:12]}", command=command, task_id=task_id,
             owner_task_id=owner_task_id, session_key=session_key, cwd=cwd,
-            parent_session_id=get_session_env("HERMES_SESSION_ID", ""),
+            parent_session_id=get_session_env("MOOR_SESSION_ID", ""),
             started_at=time.time(), **extra)
 
     @staticmethod

@@ -332,7 +332,7 @@ describe('GatewayClient websocket attach mode', () => {
   })
 
   it('rejects pending RPCs when the attached socket closes', async () => {
-    process.env.HERMES_TUI_GATEWAY_URL = 'ws://gateway.test/api/ws?token=abc'
+    process.env.MOOR_TUI_GATEWAY_URL = 'ws://gateway.test/api/ws?token=abc'
     const gw = new GatewayClient()
 
     gw.start()

@@ -10,9 +10,9 @@ import os
 from dataclasses import dataclass
 from typing import Callable, List, Optional
 
-from hermes_cli.browser_runtime import chromium_executable
-from hermes_cli.doctor import _section, check_info
-from hermes_cli.doctor_report import check_fail, check_ok, check_warn
+from moor_cli.browser_runtime import chromium_executable
+from moor_cli.doctor import _section, check_info
+from moor_cli.doctor_report import check_fail, check_ok, check_warn
 
 DEFAULT_PROBE_TIMEOUT = 10.0
 

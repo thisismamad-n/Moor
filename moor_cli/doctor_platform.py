@@ -19,16 +19,16 @@ from moor_constants import is_termux as _is_termux
 
 
 def _python_repair_hint() -> str:
-    from hermes_cli.config import detect_install_method
-    from hermes_cli.doctor import PROJECT_ROOT
+    from moor_cli.config import detect_install_method
+    from moor_cli.doctor import PROJECT_ROOT
 
     method = detect_install_method(PROJECT_ROOT)
     if is_nix_install_method(method):
         return recommended_update_command_for_method(method)
     if method in ("docker", "apt"):
         command = recommended_update_command_for_method(method)
-        return f"Run `{command}`" + (", then recreate the Hermes container" if method == "docker" else "")
-    return "Run `hermes pm repair`, then restart Hermes"
+        return f"Run `{command}`" + (", then recreate the Moor container" if method == "docker" else "")
+    return "Run `moor pm repair`, then restart Moor"
 
 
 def _system_package_install_cmd(pkg: str) -> str:
@@ -103,7 +103,7 @@ def _report_database_holders(name: str, db_path: Path) -> None:
     """Name the processes holding ``db_path`` (or a WAL sidecar) so the operator knows what to stop before the
     offline journal-mode conversion; a partial or unavailable scan is reported as "cannot prove quiet", never as
     an all-clear (the scan is the same fail-closed authority repair/VACUUM/checkpoint admission uses)."""
-    from hermes_state_holders import describe_holder_pid, foreign_state_db_holders
+    from moor_state_holders import describe_holder_pid, foreign_state_db_holders
     unknown: list[str] = []
     by_pid: dict[int, set[str]] = {}
     for pid, target in foreign_state_db_holders(db_path):
@@ -120,7 +120,7 @@ def _report_database_holders(name: str, db_path: Path) -> None:
         check_info(f"{name}: no other process holds it right now — the offline conversion can run")
 
 
-def _report_database_journal_modes(hermes_home: Path | None = None, version_info: tuple[int, ...] | None = None) -> None:
+def _report_database_journal_modes(moor_home: Path | None = None, version_info: tuple[int, ...] | None = None) -> None:
     """List each database's journal mode; warn on WAL under a vulnerable SQLite, and on a configured
     ``database.journal_mode: delete`` that never took effect."""
     from moor_cli.doctor import MOOR_HOME
@@ -151,8 +151,8 @@ def _report_database_journal_modes(hermes_home: Path | None = None, version_info
             check_warn(f"{name} is in WAL mode ({size}) despite database.journal_mode=delete",
                        "(the setting never applied: an existing WAL database is never live-downgraded"
                        + ("; also exposed to the WAL-reset bug" if vulnerable else "")
-                       + ". Stop every Hermes process for this profile, then run "
-                       f"`hermes sessions set-journal-mode delete{'' if name == 'state.db' else f' --db {path}'}`)")
+                       + ". Stop every Moor process for this profile, then run "
+                       f"`moor sessions set-journal-mode delete{'' if name == 'state.db' else f' --db {path}'}`)")
             _report_database_holders(name, path)
         elif error is not None:
             if vulnerable:
@@ -166,8 +166,8 @@ def _report_database_journal_modes(hermes_home: Path | None = None, version_info
             if vulnerable:
                 exposed.append(name)
             check_warn(f"{name} is in WAL mode on a cross-VM filesystem (virtiofs/9p, {size})",
-                       "(WAL can silently corrupt across the VM boundary; stop every Hermes process and run "
-                       f"`hermes sessions set-journal-mode delete{'' if name == 'state.db' else f' --db {path}'}`, then "
+                       "(WAL can silently corrupt across the VM boundary; stop every Moor process and run "
+                       f"`moor sessions set-journal-mode delete{'' if name == 'state.db' else f' --db {path}'}`, then "
                        "set `database.journal_mode: delete` — or move the database onto a native/named volume)")
         elif mode == "wal" and vulnerable:
             exposed.append(name)
@@ -206,10 +206,10 @@ def _report_host_gateway_slot(mgr, issues: list[str]) -> None:
     topology = host_gateway_topology()
     if topology is None:
         if not slots:
-            return check_info("No gateway registered yet — run `hermes gateway install`")
+            return check_info("No gateway registered yet — run `moor gateway install`")
         up = [p for p in slots if mgr.is_running(f"gateway-{p}")]
         issues.append("No host gateway owns the gateway role — start the ONE host multiplexer: "
-                      "hermes --profile default gateway start")
+                      "moor --profile default gateway start")
         return check_warn(f"No host gateway owns the gateway role ({len(up)}/{len(slots)} supervision "
                           f"slots up: {', '.join(slots)})", "(nothing is serving these profiles)")
     check_ok(f"Host gateway: {topology.describe()}")
@@ -218,7 +218,7 @@ def _report_host_gateway_slot(mgr, issues: list[str]) -> None:
         check_warn(f"LEGACY per-profile gateway slots still supervised: {', '.join(legacy_up)}",
                    "(multiplex-only: the host gateway already serves every profile from one process)")
         issues.append("Fold the legacy per-profile gateways into the host gateway: "
-                      "hermes --profile default gateway migrate --multiplex")
+                      "moor --profile default gateway migrate --multiplex")
 
 
 def check_certificates(should_fix: bool = False, issues: "list | None" = None) -> None:
@@ -259,10 +259,10 @@ def _check_gateway_service_linger(issues: list[str]) -> None:
     the check for every profile that does not own a service of its own.
     """
     try:
-        from hermes_cli.gateway import (
+        from moor_cli.gateway import (
             _SERVICE_BASE, get_systemd_linger_status, get_systemd_unit_path, is_linux,
             user_systemd_unit_dir)
-        from hermes_cli.service_manager import detect_service_manager
+        from moor_cli.service_manager import detect_service_manager
     except Exception as e:
         return check_warn("Gateway service linger", f"(could not import gateway helpers: {e})")
     if not is_linux() or detect_service_manager() == "s6":
@@ -508,22 +508,22 @@ def _check_gateway_supervision(should_fix: bool, f: Finding) -> None:
 @doctor_check()
 def _check_command_installation(should_fix: bool, f: Finding) -> None:
     """Check the install-owned launch contract without replacing custom commands."""
-    from hermes_cli.doctor import PROJECT_ROOT
+    from moor_cli.doctor import PROJECT_ROOT
     if sys.platform == "win32":
         return
     _section("Command Installation")
-    from hermes_cli.config import detect_install_method
+    from moor_cli.config import detect_install_method
 
     method = detect_install_method(PROJECT_ROOT)
     if is_nix_install_method(method) or method in ("docker", "apt"):
-        command = shutil.which("hermes")
+        command = shutil.which("moor")
         if command:
-            check_ok(f"Hermes command managed by {method} ({command})")
+            check_ok(f"Moor command managed by {method} ({command})")
         else:
-            check_warn(f"Hermes command not on PATH ({method}-managed)")
+            check_warn(f"Moor command not on PATH ({method}-managed)")
             f.manual_issues.append(_python_repair_hint())
         return
-    from hermes_cli._launchers import resolve_store_python
+    from moor_cli._launchers import resolve_store_python
     from pm.environments import base_venv, selected_venv
 
     try:
@@ -532,11 +532,11 @@ def _check_command_installation(should_fix: bool, f: Finding) -> None:
         check_fail("Cannot resolve selected dependencies", str(exc))
         return f.manual_issues.append(_python_repair_hint())
     pm_launcher = selected != base_venv(PROJECT_ROOT) or resolve_store_python(PROJECT_ROOT) is not None
-    venv_bin = PROJECT_ROOT / "hermes" if pm_launcher else selected / "bin" / "hermes"
+    venv_bin = PROJECT_ROOT / "moor" if pm_launcher else selected / "bin" / "moor"
     if not venv_bin.is_file():
-        check_warn("Hermes entry point not found", f"({venv_bin})")
-        return f.manual_issues.append("Repair or reinstall the Hermes launcher through the installation owner")
-    check_ok(f"Hermes entry point exists ({venv_bin})")
+        check_warn("Moor entry point not found", f"({venv_bin})")
+        return f.manual_issues.append("Repair or reinstall the Moor launcher through the installation owner")
+    check_ok(f"Moor entry point exists ({venv_bin})")
     # Expected command link directory (mirrors install.sh logic).
     prefix = os.environ.get("PREFIX", "")
     termux = prefix and (os.environ.get("TERMUX_VERSION") or "com.termux/files/usr" in prefix)
@@ -545,13 +545,13 @@ def _check_command_installation(should_fix: bool, f: Finding) -> None:
     if link.is_symlink():
         target, expected = link.resolve(), venv_bin.resolve()
         if target == expected:
-            return check_ok(f"{display}/hermes → correct target")
-        check_warn(f"{display}/hermes points to wrong target", f"(→ {target}, expected → {expected})")
-        owned_targets = {(PROJECT_ROOT / name / "bin" / "hermes").resolve() for name in ("venv", ".venv")}
+            return check_ok(f"{display}/moor → correct target")
+        check_warn(f"{display}/moor points to wrong target", f"(→ {target}, expected → {expected})")
+        owned_targets = {(PROJECT_ROOT / name / "bin" / "moor").resolve() for name in ("venv", ".venv")}
         if target not in owned_targets:
-            return f.manual_issues.append(f"Review {display}/hermes manually; its target is user-managed and was not changed")
+            return f.manual_issues.append(f"Review {display}/moor manually; its target is user-managed and was not changed")
         if not should_fix:
-            return f.issues.append(f"Broken symlink at {display}/hermes — run 'hermes doctor --fix'")
+            return f.issues.append(f"Broken symlink at {display}/moor — run 'moor doctor --fix'")
         verb = "Fixed"
     elif link.exists():  # regular file (wrapper script), not a symlink
         return check_ok(f"{display}/moor exists (non-symlink)")
@@ -562,17 +562,17 @@ def _check_command_installation(should_fix: bool, f: Finding) -> None:
         link_dir.mkdir(parents=True, exist_ok=True)
         verb = "Created"
     if pm_launcher:
-        from hermes_cli._launchers import stage_launcher
+        from moor_cli._launchers import stage_launcher
 
-        if stage_launcher("hermes", PROJECT_ROOT, link_dir) is None:
-            check_fail("Could not publish Hermes launcher")
-            return f.manual_issues.append("Repair the PM store interpreter through the installation owner, then rerun 'hermes doctor --fix'")
-        check_ok(f"{verb} PM launcher: {display}/hermes")
+        if stage_launcher("moor", PROJECT_ROOT, link_dir) is None:
+            check_fail("Could not publish Moor launcher")
+            return f.manual_issues.append("Repair the PM store interpreter through the installation owner, then rerun 'moor doctor --fix'")
+        check_ok(f"{verb} PM launcher: {display}/moor")
     else:
         if link.is_symlink():
             link.unlink()
         link.symlink_to(venv_bin)
-        check_ok(f"{verb} symlink: {display}/hermes → {venv_bin}")
+        check_ok(f"{verb} symlink: {display}/moor → {venv_bin}")
     f.fixed += 1
     if verb == "Created" and str(link_dir) not in os.environ.get("PATH", "").split(os.pathsep):
         check_warn(f"{display} is not on your PATH", "(add it to your shell config: export PATH=\"$HOME/.local/bin:$PATH\")")

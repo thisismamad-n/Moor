@@ -8,10 +8,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import main, source_releases, update_cmd
-from hermes_cli.subcommands.update import build_update_parser
-from hermes_cli.update_channel import channel_record, set_install_channel
-from hermes_cli.config import require_readable_config_before_write
+from moor_cli import main, source_releases, update_cmd
+from moor_cli.subcommands.update import build_update_parser
+from moor_cli.update_channel import channel_record, set_install_channel
+from moor_cli.config import require_readable_config_before_write
 
 # These tests model channel archives and the reader's own transport.
 pytestmark = pytest.mark.real_release_channels
@@ -27,9 +27,9 @@ def source(tmp_path, monkeypatch):
     home, origin, checkout = (tmp_path / name for name in ("home", "origin", "checkout"))
     home.mkdir()
     origin.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(checkout))
-    monkeypatch.delenv("HERMES_MANAGED", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(checkout))
+    monkeypatch.delenv("MOOR_MANAGED", raising=False)
     git(origin, "init", "-b", "main")
     git(origin, "config", "user.name", "Channel Fixture")
     git(origin, "config", "user.email", "fixture@example.invalid")
@@ -43,7 +43,7 @@ def source(tmp_path, monkeypatch):
     git(tmp_path, "clone", str(origin), str(checkout))
     git(checkout, "checkout", "--detach", commits[0])
     monkeypatch.setattr(main, "PROJECT_ROOT", checkout)
-    monkeypatch.setattr("hermes_cli.config.get_project_root", lambda: checkout)
+    monkeypatch.setattr("moor_cli.config.get_project_root", lambda: checkout)
     parser = argparse.ArgumentParser()
     build_update_parser(parser.add_subparsers(), cmd_update=main.cmd_update)
     opts = update_cmd._UpdateOptions(pre_update_version=None, gw_input_fn=None,
@@ -138,7 +138,7 @@ def test_retirement_adopts_destination_only_after_success(source, monkeypatch, o
 
 @pytest.mark.parametrize("channel", ["preview-not-registered", "stable", "canary", "main"])
 def test_missing_channel_cannot_fall_back_to_main(source, monkeypatch, channel):
-    from hermes_cli import source_check
+    from moor_cli import source_check
 
     set_install_channel(channel, source.root)
     def missing(name, repository):
@@ -156,8 +156,8 @@ def test_missing_channel_cannot_fall_back_to_main(source, monkeypatch, channel):
 def test_unpublished_main_record_keeps_following_the_git_branch(source, monkeypatch):
     """main IS the source branch: until R2 publishes its record, a checkout
     still updates via git instead of failing on a missing channel object."""
-    from hermes_cli import source_check
-    from hermes_cli.release_channels import ChannelNotFound
+    from moor_cli import source_check
+    from moor_cli.release_channels import ChannelNotFound
 
     set_install_channel("main", source.root)
     def unpublished(name, repository):
@@ -173,7 +173,7 @@ def test_unpublished_main_record_keeps_following_the_git_branch(source, monkeypa
 
 
 def test_passive_check_reports_retirement_without_adopting_it(source, monkeypatch):
-    from hermes_cli import source_check, banner
+    from moor_cli import source_check, banner
 
     name = "preview-retiring"
     set_install_channel(name, source.root)
@@ -227,7 +227,7 @@ def channel_archive(source, monkeypatch):
 
 def publish_channel_build(channel_archive, name, build_id, commit, *, sequence=1, stable=False):
     from hashlib import sha256
-    from hermes_cli.release_channels import canonical_json
+    from moor_cli.release_channels import canonical_json
 
     archive, base = channel_archive
     prefix = f"releases/channel-builds/{build_id}/"
@@ -264,7 +264,7 @@ def test_real_http_reader_resolves_tagless_build_through_cli(source, monkeypatch
     archive, _ = channel_archive
     name = "http-preview-351"
     channel = publish_channel_build(channel_archive, name, "b" * 32, source.commits[1])
-    from hermes_cli import source_check
+    from moor_cli import source_check
     status = source_check.check_for_updates(install_root=source.root, home=source.home,
                                             channel=name, force=True)
     assert status.get("targetSha") == source.commits[1], status
@@ -282,7 +282,7 @@ def test_real_http_reader_resolves_tagless_build_through_cli(source, monkeypatch
 
 @pytest.fixture
 def retired_channel_archive(source, channel_archive):
-    from hermes_cli.release_channels import canonical_json
+    from moor_cli.release_channels import canonical_json
 
     archive, _ = channel_archive
     name = "offline-preview"
@@ -301,8 +301,8 @@ def retired_channel_archive(source, channel_archive):
 @pytest.mark.parametrize("fault", [None, "binding", "manifest"])
 def test_offline_retirement_uses_qualified_build_before_current_stable(
         source, monkeypatch, retired_channel_archive, fault):
-    from hermes_cli import source_check
-    from hermes_cli.release_channels import canonical_json
+    from moor_cli import source_check
+    from moor_cli.release_channels import canonical_json
 
     fixture = retired_channel_archive
     original = deepcopy(saved(source))
@@ -368,13 +368,13 @@ def test_retirement_refuses_to_downgrade_newer_source(
 @pytest.mark.parametrize("dirty", [False, True])
 def test_tagless_zip_apply_uses_pinned_source_archive(source, monkeypatch, dirty):
     import urllib.request
-    from hermes_cli import update_cmd_zip
+    from moor_cli import update_cmd_zip
 
     name = "zip-preview"
     set_install_channel(name, source.root)
     install_reader(monkeypatch, reader_result(source, name, "stable"))
     archive = source.home / "source.zip"
-    git(source.origin, "archive", "--format=zip", "--prefix=hermes-agent-fixture/",
+    git(source.origin, "archive", "--format=zip", "--prefix=moor-agent-fixture/",
         "--output=" + str(archive), source.commits[1])
     urls = []
     def download(url, filename):
@@ -394,7 +394,7 @@ def test_tagless_zip_apply_uses_pinned_source_archive(source, monkeypatch, dirty
         assert (source.root / "notes.txt").read_text() == "do not remove"
     else:
         update_cmd._cmd_update_impl(source.parser.parse_args(["update"]), False)
-        assert urls == [f"https://github.com/NousResearch/hermes-agent/archive/{source.commits[1]}.zip"]
+        assert urls == [f"https://github.com/thisismamad-n/Moor/archive/{source.commits[1]}.zip"]
         assert (source.root / "content.txt").read_text() == "published"
         assert completed[0]["expected_sha"] == source.commits[1]
         assert completed[0]["channel_retirement"]["destination"] == "stable"
@@ -403,14 +403,14 @@ def test_tagless_zip_apply_uses_pinned_source_archive(source, monkeypatch, dirty
 
 @pytest.mark.parametrize("outcome", ["success", "failure", "uncorrelated", "missing"])
 def test_retirement_waits_for_correlated_completion_process(source, monkeypatch, outcome):
-    from hermes_cli import update_receipt
+    from moor_cli import update_receipt
 
     name = "process-retiring"
     set_install_channel(name, source.root)
     original = deepcopy(saved(source))
     # This child is the completion transport fixture, not a simulated PM install.
     # The existing completion-process suite exercises fresh PM/selected Python.
-    script = source.root / "hermes_cli/update_completion.py"
+    script = source.root / "moor_cli/update_completion.py"
     script.parent.mkdir()
     script.write_text(
         "import json, pathlib, sys\n"
@@ -442,7 +442,7 @@ def test_retirement_waits_for_correlated_completion_process(source, monkeypatch,
 
 
 def test_source_branch_record_has_no_bundle_and_explicit_branch_is_separate(source, monkeypatch):
-    from hermes_cli import source_check
+    from moor_cli import source_check
 
     branch_record = record("main")
     branch_record.update(policy="source-branch", identity=None,
@@ -486,7 +486,7 @@ def test_changed_checkout_cannot_repin_selected_channel_during_apply(source, mon
 
 @pytest.mark.parametrize("fault", ["floor", "protocol", "build", "chain", "missing"])
 def test_source_retirement_rejects_invalid_archive_constraints(source, retired_channel_archive, fault):
-    from hermes_cli.release_channels import canonical_json
+    from moor_cli.release_channels import canonical_json
     fixture = retired_channel_archive
     if fault == "floor":
         fixture.retired["minimumVersion"] = "9.0.0"

@@ -86,16 +86,16 @@ def test_resolve_last_session_real_db_prefers_workspace(monkeypatch, tmp_path):
 
 
 def test_resolve_last_session_cli_continues_a_oneshot(monkeypatch, tmp_path):
-    """`hermes -z … --resume latest` / `hermes -c` chain on the previous one-shot: its distinct `oneshot`
+    """`moor -z … --resume latest` / `moor -c` chain on the previous one-shot: its distinct `oneshot`
     source hides it from pickers but it is still CLI history (#112550)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
 
-    import hermes_state
+    import moor_state
     from pathlib import Path
 
     state_db = Path(tmp_path / "state.db")
-    real_db = hermes_state.SessionDB
+    real_db = moor_state.SessionDB
     db = real_db(db_path=state_db)
     try:
         db.create_session("interactive", source="cli")
@@ -108,7 +108,7 @@ def test_resolve_last_session_cli_continues_a_oneshot(monkeypatch, tmp_path):
     finally:
         db.close()
 
-    monkeypatch.setattr("hermes_cli.main._resolve_workspace_key", lambda: None)
-    monkeypatch.setattr("hermes_state.SessionDB", lambda **kw: real_db(db_path=state_db, **kw))
+    monkeypatch.setattr("moor_cli.main._resolve_workspace_key", lambda: None)
+    monkeypatch.setattr("moor_state.SessionDB", lambda **kw: real_db(db_path=state_db, **kw))
     assert _resolve_last_session("cli") == "oneshot_run"
     assert _resolve_last_session("tui") == "tui_chat"

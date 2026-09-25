@@ -58,7 +58,7 @@ def _load_usage() -> dict[str, dict[str, Any]]:
         return load_usage()
     except Exception:
         try:
-            return json.loads((get_hermes_home() / "skills" / ".usage.json").read_text(encoding="utf-8-sig"))
+            return json.loads((get_moor_home() / "skills" / ".usage.json").read_text(encoding="utf-8-sig"))
         except Exception:
             return {}
 
@@ -150,7 +150,7 @@ def _memory_cards() -> list[dict[str, Any]]:
     entry becomes one card (MEMORY.md cards first, then USER.md)."""
     from tools.memory_tool import MemoryStore
 
-    base = get_hermes_home() / "memories"
+    base = get_moor_home() / "memories"
     cards: list[dict[str, Any]] = []
     for fname, source in (("MEMORY.md", "memory"), ("USER.md", "profile")):
         path = base / fname

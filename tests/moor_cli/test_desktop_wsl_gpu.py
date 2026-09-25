@@ -4,8 +4,8 @@ its GPU process (#106117) — and never overrides an explicit Mesa choice or fir
 import argparse
 from pathlib import Path
 
-from hermes_cli import main_desktop
-from hermes_platform.host import runtime as host_runtime
+from moor_cli import main_desktop
+from moor_platform.host import runtime as host_runtime
 
 
 def _launch_env(monkeypatch, tmp_path, *, wsl: bool, dxg: bool, driver: bool) -> dict:

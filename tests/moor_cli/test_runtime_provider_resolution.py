@@ -67,16 +67,16 @@ def test_runtime_selected_copilot_exchanges_ambient_pool_token(tmp_path, monkeyp
     `--provider copilot`) must still hand the EXCHANGED token and the enterprise base_url to the
     client: the seeder leaves an ambient gh-CLI credential raw while copilot is not configured
     (#114740), and a raw token 400s on enterprise-only models."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    (hermes_home / "auth.json").write_text(json.dumps({"version": 1, "credential_pool": {}}))
-    (hermes_home / "config.yaml").write_text("model:\n  provider: deepseek\n  default: deepseek-chat\n")
-    from hermes_cli import config as _cfg
+    moor_home = tmp_path / "moor"
+    moor_home.mkdir()
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
+    (moor_home / "auth.json").write_text(json.dumps({"version": 1, "credential_pool": {}}))
+    (moor_home / "config.yaml").write_text("model:\n  provider: deepseek\n  default: deepseek-chat\n")
+    from moor_cli import config as _cfg
     _cfg._LOAD_CONFIG_CACHE.clear()
     _cfg._RAW_CONFIG_CACHE.clear()
-    monkeypatch.setattr("hermes_cli.copilot_auth.resolve_copilot_token", lambda: ("ghu_raw_gh_token", "gh auth token"))
-    monkeypatch.setattr("hermes_cli.copilot_auth.get_copilot_api_token",
+    monkeypatch.setattr("moor_cli.copilot_auth.resolve_copilot_token", lambda: ("ghu_raw_gh_token", "gh auth token"))
+    monkeypatch.setattr("moor_cli.copilot_auth.get_copilot_api_token",
                         lambda tok: ("tid=exchanged;exp=1", "https://api.enterprise.ghe.example"))
     monkeypatch.setattr(rp._models, "copilot_model_api_mode", lambda *a, **k: "chat_completions")
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "copilot")
@@ -153,7 +153,7 @@ def test_codex_pool_honors_model_base_url(monkeypatch):
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openai-codex")
     monkeypatch.setattr(rp, "load_pool", lambda provider: _Pool())
-    monkeypatch.delenv("HERMES_CODEX_BASE_URL", raising=False)
+    monkeypatch.delenv("MOOR_CODEX_BASE_URL", raising=False)
     monkeypatch.setattr(rp, "_get_model_config", lambda: {
         "provider": "openai-codex", "default": "gpt-5.3-codex", "base_url": "http://127.0.0.1:8400/backend-api/codex/"})
 
@@ -630,7 +630,7 @@ def test_openai_key_used_when_no_openrouter_key(monkeypatch):
 ])
 def test_openai_key_bound_to_another_host_never_reaches_openrouter(monkeypatch, openai_base_url, expected_key):
     """OPENAI_API_KEY is an OpenRouter fallback only while OPENAI_BASE_URL doesn't bind it elsewhere."""
-    from hermes_cli.runtime_provider_backends import _resolve_openrouter_runtime
+    from moor_cli.runtime_provider_backends import _resolve_openrouter_runtime
     monkeypatch.setattr(rp, "_get_model_config", lambda: {})
     monkeypatch.setenv("OPENAI_BASE_URL", openai_base_url)
     monkeypatch.delenv("OPENROUTER_BASE_URL", raising=False)
@@ -732,7 +732,7 @@ def test_codex_app_server_opt_in_routes_only_named_custom_providers(monkeypatch)
     resolved = rp.resolve_runtime_provider(requested="custom:my-gateway")
     assert (resolved["provider"], resolved["requested_provider"], resolved["api_mode"]) == (
         "custom", "custom:my-gateway", "codex_app_server")
-    assert resolved["api_key"] == "test-key"  # Hermes' own aux/fallback client keeps the credential
+    assert resolved["api_key"] == "test-key"  # Moor' own aux/fallback client keeps the credential
 
     anonymous = rp.resolve_runtime_provider(requested="custom", explicit_base_url="https://gateway.example.com/v1",
                                             explicit_api_key="k")
@@ -2061,7 +2061,7 @@ def test_removed_keyless_free_provider_points_at_its_replacements(name):
     """The keyless OpenCode free tier is gone (the relay 403s anonymous traffic), so a persisted
     ``model.provider`` — or ``--provider`` — still naming it must fail with the removal hint
     naming both surviving OpenCode providers, not a bare "Unknown provider"."""
-    from hermes_cli.auth import AuthError, resolve_provider
+    from moor_cli.auth import AuthError, resolve_provider
 
     with pytest.raises(AuthError) as excinfo:
         resolve_provider(name)
@@ -2090,7 +2090,7 @@ def test_bare_custom_resolves_model_key_env_for_configured_base_url(monkeypatch)
     monkeypatch.setenv("CUSTOM_BASE_URL", "https://other.example.test/v1")
     assert rp.resolve_runtime_provider(requested="custom")["api_key"] == "no-key-required"
 
-    # Direct-alias rung (`hermes --resume` provider change, `/model` direct aliases pass explicit_base_url):
+    # Direct-alias rung (`moor --resume` provider change, `/model` direct aliases pass explicit_base_url):
     # the declared key follows the configured endpoint and stays home for any other endpoint.
     monkeypatch.delenv("CUSTOM_BASE_URL", raising=False)
     direct = rp.resolve_runtime_provider(requested="custom", explicit_base_url="https://api.example.test/v1")
@@ -2107,7 +2107,7 @@ def test_configured_key_env_resolving_empty_is_logged(monkeypatch, caplog):
         {"name": "scw", "base_url": "https://api.example.test/v1", "key_env": "UNSET_LLM_KEY", "model": "m"},
         {"name": "local", "base_url": "http://127.0.0.1:8080/v1", "model": "m"}]})
     monkeypatch.delenv("UNSET_LLM_KEY", raising=False)
-    with caplog.at_level("WARNING", logger="hermes_cli.runtime_provider"):
+    with caplog.at_level("WARNING", logger="moor_cli.runtime_provider"):
         assert rp.resolve_runtime_provider(requested="custom:scw")["api_key"] == "no-key-required"
         assert rp.resolve_runtime_provider(requested="custom:local")["api_key"] == "no-key-required"
     hits = [r for r in caplog.records if "UNSET_LLM_KEY" in r.getMessage()]
@@ -2117,7 +2117,7 @@ def test_configured_key_env_resolving_empty_is_logged(monkeypatch, caplog):
 # ── model.openai_runtime: codex_app_server on every ladder rung (#115169) ─────────────────
 
 _CODEX_STORE_CREDS = {"base_url": "https://chatgpt.com/backend-api/codex", "api_key": "tok",
-                      "source": "hermes-auth-store", "last_refresh": 1}
+                      "source": "moor-auth-store", "last_refresh": 1}
 
 
 def _codex_rung(monkeypatch, rung: str) -> dict:

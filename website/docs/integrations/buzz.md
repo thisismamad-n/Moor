@@ -32,7 +32,7 @@ For a hosted Moor identity that joins Buzz *channels* while Buzz's own harness o
 Buzz relay <-- WebSocket --> buzz-acp <-- ACP over stdio --> Moor Agent
 ```
 
-The spawned Hermes uses the same config, credentials, memory, and skills as `hermes` on that host. Key minting, channel discovery, owner-only telemetry (`BUZZ_ACP_RELAY_OBSERVER`), and headless-permission guidance: **[ACP Host Integration → Buzz channels (relay bridge)](../user-guide/features/acp.md#buzz-channels-relay-bridge)**
+The spawned Moor uses the same config, credentials, memory, and skills as `moor` on that host. Key minting, channel discovery, owner-only telemetry (`BUZZ_ACP_RELAY_OBSERVER`), and headless-permission guidance: **[ACP Host Integration → Buzz channels (relay bridge)](../user-guide/features/acp.md#buzz-channels-relay-bridge)**
 
 ## ③ Native gateway platform (recommended for full Moor)
 

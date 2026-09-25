@@ -30,8 +30,8 @@ FLAT_INSTALL_RUNTIME_STATE = (
     "state.db-journal",
     "state.db.retired-wal-20260914T000000Z-1234/manifest.json",
     # Dot-suffixed `<db>.db.*` runtime artifacts (#112974): cross-process lock
-    # files from hermes_state_dbfile / hermes_state_repair / hermes_state_common /
-    # hermes_cli/kanban_db_*, the repair-attempts ledger and malformed backups.
+    # files from moor_state_dbfile / moor_state_repair / moor_state_common /
+    # moor_cli/kanban_db_*, the repair-attempts ledger and malformed backups.
     "state.db.quarantine.lock",
     "state.db.repair.lock",
     "state.db.fts_rebuild.lock",
@@ -196,7 +196,7 @@ def test_untracked_autostash_cannot_split_live_database_lock_inode(flat_install_
     exclusive lock would succeed while the first holder is still live."""
     import fcntl
 
-    from hermes_cli.update_cmd_stash import _stash_local_changes_if_needed
+    from moor_cli.update_cmd_stash import _stash_local_changes_if_needed
 
     lock_path = flat_install_repo / "state.db.quarantine.lock"
     with lock_path.open("a+b") as first:

@@ -14,7 +14,7 @@ def _flow(flow_id: str = "flow-retry", server_name: str = "asana"):
         flow_id=flow_id,
         server_name=server_name,
         profile=None,
-        hermes_home="/tmp/hermes-test",
+        moor_home="/tmp/moor-test",
         redirect_uri=f"https://agent.example/mcp/oauth/callback/{flow_id}",
     )
 
@@ -194,7 +194,7 @@ def test_preregistered_pinned_redirect_port_keeps_loopback_listener_under_dashbo
 
     from tools.mcp_dashboard_oauth import DashboardOAuthFlow, dashboard_oauth_flow
     from tools.mcp_oauth import (
-        HermesTokenStorage,
+        MoorTokenStorage,
         _build_client_metadata,
         _configure_callback_port,
         _make_callback_waiter,
@@ -202,15 +202,15 @@ def test_preregistered_pinned_redirect_port_keeps_loopback_listener_under_dashbo
         force_interactive_oauth,
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    flow = DashboardOAuthFlow(flow_id="flow-5", server_name="asana", profile=None, hermes_home=str(tmp_path),
+    flow = DashboardOAuthFlow(flow_id="flow-5", server_name="asana", profile=None, moor_home=str(tmp_path),
                               redirect_uri="https://agent.example/mcp/oauth/callback/flow-5")
     cfg = {"client_id": "pre-registered", "client_secret": "s", "redirect_host": "localhost", "redirect_port": port}
     with dashboard_oauth_flow(flow), force_interactive_oauth():
-        assert _configure_callback_port(cfg, HermesTokenStorage("asana")) == port
+        assert _configure_callback_port(cfg, MoorTokenStorage("asana")) == port
         assert str(_build_client_metadata(cfg).redirect_uris[0]) == f"http://localhost:{port}/callback"
         asyncio.run(_make_redirect_handler(port)("https://idp.example/authorize?state=state-5"))
         assert flow.authorization_url == "https://idp.example/authorize?state=state-5"  # dashboard shows the URL
@@ -238,7 +238,7 @@ def test_server_task_does_not_park_on_an_ended_dashboard_flow(
     With the flow re-minted, the ladder fails (if at all) only for the ordinary reason — nobody
     completed the consent screen — and the handle is live and completable again.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
 
     from tools import mcp_tool
     from tools.mcp_dashboard_oauth import dashboard_oauth_flow

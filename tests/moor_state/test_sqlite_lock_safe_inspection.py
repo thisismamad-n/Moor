@@ -302,9 +302,9 @@ def test_repair_connections_are_tracked_for_byte_probe_safety(tmp_path, clean_re
     (``howtocorrupt`` §2.2), letting an external writer commit into the database
     the repair still believed it owned.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    from hermes_state import SessionDB
-    from hermes_state_repair import _connect_repair_durable, _repair_conn
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    from moor_state import SessionDB
+    from moor_state_repair import _connect_repair_durable, _repair_conn
 
     db_path = tmp_path / "state.db"
     seed = SessionDB(db_path=db_path)
@@ -329,13 +329,13 @@ def test_repair_connections_are_tracked_for_byte_probe_safety(tmp_path, clean_re
 
 
 def test_byte_probe_never_cancels_the_repair_exclusion(tmp_path, clean_registry):
-    """A live repair's EXCLUSIVE lock must survive Hermes' own inspection (#63386).
+    """A live repair's EXCLUSIVE lock must survive Moor' own inspection (#63386).
 
     With the connection tracked the probe is refused, so nothing closes an fd and
     the exclusion keeps holding; if the probe were allowed through, its ``close()``
     would cancel the lock and the intruder would commit into the file mid-repair.
     """
-    import hermes_state_repair as repair
+    import moor_state_repair as repair
 
     db_path = tmp_path / "state.db"
     _make_db(db_path, "DELETE")

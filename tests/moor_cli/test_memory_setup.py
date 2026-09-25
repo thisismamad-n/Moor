@@ -2,8 +2,8 @@ import re
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-import hermes_cli.memory_setup as memory_setup
-from hermes_cli.memory_setup import _CANCELLED
+import moor_cli.memory_setup as memory_setup
+from moor_cli.memory_setup import _CANCELLED
 
 
 
@@ -63,7 +63,7 @@ def test_cmd_setup_generic_choice_cancel_writes_nothing(tmp_path, monkeypatch):
 
 def test_install_dependencies_prepares_declared_extra_even_if_importable(tmp_path, monkeypatch):
     """PM, not ambient importability, decides whether constraints are current."""
-    import hermes_yaml as _yaml
+    import moor_yaml as _yaml
 
     plugin_dir = tmp_path / "mem0"
     plugin_dir.mkdir()

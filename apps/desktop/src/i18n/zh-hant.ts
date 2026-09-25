@@ -166,7 +166,7 @@ export const zhHant = defineLocale({
 
   notifications: {
     sharedProfileWarning:
-      '另一個 Hermes 安裝實例正在使用此設定檔。兩個實例共用此設定檔的設定和資料，因此變更可能發生衝突。你可以繼續使用，也可以在變更前關閉另一個實例。',
+      '另一個 Moor 安裝實例正在使用此設定檔。兩個實例共用此設定檔的設定和資料，因此變更可能發生衝突。你可以繼續使用，也可以在變更前關閉另一個實例。',
     region: '通知',
     hide: '隱藏',
     show: '顯示',
@@ -233,8 +233,8 @@ export const zhHant = defineLocale({
       rejectAction: '拒絕',
       inputTitle: '需要輸入',
       inputTitleNamed: session => `需要輸入 — ${session}`,
-      inputBody: 'Hermes 正在等待你的回應。',
-      turnDoneTitle: 'Hermes 已完成',
+      inputBody: 'Moor 正在等待你的回應。',
+      turnDoneTitle: 'Moor 已完成',
       turnDoneBody: '',
       turnErrorTitle: '本輪失敗',
       backgroundDoneTitle: '背景工作已完成',
@@ -360,7 +360,7 @@ export const zhHant = defineLocale({
     plugins: {
       openFolder: '開啟桌面外掛資料夾',
       installModal: {
-        installUncertain: 'Hermes 已停止等待安裝結果，但外掛可能仍在安裝中。請關閉此視窗，重新掃描外掛清單後再嘗試安裝。',
+        installUncertain: 'Moor 已停止等待安裝結果，但外掛可能仍在安裝中。請關閉此視窗，重新掃描外掛清單後再嘗試安裝。',
         installFromGit: '從 Git 安裝',
         reviewRepository: '檢查儲存庫',
         repoPlaceholder: 'https://github.com/owner/repo',
@@ -959,7 +959,7 @@ export const zhHant = defineLocale({
     uninstallSection: {
       dangerZone: '危險操作',
       checkingInstalled: '正在檢查已安裝內容…',
-      uninstallHermes: '解除安裝 Hermes',
+      uninstallMoor: '解除安裝 Moor',
       chooseHowMuch: '選擇要移除的內容。應用程式會關閉以完成作業；隨時重新開啟安裝程式即可返回。',
       confirmUninstall: '確認解除安裝',
       confirmBody: what => `這將移除${what}。此操作無法復原。`,
@@ -970,18 +970,18 @@ export const zhHant = defineLocale({
       options: {
         gui: {
           title: '僅解除安裝聊天 GUI',
-          description: '移除此桌面應用程式。Hermes 代理、你的設定和聊天記錄都會保留。',
+          description: '移除此桌面應用程式。Moor 代理、你的設定和聊天記錄都會保留。',
           consequence: '桌面聊天 GUI（此應用程式及其資料）'
         },
         lite: {
           title: '解除安裝 GUI 與代理，保留資料',
-          description: '移除應用程式和 Hermes 代理，但保留設定、聊天記錄和機密，以便日後重新安裝。',
-          consequence: '聊天 GUI 和 Hermes 代理（設定、聊天記錄和機密會保留）'
+          description: '移除應用程式和 Moor 代理，但保留設定、聊天記錄和機密，以便日後重新安裝。',
+          consequence: '聊天 GUI 和 Moor 代理（設定、聊天記錄和機密會保留）'
         },
         full: {
           title: '解除安裝全部',
           description: '移除應用程式、代理和所有使用者資料——設定、聊天記錄、排程工作、機密和日誌。',
-          consequence: '全部內容——聊天 GUI、Hermes 代理，以及你的所有設定、聊天記錄、機密和日誌'
+          consequence: '全部內容——聊天 GUI、Moor 代理，以及你的所有設定、聊天記錄、機密和日誌'
         }
       }
     },
@@ -1043,7 +1043,7 @@ export const zhHant = defineLocale({
     config: {
       minimizeToTrayTitle: '最小化至系統匣',
       minimizeToTrayDesc:
-        '最小化視窗或關閉主視窗時，將其隱藏至系統匣（macOS 上為選單列），讓 Hermes 繼續執行。透過系統匣選單中的「結束 Hermes」或 Cmd+Q 結束。預設關閉，僅適用於此裝置。',
+        '最小化視窗或關閉主視窗時，將其隱藏至系統匣（macOS 上為選單列），讓 Moor 繼續執行。透過系統匣選單中的「結束 Moor」或 Cmd+Q 結束。預設關閉，僅適用於此裝置。',
       minimizeToTrayUnavailable: '系統匣無法使用。視窗將正常最小化和關閉。關閉此選項後重新開啟即可重試。',
       none: '無',
       noneParen: '(無)',
@@ -1071,24 +1071,24 @@ export const zhHant = defineLocale({
       title: '輕按叫出 HUD',
       description:
         '在 Mac 上按下並放開 ⌘ + Option，在 Windows/Linux 上按下並放開 Ctrl + Alt，即可從任何應用程式將 HUD 帶到前景。預設關閉，僅適用於此裝置。',
-      permission: '請在系統設定 → 隱私權與安全性 → 輸入監控中允許 Hermes，然後重試。此手勢不會記錄按鍵或擷取畫面。',
-      unavailable: 'HUD 手勢輔助程式無法啟動或意外停止。請重試或重新啟動 Hermes。Hermes 內原有的 HUD 快速鍵仍可使用。',
-      missingHelper: '此 Hermes 安裝缺少 HUD 手勢輔助程式。請更新或重新安裝 Hermes，然後重試。',
+      permission: '請在系統設定 → 隱私權與安全性 → 輸入監控中允許 Moor，然後重試。此手勢不會記錄按鍵或擷取畫面。',
+      unavailable: 'HUD 手勢輔助程式無法啟動或意外停止。請重試或重新啟動 Moor。Moor 內原有的 HUD 快速鍵仍可使用。',
+      missingHelper: '此 Moor 安裝缺少 HUD 手勢輔助程式。請更新或重新安裝 Moor，然後重試。',
       unsupportedSession: '此桌面工作階段不支援全域修飾鍵輕按事件。Linux 需要 X11；不支援 Wayland。'
     },
     screenshot: {
       enabledTitle: '螢幕截圖快速鍵',
       enabledDesc:
-        '在任何應用程式中同時按下左右兩個 Command 鍵，即可擷取最前方的視窗並附加到目前的 Hermes 草稿。絕不會自動傳送。預設關閉，僅適用於這台 Mac。視窗可能包含敏感內容，請在傳送前檢查附件。',
+        '在任何應用程式中同時按下左右兩個 Command 鍵，即可擷取最前方的視窗並附加到目前的 Moor 草稿。絕不會自動傳送。預設關閉，僅適用於這台 Mac。視窗可能包含敏感內容，請在傳送前檢查附件。',
       statusTitle: '螢幕截圖快速鍵狀態',
       checking: '正在檢查螢幕截圖快速鍵…',
       disabled: '螢幕截圖快速鍵已關閉。',
       starting: '正在啟動快速鍵偵測，尚未就緒。',
       ready: '快速鍵已就緒。截圖會附加到目前的草稿，不會傳送。',
       inputPermission:
-        '輸入監控權限可讓 Hermes 在其他應用程式使用中時偵測兩個 Command 鍵。請在系統設定 → 隱私權與安全性 → 輸入監控中允許 Hermes，然後返回此處重試。',
+        '輸入監控權限可讓 Moor 在其他應用程式使用中時偵測兩個 Command 鍵。請在系統設定 → 隱私權與安全性 → 輸入監控中允許 Moor，然後返回此處重試。',
       screenPermission:
-        '螢幕錄製權限可讓 Hermes 在你使用此快速鍵時擷取最前方的應用程式視窗。請在系統設定 → 隱私權與安全性 → 螢幕錄製中允許 Hermes，然後返回此處重試。如果 macOS 提示，請重新啟動 Hermes。',
+        '螢幕錄製權限可讓 Moor 在你使用此快速鍵時擷取最前方的應用程式視窗。請在系統設定 → 隱私權與安全性 → 螢幕錄製中允許 Moor，然後返回此處重試。如果 macOS 提示，請重新啟動 Moor。',
       openSettings: '開啟系統設定',
       retry: '重試',
       unavailable: '螢幕截圖快速鍵無法使用。請重試或將其關閉。',
@@ -1454,11 +1454,11 @@ export const zhHant = defineLocale({
       usageLabel: label => `${label}用量`,
       freeTier: {
         signIn: '登入',
-        title: '你正在使用 Nous 免費服務',
-        message: '登入 Nous 帳戶以解鎖更多模型和工具。',
-        caption: '使用 nous/welcome，包含連接器。登入後會保留連接器，並增加需要帳戶的工具和其他所有模型。',
-        name: 'Nous · 免費服務',
-        footnote: '免費服務沒有餘額，無需付款。登入 Nous 帳戶後才會顯示支付與用量。',
+        title: '你正在使用 Moor 免費服務',
+        message: '登入 Moor 帳戶以解鎖更多模型和工具。',
+        caption: '使用 moor/welcome，包含連接器。登入後會保留連接器，並增加需要帳戶的工具和其他所有模型。',
+        name: 'Moor · 免費服務',
+        footnote: '免費服務沒有餘額，無需付款。登入 Moor 帳戶後才會顯示支付與用量。',
         plan: '免費服務',
         model: '模型',
         connectors: '連接器',
@@ -1557,8 +1557,8 @@ export const zhHant = defineLocale({
       state: {
         notice: {
           loggedOut: {
-            title: '連接你的 Nous 帳戶',
-            message: '登入你的 Nous 帳戶，即可在此查看餘額、方案和用量。',
+            title: '連接你的 Moor 帳戶',
+            message: '登入你的 Moor 帳戶，即可在此查看餘額、方案和用量。',
             action: '登入'
           },
           openPortal: '開啟入口網站 ↗',
@@ -1637,7 +1637,7 @@ export const zhHant = defineLocale({
         sessionRevoked: { title: '工作階段已登出', message: '你的工作階段已登出。請從「設定 → 閘道」重新登入。' },
         cliBillingDisabled: {
           title: '遠端支出已關閉',
-          message: '此帳戶的遠端支出已關閉，帳單管理員可在入口網站的 Hermes Agent 頁面開啟。'
+          message: '此帳戶的遠端支出已關閉，帳單管理員可在入口網站的 Moor Agent 頁面開啟。'
         },
         roleRequired: {
           title: '需要管理員權限',
@@ -2030,7 +2030,7 @@ export const zhHant = defineLocale({
     },
     nav: {
       newChat: { title: '新工作階段', detail: '開始新的工作階段' },
-      settings: { title: '設定', detail: '設定 Hermes 桌面端' },
+      settings: { title: '設定', detail: '設定 Moor 桌面端' },
       capabilities: { title: '技能與工具', detail: '啟用技能、工具集和提供方' },
       messaging: { title: '訊息平台', detail: '設定 Telegram、Slack、Discord 等' },
       artifacts: { title: '成品', detail: '瀏覽產生的輸出' }
@@ -2269,12 +2269,12 @@ export const zhHant = defineLocale({
     switchConnectionFailed: name => `無法連線至 ${name}`,
     manageProfiles: '管理設定檔…',
     fleet: {
-      localDevice: '此裝置（本機後端——若未安裝 Hermes 則會安裝，否則開啟新的工作階段）',
+      localDevice: '此裝置（本機後端——若未安裝 Moor 則會安裝，否則開啟新的工作階段）',
       switchDeviceTitle: '切換到此裝置？',
       switchDeviceDesc: '這會在這台電腦上開啟新的工作階段。目前的對話仍留在另一個閘道。',
       switchDeviceConfirm: '切換',
       installDeviceTitle: '切換到此裝置？',
-      installDeviceDesc: '這會在本機安裝 Hermes，然後在這台電腦上開啟新的工作階段。確認之前不會開始安裝。',
+      installDeviceDesc: '這會在本機安裝 Moor，然後在這台電腦上開啟新的工作階段。確認之前不會開始安裝。',
       installDeviceConfirm: '本機安裝',
       connectExistingInstead: '改為連線現有環境'
     },
@@ -2315,7 +2315,7 @@ export const zhHant = defineLocale({
     setAsDefault: '設為預設',
     defaultProfile: '預設設定檔',
     defaultSet: name => `${name} 已設為預設`,
-    defaultDescription: '用於 Hermes 啟動和新建聊天。現有工作階段仍保留在各自的設定檔中。',
+    defaultDescription: '用於 Moor 啟動和新建聊天。現有工作階段仍保留在各自的設定檔中。',
     failedSetDefault: '無法設定預設設定檔',
     setColor: color => `設定顏色 ${color}`,
     autoColor: '自動',
@@ -2382,7 +2382,7 @@ export const zhHant = defineLocale({
   },
 
   modelAssignment: {
-    saveFailed: 'Hermes 未儲存該模型變更。',
+    saveFailed: 'Moor 未儲存該模型變更。',
     confirmTitle: '模型選擇警告',
     confirmDetail: '僅在你接受此權衡時確認。',
     confirmAction: '確認',
@@ -2846,7 +2846,7 @@ export const zhHant = defineLocale({
       '/resume': '繼續已儲存的工作階段',
       '/details': '控制對話記錄的詳細程度',
       '/copy': '複製所選內容或最後一條助手訊息',
-      '/quit': '結束 hermes',
+      '/quit': '結束 moor',
       '/start': '確認平台啟動請求，不傳送回覆',
       '/new': '開始新的桌面聊天',
       '/topic': '啟用或查看 Telegram 私訊話題工作階段',
@@ -2870,19 +2870,19 @@ export const zhHant = defineLocale({
       '/journey': '開啟記憶圖譜 — 查看技能與記憶隨時間的變化',
       '/queue': '排入、檢視、編輯、移除、移動或清空下一回合提示詞',
       '/steer': '在下一次工具呼叫後插入訊息，不會中斷目前工作',
-      '/goal': '設定持續目標，讓 Hermes 跨回合工作直到完成',
+      '/goal': '設定持續目標，讓 Moor 跨回合工作直到完成',
       '/heartbeat': '設定週期性提示詞，在閒置時重新進入此工作階段',
       '/refine': '立即檢查此對話，並將心得儲存至記憶或技能',
       '/review': '產生獨立子代理，審查剛才討論的工作（PR、程式碼、文件）',
       '/loop': '在此工作階段以固定間隔重新執行提示詞',
-      '/plan': '將 Markdown 實作計畫寫入 .hermes/plans/，不執行任何操作',
+      '/plan': '將 Markdown 實作計畫寫入 .moor/plans/，不執行任何操作',
       '/moa': '使用預設的 Mixture of Agents 組合執行提示詞，完成後還原模型',
       '/subgoal': '新增或管理作用中目標的額外條件',
       '/status': '顯示目前工作階段狀態',
       '/egress': '顯示 Docker 對外連線代理狀態',
       '/context': '顯示詳細的上下文視窗，包括用量、分類明細、壓縮統計與吞吐量',
       '/whoami': '顯示你的斜線指令存取權限（admin / user）',
-      '/profile': '切換作用中的 Hermes 設定檔',
+      '/profile': '切換作用中的 Moor 設定檔',
       '/codex-runtime': '切換 OpenAI/Codex 模型使用的 Codex app-server runtime',
       '/personality': '設定預先定義的人格',
       '/battery': '切換狀態列中的彩色電池指示器',
@@ -2906,10 +2906,10 @@ export const zhHant = defineLocale({
       '/browser': '管理瀏覽器 CDP 連線 [connect|disconnect|status]（僅限本機 gateway）',
       '/palette': '開啟模糊搜尋指令面板（也可使用 Ctrl+P）',
       '/usage': '顯示 Token 用量與速率限制；`reset` 可兌換保留的 Codex 限額重設',
-      '/subscription': '檢視你的 Nous 方案，並在瀏覽器中變更',
-      '/topup': '顯示你的 Nous 餘額，並在 Portal 管理帳務',
+      '/subscription': '檢視你的 Moor 方案，並在瀏覽器中變更',
+      '/topup': '顯示你的 Moor 餘額，並在 Portal 管理帳務',
       '/platform': '暫停、恢復或列出故障的閘道平台',
-      '/version': '顯示 Hermes Agent 版本',
+      '/version': '顯示 Moor Agent 版本',
       '/debug': '上傳偵錯報告（系統資訊與記錄），並取得可分享連結',
       '/model': '切換此工作階段的模型'
     },
@@ -3143,13 +3143,13 @@ export const zhHant = defineLocale({
   },
 
   updates: {
-    discontinuedTitle: '此版本的 Hermes 已停止支援',
-    discontinuedBody: '此版本的 Hermes 已停止支援，可能無法正常運作——請解除安裝。您的資料仍保留在磁碟上。',
+    discontinuedTitle: '此版本的 Moor 已停止支援',
+    discontinuedBody: '此版本的 Moor 已停止支援，可能無法正常運作——請解除安裝。您的資料仍保留在磁碟上。',
     channels: { stable: '穩定版', canary: '預覽版' },
     bundleSwapPending: '重新啟動以完成更新',
     bundleSwapPendingDesc:
-      '更新後的應用程式已安裝完成，只需重新啟動 Hermes 即可載入新版本。聊天記錄和設定不會受到影響。',
-    bundleSwapPendingAction: '重新啟動 Hermes',
+      '更新後的應用程式已安裝完成，只需重新啟動 Moor 即可載入新版本。聊天記錄和設定不會受到影響。',
+    bundleSwapPendingAction: '重新啟動 Moor',
     stages: {
       idle: '準備中…',
       prepare: '準備中…',
@@ -3170,7 +3170,7 @@ export const zhHant = defineLocale({
     notAvailableTitle: '更新不可用',
     unsupportedMessage: '此版本的 Moor 無法在應用程式內自行更新。',
     connectionRetry: '請檢查網路連線後重試。',
-    gitUnusable: 'Hermes 無法在這台電腦上執行 Git，因此無法檢查更新。',
+    gitUnusable: 'Moor 無法在這台電腦上執行 Git，因此無法檢查更新。',
     latestBody: '您正在執行最新版本。',
     versionDetailsDistributionStore: 'Microsoft Store',
     latestBodyBackend: '後端正在執行最新版本。',
@@ -3254,7 +3254,7 @@ export const zhHant = defineLocale({
     justNowSuffix: ' · 剛剛',
     bundleOutOfSync: '應用程式建置版本過舊',
     bundleOutOfSyncDesc:
-      'Hermes 執行環境已更新,但桌面應用程式本身仍是舊建置——在應用程式更新之前,新的介面功能(如 Bot Mode)不會顯示。請執行下方的更新以重新建置應用程式。如果此警告仍未消除,請從最新的桌面安裝程式重新安裝。',
+      'Moor 執行環境已更新,但桌面應用程式本身仍是舊建置——在應用程式更新之前,新的介面功能(如 Bot Mode)不會顯示。請執行下方的更新以重新建置應用程式。如果此警告仍未消除,請從最新的桌面安裝程式重新安裝。',
     bundleOutOfSyncAction: '取得安裝程式',
     checkingShort: '檢查中…'
   },
@@ -3719,11 +3719,11 @@ export const zhHant = defineLocale({
 
   interfaceMode: {
     title: '介面模式',
-    hint: '只改變顯示的內容，不改變 Hermes 的能力。',
+    hint: '只改變顯示的內容，不改變 Moor 的能力。',
     sessionNote: '由簡潔模式設定。此處的變更僅在本次工作階段內生效；切換到進階模式即可保留為你的設定。',
     simple: {
       label: '簡潔',
-      description: '用於與 Hermes 對話。只有側邊欄和聊天；沒有終端機、檔案或差異面板。'
+      description: '用於與 Moor 對話。只有側邊欄和聊天；沒有終端機、檔案或差異面板。'
     },
     advanced: {
       label: '進階',
@@ -3845,9 +3845,9 @@ export const zhHant = defineLocale({
       dismissError: '关闭错误',
       errorGenericProvider: 'AI 服務',
       errorLayerBodies: {
-        generic: 'Hermes 回覆時發生問題。請重試；若問題持續，請複製錯誤詳細資訊。',
+        generic: 'Moor 回覆時發生問題。請重試；若問題持續，請複製錯誤詳細資訊。',
         provider: 'AI 服務無法完成此請求。請稍後重試或切換服務商。',
-        endpoint: 'Hermes 無法連線至你的自訂模型伺服器。請確認它正在執行，然後重新傳送訊息。',
+        endpoint: 'Moor 無法連線至你的自訂模型伺服器。請確認它正在執行，然後重新傳送訊息。',
         streaming: '回覆完成前連線已中斷。請重試以重新傳送。'
       },
       errorCodes: {
@@ -3865,7 +3865,7 @@ export const zhHant = defineLocale({
         },
         invalid_response: {
           title: 'AI 服務傳回了無法讀取的回覆',
-          body: provider => `${provider} 傳回了 Hermes 無法讀取的內容。請稍後重試。`
+          body: provider => `${provider} 傳回了 Moor 無法讀取的內容。請稍後重試。`
         },
         empty_response: {
           title: 'AI 服務傳回了空回覆',
@@ -3893,7 +3893,7 @@ export const zhHant = defineLocale({
         },
         ssl_cert_verification: {
           title: '安全連線失敗',
-          body: provider => `Hermes 無法驗證與 ${provider} 的安全連線。請檢查網路或代理設定，或切換服務商後重新傳送。`
+          body: provider => `Moor 無法驗證與 ${provider} 的安全連線。請檢查網路或代理設定，或切換服務商後重新傳送。`
         }
       },
       errorLayers: {
@@ -4075,7 +4075,7 @@ export const zhHant = defineLocale({
     sudoDesc: '輸入 sudo 密碼前，請先確認指令。密碼會傳送給執行指令的代理，並在本次工作階段中快取。',
     sudoCommandUnavailable: '此代理未提供指令。如果無法在對話中確認，請取消。',
     sudoInstallDesc:
-      'Hermes 需要您的 sudo 密碼，以在閘道主機上安裝 Bot Screen 套件（TigerVNC + Xfce）。它只會傳送到該主機。',
+      'Moor 需要您的 sudo 密碼，以在閘道主機上安裝 Bot Screen 套件（TigerVNC + Xfce）。它只會傳送到該主機。',
     sudoPlaceholder: 'sudo 密碼',
     secretTitle: '需要密鑰',
     secretDesc: 'Moor 需要一個憑證才能繼續。',

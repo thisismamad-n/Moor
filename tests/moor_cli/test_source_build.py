@@ -37,7 +37,7 @@ def stamp_product(root, product, out):
 
 
 def test_source_build_uses_selected_python_for_isolated_icon_child(tmp_path, monkeypatch):
-    from hermes_cli.source_build import source_build_env
+    from moor_cli.source_build import source_build_env
     from pm import paths
     from pm.environments import site_packages, venv_python
 
@@ -52,13 +52,13 @@ def test_source_build_uses_selected_python_for_isolated_icon_child(tmp_path, mon
     monkeypatch.syspath_prepend(str(selected))
 
     env = source_build_env()
-    assert env["HERMES_PYTHON"] == str(venv_python(venv))
-    subprocess.run([env["HERMES_PYTHON"], "-I", "-c",
+    assert env["MOOR_PYTHON"] == str(venv_python(venv))
+    subprocess.run([env["MOOR_PYTHON"], "-I", "-c",
                     "import icon_dependency; assert icon_dependency.ready"], check=True)
 
 
 def test_automatic_build_preserves_pm_admission_intent(monkeypatch):
-    from hermes_cli.source_build import source_build_env
+    from moor_cli.source_build import source_build_env
 
     intent = []
     def acquire(name, *, base_env, explicit):
@@ -70,11 +70,11 @@ def test_automatic_build_preserves_pm_admission_intent(monkeypatch):
 
 
 def test_installed_npm_does_not_authorize_missing_workspace_dependencies(source_checkout, monkeypatch):
-    from hermes_cli.source_build import prepare_source_dependencies, source_build_env
+    from moor_cli.source_build import prepare_source_dependencies, source_build_env
 
     root, _ = source_checkout
     env = source_build_env()
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("MOOR_DISABLE_LAZY_INSTALLS", "1")
     with pytest.raises(subprocess.CalledProcessError):
         prepare_source_dependencies(root, ("ui-tui", "web"), env=env)
     assert _events(root) == []
@@ -90,12 +90,12 @@ def source_checkout(tmp_path, monkeypatch):
     assert node and npm, "source-build integration requires node and npm"
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "0")
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("MOOR_DISABLE_LAZY_INSTALLS", "0")
     monkeypatch.setenv("npm_config_cache", str(tmp_path / "npm-cache"))
     monkeypatch.setenv("ESBUILD_BINARY_PATH", "/wrong/esbuild")
-    monkeypatch.setenv("HERMES_PYTHON", "/wrong/python")
+    monkeypatch.setenv("MOOR_PYTHON", "/wrong/python")
     (home / "npmrc").write_text("fund=false\n", encoding="utf-8")
     monkeypatch.delenv("NPM_CONFIG_USERCONFIG", raising=False)
     acquired = []
@@ -126,7 +126,7 @@ def source_checkout(tmp_path, monkeypatch):
     (root / "log.mjs").write_text(
         "import { appendFileSync } from 'node:fs';\n"
         "appendFileSync('events.jsonl', JSON.stringify({step: process.argv[2], "
-        "python: process.env.HERMES_PYTHON, ci: process.env.CI, "
+        "python: process.env.MOOR_PYTHON, ci: process.env.CI, "
         "esbuild: process.env.ESBUILD_BINARY_PATH, "
         "npmrc: process.env.NPM_CONFIG_USERCONFIG}) + '\\n');\n",
         encoding="utf-8",
@@ -169,7 +169,7 @@ def source_products(source_checkout):
     for script, step, output in [
         ("generate-icons.mjs", "icons", "never-rendered-at-install"),
         ("build/tui.mjs", "tui", "ui-tui/dist/entry.js"),
-        ("build/web.mjs", "web", "hermes_cli/web_dist/index.html"),
+        ("build/web.mjs", "web", "moor_cli/web_dist/index.html"),
     ]:
         relative = "../../" if script.startswith("build/") else "../"
         (root / "scripts" / script).write_text(
@@ -181,7 +181,7 @@ def source_products(source_checkout):
         "import { build } from '../../product.mjs';\n"
         "const flag = '-c.directories.output=';\n"
         "const staging = process.argv.find(arg => arg.startsWith(flag)).slice(flag.length);\n"
-        "build('desktop', relative('../..', staging) + '/linux-unpacked/hermes');\n",
+        "build('desktop', relative('../..', staging) + '/linux-unpacked/moor');\n",
         encoding="utf-8",
     )
     (root / "scripts/build/build-desktop.mjs").write_text(
@@ -201,7 +201,7 @@ def _events(root):
 
 @pytest.mark.platforms("posix")
 def test_preparation_reuses_only_the_exact_completed_workspace_union(source_checkout):
-    from hermes_cli.source_build import prepare_source_dependencies, source_build_env
+    from moor_cli.source_build import prepare_source_dependencies, source_build_env
 
     root, acquired = source_checkout
     before = (root / "package-lock.json").read_bytes()
@@ -209,10 +209,10 @@ def test_preparation_reuses_only_the_exact_completed_workspace_union(source_chec
     prepare_source_dependencies(root, ("ui-tui", "web"), env=env)
     first = _events(root)
     assert [event["step"] for event in first] == ["deps"]
-    assert first[0]["python"] == env["HERMES_PYTHON"]
+    assert first[0]["python"] == env["MOOR_PYTHON"]
     assert first[0]["ci"] == "1"
     assert "esbuild" not in first[0]
-    assert first[0]["npmrc"] == str(Path(os.environ["HERMES_HOME"]) / "npmrc")
+    assert first[0]["npmrc"] == str(Path(os.environ["MOOR_HOME"]) / "npmrc")
     assert (root / "node_modules/ui-tui").exists()
     assert (root / "node_modules/web").exists()
     assert not (root / "node_modules/apps-desktop").exists()
@@ -246,11 +246,11 @@ def test_preparation_reuses_only_the_exact_completed_workspace_union(source_chec
 @pytest.mark.platforms("linux")
 @pytest.mark.parametrize("desktop", [False, True])
 def test_update_builds_selected_products_after_one_union_preparation(source_products, desktop):
-    from hermes_cli.source_build import build_update_products
-    from hermes_cli.main_web_build import _web_ui_build_needed
+    from moor_cli.source_build import build_update_products
+    from moor_cli.main_web_build import _web_ui_build_needed
 
     root, acquired = source_products
-    app = root / "apps/desktop/release/linux-unpacked/hermes"
+    app = root / "apps/desktop/release/linux-unpacked/moor"
     app.parent.mkdir(parents=True)
     app.write_text("previous app")
     build_update_products(root, desktop=desktop)
@@ -258,7 +258,7 @@ def test_update_builds_selected_products_after_one_union_preparation(source_prod
     assert steps == ["deps", "tui", "web"] + (["desktop"] if desktop else [])
     assert acquired == ["npm"]
     assert (root / "ui-tui/dist/entry.js").read_text() == "tui"
-    assert (root / "hermes_cli/web_dist/index.html").read_text() == "web"
+    assert (root / "moor_cli/web_dist/index.html").read_text() == "web"
     assert not _web_ui_build_needed(root / "web")
     assert (root / "node_modules/apps-desktop").exists() == desktop
     assert not (root / "node_modules/unrelated").exists()
@@ -269,10 +269,10 @@ def test_update_builds_selected_products_after_one_union_preparation(source_prod
 @pytest.mark.platforms("linux")
 @pytest.mark.parametrize("step", ["tui", "web", "desktop"])
 def test_update_failure_raises_without_retries_or_replacing_live_app(source_products, step):
-    from hermes_cli.source_build import build_update_products
+    from moor_cli.source_build import build_update_products
 
     root, acquired = source_products
-    app = root / "apps/desktop/release/linux-unpacked/hermes"
+    app = root / "apps/desktop/release/linux-unpacked/moor"
     app.parent.mkdir(parents=True)
     app.write_text("previous app")
     (root / f"fail-{step}").touch()
@@ -283,7 +283,7 @@ def test_update_failure_raises_without_retries_or_replacing_live_app(source_prod
     order = ["deps", "tui", "web", "desktop"]
     assert [event["step"] for event in _events(root)] == order[:order.index(step) + 1]
     assert acquired == ["npm"]
-    assert not (Path(os.environ["HERMES_HOME"]) / "desktop-build-stamp.json").exists()
+    assert not (Path(os.environ["MOOR_HOME"]) / "desktop-build-stamp.json").exists()
 
 
 @pytest.mark.platforms("linux")
@@ -294,8 +294,8 @@ def test_module_cli_builds_the_requested_products(source_products, desktop, monk
     root, acquired = source_products
     monkeypatch.setattr(sys, "argv", ["source_build", "--source", str(root)] + (["--desktop"] if desktop else []))
     # run_module exercises __main__ while substituting only tool acquisition.
-    monkeypatch.delitem(sys.modules, "hermes_cli.source_build", raising=False)
-    runpy.run_module("hermes_cli.source_build", run_name="__main__")
+    monkeypatch.delitem(sys.modules, "moor_cli.source_build", raising=False)
+    runpy.run_module("moor_cli.source_build", run_name="__main__")
     assert acquired == ["npm"]
-    assert (root / "hermes_cli/web_dist/index.html").is_file()
-    assert (root / "apps/desktop/release/linux-unpacked/hermes").exists() == desktop
+    assert (root / "moor_cli/web_dist/index.html").is_file()
+    assert (root / "apps/desktop/release/linux-unpacked/moor").exists() == desktop

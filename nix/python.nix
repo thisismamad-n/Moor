@@ -172,8 +172,8 @@ in
 {
   inherit python;
 
-  venv = pythonSet.mkVirtualEnv "hermes-agent-env" {
-    hermes-agent = dependency-groups;
+  venv = pythonSet.mkVirtualEnv "moor-agent-env" {
+    moor-agent = dependency-groups;
   };
   editableVenv = editableSet.mkVirtualEnv "moor-agent-editable-env" {
     moor-agent = dependency-groups;

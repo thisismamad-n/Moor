@@ -1,30 +1,30 @@
-"""A Hermes-authored systemd ``--replace`` drop-in must not survive unit refresh.
+"""A moor-authored systemd ``--replace`` drop-in must not survive unit refresh.
 
-An older Hermes wrote ``<unit>.d/20-replace.conf`` to end a respawn storm; it overrides ExecStart
+An older Moor wrote ``<unit>.d/20-replace.conf`` to end a respawn storm; it overrides ExecStart
 with ``gateway run --replace``. Combined with the cross-profile ownership guard, that override turns
-a per-profile fleet's unit into one that can never start (#119467). Refresh retires the Hermes file,
+a per-profile fleet's unit into one that can never start (#119467). Refresh retires the Moor file,
 and only that file: a drop-in the operator wrote is theirs.
 """
 
-import hermes_cli.gateway as gateway_cli
+import moor_cli.gateway as gateway_cli
 
-HERMES_DROPIN = (
+MOOR_DROPIN = (
     "# Added to end the gateway respawn storm: a stray lock-holder used to make the\n"
     "# plain `gateway run` exit 1, and Restart=always turned that into thousands of\n"
     "# restarts. `--replace` makes systemd's start reclaim the lock instead of\n"
     "# crash-looping. Remove this file (and daemon-reload) to revert.\n"
     "[Service]\n"
     "ExecStart=\n"
-    "ExecStart=/usr/bin/python -m hermes_cli.main gateway run --replace\n"
+    "ExecStart=/usr/bin/python -m moor_cli.main gateway run --replace\n"
 )
 
 
 def _current_unit_with_dropin(tmp_path, monkeypatch, dropin_text: str):
-    unit = tmp_path / "hermes-gateway.service"
+    unit = tmp_path / "moor-gateway.service"
     unit.write_text("[Unit]\nDescription=current\n", encoding="utf-8")
     monkeypatch.setattr(gateway_cli, "get_systemd_unit_path", lambda system=False: unit)
     monkeypatch.setattr(gateway_cli, "generate_systemd_unit", lambda **_: "[Unit]\nDescription=current\n")
-    monkeypatch.setattr(gateway_cli, "_sync_hermes_home_from_systemd_unit", lambda **_: None)
+    monkeypatch.setattr(gateway_cli, "_sync_moor_home_from_systemd_unit", lambda **_: None)
     calls = []
     monkeypatch.setattr(gateway_cli, "_run_systemctl", lambda args, **kwargs: calls.append((args, kwargs)))
     dropin = unit.parent / f"{unit.name}.d" / "20-replace.conf"
@@ -33,10 +33,10 @@ def _current_unit_with_dropin(tmp_path, monkeypatch, dropin_text: str):
     return unit, dropin, calls
 
 
-def test_refresh_retires_the_hermes_replace_dropin_even_when_the_unit_text_is_current(tmp_path, monkeypatch, capsys):
+def test_refresh_retires_the_moor_replace_dropin_even_when_the_unit_text_is_current(tmp_path, monkeypatch, capsys):
     """The base unit already matches the generator, so the old gate said "nothing to do" and the
     drop-in kept re-arming ``--replace`` on every restart."""
-    unit, dropin, calls = _current_unit_with_dropin(tmp_path, monkeypatch, HERMES_DROPIN)
+    unit, dropin, calls = _current_unit_with_dropin(tmp_path, monkeypatch, MOOR_DROPIN)
     before = unit.read_bytes()
 
     assert gateway_cli.refresh_systemd_unit_if_needed(system=True) is True
@@ -48,9 +48,9 @@ def test_refresh_retires_the_hermes_replace_dropin_even_when_the_unit_text_is_cu
 
 
 def test_refresh_keeps_an_operator_written_dropin_of_the_same_name(tmp_path, monkeypatch):
-    """Only the file Hermes authored (recognised by its own comment) is retired."""
+    """Only the file Moor authored (recognised by its own comment) is retired."""
     unit, dropin, calls = _current_unit_with_dropin(
-        tmp_path, monkeypatch, "[Service]\nExecStart=\nExecStart=/opt/hermes gateway run --replace\n")
+        tmp_path, monkeypatch, "[Service]\nExecStart=\nExecStart=/opt/moor gateway run --replace\n")
 
     assert gateway_cli.refresh_systemd_unit_if_needed() is False
 

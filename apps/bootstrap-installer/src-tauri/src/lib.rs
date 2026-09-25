@@ -69,7 +69,7 @@ where
 /// The runtime's default activation policy is Regular. Entering it registers
 /// this bootstrap process as a Dock app even when Info.plist sets
 /// `LSUIElement`, and the real desktop is a different bundle id, so that
-/// registration is a second Hermes icon. Update, repair, and non-macOS
+/// registration is a second Moor icon. Update, repair, and non-macOS
 /// launches still build the installer UI. The installed-on-disk check is I/O
 /// and stays with the caller.
 pub fn handoff_before_appkit(is_macos: bool, mode: AppMode, force_setup: bool) -> bool {
@@ -121,15 +121,15 @@ pub fn run() {
     // late: by then the process has already been registered as a regular
     // Dock application.
     if handoff_before_appkit(cfg!(target_os = "macos"), mode, force_setup) {
-        let install_root = paths::hermes_home().join("hermes-agent");
-        if bootstrap::hermes_is_installed(&install_root) {
+        let install_root = paths::moor_home().join("moor-agent");
+        if bootstrap::moor_is_installed(&install_root) {
             match bootstrap::spawn_installed_desktop(&install_root) {
                 Ok(()) => {
                     // Brief grace so the spawned app is registered before we
-                    // exit (mirrors launch_hermes_desktop).
+                    // exit (mirrors launch_moor_desktop).
                     std::thread::sleep(std::time::Duration::from_millis(200));
                     tracing::info!(
-                        "hermes already installed — relaunched desktop; exiting installer"
+                        "moor already installed — relaunched desktop; exiting installer"
                     );
                     return;
                 }

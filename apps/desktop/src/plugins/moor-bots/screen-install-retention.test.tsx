@@ -13,7 +13,7 @@ import type { RosterRow } from './types'
 
 const calls = vi.hoisted(() => [] as string[])
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { onGatewayEvent } = await import('../../contrib/events')
 
   return {
@@ -60,7 +60,7 @@ vi.mock('./i18n', () => ({
   })
 }))
 
-import { host } from '@hermes/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 
 // eslint-disable-next-line no-restricted-imports
 import { emitGatewayEvent } from '../../contrib/events'
@@ -71,7 +71,7 @@ const bot: RosterRow = { name: 'ops', sourceScoped: true, connectionId: 'host-a'
 
 const status: DisplayStatus = {
   profile: 'ops',
-  profile_key: '/home/hermes/.hermes',
+  profile_key: '/home/moor/.moor',
   supported: true,
   installed: false,
   missing: ['tigervnc'],

@@ -373,8 +373,8 @@ class TestSyncBackSizeCap:
 
         # Cap at 1 byte so any non-empty tar exceeds it
         with caplog.at_level(logging.WARNING, logger="tools.environments.file_sync"):
-            with patch("hermes_cli.config.load_config", return_value={"terminal": {"sync_back_max_bytes": 1}}):
-                mgr.sync_back(hermes_home=tmp_path / ".hermes")
+            with patch("moor_cli.config.load_config", return_value={"terminal": {"sync_back_max_bytes": 1}}):
+                mgr.sync_back(moor_home=tmp_path / ".moor")
 
         # Host file should be untouched because extraction was skipped
         assert Path(skill_host).read_bytes() == b"original"
@@ -387,20 +387,20 @@ class TestSyncBackSizeCap:
         non-integer value is ignored with a warning and the default applies. The env var
         the first cut used is gone — non-secret settings live in config.yaml."""
         host_file = _write_file(tmp_path / "host_skill.md", b"original")
-        files = {"root/.hermes/skill.md": b"remote_version"}
-        mgr = _make_manager(tmp_path, file_mapping=[(host_file, "/root/.hermes/skill.md")],
+        files = {"root/.moor/skill.md": b"remote_version"}
+        mgr = _make_manager(tmp_path, file_mapping=[(host_file, "/root/.moor/skill.md")],
                             bulk_download_fn=_make_download_fn(files))
 
-        monkeypatch.setenv("HERMES_SYNC_BACK_MAX_BYTES", "1")  # the first cut's env var: must be ignored
-        monkeypatch.setattr("hermes_cli.config.load_config",
+        monkeypatch.setenv("MOOR_SYNC_BACK_MAX_BYTES", "1")  # the first cut's env var: must be ignored
+        monkeypatch.setattr("moor_cli.config.load_config",
                             lambda: {"terminal": {"sync_back_max_bytes": 1}})
-        mgr.sync_back(hermes_home=tmp_path / ".hermes")
+        mgr.sync_back(moor_home=tmp_path / ".moor")
         assert Path(host_file).read_bytes() == b"original"  # 1-byte cap: skipped
 
-        monkeypatch.setattr("hermes_cli.config.load_config",
+        monkeypatch.setattr("moor_cli.config.load_config",
                             lambda: {"terminal": {"sync_back_max_bytes": "lots"}})
         with caplog.at_level(logging.WARNING, logger="tools.environments.file_sync"):
-            mgr.sync_back(hermes_home=tmp_path / ".hermes")
+            mgr.sync_back(moor_home=tmp_path / ".moor")
         assert Path(host_file).read_bytes() == b"remote_version"  # default cap applies
         assert any("sync_back_max_bytes" in r.message for r in caplog.records)
 

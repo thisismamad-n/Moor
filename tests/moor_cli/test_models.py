@@ -7,11 +7,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from unittest.mock import patch, MagicMock
 
-from hermes_cli.nous_account import NousPortalAccountInfo
-from hermes_cli.models import (
+from moor_cli.moor_account import MoorPortalAccountInfo
+from moor_cli.models import (
     OPENROUTER_MODELS, fetch_openrouter_models, detect_provider_for_model,
-    partition_nous_models_by_tier,
-    check_nous_free_tier, union_with_portal_free_recommendations,
+    partition_moor_models_by_tier,
+    check_moor_free_tier, union_with_portal_free_recommendations,
     union_with_portal_paid_recommendations,
 )
 import moor_cli.models as _models_mod
@@ -123,8 +123,8 @@ class TestDetectProviderForModel:
         assert detect_provider_for_model("gpt-5.4", "custom:foo") is None
 
 
-class TestPartitionNousModelsByTier:
-    """Tests for partition_nous_models_by_tier — free vs paid tier model split."""
+class TestPartitionMoorModelsByTier:
+    """Tests for partition_moor_models_by_tier — free vs paid tier model split."""
 
     _PAID = {"prompt": "0.000003", "completion": "0.000015"}
     _FREE = {"prompt": "0", "completion": "0"}
@@ -142,22 +142,22 @@ class TestPartitionNousModelsByTier:
         """A row the gateway bills to a subscription costs no credits, whatever price it lists."""
         models = ["anthropic/claude-opus-4.6", "openai/gpt-5.4"]
         pricing = {"anthropic/claude-opus-4.6": self._PAID, "openai/gpt-5.4": {**self._PAID, "billing_mode": "subscription"}}
-        sel, unav = partition_nous_models_by_tier(models, pricing, free_tier=True)
+        sel, unav = partition_moor_models_by_tier(models, pricing, free_tier=True)
         assert (sel, unav) == (["openai/gpt-5.4"], ["anthropic/claude-opus-4.6"])
 
     def test_free_tier_default_prefers_a_free_model_over_a_subscription_billed_one(self, monkeypatch):
-        import hermes_cli.models as m
-        from hermes_cli import models_pricing as mp
+        import moor_cli.models as m
+        from moor_cli import models_pricing as mp
         pricing = {"openai/gpt-5.4": {**self._PAID, "billing_mode": "subscription"}, "free/model": self._FREE}
-        monkeypatch.setattr(m, "get_curated_nous_model_ids", lambda: list(pricing))
-        monkeypatch.setattr(m, "check_nous_free_tier", lambda **kw: True)
+        monkeypatch.setattr(m, "get_curated_moor_model_ids", lambda: list(pricing))
+        monkeypatch.setattr(m, "check_moor_free_tier", lambda **kw: True)
         monkeypatch.setattr(m, "union_with_portal_free_recommendations", lambda ids, pr, url="", **kw: (ids, pr))
         monkeypatch.setattr(m, "get_preferred_silent_default_model", lambda provider="": "not/listed")
         monkeypatch.setattr(mp, "get_pricing_for_provider", lambda slug, **kw: pricing)
-        monkeypatch.setattr(mp, "nous_policy_allowed_ids", lambda **kw: None)
-        assert m.recommended_nous_default_model()["model"] == "free/model"
+        monkeypatch.setattr(mp, "moor_policy_allowed_ids", lambda **kw: None)
+        assert m.recommended_moor_default_model()["model"] == "free/model"
         del pricing["free/model"]
-        assert m.recommended_nous_default_model()["model"] == "openai/gpt-5.4"
+        assert m.recommended_moor_default_model()["model"] == "openai/gpt-5.4"
 
     def test_all_paid_models(self):
         """When all models are paid, free-tier users have none selectable."""
@@ -335,8 +335,8 @@ class TestCheckMoorFreeTierCache:
         mock_account.assert_called_with(force_fresh=True)
 
 
-class TestNousRecommendedModels:
-    """Tests for fetch_nous_recommended_models + get_nous_recommended_aux_model."""
+class TestMoorRecommendedModels:
+    """Tests for fetch_moor_recommended_models + get_moor_recommended_aux_model."""
 
     _SAMPLE_PAYLOAD = {
         "paidRecommendedModels": [],
@@ -750,7 +750,7 @@ class TestLocalOllamaModelDiscovery:
         assert first != second
 
     def test_clear_provider_models_cache_clears_ollama_native_tags_cache(self):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         cache = getattr(models, "_OLLAMA_LOCAL_MODELS_CACHE")
         cache["http://127.0.0.1:11434"] = ("old-model",)
@@ -758,7 +758,7 @@ class TestLocalOllamaModelDiscovery:
         assert cache == {}
 
     def test_clear_provider_models_cache_custom_clears_native_tags_cache(self):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         cache = getattr(models, "_OLLAMA_LOCAL_MODELS_CACHE")
         cache["http://127.0.0.1:11434"] = ("old-model",)
@@ -766,7 +766,7 @@ class TestLocalOllamaModelDiscovery:
         assert cache == {}
 
     def test_clear_provider_models_cache_does_not_remove_custom_disk_cache(self):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         disk_cache = {
             "custom": {"models": ["custom-model"]},
@@ -1268,7 +1268,7 @@ class TestLocalOllamaModelDiscovery:
         assert _root_for_ollama_native_api("http://ollama.example/api/tags") == "http://ollama.example"
 
     def test_ollama_failed_probe_is_cached_briefly(self):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         models._OLLAMA_LOCAL_MODELS_CACHE.clear()
         models._OLLAMA_LOCAL_PROBE_FAILURE_CACHE.clear()
@@ -1281,7 +1281,7 @@ class TestLocalOllamaModelDiscovery:
         request.assert_called_once()
 
     def test_empty_ollama_catalog_does_not_resurrect_stale_disk_models(self):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         base_url = "http://127.0.0.1:11434"
         probe_key = models._ollama_probe_cache_key(base_url, None)
@@ -1301,7 +1301,7 @@ class TestLocalOllamaModelDiscovery:
             models._OLLAMA_LOCAL_PROBE_REACHABLE.pop(probe_key, None)
 
     def test_failed_ollama_catalog_preserves_stale_disk_models(self):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         base_url = "http://127.0.0.1:11434"
         probe_key = models._ollama_probe_cache_key(base_url, None)
@@ -1321,7 +1321,7 @@ class TestLocalOllamaModelDiscovery:
             models._OLLAMA_LOCAL_PROBE_REACHABLE.pop(probe_key, None)
 
     def test_ollama_native_request_uses_redirect_safe_catalog_helper(self):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         response = MagicMock()
         response.read.return_value = b'{"models": [{"name": "qwen3:1.7b"}]}'
@@ -1498,21 +1498,21 @@ class TestAzureFoundryPickerCatalog:
             seen.update(base_url=base_url, credential=credential)
             return True, ["gpt-5.4", "kimi-k2.6"]
 
-        monkeypatch.setattr("hermes_cli.runtime_provider._resolve_azure_foundry_runtime", fake_runtime)
-        monkeypatch.setattr("hermes_cli.azure_detect._probe_openai_models", fake_probe)
+        monkeypatch.setattr("moor_cli.runtime_provider._resolve_azure_foundry_runtime", fake_runtime)
+        monkeypatch.setattr("moor_cli.azure_detect._probe_openai_models", fake_probe)
         assert _models_mod.provider_model_ids("azure-foundry", force_refresh=True) == ["gpt-5.4", "kimi-k2.6"]
         assert seen == {"base_url": "https://r.openai.azure.com/openai/v1", "credential": "k"}
 
     def test_probe_miss_or_resolver_error_keeps_the_empty_static_catalog(self, monkeypatch):
-        monkeypatch.setattr("hermes_cli.azure_detect._probe_openai_models", lambda *a, **k: (False, []))
-        monkeypatch.setattr("hermes_cli.runtime_provider._resolve_azure_foundry_runtime",
+        monkeypatch.setattr("moor_cli.azure_detect._probe_openai_models", lambda *a, **k: (False, []))
+        monkeypatch.setattr("moor_cli.runtime_provider._resolve_azure_foundry_runtime",
                             lambda **_: {"base_url": "https://r.services.ai.azure.com/anthropic", "api_key": "k"})
         assert _models_mod.provider_model_ids("azure-foundry", force_refresh=True) == []
 
         def raising(**_):
             raise RuntimeError("Azure Foundry requires a base URL")
 
-        monkeypatch.setattr("hermes_cli.runtime_provider._resolve_azure_foundry_runtime", raising)
+        monkeypatch.setattr("moor_cli.runtime_provider._resolve_azure_foundry_runtime", raising)
         assert _models_mod.provider_model_ids("azure-foundry", force_refresh=True) == []
 
     def test_disk_cache_fingerprint_tracks_the_configured_resource(self, monkeypatch):

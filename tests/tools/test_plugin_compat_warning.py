@@ -43,7 +43,7 @@ def test_importing_the_facade_itself_does_not_warn():
     with warnings.catch_warnings(record=True) as rec:
         warnings.simplefilter("always")
         importlib.import_module("tools.web_tools")
-    assert not [w for w in rec if issubclass(w.category, HermesPluginCompatWarning)]
+    assert not [w for w in rec if issubclass(w.category, MoorPluginCompatWarning)]
 
 
 def test_skills_hub_compat_hook_is_idempotent_across_reload_and_reinstall():
@@ -59,7 +59,7 @@ def test_skills_hub_compat_hook_is_idempotent_across_reload_and_reinstall():
 
     assert hub.__getattr__ is hook
     assert hub._plugin_compat_prev_getattr is previous
-    assert hub.HERMES_HOME.is_dir()
+    assert hub.MOOR_HOME.is_dir()
     with pytest.raises(AttributeError):
         getattr(hub, "not_a_real_hub_attribute")
 

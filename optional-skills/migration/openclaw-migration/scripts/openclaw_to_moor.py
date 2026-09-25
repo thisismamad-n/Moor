@@ -387,7 +387,7 @@ def load_yaml_file(path: Path) -> Dict[str, Any]:
         ) from exc
     try:
         reader = yaml.YAML(typ="safe")
-        reader.version = (1, 1)  # Match Hermes' existing config scalar semantics.
+        reader.version = (1, 1)  # Match Moor' existing config scalar semantics.
         data = reader.load(raw)
     except yaml.YAMLError as exc:
         raise ConfigReadError(
@@ -423,7 +423,7 @@ def dump_yaml_file(path: Path, data: Dict[str, Any]) -> None:
     ``~/.moor/config.yaml`` into a dotfiles repo or profile package.
     """
     if yaml is None:
-        raise RuntimeError("ruamel.yaml is required to update Hermes config.yaml")
+        raise RuntimeError("ruamel.yaml is required to update Moor config.yaml")
     ensure_parent(path)
     target = os.path.realpath(str(path)) if os.path.islink(str(path)) else str(path)
     fd, tmp_path = tempfile.mkstemp(

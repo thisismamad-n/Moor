@@ -223,7 +223,7 @@ class TestOpenAIClientConfig:
         self, monkeypatch, tmp_path, sample_wav, openai_config, expected_timeout, expected_retries
     ):
         monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         config_lines = ["stt:", "  openai:"]
         config_lines.extend(f"    {key}: {value}" for key, value in openai_config.items())
         (tmp_path / "config.yaml").write_text("\n".join(config_lines) + "\n", encoding="utf-8")

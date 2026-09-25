@@ -88,8 +88,8 @@ def resolve_copilot_token() -> tuple[str, str]:
 
 def _gh_cli_candidates() -> list[str]:
     """Every present ``gh`` in probe order: PATH first, then Homebrew and ``~/.local/bin``."""
-    from hermes_platform.resolver import locate_command
-    from hermes_platform.resolver.known_dirs import homebrew_dirs, user_local_bin
+    from moor_platform.resolver import locate_command
+    from moor_platform.resolver.known_dirs import homebrew_dirs, user_local_bin
 
     res = locate_command("gh", known_dirs=(*homebrew_dirs(), *user_local_bin()))
     seen: list[str] = []

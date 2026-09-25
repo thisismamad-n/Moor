@@ -16,7 +16,7 @@ import threading
 
 from rich.markup import escape as _escape
 from utils import base_url_host_matches
-from hermes_cli.cli_agent_setup_mixin import _retire_agent
+from moor_cli.cli_agent_setup_mixin import _retire_agent
 
 # CLI-level fields describing the active model route; snapshotted before a switch / one-turn
 # override and restored wholesale on rollback. ``reasoning_config`` rides along because it is
@@ -39,7 +39,7 @@ def _resolve_cli_reasoning(cli) -> None:
     the launch model's effort and 400s (#112921, #96012). ``agent.switch_model`` re-resolves its own
     copy for the live-agent path."""
     from cli import CLI_CONFIG
-    from hermes_constants import resolve_reasoning_config
+    from moor_constants import resolve_reasoning_config
     # getattr: tests drive /new unbound on a SimpleNamespace without ``model`` (blank -> config default).
     cli.reasoning_config = resolve_reasoning_config(CLI_CONFIG, getattr(cli, "model", None) or "")
 
@@ -61,18 +61,18 @@ def stored_session_route(session_meta, *, current_model, current_provider):
     if stored_model == current_model and not provider_changed:
         return None
     api_mode = runtime.get("api_mode") or None
-    from hermes_cli.runtime_provider import is_foreign_provider_endpoint
+    from moor_cli.runtime_provider import is_foreign_provider_endpoint
     if is_foreign_provider_endpoint(provider, base_url):
         # The endpoint and its wire belong to the provider this chat left; resolve the stored one's own.
         base_url = api_mode = None
     # A row's api_mode/base_url were written for whichever model the session last ran. Providers that
-    # pick the wire per model (OpenCode Zen/Go, Copilot, Nous) re-derive both from the stored model, or a
+    # pick the wire per model (OpenCode Zen/Go, Copilot, Moor) re-derive both from the stored model, or a
     # resumed opencode-go session keeps a MiniMax-era anthropic_messages route for a chat_completions
     # model (#96066) — the CLI/oneshot twin of tui_gateway's _rederive_per_model_route.
-    from hermes_cli.model_switch import model_derived_api_mode
+    from moor_cli.model_switch import model_derived_api_mode
     derived = model_derived_api_mode(provider or "", stored_model)
     if derived is not None:
-        from hermes_cli.models import normalize_opencode_base_url
+        from moor_cli.models import normalize_opencode_base_url
         api_mode = derived
         base_url = normalize_opencode_base_url(provider, api_mode, base_url) or None
     return stored_model, provider, base_url, api_mode, provider_changed
@@ -134,7 +134,7 @@ def _print_switch_summary(cli, result, old_model, *, one_turn: bool, strict_cont
     _cprint(f"    Provider: {result.provider_label or result.target_provider}")
     if result.target_provider == "moa":
         # The preset name hides who pays: the aggregator runs every tool-loop step (#112359).
-        from hermes_cli.moa_config import normalize_moa_config
+        from moor_cli.moa_config import normalize_moa_config
         moa_cfg = cli.config.get("moa") if isinstance(cli.config, dict) else {}
         agg = normalize_moa_config(moa_cfg)["presets"].get(result.new_model, {}).get("aggregator") or {}
         if agg:
@@ -373,7 +373,7 @@ class CLIModelSwitchMixin:
 
         # 2. Replace untouched default with a Codex model
         if self._model_is_default:
-            from hermes_cli.codex_models import DEFAULT_CODEX_MODELS, get_codex_model_ids
+            from moor_cli.codex_models import DEFAULT_CODEX_MODELS, get_codex_model_ids
 
             fallback_model = DEFAULT_CODEX_MODELS[0]
             try:
@@ -439,7 +439,7 @@ class CLIModelSwitchMixin:
         if route is None:
             return
         stored_model, stored_provider, stored_base_url, stored_api_mode, provider_changed = route
-        from hermes_cli.local_runtime.endpoint import LLAMACPP_ALIASES
+        from moor_cli.local_runtime.endpoint import LLAMACPP_ALIASES
         managed = str(stored_provider or "").strip().lower() in LLAMACPP_ALIASES
         self.model = stored_model
         if stored_provider:
@@ -456,7 +456,7 @@ class CLIModelSwitchMixin:
             self._explicit_api_key = None
             self._explicit_base_url = None
             try:
-                from hermes_cli.runtime_provider import resolve_runtime_provider
+                from moor_cli.runtime_provider import resolve_runtime_provider
                 resolved = resolve_runtime_provider(requested=stored_provider, target_model=self.model or None)
                 if resolved.get("api_key"):
                     self.api_key = resolved["api_key"]
@@ -479,7 +479,7 @@ class CLIModelSwitchMixin:
             self._explicit_api_key = None
             self._explicit_base_url = stored_base_url
             try:
-                from hermes_cli.runtime_provider import resolve_runtime_provider
+                from moor_cli.runtime_provider import resolve_runtime_provider
                 resolved = resolve_runtime_provider(requested=stored_provider, target_model=self.model or None)
                 if resolved.get("api_key"):
                     self.api_key = resolved["api_key"]
@@ -712,18 +712,18 @@ class CLIModelSwitchMixin:
                 self._close_model_picker()
                 return
             provider_data = providers[selected]
-            # Curated list (same as `hermes model` / gateway pickers); live catalog only when
+            # Curated list (same as `moor model` / gateway pickers); live catalog only when
             # it is empty (user-defined endpoints, per-resource providers such as azure-foundry).
             # Disk-cached like the gateway pickers: the live probe can walk several api-version
             # fallbacks with a 6 s timeout each, which must not block the REPL on every select.
             model_list = provider_data.get("models", [])
             if not model_list:
                 try:
-                    from hermes_cli.models import cached_provider_model_ids
+                    from moor_cli.models import cached_provider_model_ids
                     model_list = cached_provider_model_ids(provider_data["slug"]) or model_list
                 except Exception:
                     pass
-            from hermes_cli.models_validate import offered_model_ids
+            from moor_cli.models_validate import offered_model_ids
             model_list = offered_model_ids(
                 model_list, provider_data.get("slug"), provider_data.get("api_url"))
             state.update(

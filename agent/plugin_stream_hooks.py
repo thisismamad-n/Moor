@@ -76,7 +76,7 @@ def _worker(dispatcher: _ConsumerDispatcher) -> None:
             except Exception as exc:
                 # Fires once per streaming delta: a mis-declared callback fails identically every
                 # time, so it goes through the manager's warn-once reporter (#111922).
-                from hermes_cli.plugins import get_plugin_manager
+                from moor_cli.plugins import get_plugin_manager
 
                 get_plugin_manager()._report_hook_failure(dispatcher.hook_name, dispatcher.callback, payload, exc)
         finally:
@@ -159,7 +159,7 @@ def stream_reasoning_deltas_enabled() -> bool:
     Read-only scalar lookup: skips ``load_config()``'s deepcopy. Callers on the token path
     should still cache the result per stream (``_fire_reasoning_delta`` does)."""
     try:
-        from hermes_cli import config as config_mod
+        from moor_cli import config as config_mod
         config = config_mod.load_config_readonly()
         return bool(config_mod.cfg_get(config, "plugins", "stream_reasoning_deltas", default=False))
     except Exception:

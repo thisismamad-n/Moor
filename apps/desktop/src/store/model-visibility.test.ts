@@ -48,21 +48,21 @@ describe('model visibility', () => {
   })
 
   it('shows a model that appeared after the user curated its provider, unless the provider is hidden', () => {
-    // User curated claude-sub (kept sonnet, hid haiku) and hid all of nous; then a plugin update adds opus.
-    const stored = new Set([modelVisibilityKey('claude-sub', 'sonnet'), emptyProviderSentinelKey('nous')])
+    // User curated claude-sub (kept sonnet, hid haiku) and hid all of moor; then a plugin update adds opus.
+    const stored = new Set([modelVisibilityKey('claude-sub', 'sonnet'), emptyProviderSentinelKey('moor')])
 
     const known = new Set([
       modelVisibilityKey('claude-sub', 'sonnet'),
       modelVisibilityKey('claude-sub', 'haiku'),
-      modelVisibilityKey('nous', 'hermes-4')
+      modelVisibilityKey('moor', 'hermes-4')
     ])
 
-    const providers = [provider('claude-sub', ['sonnet', 'haiku', 'opus']), provider('nous', ['hermes-4', 'hermes-5'])]
+    const providers = [provider('claude-sub', ['sonnet', 'haiku', 'opus']), provider('moor', ['hermes-4', 'hermes-5'])]
     const visible = effectiveVisibleKeys(stored, providers, known)
 
     expect(visible.has(modelVisibilityKey('claude-sub', 'opus'))).toBe(true)
     expect(visible.has(modelVisibilityKey('claude-sub', 'haiku'))).toBe(false)
-    expect(visible.has(modelVisibilityKey('nous', 'hermes-5'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('moor', 'hermes-5'))).toBe(false)
 
     // No snapshot yet (pre-upgrade store): nothing counts as new, hide choices stay verbatim.
     expect(effectiveVisibleKeys(stored, providers, null).has(modelVisibilityKey('claude-sub', 'opus'))).toBe(false)

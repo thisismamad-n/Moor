@@ -102,19 +102,19 @@ def test_self_heals_missing_singleton_access_token_from_codex_cli(tmp_path, monk
 
 def test_opt_out_never_adopts_codex_cli_login(tmp_path, monkeypatch):
     """``auth.adopt_external_logins: false`` (#113023): the Codex CLI pair is a single-use refresh-token
-    family the user did not hand to Hermes. Both automatic recovery paths must leave it (and Hermes' own
+    family the user did not hand to Moor. Both automatic recovery paths must leave it (and Moor' own
     auth.json) untouched and surface the real error instead."""
-    hermes_home = tmp_path / "hermes"
+    moor_home = tmp_path / "moor"
     codex_home = tmp_path / "codex"
-    hermes_home.mkdir()
+    moor_home.mkdir()
     codex_home.mkdir()
-    (hermes_home / "config.yaml").write_text("auth:\n  adopt_external_logins: false\n")
-    hermes_auth = {"version": 1, "providers": {"openai-codex": {
+    (moor_home / "config.yaml").write_text("auth:\n  adopt_external_logins: false\n")
+    moor_auth = {"version": 1, "providers": {"openai-codex": {
         "tokens": {"refresh_token": "stale-refresh"}, "auth_mode": "chatgpt"}}}
-    (hermes_home / "auth.json").write_text(json.dumps(hermes_auth))
+    (moor_home / "auth.json").write_text(json.dumps(moor_auth))
     (codex_home / "auth.json").write_text(json.dumps({
         "tokens": {"access_token": "fresh-access", "refresh_token": "fresh-refresh"}}))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
 
     with pytest.raises(AuthError) as info:
@@ -128,7 +128,7 @@ def test_opt_out_never_adopts_codex_cli_login(tmp_path, monkeypatch):
     with pytest.raises(AuthError) as info:
         _refresh_codex_auth_tokens(dict(STALE), 5.0)
     assert info.value.relogin_required  # surfaced, not papered over with the CLI pair
-    assert json.loads((hermes_home / "auth.json").read_text()) == hermes_auth
+    assert json.loads((moor_home / "auth.json").read_text()) == moor_auth
 
 
 def _codex_jwt(account_id: str, sub: str = "user-1") -> str:
@@ -139,27 +139,27 @@ def _codex_jwt(account_id: str, sub: str = "user-1") -> str:
     return f"{_b64({'alg': 'none'})}.{_b64(claims)}.sig"
 
 
-def _seed_homes(tmp_path, monkeypatch, hermes_tokens, cli_tokens):
-    hermes_home, codex_home = tmp_path / "hermes", tmp_path / "codex"
-    hermes_home.mkdir()
+def _seed_homes(tmp_path, monkeypatch, moor_tokens, cli_tokens):
+    moor_home, codex_home = tmp_path / "moor", tmp_path / "codex"
+    moor_home.mkdir()
     codex_home.mkdir()
-    (hermes_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"openai-codex": {
-        "tokens": hermes_tokens, "auth_mode": "chatgpt"}}}))
+    (moor_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"openai-codex": {
+        "tokens": moor_tokens, "auth_mode": "chatgpt"}}}))
     (codex_home / "auth.json").write_text(json.dumps({"tokens": cli_tokens}))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
-    return hermes_home / "auth.json"
+    return moor_home / "auth.json"
 
 
 def test_recovery_refuses_codex_cli_login_from_another_workspace(tmp_path, monkeypatch, caplog):
     """#73667: a Codex Desktop/CLI login into ANOTHER ChatGPT workspace must not silently replace the
-    Hermes credential it is supposed to repair — the store stays byte-identical and the log says why."""
+    Moor credential it is supposed to repair — the store stays byte-identical and the log says why."""
     personal, team = _codex_jwt("acct-personal"), _codex_jwt("acct-team")
     auth_file = _seed_homes(tmp_path, monkeypatch, {"access_token": personal},
                             {"access_token": team, "refresh_token": "rt-team"})
     before = auth_file.read_bytes()
 
-    with caplog.at_level("WARNING", logger="hermes_cli.auth"), pytest.raises(AuthError) as info:
+    with caplog.at_level("WARNING", logger="moor_cli.auth"), pytest.raises(AuthError) as info:
         resolve_codex_runtime_credentials(refresh_if_expiring=False)
 
     assert info.value.code == "codex_auth_missing_refresh_token"

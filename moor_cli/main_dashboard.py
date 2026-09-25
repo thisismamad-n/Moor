@@ -13,8 +13,8 @@ import sys
 
 from pathlib import Path
 from typing import NoReturn
-from hermes_cli.cli_output import line_input
-from hermes_cli.process_identity import is_desktop_owned_backend as _is_desktop_owned_backend
+from moor_cli.cli_output import line_input
+from moor_cli.process_identity import is_desktop_owned_backend as _is_desktop_owned_backend
 
 _PRE_BUILD_HINT = "  Pre-build first:  npm install --workspace web && npm run build -w web"
 
@@ -23,23 +23,23 @@ def _find_stale_dashboard_pids(*, exclude_pids: set[int] | None = None,
                                scope_home: str | None = None) -> list[int]:
     """PIDs of running ``dashboard``/``serve`` backends the caller may stop.
 
-    *scope_home*: keep only backends whose resolved Hermes home (see
-    ``_hermes_home_for_pid``) is this home; unreadable ownership is spared, never guessed.
+    *scope_home*: keep only backends whose resolved Moor home (see
+    ``_moor_home_for_pid``) is this home; unreadable ownership is spared, never guessed.
     ``--stop`` and the post-update cleanup pass their own home so another install's or
     profile's backend on the same machine is never a target (#113978).
     """
-    from hermes_cli.dashboard_procs import (
+    from moor_cli.dashboard_procs import (
         _caller_ancestor_pids,
         _is_caller_wrapper_shell,
-        _pids_owned_by_hermes_home,
+        _pids_owned_by_moor_home,
         _scan_dashboard_processes,
     )
     pids = [pid for pid, _cmd in _scan_dashboard_processes(exclude_pids=exclude_pids)]
     # The argv substring scan also selects the caller's own wrapper shell (``bash -c
-    # 'hermes dashboard --stop'``); killing it takes down the invoking terminal.
+    # 'moor dashboard --stop'``); killing it takes down the invoking terminal.
     ancestors = _caller_ancestor_pids()
     pids = [pid for pid in pids if not _is_caller_wrapper_shell(pid, ancestors)]
-    return _pids_owned_by_hermes_home(pids, scope_home) if scope_home else pids
+    return _pids_owned_by_moor_home(pids, scope_home) if scope_home else pids
 
 
 def _parse_dashboard_runtime(command: str) -> tuple[str, str, int] | None:
@@ -253,7 +253,7 @@ def _loaded_launchd_backend_jobs(
     import plistlib
     from xml.parsers.expat import ExpatError
 
-    from hermes_cli.gateway import _launchd_print_service_pid
+    from moor_cli.gateway import _launchd_print_service_pid
     uid = os.getuid()  # windows-footgun: ok — darwin-only branch
     jobs: list[tuple[str, str, list[str], int | None]] = []
     for kind, plist_dir in (plist_dirs if plist_dirs is not None else _launchd_plist_dirs()):
@@ -467,8 +467,8 @@ def _install_hangup_protection(gateway_mode: bool = False):
 
         import datetime as _dt
 
-        stage = "continued on the pulled code" if os.environ.get("HERMES_UPDATE_POST_SWAP") == "1" else "started"
-        log_file.write(f"\n=== hermes update {stage} {_dt.datetime.now().isoformat(timespec='seconds')} ===\n")
+        stage = "continued on the pulled code" if os.environ.get("MOOR_UPDATE_POST_SWAP") == "1" else "started"
+        log_file.write(f"\n=== moor update {stage} {_dt.datetime.now().isoformat(timespec='seconds')} ===\n")
 
         state["log_file"] = log_file
         sys.stdout = _UpdateOutputStream(state["prev_stdout"], log_file)
@@ -808,24 +808,24 @@ def _endpoint_conflict(args, record, typed: set) -> str:
 
 
 def _attach_to_host_backend(args, headless_backend: bool) -> None:
-    """Multiplex-only: a second `hermes serve`/`dashboard` attaches to the host backend.
+    """Multiplex-only: a second `moor serve`/`dashboard` attaches to the host backend.
 
     Exactly ONE backend runs per host and multiplexes every profile, so a second invocation —
     for ANY profile, the default included — reports the live one and exits 0 instead of binding
     a second port. ``--isolated`` opts out (Desktop's SSH backend proves ownership with it) and
-    Desktop pool backends (HERMES_DESKTOP=1) keep their own lifecycle.
+    Desktop pool backends (MOOR_DESKTOP=1) keep their own lifecycle.
 
     Exit 0 means "the host backend answered and serves what you asked for", and nothing else:
 
     * the owner must ANSWER on its recorded port and identify itself (a record alone cannot see a
       graceful-shutdown window or a foreign listener that inherited the port) — a supervisor or
-      `hermes update` relaunch landing in that window would otherwise exit 0 with NOTHING
+      `moor update` relaunch landing in that window would otherwise exit 0 with NOTHING
       listening, reporting success for a dead service;
     * an explicitly typed ``--port``/``--host`` the owner cannot serve is a REFUSAL naming the
       owner, never a silent redirect. It exits 78 (EX_CONFIG), the deliberate-refusal code
       ``RestartPreventExitStatus=78`` parks on: exit 1 under ``Restart=always`` was an infinite
       restart loop with nothing listening on the ingress port (#119824);
-    * a `hermes dashboard` user is never handed a headless backend's URL (no SPA behind it).
+    * a `moor dashboard` user is never handed a headless backend's URL (no SPA behind it).
 
     Returns normally — leaving the caller to BIND — when no owner answers.
     """
@@ -854,12 +854,12 @@ def _attach_to_host_backend(args, headless_backend: bool) -> None:
 
     if not headless_backend and not identity.get("servesSpa"):
         print(f"Refusing to start: this host is already served by {hr.describe(record)}, "
-              "which is a headless `hermes serve` backend with no dashboard UI.")
-        print("  Stop it and run `hermes dashboard`, or use --isolated for a dedicated server.")
+              "which is a headless `moor serve` backend with no dashboard UI.")
+        print("  Stop it and run `moor dashboard`, or use --isolated for a dedicated server.")
         sys.exit(GATEWAY_FATAL_CONFIG_EXIT_CODE)
 
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from moor_cli.profiles import get_active_profile_name
         profile = get_active_profile_name()
     except Exception:
         profile = "default"
@@ -867,7 +867,7 @@ def _attach_to_host_backend(args, headless_backend: bool) -> None:
     url = f"http://{hr.dial_host(record)}:{record.port}/?profile={wanted}"
 
     kind = "backend" if headless_backend else "dashboard"
-    print(f"Hermes {kind} already running on this host: PID {record.pid}, port {record.port}.")
+    print(f"Moor {kind} already running on this host: PID {record.pid}, port {record.port}.")
     print(f"  Managing profile '{wanted}': {url}")
     if not headless_backend and not args.no_open:
         with contextlib.suppress(Exception):
@@ -884,7 +884,7 @@ def _route_named_profile_dashboard(
     No-record fallback to :func:`_attach_to_host_backend`, which already attached (and exited)
     when the host publishes a live rendezvous record: re-exec pinned to ``-p default`` (so
     ``_apply_profile_override`` can't re-route via the sticky active_profile file). ``--isolated``
-    opts out; Desktop pool backends (HERMES_DESKTOP=1) stay per-profile. Returns normally when no
+    opts out; Desktop pool backends (MOOR_DESKTOP=1) stay per-profile. Returns normally when no
     routing applies.
     """
     try:

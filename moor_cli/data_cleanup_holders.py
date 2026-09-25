@@ -23,7 +23,7 @@ def _drain_manual_gateway(home: Path) -> None:
         if get_running_pid_identity_strict(home / "gateway.pid") is not None:
             raise RuntimeError(f"gateway has no usable control socket for {home}; stop it through its owner and retry")
         return
-    if not identity.get("hermes_home") or Path(identity["hermes_home"]).resolve() != home:
+    if not identity.get("moor_home") or Path(identity["moor_home"]).resolve() != home:
         raise RuntimeError(f"gateway control identity does not match {home}")
     owner = identity.get("supervisor")
     if owner != "manual":
@@ -51,10 +51,10 @@ def _drain_manual_gateway(home: Path) -> None:
 
 
 def _refuse_backend_writers(home: Path) -> None:
-    from hermes_constants import get_default_hermes_root
-    from hermes_cli.process_identity import LEDGER_FILENAME, _pid_alive_matches, _read_ledger
+    from moor_constants import get_default_moor_root
+    from moor_cli.process_identity import LEDGER_FILENAME, _pid_alive_matches, _read_ledger
 
-    root = get_default_hermes_root(home=home).resolve()
+    root = get_default_moor_root(home=home).resolve()
     rows = _read_ledger(root / LEDGER_FILENAME)
     if rows is None:
         raise RuntimeError(f"cannot read backend ownership: {root / LEDGER_FILENAME}")
@@ -102,11 +102,11 @@ def _refuse_cron_writers(home: Path) -> None:
 
 
 def _refuse_multiplexer(home: Path) -> None:
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
     from gateway.control_socket import identify_gateway
     from gateway.status import get_running_pid_identity_strict
 
-    root = get_default_hermes_root(home=home).resolve()
+    root = get_default_moor_root(home=home).resolve()
     if home == root:
         return
     identity = identify_gateway(root)
@@ -121,8 +121,8 @@ def _refuse_multiplexer(home: Path) -> None:
 def quiescent_home(home: Path):
     """Hold existing writer locks through deletion; do not remove their inodes."""
     from gateway.status import _release_file_lock, _try_acquire_file_lock
-    from hermes_cli.active_sessions import _FileLock, _prune_dead, _read_entries
-    from hermes_cli.runtime_state import _lock
+    from moor_cli.active_sessions import _FileLock, _prune_dead, _read_entries
+    from moor_cli.runtime_state import _lock
     from tools.checkpoint_pruning import store_lock
 
     home = home.resolve()

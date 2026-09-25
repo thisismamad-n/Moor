@@ -19,7 +19,7 @@
 # CONTRACT (keep in sync with apps/desktop/electron/main.ts):
 #   cmd /d /s /c start "" /b powershell -NoProfile -ExecutionPolicy Bypass
 #     -File scripts\desktop-update\windows.ps1
-#     -InstallRoot <path>   repo checkout (HERMES_HOME\hermes-agent)
+#     -InstallRoot <path>   repo checkout (MOOR_HOME\moor-agent)
 #     [-Branch <ref> | -Channel stable|canary|main]  default: branch main
 #     -DesktopPid <pid>     the Electron main process to wait out
 #     [-RelaunchExe <path>] Moor.exe to start when done (omit = no relaunch)
@@ -90,10 +90,10 @@ try {
     $OutputEncoding = [System.Text.Encoding]::UTF8
 } catch {}
 $TempDir = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
-$HermesHome = if ($env:HERMES_HOME) { $env:HERMES_HOME } elseif ($InstallRoot) { Split-Path -Parent $InstallRoot } else { $TempDir }
-$env:HERMES_HOME = $HermesHome
-$MarkerPath = Join-Path $HermesHome ".hermes-update-in-progress"
-$LogDir = Join-Path $HermesHome "logs"
+$MoorHome = if ($env:MOOR_HOME) { $env:MOOR_HOME } elseif ($InstallRoot) { Split-Path -Parent $InstallRoot } else { $TempDir }
+$env:MOOR_HOME = $MoorHome
+$MarkerPath = Join-Path $MoorHome ".moor-update-in-progress"
+$LogDir = Join-Path $MoorHome "logs"
 $LogPath = Join-Path $LogDir "desktop-update-handoff.log"
 $ResultPath = Join-Path $MoorHome ".moor-update-result.json"
 $script:Ui = $null
@@ -1079,7 +1079,7 @@ function Invoke-MoorStep([string]$Exe, [string[]]$MoorArgs, [string]$Tag) {
     # Historical user-bin publication could be a command file rather than a
     # native launcher. Keep the wrapper inside the same supervised job.
     if ([IO.Path]::GetExtension($Exe) -eq '.cmd') {
-        if ($Exe -match '[%!"\x0D\x0A]' -or @($HermesArgs | Where-Object { $_ -match '[%!"\x0D\x0A]' }).Count) {
+        if ($Exe -match '[%!"\x0D\x0A]' -or @($MoorArgs | Where-Object { $_ -match '[%!"\x0D\x0A]' }).Count) {
             throw 'The legacy command launcher cannot safely quote this update target; refresh the installation launcher first.'
         }
         $arguments = '/d /s /c ""' + $Exe + '" ' + $arguments + '"'
@@ -1357,7 +1357,7 @@ exit 3
     $savedIdle = $script:StepIdleTimeoutSeconds
     try {
         $script:StepIdleTimeoutSeconds = 120
-        $res = Invoke-HermesStep $powershell @(
+        $res = Invoke-MoorStep $powershell @(
             "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $childPs1,
             "-Hold", [string]$hold, "-PidFile", $pidFile
         ) "pipedrain"
@@ -1511,7 +1511,7 @@ try {
     if ($SelfTestWorkingDirectory) {
         $expectedRoot = [System.IO.Path]::GetFullPath($InstallRoot)
         $probeExe = Join-Path $PSHOME "powershell.exe"
-        $probe = Invoke-HermesStep $probeExe @("-NoProfile", "-Command", "[Environment]::CurrentDirectory; [Console]::IsInputRedirected") "cwd"
+        $probe = Invoke-MoorStep $probeExe @("-NoProfile", "-Command", "[Environment]::CurrentDirectory; [Console]::IsInputRedirected") "cwd"
         $observed, $stdinRedirected = @($probe.Output.Trim() -split "`r?`n" | ForEach-Object { $_.Trim() })
         if ($probe.Code -ne 0 -or -not [string]::Equals($observed, $expectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
             $finalMsg = "WORKING-DIRECTORY SELF-TEST: FAIL expected=$expectedRoot observed=$observed code=$($probe.Code)"
@@ -1533,7 +1533,7 @@ try {
     . (Join-Path $PSScriptRoot 'runtime.ps1')
     $legacyInstall = -not (Test-Path -LiteralPath (Join-Path $InstallRoot 'pm') -PathType Container)
     try {
-        $runtimeCommand = @(Get-HermesRuntimeCommand -InstallRoot $InstallRoot)
+        $runtimeCommand = @(Get-MoorRuntimeCommand -InstallRoot $InstallRoot)
     } catch {
         $finalCode = 3
         $finalMsg = $_.Exception.Message
@@ -1604,33 +1604,33 @@ try {
     if ($legacyInstall -and $res.Code -ne 0 -and $res.Code -ne 2) {
         Write-HandoffLog "legacy update failed; retrying once from the updated installation"
         Publish-UiProgress "Retrying update"
-        $runtimeCommand = @(Get-HermesRuntimeCommand -InstallRoot $InstallRoot)
+        $runtimeCommand = @(Get-MoorRuntimeCommand -InstallRoot $InstallRoot)
         $pythonExe = $runtimeCommand[0]
         $runtimeArgs = @($runtimeCommand | Select-Object -Skip 1)
         # Same request as the first attempt (--force included): the installation is still the
         # legacy one being converted until this run succeeds.
         $updateArgs = $runtimeArgs + @('update', '--yes') + $gatewayArg + $forceArg + $targetArgs
-        $res = Invoke-HermesStep $pythonExe $updateArgs 'update'
+        $res = Invoke-MoorStep $pythonExe $updateArgs 'update'
     }
 
     # Pre-PM updates reported a successful exit with a failed build warning.
     # Keep that historical transition here only; current failures propagate.
     $desktopBuildFailed = $false
     if ($legacyInstall -and $res.Code -eq 0 -and $res.Output -match "Desktop build failed") {
-        Write-HandoffLog "hermes update reported a desktop build failure (non-fatal there, fatal here); retrying build"
+        Write-HandoffLog "moor update reported a desktop build failure (non-fatal there, fatal here); retrying build"
         Publish-UiProgress "Rebuilding Desktop"
-        $runtimeCommand = @(Get-HermesRuntimeCommand -InstallRoot $InstallRoot)
+        $runtimeCommand = @(Get-MoorRuntimeCommand -InstallRoot $InstallRoot)
         $rebuildArgs = @($runtimeCommand | Select-Object -Skip 1) + @('desktop', '--force-build', '--build-only')
-        $rebuild = Invoke-HermesStep $runtimeCommand[0] $rebuildArgs 'rebuild'
+        $rebuild = Invoke-MoorStep $runtimeCommand[0] $rebuildArgs 'rebuild'
         Write-HandoffLog "desktop rebuild exit code: $($rebuild.Code)"
         if ($rebuild.Code -ne 0) { $desktopBuildFailed = $true }
     }
 
     # A zero-exit update is not proof that the runtime survived the update.
     if ($res.Code -eq 0 -and -not $desktopBuildFailed) {
-        $verifyCommand = @(Get-HermesRuntimeCommand -InstallRoot $InstallRoot -Module 'hermes_cli.desktop_update_verify')
+        $verifyCommand = @(Get-MoorRuntimeCommand -InstallRoot $InstallRoot -Module 'moor_cli.desktop_update_verify')
         $verifyArgs = @($verifyCommand | Select-Object -Skip 1)
-        $verify = Invoke-HermesStep $verifyCommand[0] $verifyArgs 'verify'
+        $verify = Invoke-MoorStep $verifyCommand[0] $verifyArgs 'verify'
         if ($verify.Code -ne 0) {
             $finalCode = 8
             $finalMsg = "The updated Moor runtime or Desktop build failed verification. Repair the installation and review antivirus quarantine before retrying."
@@ -1641,7 +1641,7 @@ try {
 
     # Desktop stopped every locally running profile gateway before handing off
     # so their venv launchers could not hold the update lock. That happens
-    # before `hermes update` captures its Windows pause inventory, leaving the
+    # before `moor update` captures its Windows pause inventory, leaving the
     # updater nothing to resume on its normal success path. Restore the same
     # all-profile fleet only after the updated runtime verifies. A remote-served
     # Desktop must stay passive: its -NoGateway hand-off owns no local poller.
@@ -1650,9 +1650,9 @@ try {
         try {
             # Resolve again after update: PM may have published a new generation,
             # and its command can include an isolation/bootstrap prefix.
-            $gatewayCommand = @(Get-HermesRuntimeCommand -InstallRoot $InstallRoot)
+            $gatewayCommand = @(Get-MoorRuntimeCommand -InstallRoot $InstallRoot)
             $gatewayArgs = @($gatewayCommand | Select-Object -Skip 1) + @("gateway", "start", "--all")
-            $gatewayRestart = Invoke-HermesStep $gatewayCommand[0] $gatewayArgs "gateway restart"
+            $gatewayRestart = Invoke-MoorStep $gatewayCommand[0] $gatewayArgs "gateway restart"
             $gatewayRestartFailed = $gatewayRestart.Code -ne 0
         } catch {
             $gatewayRestartFailed = $true
@@ -1664,7 +1664,7 @@ try {
             # update: a non-zero exit here would run the error finale and hide
             # the fact that the new runtime is installed and verified.
             $manualAction = $true
-            $manualMsg = "Update complete, but Hermes could not restart every messaging gateway. Run `hermes gateway start --all` in a terminal."
+            $manualMsg = "Update complete, but Moor could not restart every messaging gateway. Run `moor gateway start --all` in a terminal."
             Write-HandoffLog $manualMsg
         }
     }

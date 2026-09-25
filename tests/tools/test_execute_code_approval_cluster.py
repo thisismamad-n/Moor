@@ -107,7 +107,7 @@ def test_rpc_carries_authority_to_real_dispatch(child_env, monkeypatch, transpor
         return original(name, args, *pos, **kwargs)
 
     monkeypatch.setattr(model_tools, "handle_function_call", dispatch)
-    code = f"from hermes_tools import read_file\nimport json\nprint(json.dumps(read_file({str(witness)!r})))"
+    code = f"from moor_tools import read_file\nimport json\nprint(json.dumps(read_file({str(witness)!r})))"
     try:
         for turn in ("first", "second"):
             witness.write_text(f"real RPC payload {turn}\n", encoding="utf-8")

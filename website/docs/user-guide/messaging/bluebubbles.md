@@ -94,12 +94,12 @@ Moor will connect to your BlueBubbles server, register a webhook, and start list
 
 ### 6. Verify the Setup
 
-The setup wizard saves your credentials to `~/.hermes/.env` — it does **not** write `platforms.bluebubbles.enabled` into `~/.hermes/config.yaml`. With no explicit setting, present credentials are enough for the adapter to start; but an explicit `enabled: false` always wins over credentials, so if you previously disabled the adapter (for example, while using another iMessage bridge), the wizard will report success and the adapter will still never start.
+The setup wizard saves your credentials to `~/.moor/.env` — it does **not** write `platforms.bluebubbles.enabled` into `~/.moor/config.yaml`. With no explicit setting, present credentials are enough for the adapter to start; but an explicit `enabled: false` always wins over credentials, so if you previously disabled the adapter (for example, while using another iMessage bridge), the wizard will report success and the adapter will still never start.
 
 Check the stored setting:
 
 ```bash
-hermes config get platforms.bluebubbles.enabled
+moor config get platforms.bluebubbles.enabled
 ```
 
 - `true` — explicitly enabled
@@ -109,7 +109,7 @@ hermes config get platforms.bluebubbles.enabled
 Then check the gateway log for the two lines that prove the connection and the webhook registration:
 
 ```bash
-hermes logs gateway
+moor logs gateway
 ```
 
 ```text
@@ -134,17 +134,17 @@ Moor → BlueBubbles REST API → Messages.app → iMessage
 
 The setup uses two URLs that point in opposite directions — don't confuse them:
 
-- `BLUEBUBBLES_SERVER_URL` (e.g. `http://192.168.1.10:1234`) — Hermes **calls** your BlueBubbles server's API. This is the Server URL shown in BlueBubbles Server → Settings → API.
-- The webhook (default `http://localhost:8645/bluebubbles-webhook`) — BlueBubbles **POSTs** new-message events to Hermes. Its host/port/path come from `BLUEBUBBLES_WEBHOOK_HOST` / `BLUEBUBBLES_WEBHOOK_PORT` / `BLUEBUBBLES_WEBHOOK_PATH`.
+- `BLUEBUBBLES_SERVER_URL` (e.g. `http://192.168.1.10:1234`) — Moor **calls** your BlueBubbles server's API. This is the Server URL shown in BlueBubbles Server → Settings → API.
+- The webhook (default `http://localhost:8645/bluebubbles-webhook`) — BlueBubbles **POSTs** new-message events to Moor. Its host/port/path come from `BLUEBUBBLES_WEBHOOK_HOST` / `BLUEBUBBLES_WEBHOOK_PORT` / `BLUEBUBBLES_WEBHOOK_PATH`.
 
 ### How the webhook is registered
 
-You do **not** need to create a webhook in the BlueBubbles UI. When the gateway connects, Hermes registers the webhook itself via the BlueBubbles REST API (`/api/v1/webhook`) for the `new-message` and `updated-message` events, and removes the registration again on clean shutdown.
+You do **not** need to create a webhook in the BlueBubbles UI. When the gateway connects, Moor registers the webhook itself via the BlueBubbles REST API (`/api/v1/webhook`) for the `new-message` and `updated-message` events, and removes the registration again on clean shutdown.
 
 Two details worth knowing:
 
 - The registered URL carries the server password as a query parameter (`?password=…`) because the BlueBubbles webhook API does not support custom headers — this is how inbound events are authenticated.
-- The webhook listener binds to `127.0.0.1` by default. That is fine when Hermes and BlueBubbles run on the same machine; if they are on different machines, set `BLUEBUBBLES_WEBHOOK_HOST` to an address the Mac running BlueBubbles can reach.
+- The webhook listener binds to `127.0.0.1` by default. That is fine when Moor and BlueBubbles run on the same machine; if they are on different machines, set `BLUEBUBBLES_WEBHOOK_HOST` to an address the Mac running BlueBubbles can reach.
 
 ## Environment Variables
 
@@ -206,23 +206,23 @@ One caveat: "basic messaging works without Private API" assumes BlueBubbles can 
 - Ensure network connectivity (firewall, port forwarding)
 
 ### Messages not arriving
-- Check `hermes logs gateway` for webhook errors (or `hermes logs -f` to follow in real-time)
-- Hermes registers the webhook itself on connect — only inspect BlueBubbles Server → Settings → API → Webhooks if the log shows a registration failure
-- A webhook row in the BlueBubbles UI is not proof of delivery; the end-to-end proof is Hermes logging the message and replying
-- If Hermes and BlueBubbles run on different machines, the default webhook bind address `127.0.0.1` is unreachable from the Mac — set `BLUEBUBBLES_WEBHOOK_HOST` to a reachable address and restart the gateway
+- Check `moor logs gateway` for webhook errors (or `moor logs -f` to follow in real-time)
+- Moor registers the webhook itself on connect — only inspect BlueBubbles Server → Settings → API → Webhooks if the log shows a registration failure
+- A webhook row in the BlueBubbles UI is not proof of delivery; the end-to-end proof is Moor logging the message and replying
+- If Moor and BlueBubbles run on different machines, the default webhook bind address `127.0.0.1` is unreachable from the Mac — set `BLUEBUBBLES_WEBHOOK_HOST` to a reachable address and restart the gateway
 
 ### Setup succeeded, but the adapter never starts
-- `hermes gateway setup` saves credentials to `~/.hermes/.env`; it does not set `platforms.bluebubbles.enabled: true`
-- An explicit `enabled: false` in `~/.hermes/config.yaml` wins over credentials being present — check with `hermes config get platforms.bluebubbles.enabled`
+- `moor gateway setup` saves credentials to `~/.moor/.env`; it does not set `platforms.bluebubbles.enabled: true`
+- An explicit `enabled: false` in `~/.moor/config.yaml` wins over credentials being present — check with `moor config get platforms.bluebubbles.enabled`
 - This commonly bites after switching iMessage bridges: if you used another iMessage bridge and disabled BlueBubbles at the time, re-running setup will not re-enable it. Set `enabled: true` (and disable the bridge you no longer use — two iMessage bridges will double-handle messages)
 
 ### Two BlueBubbles servers on one Mac (wrong Apple ID)
-- Hermes uses `BLUEBUBBLES_SERVER_URL` from `~/.hermes/.env`, not the Server URL shown in the BlueBubbles UI (which can be stale after a DHCP change)
-- Two macOS users on one Mac each run their own BlueBubbles server with its own API port and Apple ID — verify which one Hermes reaches: `curl "http://<server-url>/api/v1/server/info?password=<password>"` and compare the `computer_id`
+- Moor uses `BLUEBUBBLES_SERVER_URL` from `~/.moor/.env`, not the Server URL shown in the BlueBubbles UI (which can be stale after a DHCP change)
+- Two macOS users on one Mac each run their own BlueBubbles server with its own API port and Apple ID — verify which one Moor reaches: `curl "http://<server-url>/api/v1/server/info?password=<password>"` and compare the `computer_id`
 - For the multi-user setup itself, follow [BlueBubbles: multiple users on the same Mac](https://docs.bluebubbles.app/server/basic-guides/multiple-users-on-the-same-mac) — one port per user, and don't log out the user running the server
 
 ### Duplicate replies
-- Known issue: session handling can split one correspondent into two sessions (raw-GUID form vs. phone/email form) — tracked in [#30708](https://github.com/NousResearch/hermes-agent/issues/30708) and [#34372](https://github.com/NousResearch/hermes-agent/issues/34372)
+- Known issue: session handling can split one correspondent into two sessions (raw-GUID form vs. phone/email form) — tracked in [#30708](https://github.com/thisismamad-n/Moor/issues/30708) and [#34372](https://github.com/thisismamad-n/Moor/issues/34372)
 - Not a documentation or configuration problem — follow those issues for fixes
 
 ### "♻️ Recovered reply" repeats, or sends hang for minutes

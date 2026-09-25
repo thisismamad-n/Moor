@@ -22,14 +22,14 @@ export interface DesktopChatSmokeOptions {
 export interface ChatIdentity {
   appVersion: string
   commit: string | null
-  hermesRoot: string
+  moorRoot: string
   platform: string
-  /** The resolved Hermes home (newer desktops report it; absent on older ones). */
-  hermesHome?: string
+  /** The resolved Moor home (newer desktops report it; absent on older ones). */
+  moorHome?: string
 }
 
 interface SmokeWindow extends Window {
-  hermesDesktop?: { getVersion: () => Promise<ChatIdentity> }
+  moorDesktop?: { getVersion: () => Promise<ChatIdentity> }
 }
 
 export interface TranscriptMessage {
@@ -57,13 +57,13 @@ export interface DesktopChatReceipt {
 
 const identitySchema = z.object({
   appVersion: z.string(), commit: z.string().nullable().optional(),
-  hermesRoot: z.string(), platform: z.string(), hermesHome: z.string().optional(),
+  moorRoot: z.string(), platform: z.string(), moorHome: z.string().optional(),
 })
 
 export async function readChatIdentity(page: Page): Promise<ChatIdentity> {
   const identity = identitySchema.parse(await page.evaluate(async (): Promise<ChatIdentity> => {
     // SAFETY: the driver uses a desktop page; the returned IPC data is parsed outside the renderer.
-    const bridge = (window as SmokeWindow).hermesDesktop
+    const bridge = (window as SmokeWindow).moorDesktop
     if (!bridge) {
       throw new Error('Desktop version bridge is unavailable')
     }

@@ -527,7 +527,7 @@ def test_real_fixture_plugins_thread_prompt_in_registration_order(
     import os
     from pathlib import Path
 
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     moor_home = Path(os.environ["MOOR_HOME"])
     plugin_dir = moor_home / "plugins" / "stt_vocab"

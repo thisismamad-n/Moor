@@ -251,7 +251,7 @@ describe('deriveBillingView', () => {
 
   it('signs in from the logged-out notice through the shared sign-in dialog, not a portal link', () => {
     // A plain portal link never writes a credential, so the page would stay logged out forever
-    // (#87792). The action must open the one Nous sign-in dialog (device-code + poll).
+    // (#87792). The action must open the one Moor sign-in dialog (device-code + poll).
     $freeTierSignIn.set({ status: 'closed' })
     const view = deriveBillingView(okBilling(loggedOutBillingState), okSubscription(loggedOutSubscriptionState))
 

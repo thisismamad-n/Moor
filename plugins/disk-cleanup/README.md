@@ -3,7 +3,7 @@
 Auto-tracks and cleans up ephemeral files created during Moor Agent
 sessions — test scripts, temp outputs, cron logs, stale chrome profiles.
 <!-- no-tmp: ok — documents the legacy scratch scope this plugin cleans up -->
-Scoped strictly to `$HERMES_HOME` and `/tmp/hermes-*`.
+Scoped strictly to `$MOOR_HOME` and `/tmp/moor-*`.
 
 Originally contributed by [@LVT382009](https://github.com/LVT382009) as a
 skill in PR #12212.  Ported to the plugin system so the behaviour runs
@@ -43,7 +43,7 @@ Deletion rules (same as the original PR):
 ## Safety
 
 <!-- no-tmp: ok — documents the legacy scratch scope this plugin cleans up -->
-- `is_safe_path()` rejects anything outside `HERMES_HOME` or `/tmp/hermes-*`
+- `is_safe_path()` rejects anything outside `MOOR_HOME` or `/tmp/moor-*`
 - Windows mounts (`/mnt/c` etc.) are rejected
 - The state directory `$MOOR_HOME/disk-cleanup/` is itself excluded
 - `$MOOR_HOME/logs/`, `memories/`, `sessions/`, `skills/`, `plugins/`,

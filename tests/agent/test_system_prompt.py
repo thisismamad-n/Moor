@@ -66,10 +66,10 @@ def test_kanban_guidance_requires_worker_task_at_agent_init(monkeypatch, task_id
     import model_tools
 
     if task_id is None:
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
     else:
-        monkeypatch.setenv("HERMES_KANBAN_TASK", task_id)
-    monkeypatch.setattr("hermes_cli.plugins.discover_plugins", lambda: None)
+        monkeypatch.setenv("MOOR_KANBAN_TASK", task_id)
+    monkeypatch.setattr("moor_cli.plugins.discover_plugins", lambda: None)
     monkeypatch.setattr(
         model_tools,
         "get_tool_definitions",
@@ -89,7 +89,7 @@ def test_kanban_guidance_requires_worker_task_at_agent_init(monkeypatch, task_id
 ])
 def test_kanban_guidance_fallback_requires_owned_worker_task(monkeypatch, task_id, owner, expected):
     """Prompt fallback preserves the worker boundary when init was bypassed: tool access
-    is not identity, and an inherited HERMES_KANBAN_TASK is not ownership (#112486)."""
+    is not identity, and an inherited MOOR_KANBAN_TASK is not ownership (#112486)."""
     from contextlib import nullcontext
 
     from agent.delegation_context import non_dispatcher_owned_context
@@ -97,9 +97,9 @@ def test_kanban_guidance_fallback_requires_owned_worker_task(monkeypatch, task_i
     from agent.system_prompt import _tool_guidance_block
 
     if task_id is None:
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
     else:
-        monkeypatch.setenv("HERMES_KANBAN_TASK", task_id)
+        monkeypatch.setenv("MOOR_KANBAN_TASK", task_id)
     agent = _make_agent(valid_tool_names={"kanban_show"})
     delattr(agent, "_kanban_worker_guidance")
 
@@ -867,7 +867,7 @@ class TestConversationStartedTwoLine:
         # Windows cp1252 zone name decoded under a UTF-8 LC_CTYPE; strftime("%Z") raised (#102910).
         from datetime import timedelta, timezone
         current = datetime(2026, 7, 14, 13, 5, tzinfo=timezone(timedelta(hours=2), "Paris, Madrid (heure d'\udce9t\udce9)"))
-        with patch("hermes_time.now", return_value=current):
+        with patch("moor_time.now", return_value=current):
             vol = self._volatile(self._agent("20260714_090000_fresh"))
 
         json.dumps(vol, ensure_ascii=False).encode("utf-8")

@@ -149,7 +149,7 @@ def test_oneshot_unit_dispatcher_scope_wraps_or_warns_never_dooms_silently(
 ) -> None:
     """A dispatcher under any systemd unit that is NOT the supervised gateway (a
     ``Type=oneshot`` dispatch timer, #113612) loses its cgroup at unit exit. With a
-    user bus the worker gets its own ``hermes-worker-*`` scope; without one the
+    user bus the worker gets its own ``moor-worker-*`` scope; without one the
     spawn still happens (the unit's ``KillMode``/lifetime is unknowable, a
     long-lived sequencer keeps working) but the operator is told exactly why the
     workers may die. A cron caller under the same unit is unchanged."""
@@ -167,23 +167,23 @@ def test_oneshot_unit_dispatcher_scope_wraps_or_warns_never_dooms_silently(
     monkeypatch.setattr(process_registry, "_systemd_run_user_scope_available", lambda: True)
     monkeypatch.setattr(
         process_registry, "_build_systemd_scope_argv",
-        lambda cmd, unit_suffix: ["systemd-run", "--user", "--scope", "--unit", f"hermes-worker-{unit_suffix}", *cmd],
+        lambda cmd, unit_suffix: ["systemd-run", "--user", "--scope", "--unit", f"moor-worker-{unit_suffix}", *cmd],
     )
 
     kbd._default_spawn(task, str(workspace))
     assert spawned[-1][:3] == ["systemd-run", "--user", "--scope"]
-    assert f"hermes-worker-kanban-{task.id}-run-{task.current_run_id}" in spawned[-1]
+    assert f"moor-worker-kanban-{task.id}-run-{task.current_run_id}" in spawned[-1]
 
     monkeypatch.setattr(process_registry, "_systemd_run_user_scope_available", lambda: False)
     monkeypatch.setattr(process_registry, "_scope_degraded_warned", False)
     with caplog.at_level("WARNING", logger=process_registry.logger.name):
         kbd._default_spawn(task, str(workspace))
-    assert spawned[-1][:3] == ["hermes", "-p", "coder"]
+    assert spawned[-1][:3] == ["moor", "-p", "coder"]
     warned = [r.getMessage() for r in caplog.records if "KILLED when the unit exits" in r.getMessage()]
     assert len(warned) == 1 and "KillMode=process" in warned[0]
 
     cron = process_registry.restart_safe_gateway_child_argv(
-        ["hermes", "cron"], unit_suffix="cron-job-1", require_restart_safe_scope=True,
+        ["moor", "cron"], unit_suffix="cron-job-1", require_restart_safe_scope=True,
     )
     assert cron.mode == "in_process"
 
@@ -204,8 +204,8 @@ def test_real_user_systemd_scope_preserves_worker_context(
         "p = pathlib.Path(sys.argv[1]); t = p.with_suffix('.tmp'); "
         "t.write_text(json.dumps({"
         "'pid': os.getpid(), 'cwd': os.getcwd(), "
-        "'task': os.environ.get('HERMES_KANBAN_TASK'), "
-        "'run': os.environ.get('HERMES_KANBAN_RUN_ID'), "
+        "'task': os.environ.get('MOOR_KANBAN_TASK'), "
+        "'run': os.environ.get('MOOR_KANBAN_RUN_ID'), "
         "'cgroup': pathlib.Path('/proc/self/cgroup').read_text()})); os.replace(t, p); time.sleep(0.5)"
     )
     monkeypatch.setattr(kbd, "_resolve_moor_argv", lambda: [sys.executable, "-c", script, str(receipt)])

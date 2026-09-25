@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli.service_manager import (
+from moor_cli.service_manager import (
     S6ServiceManager,
 )
 
@@ -290,7 +290,7 @@ def _log_run_setup_fragment(rendered: str) -> str:
 
 
 @pytest.mark.platforms("linux")
-def test_s6_log_run_creates_leaf_as_hermes_without_chown(
+def test_s6_log_run_creates_leaf_as_moor_without_chown(
     s6_scandir, fake_subprocess_run,
 ) -> None:
     """log/run must not root-chown/unlink volume paths; create leaf as moor.

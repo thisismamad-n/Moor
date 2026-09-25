@@ -74,7 +74,7 @@ def _roster(root: Path) -> list[tuple[str, Path]]:
     predicate as ``profile list``: infra dirs (``sessions/``, ``logs/``) and tombstones are not
     teammates (#99392), and neither is a marker-carrying dir whose name is not a profile id —
     a parked backup or staging dir must never become a ``message_agent`` target (#116905)."""
-    from hermes_constants import PROFILE_ID_RE, named_profile_is_live
+    from moor_constants import PROFILE_ID_RE, named_profile_is_live
 
     profiles = root / "profiles"
     named = _swallow(
@@ -99,7 +99,7 @@ def _read_yaml_dict(path: Path, needle: str | None = None) -> dict | None:
         raw = path.read_text(encoding="utf-8-sig", errors="replace")
         if needle is not None and needle not in raw:
             return None
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         data = yaml.safe_load(raw)
         return data if isinstance(data, dict) else None
@@ -141,7 +141,7 @@ def _bullet(handle: str, *parts: str) -> str:
 
 def _profile_role(profile_dir: Path) -> str:
     """Teammate role line: Bot Mode title — profile description; tells a teammate
-    WHO to message for a job. A friendly ``display_name`` (``hermes profile rename``) that
+    WHO to message for a job. A friendly ``display_name`` (``moor profile rename``) that
     differs from both the folder id and the title leads the line, so an untagged
     "talk to Scribe" maps to the folder handle without a disk search (#100671).
     Single-line, ≤160 chars, "" when nothing. Never raises."""
@@ -169,13 +169,13 @@ def _friendly_names(profile_dir: Path) -> tuple[str, str]:
 
 def _display_name(name: str, profile_dir: Path) -> str:
     """Human-facing sender name, in the Desktop's ``botFriendlyNames`` order: Bot Mode title,
-    then profile.yaml ``display_name`` (``hermes profile rename``), else the @handle — the
-    renamed primary signs as ``Maia (@hermes)``, not ``hermes (@hermes)`` (#89720)."""
+    then profile.yaml ``display_name`` (``moor profile rename``), else the @handle — the
+    renamed primary signs as ``Maia (@moor)``, not ``moor (@moor)`` (#89720)."""
     return next((n for n in _friendly_names(profile_dir) if n), None) or _handle(name)
 
 
-# Tokens the Desktop mention parser reserves; a bot titled "Hermes" never hijacks @hermes.
-_RESERVED_ALIASES = frozenset({"all", "everyone", "user", "default", "hermes"})
+# Tokens the Desktop mention parser reserves; a bot titled "Moor" never hijacks @moor.
+_RESERVED_ALIASES = frozenset({"all", "everyone", "user", "default", "moor"})
 
 
 def alias_forms(value: str) -> set[str]:

@@ -9,7 +9,7 @@ description: "Plugins shipped with Moor Agent that run automatically via lifecyc
 
 Moor ships a small set of plugins bundled with the repository. They live under `<repo>/plugins/<name>/` and load automatically alongside user-installed plugins in `~/.moor/plugins/`. They use the same plugin surface as third-party plugins — hooks, tools, slash commands — just maintained in-tree.
 
-See the [Plugins](./plugins.md) page for the general plugin system, and [Build a Hermes Plugin](../../developer-guide/plugins/index.md) to write your own.
+See the [Plugins](./plugins.md) page for the general plugin system, and [Build a Moor Plugin](../../developer-guide/plugins/index.md) to write your own.
 
 ## How discovery works
 
@@ -77,7 +77,7 @@ Auto-tracks and removes ephemeral files created during sessions — test scripts
 
 | Hook | Behaviour |
 |---|---|
-| `post_tool_call` | When `write_file` / `terminal` / `patch` creates a file matching `test_*`, `tmp_*`, or `*.test.*` inside `HERMES_HOME` or `/tmp/hermes-*`, track it silently as `test` / `temp` / `cron-output`. | <!-- no-tmp: ok — documents the plugin's scope guard -->
+| `post_tool_call` | When `write_file` / `terminal` / `patch` creates a file matching `test_*`, `tmp_*`, or `*.test.*` inside `MOOR_HOME` or `/tmp/moor-*`, track it silently as `test` / `temp` / `cron-output`. | <!-- no-tmp: ok — documents the plugin's scope guard -->
 | `on_session_end` | If any test files were auto-tracked during the turn, run the safe `quick` cleanup and log a one-line summary. Stays silent otherwise. |
 
 **Deletion rules:**
@@ -112,7 +112,7 @@ Auto-tracks and removes ephemeral files created during sessions — test scripts
 | `cleanup.log` | Append-only audit trail of every track / skip / reject / delete |
 
 <!-- no-tmp: ok — documents the plugin's scope guard -->
-**Safety** — cleanup only ever touches paths under `HERMES_HOME` or `/tmp/hermes-*`. Windows mounts (`/mnt/c/...`) are rejected. Well-known top-level state dirs (`logs/`, `memories/`, `sessions/`, `cron/`, `cache/`, `skills/`, `plugins/`, `disk-cleanup/` itself) are never removed even when empty — a fresh install does not get gutted on first session end. User project trees (`workspace/`, `projects/`, `plans/`, `home/`) are never tracked or swept at all: a `test_*.py` or `tmp_*` file inside your project is source code, not scratch. `kanban/` (task attachments and workspaces) is never tracked either, and a tracked *directory* under a protected top level such as `cache/` is never removed — only the files inside it age out.
+**Safety** — cleanup only ever touches paths under `MOOR_HOME` or `/tmp/moor-*`. Windows mounts (`/mnt/c/...`) are rejected. Well-known top-level state dirs (`logs/`, `memories/`, `sessions/`, `cron/`, `cache/`, `skills/`, `plugins/`, `disk-cleanup/` itself) are never removed even when empty — a fresh install does not get gutted on first session end. User project trees (`workspace/`, `projects/`, `plans/`, `home/`) are never tracked or swept at all: a `test_*.py` or `tmp_*` file inside your project is source code, not scratch. `kanban/` (task attachments and workspaces) is never tracked either, and a tracked *directory* under a protected top level such as `cache/` is never removed — only the files inside it age out.
 
 **Enabling:** `moor plugins enable disk-cleanup` (or check the box in `moor plugins`).
 
@@ -153,23 +153,23 @@ moor tools          # → Langfuse Observability → Cloud or Self-Hosted
 ```
 
 The wizard collects your keys, prepares the declared `langfuse` extra through PM
-when needed, and enables `observability/langfuse`. Restart Hermes and the next
-turn ships a trace. If preparation fails, retry through `hermes tools`; do not
+when needed, and enables `observability/langfuse`. Restart Moor and the next
+turn ships a trace. If preparation fails, retry through `moor tools`; do not
 install the SDK into the selected environment with pip.
 
 **Setup (manual):**
 
 For a source checkout, first follow the [PM developer workflow](../../reference/package-management.md#developer-workflow)
-with the intended Hermes home. Use the checkout's prepared Python:
+with the intended Moor home. Use the checkout's prepared Python:
 
 ```bash
 python -c "import pm; pm.sync_venv(['langfuse'], explicit=True)"
 source ./activate
-python hermes plugins enable observability/langfuse
+python moor plugins enable observability/langfuse
 ```
 
 Use `. .\activate.ps1` for PowerShell activation. Then put the credentials in
-the active home's `.env` (`$HERMES_HOME/.env`, normally `~/.hermes/.env`):
+the active home's `.env` (`$MOOR_HOME/.env`, normally `~/.moor/.env`):
 
 ```bash
 MOOR_LANGFUSE_PUBLIC_KEY=pk-lf-...
@@ -361,7 +361,7 @@ Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, ti
 
 ## Adding a bundled plugin
 
-Bundled plugins are written exactly like any other Hermes plugin — see [Build a Hermes Plugin](../../developer-guide/plugins/index.md). The only differences are:
+Bundled plugins are written exactly like any other Moor plugin — see [Build a Moor Plugin](../../developer-guide/plugins/index.md). The only differences are:
 
 - Directory lives at `<repo>/plugins/<name>/` instead of `~/.moor/plugins/<name>/`
 - Manifest source is reported as `bundled` in `moor plugins list`

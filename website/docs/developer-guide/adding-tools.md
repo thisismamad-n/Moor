@@ -14,7 +14,7 @@ If you want a personal, project-local, or otherwise custom tool without
 modifying Moor core, use the plugin route instead:
 
 - [Plugins](../user-guide/features/plugins.md)
-- [Build a Hermes Plugin](./plugins/index.md)
+- [Build a Moor Plugin](./plugins/index.md)
 
 Default to plugins for most custom tool creation. Only follow this page when
 you explicitly want to ship a new built-in tool in `tools/` and `toolsets.py`.

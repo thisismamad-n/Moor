@@ -16,7 +16,7 @@ def stage2_text() -> str:
         pytest.skip("docker/stage2-hook.sh not present in this checkout")
     return STAGE2_HOOK.read_text()
 
-def _chown_hermes_tree_function(text: str) -> str:
+def _chown_moor_tree_function(text: str) -> str:
     start = text.index("path_has_symlink_component() {")
     end = text.index("\n\nneeds_chown=false", start)
     return text[start:end]

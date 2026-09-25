@@ -101,8 +101,8 @@ retain the same `session_id` and add `moor.session.segment` plus
 
 ## Working-Directory Scope Data
 
-When Hermes knows a session or task's logical working directory, its
-`hermes.session` and `hermes.turn` start scopes include it as `data.cwd` in
+When Moor knows a session or task's logical working directory, its
+`moor.session` and `moor.turn` start scopes include it as `data.cwd` in
 ATOF. A turn running in a task worktree can therefore differ from its owning
 session. Unknown directories are omitted, and scope-end data remains reserved
 for the outcome.

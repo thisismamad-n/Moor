@@ -9,7 +9,7 @@ description: "随 Moor Agent 附带并通过生命周期 hook 自动运行的插
 
 Moor 随仓库附带了一小组插件。它们位于 `<repo>/plugins/<name>/`，与用户安装在 `~/.moor/plugins/` 中的插件一同自动加载。它们使用与第三方插件相同的插件接口——hook、工具、斜杠命令——只是在仓库内维护。
 
-请参阅 [插件](./plugins.md) 页面了解通用插件系统，以及 [构建 Hermes 插件](../../developer-guide/plugins/index.md) 了解如何编写自己的插件。
+请参阅 [插件](./plugins.md) 页面了解通用插件系统，以及 [构建 Moor 插件](../../developer-guide/plugins/index.md) 了解如何编写自己的插件。
 
 ## 发现机制
 
@@ -124,23 +124,23 @@ moor plugins disable disk-cleanup
 **设置：**
 
 ```bash
-hermes tools  # → Langfuse Observability → Cloud 或 Self-Hosted
+moor tools  # → Langfuse Observability → Cloud 或 Self-Hosted
 ```
 
 向导收集凭据，按需通过 PM 准备已声明的 `langfuse` extra，并启用插件。
-完成后重启 Hermes；准备失败时通过 `hermes tools` 重试，不要直接 pip 安装到选中的环境。
+完成后重启 Moor；准备失败时通过 `moor tools` 重试，不要直接 pip 安装到选中的环境。
 
 源码检出的手动设置：先按照 [PM 开发流程](../../reference/package-management.md#developer-workflow)
-激活目标检出并选择正确的 Hermes 数据目录，然后执行：
+激活目标检出并选择正确的 Moor 数据目录，然后执行：
 
 ```bash
 python -c "import pm; pm.sync_venv(['langfuse'], explicit=True)"
 source ./activate
-python hermes plugins enable observability/langfuse
+python moor plugins enable observability/langfuse
 ```
 
 PowerShell 使用 `. .\activate.ps1` 激活。将凭据写入活动数据目录的 `.env`
-（`$HERMES_HOME/.env`，通常为 `~/.hermes/.env`）：
+（`$MOOR_HOME/.env`，通常为 `~/.moor/.env`）：
 
 ```bash
 MOOR_LANGFUSE_PUBLIC_KEY=pk-lf-...
@@ -265,7 +265,7 @@ agent 会启动会议加入流程，在通话进行时将转录内容流式传�
 
 ## 添加内置插件
 
-内置插件的编写方式与其他 Hermes 插件完全相同——参见 [构建 Hermes 插件](../../developer-guide/plugins/index.md)。唯一的区别是：
+内置插件的编写方式与其他 Moor 插件完全相同——参见 [构建 Moor 插件](../../developer-guide/plugins/index.md)。唯一的区别是：
 
 - 目录位于 `<repo>/plugins/<name>/`，而非 `~/.moor/plugins/<name>/`
 - 在 `moor plugins list` 中，manifest 来源显示为 `bundled`

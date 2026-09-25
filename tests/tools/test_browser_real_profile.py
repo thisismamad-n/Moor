@@ -529,7 +529,7 @@ class TestSnapshotIsCredentialStore:
     """The copied Cookies/Login Data must live inside Moor' secret lifecycle."""
 
     def test_excluded_from_backup(self):
-        import hermes_cli.backup as bk
+        import moor_cli.backup as bk
         # Hyphen snapshot dirs are any-depth; Browser Use CLI underscore dir is root-scoped.
         assert bk._should_exclude(
             __import__("pathlib").Path("browser-profile/chrome/Default/Cookies")
@@ -955,7 +955,7 @@ class TestWindowsLockedProfileCopy:
         """A large DB on a slow disk that is still copying pages past the deadline must not
         get the lock wording (whose all-locked message tells the user to quit the browser)."""
         import sqlite3
-        import hermes_cli.browser_connect as bc
+        import moor_cli.browser_connect as bc
         src = str(tmp_path / "Web Data")
         con = sqlite3.connect(src)
         con.execute("create table t(x)")
@@ -976,7 +976,7 @@ class TestWindowsLockedProfileCopy:
     def test_fail_closed_when_db_unreadable(self, tmp_path, monkeypatch):
         """If even the online-backup can't read the DB, snapshot fails closed
         rather than launching a silently signed-out session."""
-        import hermes_cli.browser_connect as bc
+        import moor_cli.browser_connect as bc
         root = tmp_path / "real"
         (root / "Default").mkdir(parents=True)
         (root / "Local State").write_text(json.dumps({"profile": {"last_used": "Default"}}))

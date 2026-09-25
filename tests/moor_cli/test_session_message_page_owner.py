@@ -53,13 +53,13 @@ def test_message_pages_type_untyped_failed_turn_rows(tmp_path, monkeypatch):
     """Desktop cold-loads and pages through REST, not ``session.resume``: a failed-turn boundary
     written before the closers typed it must reach it as ``failed_turn``, not model text."""
     from agent.turn_failure_copy import FAILED_TURN_DISPLAY_KIND, FAILED_TURN_NOTICE, PARTIAL_FAILED_TURN_NOTICE
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr("hermes_state.DEFAULT_DB_PATH", home / "state.db")
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setattr("moor_state.DEFAULT_DB_PATH", home / "state.db")
     db = SessionDB(db_path=home / "state.db")
     try:
         db.create_session(session_id="s", source="desktop")
@@ -69,12 +69,12 @@ def test_message_pages_type_untyped_failed_turn_rows(tmp_path, monkeypatch):
             {"role": "user", "content": "b"},
             {"role": "assistant", "content": PARTIAL_FAILED_TURN_NOTICE},
             {"role": "user", "content": "c"},
-            {"role": "assistant", "content": f"Quoting Hermes: {FAILED_TURN_NOTICE}"},
+            {"role": "assistant", "content": f"Quoting Moor: {FAILED_TURN_NOTICE}"},
         ])
     finally:
         db.close()
 
-    from hermes_cli.web_routers.sessions import manage_router
+    from moor_cli.web_routers.sessions import manage_router
 
     app = FastAPI()
     app.include_router(manage_router)

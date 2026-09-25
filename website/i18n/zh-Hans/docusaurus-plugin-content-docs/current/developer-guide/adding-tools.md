@@ -13,7 +13,7 @@ description: "如何向 Moor Agent 添加新工具——schema、handler、注�
 如果你想要个人专用、项目本地或其他自定义工具，而不修改 Moor 核心，请使用插件方式：
 
 - [插件](../user-guide/features/plugins.md)
-- [构建 Hermes 插件](./plugins/index.md)
+- [构建 Moor 插件](./plugins/index.md)
 
 大多数自定义工具创建场景默认使用插件。只有当你明确希望在 `tools/` 和 `toolsets.py` 中发布新的内置工具时，才遵循本页面。
 :::

@@ -8,13 +8,13 @@ from moor_cli.subcommands._shared import add_json_flag
 
 
 def _cu_install(args) -> int:
-    from hermes_cli.tools_config_cua import install_cua_driver
+    from moor_cli.tools_config_cua import install_cua_driver
     return 0 if install_cua_driver(upgrade=bool(getattr(args, "upgrade", False))) else 1
 
 
 def _cu_status(args) -> int:
     import os as _os
-    from hermes_cli.tools_config_cua import _cua_driver_contract_status, _cua_version_summary
+    from moor_cli.tools_config_cua import _cua_driver_contract_status, _cua_version_summary
     from tools.computer_use.cua_backend_driver import resolve_cua_driver_cmd
 
     path = resolve_cua_driver_cmd()
@@ -49,7 +49,7 @@ def _cu_status(args) -> int:
                 print(f"    Check: systemctl --user status {unit}  (reinstalling the driver does not start it)")
                 rc = 1
     print("  ✓ Runtime contract ready (externally managed)." if override
-          else "  ✓ Runtime contract ready (Hermes PM pin).")
+          else "  ✓ Runtime contract ready (Moor PM pin).")
     return rc
 
 
@@ -80,7 +80,7 @@ def _cu_perms_status(args) -> None:
         print(f"  {glyph(st['accessibility'])} Accessibility")
         print(f"  {glyph(st['screen_recording'])} Screen Recording")
         if not st["ready"]:
-            print("  Grant: hermes computer-use permissions grant")
+            print("  Grant: moor computer-use permissions grant")
             if hint := stale_tcc_grant_hint(*(f for f in TCC_FIELDS if st[f] is False)):
                 print(f"  {hint}")
     else:  # no TCC model — readiness is driver health
@@ -105,9 +105,9 @@ def build_computer_use_parser(subparsers) -> None:
         description="Install or check the cua-driver binary used by the\n"
             "`computer_use` toolset. Supported on macOS, Windows, and\n"
             "Linux.\n\n"
-            "Use `hermes computer-use install` to prepare the pinned\n"
+            "Use `moor computer-use install` to prepare the pinned\n"
             "cua-driver package and host integration. This is equivalent to the\n"
-            "post-setup hook that `hermes tools` runs when you first\n"
+            "post-setup hook that `moor tools` runs when you first\n"
             "enable the Computer Use toolset, and is a stable target\n"
             "for re-running the install if it didn't fire (e.g. when\n"
             "toggling the toolset on a returning-user setup).\n\n"
@@ -121,7 +121,7 @@ def build_computer_use_parser(subparsers) -> None:
         "install", help="Install or repair the cua-driver binary (macOS/Windows/Linux)")
     computer_use_install.add_argument(
         "--upgrade", action="store_true",
-        help="Reconcile cua-driver with Hermes' pinned PM package and repair host setup.")
+        help="Reconcile cua-driver with Moor' pinned PM package and repair host setup.")
     computer_use_sub.add_parser("status", help="Check the selected cua-driver and its runtime contract")
     computer_use_doctor = computer_use_sub.add_parser(
         "doctor", help="Run cua-driver `health_report` and surface the check matrix",
@@ -157,7 +157,7 @@ def build_computer_use_parser(subparsers) -> None:
         "grant", help="Request the grants (opens the dialog attributed to CuaDriver)")
     _perms_actions = {"grant": _cu_perms_grant, "status": _cu_perms_status}
 
-    from hermes_cli.subcommands.computer_use_screen import build_screen_parser
+    from moor_cli.subcommands.computer_use_screen import build_screen_parser
     build_screen_parser(computer_use_sub, add_json_flag)
 
     def _cu_screen(args):

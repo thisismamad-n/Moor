@@ -62,7 +62,7 @@ def isolated_home(tmp_path, monkeypatch):
             id="provider-openrouter-mirror",
         ),
         # A bare ``model.provider`` naming a ``providers:`` entry is explicit intent too:
-        # has_named_custom_provider() already routes it at runtime (``hermes chat`` works), so the
+        # has_named_custom_provider() already routes it at runtime (``moor chat`` works), so the
         # boot inventory must not discard the bare name.
         pytest.param(
             "model:\n  default: test-model\n  provider: CPA\n\n"
@@ -122,10 +122,10 @@ def test_a_provider_configured_after_boot_flips_the_stale_setup_record(isolated_
     """A serve process whose boot inventory found nothing keeps that record for its lifetime;
     ``setup.status`` reads it (``wait_for_record``), so the dashboard chat stayed on "Setup
     Required" after the user configured a provider — from the Models page, a picker key, or
-    ``hermes setup`` in another process. A ``False`` record is reconciled with the config files
+    ``moor setup`` in another process. A ``False`` record is reconciled with the config files
     on read: it flips (+ one ``setup.ready``) once something carries inference, and a blank
     machine stays ``False`` with no broadcast."""
-    from hermes_cli import free_tier_bootstrap as fb
+    from moor_cli import free_tier_bootstrap as fb
 
     broadcasts = []
     monkeypatch.setattr(fb, "_broadcast", broadcasts.append)
@@ -135,15 +135,15 @@ def test_a_provider_configured_after_boot_flips_the_stale_setup_record(isolated_
 
     # The record is the launch profile's: a write scoped to another profile (the dashboard's
     # ``?profile=b``) must not let THAT profile's provider open the launch gate.
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     profile_b = isolated_home / "profiles" / "b"
     profile_b.mkdir(parents=True)
     (profile_b / "config.yaml").write_text("model:\n  default: qwen3\n  provider: custom\n  base_url: http://127.0.0.1:8000/v1\n  api_key: dummy\n", encoding="utf-8")
-    token = set_hermes_home_override(str(profile_b))
+    token = set_moor_home_override(str(profile_b))
     try:
         assert fb.reconcile_record() is boot and broadcasts == [], "another profile's provider is not ours"
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
     (isolated_home / "config.yaml").write_text(
         "model:\n  default: qwen3\n  provider: custom\n  base_url: http://127.0.0.1:8000/v1\n  api_key: dummy\n",

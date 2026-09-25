@@ -67,7 +67,7 @@ def test_default_is_moor_cache_not_tmp(tmp_path, monkeypatch):
     monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     env = _make_local_env({})
     result = env.get_temp_dir()
-    assert Path(result) == tmp_path / ".hermes" / "cache" / "terminal"
+    assert Path(result) == tmp_path / ".moor" / "cache" / "terminal"
     assert os.path.isdir(result)
 
 

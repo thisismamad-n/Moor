@@ -10,7 +10,7 @@ import tarfile
 
 import pytest
 
-from hermes_cli.uninstall import remove_legacy_runtime_trees
+from moor_cli.uninstall import remove_legacy_runtime_trees
 
 
 def test_legacy_cleanup_removes_only_runtime_bytes_and_is_idempotent(tmp_path):
@@ -31,18 +31,18 @@ def test_legacy_cleanup_removes_only_runtime_bytes_and_is_idempotent(tmp_path):
 class TestProfileCopyExclusions:
     @pytest.mark.parametrize("operation", ["clone", "export", "distribution"])
     def test_copies_profile_payload_without_install_artifacts(self, tmp_path, monkeypatch, operation):
-        from hermes_cli import profiles, profile_distribution
+        from moor_cli import profiles, profile_distribution
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".moor"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("MOOR_HOME", str(home))
         monkeypatch.setattr(profiles, "_maybe_register_gateway_service", lambda name: None)
         kept = {"config.yaml": "model: {}\n", "SOUL.md": "profile identity\n",
                 "skills/demo/SKILL.md": "demo instructions\n"}
         if operation != "distribution":
             kept["memories/MEMORY.md"] = "profile memory\n"
-        excluded = (".hermes-runtime", "node", "hermes-agent", "profiles")
+        excluded = (".moor-runtime", "node", "moor-agent", "profiles")
         for rel, content in kept.items():
             path = home / rel
             path.parent.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,7 @@ Contract:
     onto the job as an ordinary per-job pin; ``pinned=False`` releases both.
 
 These tests exercise the full run_job path (real imports, mocked AIAgent +
-resolve_runtime_provider against a temp HERMES_HOME) and the job-store pin helpers.
+resolve_runtime_provider against a temp MOOR_HOME) and the job-store pin helpers.
 """
 
 import sys
@@ -129,14 +129,14 @@ class TestPinnedLocksTheMainModel:
     def _store(monkeypatch, tmp_path, main_model="main-model", main_provider="openrouter"):
         import cron.jobs as jobs
         (tmp_path / "config.yaml").write_text(f"model:\n  default: {main_model}\n")
-        monkeypatch.setattr(jobs, "get_hermes_home", lambda: tmp_path, raising=True)
+        monkeypatch.setattr(jobs, "get_moor_home", lambda: tmp_path, raising=True)
         state = {"jobs": []}
         monkeypatch.setattr(jobs, "load_jobs", lambda: list(state["jobs"]), raising=True)
         monkeypatch.setattr(jobs, "save_jobs", lambda j: state.__setitem__("jobs", list(j)), raising=True)
         monkeypatch.setattr(jobs, "resolve_job_ref", lambda ref: next(
             (j for j in state["jobs"] if j["id"] == ref), None), raising=True)
         resolver = MagicMock(return_value={"provider": main_provider})
-        monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", resolver)
+        monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", resolver)
         return jobs, resolver
 
     def test_pinned_true_locks_then_pinned_false_releases(self, monkeypatch, tmp_path):
@@ -164,8 +164,8 @@ class TestPinnedLocksTheMainModel:
         jobs, resolver = self._store(monkeypatch, tmp_path)
 
         job = jobs.create_job(prompt="do a thing", schedule="every 1 hour", model="my-model",
-                              provider="nous", pinned=True)
-        assert (job["model"], job["provider"]) == ("my-model", "nous")
+                              provider="moor", pinned=True)
+        assert (job["model"], job["provider"]) == ("my-model", "moor")
         resolver.assert_not_called()
 
         still = jobs.update_job(job["id"], {"pinned": True, "model": "other-model"})

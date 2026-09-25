@@ -1034,7 +1034,7 @@ class TestCodexBuildKwargs:
         assert "web_extract" in names
 
     def test_openai_native_not_selected_keeps_client_web_search(self, transport, monkeypatch):
-        """A Codex turn that has not selected ``openai-native`` keeps Hermes
+        """A Codex turn that has not selected ``openai-native`` keeps Moor
         dispatch — the built-in must never be granted additively."""
         import agent.transports.codex as codex_mod
 
@@ -1194,23 +1194,23 @@ class TestResponsesReservedToolAliases:
             base_url="https://api.perplexity.ai/v1",
         )
         names = self._names(kw)
-        assert "hermes_search_files" in names
-        assert "hermes_web_search" in names
+        assert "moor_search_files" in names
+        assert "moor_web_search" in names
         assert "search_files" not in names
         assert "web_search" not in names
-        assert "hermes_fetch_url" in names
-        assert "hermes_people_search" in names
-        assert "hermes_finance_search" in names
+        assert "moor_fetch_url" in names
+        assert "moor_people_search" in names
+        assert "moor_finance_search" in names
         assert "fetch_url" not in names
         assert "people_search" not in names
         assert "finance_search" not in names
         assert "read_file" in names
         assert transport._last_wire_aliases == {
-            "hermes_search_files": "search_files",
-            "hermes_web_search": "web_search",
-            "hermes_fetch_url": "fetch_url",
-            "hermes_people_search": "people_search",
-            "hermes_finance_search": "finance_search",
+            "moor_search_files": "search_files",
+            "moor_web_search": "web_search",
+            "moor_fetch_url": "fetch_url",
+            "moor_people_search": "people_search",
+            "moor_finance_search": "finance_search",
         }
 
         msg = SimpleNamespace(
@@ -1219,7 +1219,7 @@ class TestResponsesReservedToolAliases:
             tool_calls=[SimpleNamespace(
                 id="call_1", call_id="call_1", response_item_id="fc_1",
                 function=SimpleNamespace(
-                    name="hermes_search_files",
+                    name="moor_search_files",
                     arguments='{"pattern":"README"}',
                 ),
             )],
@@ -1250,7 +1250,7 @@ class TestResponsesReservedToolAliases:
             names = self._names(kw)
             assert "search_files" in names
             assert "web_search" in names
-            assert "hermes_search_files" not in names
+            assert "moor_search_files" not in names
 
     def test_normalize_maps_reserved_aliases_back(self, transport, monkeypatch):
         msg = SimpleNamespace(
@@ -1331,14 +1331,14 @@ class TestXaiReservedToolSearchAlias:
 
     def test_openai_responses_aliases_reserved_tool_search(self, transport):
         """OpenAI Responses reserves the ``tool_search`` namespace for its native Tool Search (#83122):
-        both the ChatGPT Codex backend and api.openai.com get the bridge under ``hermes_tool_search``."""
+        both the ChatGPT Codex backend and api.openai.com get the bridge under ``moor_tool_search``."""
         for extra in ({"is_codex_backend": True}, {"base_url": "https://api.openai.com/v1"}):
             kw = transport.build_kwargs(
                 model="gpt-5.4", messages=[{"role": "user", "content": "hi"}], tools=list(self._TOOLS), **extra,
             )
             names = self._names(kw)
-            assert "hermes_tool_search" in names and "tool_search" not in names, extra
-            assert transport._last_wire_aliases == {"hermes_tool_search": "tool_search"}
+            assert "moor_tool_search" in names and "tool_search" not in names, extra
+            assert transport._last_wire_aliases == {"moor_tool_search": "tool_search"}
 
     def test_other_responses_backend_keeps_tool_search_name(self, transport):
         kw = transport.build_kwargs(

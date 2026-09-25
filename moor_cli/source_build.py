@@ -30,17 +30,17 @@ def source_build_env(base_env: dict | None = None, *, explicit: bool = False) ->
     from pm import ensure
     from pm.environments import project_python, running_from_selected_environment
     from pm.paths import repo_root
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     # The historical update runs on store Python with the selected environment
     # activated in-process. Icon generation starts an isolated child, which needs
     # the selected venv executable rather than the store interpreter.
     root = repo_root()
     python = str(project_python(root)) if running_from_selected_environment(root) else sys.executable
-    env = {**os.environ, **(base_env or {}), "CI": "1", "HERMES_PYTHON": python,
+    env = {**os.environ, **(base_env or {}), "CI": "1", "MOOR_PYTHON": python,
            "PYTHON": python}
     env.pop("ESBUILD_BINARY_PATH", None)
-    npmrc = get_hermes_home() / "npmrc"
+    npmrc = get_moor_home() / "npmrc"
     if npmrc.is_file():
         env.setdefault("NPM_CONFIG_USERCONFIG", str(npmrc))
     return ensure("npm", base_env=env, explicit=explicit).env
@@ -72,7 +72,7 @@ def prepare_source_dependencies(project_root: Path, workspaces: tuple[str, ...],
 
 def prepare_launch_dependencies(project_root: Path, *, env: dict) -> None:
     """A launch rebuild must not prune another installed source frontend."""
-    from hermes_cli.main_desktop import _desktop_dist_exists, _desktop_packaged_executable
+    from moor_cli.main_desktop import _desktop_dist_exists, _desktop_packaged_executable
 
     desktop_dir = project_root / "apps/desktop"
     desktop = _desktop_dist_exists(desktop_dir) or _desktop_packaged_executable(desktop_dir) is not None
@@ -88,7 +88,7 @@ def build_source_web(project_root: Path, *, env: dict, icons: Path | None = None
     # Default-brand icons are committed; installs never render them.
     icons = icons or project_root
     run_source_script(project_root, "scripts/build/web.mjs", "--source", str(project_root),
-                      "--icons", str(icons), "--out", str(project_root / "hermes_cli/web_dist"), env=env,
+                      "--icons", str(icons), "--out", str(project_root / "moor_cli/web_dist"), env=env,
                       label="Building the web UI")
 
 
@@ -103,8 +103,8 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
     """Prepare the selected union once; a failed product aborts the update."""
     # Both current updates and historical takeover reach this in a fresh target
     # interpreter, never in the updater's pre-sync import graph.
-    from hermes_cli.main_install_repair import _warn_configured_features_missing_deps
-    from hermes_cli.update_stage import publish_stage
+    from moor_cli.main_install_repair import _warn_configured_features_missing_deps
+    from moor_cli.update_stage import publish_stage
 
     _warn_configured_features_missing_deps()
     frontends = source_frontends(project_root)
@@ -121,7 +121,7 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
         publish_stage("Building the web UI")
         build_source_web(project_root, env=env)
     if desktop:
-        from hermes_cli.main_desktop import _install_rebuilt_desktop_app, build_prepared_desktop
+        from moor_cli.main_desktop import _install_rebuilt_desktop_app, build_prepared_desktop
 
         publish_stage("Building the desktop app")
         build_prepared_desktop(
@@ -139,7 +139,7 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
     # catalog for every profile home sharing this venv (config, data and tool names
     # unchanged). The update must finish even if the migration blows up.
     try:
-        from hermes_cli.memory_provider_migration import migrate_all_homes
+        from moor_cli.memory_provider_migration import migrate_all_homes
 
         migrate_all_homes()
     except Exception as exc:

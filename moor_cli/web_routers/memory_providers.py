@@ -31,12 +31,12 @@ _log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
 
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
-_discover_memory_provider_statuses = late("_discover_memory_provider_statuses", "hermes_cli.web_server_memory")
-get_hermes_home = late("get_hermes_home", "hermes_cli.config")
-load_config = late("load_config", "hermes_cli.config")
-save_config = late("save_config", "hermes_cli.config")
-save_env_value = late("save_env_value", "hermes_cli.config")
-load_env = late("load_env", "hermes_cli.config")
+_discover_memory_provider_statuses = late("_discover_memory_provider_statuses", "moor_cli.web_server_memory")
+get_moor_home = late("get_moor_home", "moor_cli.config")
+load_config = late("load_config", "moor_cli.config")
+save_config = late("save_config", "moor_cli.config")
+save_env_value = late("save_env_value", "moor_cli.config")
+load_env = late("load_env", "moor_cli.config")
 # Sentinel: remove this key so it falls back to the host or built-in default.
 _UNSET: Any = object()
 
@@ -124,7 +124,7 @@ def _read_flat_json(provider: ProviderConfigSchema) -> Dict[str, Any]:
 
 def _honcho_resolvers(name: str):
     """Host-block resolvers of provider *name*'s own ``client`` module, wherever the provider is
-    installed (bundled or ``$HERMES_HOME/plugins/``)."""
+    installed (bundled or ``$MOOR_HOME/plugins/``)."""
     from plugins.memory import import_provider_module
 
     client = import_provider_module(name, "client")
@@ -336,9 +336,9 @@ def _command_result(
 
 
 def _install_memory_provider_python_dependencies(name: str) -> List[Dict[str, Any]]:
-    from hermes_cli.memory_setup import prepare_memory_provider_dependencies
+    from moor_cli.memory_setup import prepare_memory_provider_dependencies
 
-    command = "hermes pm install"
+    command = "moor pm install"
     try:
         _manifest, status = prepare_memory_provider_dependencies(name)
     except Exception as exc:

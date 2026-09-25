@@ -94,7 +94,7 @@ def save_url_video(
     require_video_content_type: bool = False,
     trusted_origin: bool = False,
 ) -> Path:
-    """Download an (often ephemeral) video URL into ``$HERMES_HOME/cache/videos/``;
+    """Download an (often ephemeral) video URL into ``$MOOR_HOME/cache/videos/``;
     raises on network / HTTP / oversize / empty errors so callers can fall back to the URL.
     ``trusted_origin`` is only for URLs built from the operator's configured provider
     ``base_url`` (see ``provider_media.save_url``)."""
@@ -196,7 +196,7 @@ class OpenAICompatibleVideoGenProvider(VideoGenProvider):
             import openai
         except ImportError:
             return error_response(
-                error="openai Python package not installed. Run: hermes pm repair",
+                error="openai Python package not installed. Run: moor pm repair",
                 error_type="missing_dependency", provider=self.name,
             )
 

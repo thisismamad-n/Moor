@@ -443,7 +443,7 @@ class TestRunStatus:
             scope, "shutdown-test-key", "shutdown-test-fingerprint", "run_live", status)
         adapter._run_idempotency_ids.add("run_live")
         adapter._run_statuses["run_done"] = {
-            "object": "hermes.run", "run_id": "run_done", "status": "completed"}
+            "object": "moor.run", "run_id": "run_done", "status": "completed"}
         _claim_run(adapter, "run_done")
 
         async with TestClient(TestServer(_create_runs_app(adapter))) as client:

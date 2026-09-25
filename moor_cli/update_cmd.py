@@ -17,27 +17,27 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
 
-from hermes_cli.config import get_hermes_home  # noqa: F401  (re-exported; patched via update_cmd)
-from hermes_cli import update_handoff as _update_handoff
-from hermes_cli.update_cmd_common import _best_effort
+from moor_cli.config import get_moor_home  # noqa: F401  (re-exported; patched via update_cmd)
+from moor_cli import update_handoff as _update_handoff
+from moor_cli.update_cmd_common import _best_effort
 # Captured BEFORE a checkout swap: parent transport/lifecycle never imports new code.
-from hermes_cli.update_completion import run_completion
-from hermes_cli.update_channel import adopt_retired_channel
+from moor_cli.update_completion import run_completion
+from moor_cli.update_channel import adopt_retired_channel
 from pm.receipt import accept_worker_receipt as _accept_completion_pm_receipt
-from hermes_cli import update_receipt as _completion_receipt, update_cmd_config as _completion_config
-from hermes_cli._old_updater import stop_for_relaunch
-from hermes_cli._early_recovery import interrupted_pull_marker
-from hermes_cli import update_cmd_check as _check
+from moor_cli import update_receipt as _completion_receipt, update_cmd_config as _completion_config
+from moor_cli._old_updater import stop_for_relaunch
+from moor_cli._early_recovery import interrupted_pull_marker
+from moor_cli import update_cmd_check as _check
 
 # Re-exports: every split-module name stays reachable (and monkeypatchable) as update_cmd.<name>.
 from moor_cli.update_abort_recovery import (  # noqa: F401
     _abort_recovery_is_complete, _qualified_serve_skips, _recover_gateway_restart_after_abort,
     _serve_unit_recovery_available, _surviving_pre_update_serve_runtimes,
     _warn_stale_serve_runtimes)
-from hermes_cli.update_cmd_windows import (  # noqa: F401
+from moor_cli.update_cmd_windows import (  # noqa: F401
     _HOLDER_VALUE_FLAGS_FALLBACK,
     _cold_start_windows_gateway_after_update, _desktop_owns_gateway_lifecycle,
-    _detect_venv_python_processes, _hermes_holder_subcommand, _holder_value_flags,
+    _detect_venv_python_processes, _moor_holder_subcommand, _holder_value_flags,
     _holder_value_flags_cache, _looks_like_desktop_control_plane,
     _pause_windows_gateways_for_update,
     _refresh_bootstrap_cache_scripts, _refresh_windows_gateway_launchers,
@@ -78,14 +78,14 @@ from moor_cli.update_cmd_stash import (  # noqa: F401
 from moor_cli.update_cmd_config import (  # noqa: F401
     _LAST_SIBLING_SNAPSHOTS, _check_and_apply_config_migration, _migrate_sibling_profile_configs,
     _print_items, _reload_config_modules, _run_config_check_fresh, _run_migrate_config_fresh)
-from hermes_cli.update_cmd_validation import (  # noqa: F401 — frozen updater surface (tests/compat)
+from moor_cli.update_cmd_validation import (  # noqa: F401 — frozen updater surface (tests/compat)
     _UPDATE_CRITICAL_MODULES, _critical_module_import_failures,
     _validate_critical_modules_import)
-from hermes_cli.old_updater_deps import (  # noqa: F401 — frozen updater surface (tests/compat + test_old_updater_shims)
+from moor_cli.old_updater_deps import (  # noqa: F401 — frozen updater surface (tests/compat + test_old_updater_shims)
     _capture_active_lazy_features, _npm_lockfile_changed, _path_uid,
     _rebuild_desktop_after_update, _refresh_active_lazy_features,
     _refresh_active_memory_provider_dependencies, _update_node_dependencies)
-from hermes_cli.update_cmd_git import (  # noqa: F401
+from moor_cli.update_cmd_git import (  # noqa: F401
     OFFICIAL_REPO_URL, OFFICIAL_REPO_URLS, SKIP_UPSTREAM_PROMPT_FILE, _ORPHAN_RESCUE_REFS_TO_KEEP,
     _ORPHAN_RESCUE_REF_MAX_AGE_DAYS, _add_upstream_remote, _assess_parked_branch_switch,
     _branch_head_label, _branch_head_suffix, _classify_fetch_failure, _count_commits_between,
@@ -95,14 +95,14 @@ from hermes_cli.update_cmd_git import (  # noqa: F401
     _print_parked_branch_kept_notice, _print_parked_branch_skip_warning,
     _prune_orphan_rescue_refs, _should_skip_upstream_prompt, _sync_fork_with_upstream,
     _sync_with_upstream_if_needed)
-from hermes_cli.update_cmd_maint import (  # noqa: F401
+from moor_cli.update_cmd_maint import (  # noqa: F401
     _PRE_UPDATE_SNAPSHOT_KEEP, _PRE_UPDATE_SNAPSHOT_MAX_FILE_SIZE, _clear_stale_sqlite_sidecars,
     _checkout_version, _ensure_acp_launcher, _ensure_fhs_path_guard, _finish_dashboard_update_cleanup,
     _format_time_ago, _post_update_sqlite_runtime_status, _print_bundled_skills_sync_report,
     _print_curator_first_run_notice, _print_curator_recent_run_notice,
     _print_fts_optimize_available_notice, _print_update_completion, _print_update_summary,
     _prepare_updated_checkout,
-    _print_verified_update_completion, _purge_stale_hermes_modules, _read_project_version,
+    _print_verified_update_completion, _purge_stale_moor_modules, _read_project_version,
     _reload_process_scan_modules, _reload_updated_runtime_modules,
     _resolve_pre_update_backup_mode, _restore_state_db_from_snapshot,
     _run_post_update_maintenance, _run_pre_update_backup,
@@ -112,7 +112,7 @@ from hermes_cli.update_cmd_maint import (  # noqa: F401
 logger = logging.getLogger(__name__)
 
 
-def get_default_hermes_root() -> NoReturn:
+def get_default_moor_root() -> NoReturn:
     # Shim to suppress old updater work until relaunch. No path is safe to invent.
     stop_for_relaunch()
 
@@ -147,14 +147,14 @@ def _shim_quarantine_error_type() -> type[Exception]:
 
 
 def _m():
-    """Lazy ``hermes_cli.main`` reference.
+    """Lazy ``moor_cli.main`` reference.
 
-    Lets callers keep patching ``hermes_cli.main.<helper>`` (the historical
+    Lets callers keep patching ``moor_cli.main.<helper>`` (the historical
     test surface) and have those patches reach this code path, and defers the
-    import so ``hermes_cli.main`` -> ``hermes_cli.update_cmd`` stays one-way
+    import so ``moor_cli.main`` -> ``moor_cli.update_cmd`` stays one-way
     at import time.
     """
-    from hermes_cli import main
+    from moor_cli import main
 
     return main
 
@@ -204,7 +204,7 @@ NETWORK_GIT_TIMEOUT_SECONDS = 300
 def _record_update_skip(step: str, reason: str) -> None:
     """Best-effort ``update_receipt.record_skip``; the receipt must never break an update."""
     with suppress(Exception):
-        from hermes_cli.update_receipt import record_skip
+        from moor_cli.update_receipt import record_skip
         record_skip(step, reason)
 
 
@@ -295,7 +295,7 @@ def _validate_python_files_syntax(
 def _validate_critical_files_syntax(root) -> tuple[bool, str | None, str | None]:
     """Compile each file in ``_UPDATE_CRITICAL_FILES`` to catch SyntaxErrors.
 
-    These are the files imported on every ``hermes`` startup; if any of them
+    These are the files imported on every ``moor`` startup; if any of them
     has a syntax error (orphan merge-conflict markers, bad ref to a name
     that no longer exists, etc.) the CLI can't bootstrap at all. We validate
     them after a successful ``git pull`` so we can auto-roll-back instead of
@@ -326,15 +326,15 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
     Writes a prompt marker file so the gateway can forward the question to the
     user, then polls for a response file.  Falls back to *default* on timeout.
 
-    Used by ``hermes update --gateway`` so interactive prompts (stash restore,
+    Used by ``moor update --gateway`` so interactive prompts (stash restore,
     config migration) are forwarded to the messenger instead of being silently
     skipped.
     """
     import json as _json
     import uuid as _uuid
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    home = get_hermes_home()
+    home = get_moor_home()
     prompt_path = home / ".update_prompt.json"
     response_path = home / ".update_response"
 
@@ -431,7 +431,7 @@ def _format_update_failure_stage(exc: subprocess.CalledProcessError) -> str:
 def _should_zip_fallback_on_update_error(exc: BaseException) -> bool:
     """ZIP fallback is for Windows git file-I/O breakage, not later stages.
 
-    A dependency-install failure (locked ``hermes.exe`` / ``uv pip install``
+    A dependency-install failure (locked ``moor.exe`` / ``uv pip install``
     exit 2) is not a git failure. The pull has already succeeded by then, so
     re-downloading the source ZIP cannot fix the install and would replace
     every top-level entry except ``venv`` / ``node_modules`` / ``.git`` /
@@ -490,9 +490,9 @@ def _filter_non_gateway_concurrent_instances(
 
 
 def _log_only_write(text: str) -> None:
-    """Write ``text`` to ``~/.hermes/logs/update.log`` only, never the terminal.
+    """Write ``text`` to ``~/.moor/logs/update.log`` only, never the terminal.
 
-    During ``hermes update`` ``sys.stdout`` is an ``_UpdateOutputStream`` that
+    During ``moor update`` ``sys.stdout`` is an ``_UpdateOutputStream`` that
     mirrors to both the terminal and ``update.log``. Loud, low-signal
     subprocess output (npm installs, the Electron/vite build, the cua-driver
     installer's "Next steps" wall) should be captured and tucked into the log
@@ -555,18 +555,18 @@ def _source_update_channel(args=None, *, channel=None, branch_explicit=False) ->
         return "main"
     transient = channel if channel is not None else getattr(args, "channel", None)
     if transient is not None:
-        from hermes_cli.release_channels import validate_name
+        from moor_cli.release_channels import validate_name
         return validate_name(transient)
-    from hermes_cli.update_channel import resolve_update_channel
+    from moor_cli.update_channel import resolve_update_channel
 
-    from hermes_cli.config import get_config_path, require_readable_config_before_write
+    from moor_cli.config import get_config_path, require_readable_config_before_write
 
     config = require_readable_config_before_write(get_config_path())
     return resolve_update_channel(config, _m().PROJECT_ROOT)
 
 
 def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False, channel=None):
-    """Implement ``hermes update --check``: fetch and report without installing.
+    """Implement ``moor update --check``: fetch and report without installing.
 
     ``branch`` selects which branch the check compares against. Default is
     "main"; callers can pass another branch to ask "are there new commits
@@ -579,7 +579,7 @@ def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False, ch
     # Shared admission gate (#91277 Phase 3): same marker-first decision as
     # the apply path, so --check can never report git state for an install
     # whose real update mechanism is an image pull.
-    from hermes_cli.update_contract import (
+    from moor_cli.update_contract import (
         evaluate_update_admission,
         record_refusal_receipt,
     )
@@ -665,7 +665,7 @@ def _source_completion_request(opts, plan, snapshot_id, windows_resume, desktop,
         current = _completion_receipt._current.get()
     return {
         "schema": 1, "source": str(_m().PROJECT_ROOT.resolve()),
-        "home": str(get_hermes_home()), "branch": "main", "desktop": desktop,
+        "home": str(get_moor_home()), "branch": "main", "desktop": desktop,
         "assume_yes": opts.assume_yes, "gateway_mode": gateway_mode,
         "no_gateway_restart": getattr(opts, "no_gateway_restart", False),
         "pre_update_version": opts.pre_update_version, "snapshot_id": snapshot_id,
@@ -723,7 +723,7 @@ def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha, *, target_r
     # Same branch: the reset below is right either way, but the two causes of divergence here
     # are indistinguishable from the checkout alone. An upstream force-push/rebase loses
     # nothing; local commits on this branch lose everything, and the reflog is the only way
-    # back — an expiring log the user has to know to reach for, in a directory Hermes updates
+    # back — an expiring log the user has to know to reach for, in a directory Moor updates
     # unattended. So park pre_pull_sha behind a rescue ref for BOTH, orphan divergence (no
     # common ancestor: corrupted HEAD, re-init) included.
     merge_base_result = _git_run(git_cmd, ["merge-base", "HEAD", merge_ref])
@@ -734,7 +734,7 @@ def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha, *, target_r
         # SHA suffix so two updates in the same second get distinct refs.
         kind = "diverged" if has_common_ancestor else "orphan"
         rescue_ref = (
-            f"refs/hermes-update-backups/{kind}-{branch}-"
+            f"refs/moor-update-backups/{kind}-{branch}-"
             f"{_dt.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{pre_pull_sha[:12]}")
         head = (
             f"  ⚠ Local history has diverged from origin/{branch} — "
@@ -825,7 +825,7 @@ def _pull_updates(
                 # Keep detached local commits reachable, too. Named branches are
                 # untouched by checkout --detach; an autostash protects dirty files.
                 if pre_pull_sha and not _git_run(git_cmd, ["branch", "--show-current"]).stdout.strip():
-                    _git_run(git_cmd, ["update-ref", f"refs/hermes/pre-release/{pre_pull_sha}", pre_pull_sha], check=True)
+                    _git_run(git_cmd, ["update-ref", f"refs/moor/pre-release/{pre_pull_sha}", pre_pull_sha], check=True)
                 _git_run(git_cmd, ["checkout", "--detach", merge_ref], check=True)
             elif _git_run(git_cmd, ["merge", "--ff-only", merge_ref]).returncode != 0:
                 _reconcile_diverged_checkout(git_cmd, branch, pre_pull_sha, target_ref=merge_ref)
@@ -982,7 +982,7 @@ def _prepare_checkout_for_update(
 
     apply_is_shallow = _is_shallow_checkout(git_cmd)
     if commit_count > 0 and apply_is_shallow:
-        from hermes_cli.source_check import _github_compare_behind
+        from moor_cli.source_check import _github_compare_behind
         counted = _github_compare_behind(*_tip_shas(git_cmd, target_ref))
         # counted == 0 means local-ahead: falls through to the up-to-date path.
         commit_count = counted if counted is not None else -1
@@ -1307,11 +1307,11 @@ def _cmd_update_impl(args, gateway_mode: bool):
     target_repository = None
     selected_channel = _source_update_channel(args)
     if not getattr(args, "branch", None):
-        from hermes_cli.source_releases import resolve_source_target
+        from moor_cli.source_releases import resolve_source_target
 
         from copy import deepcopy
-        from hermes_cli.config import require_readable_config_before_write
-        from hermes_cli.update_channel import channel_record
+        from moor_cli.config import require_readable_config_before_write
+        from moor_cli.update_channel import channel_record
 
         original_record = deepcopy(channel_record(require_readable_config_before_write(
             Path(completion_request["home"]) / "config.yaml"), _m().PROJECT_ROOT))

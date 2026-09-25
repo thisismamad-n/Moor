@@ -204,9 +204,9 @@ def check_api_response(
     # Clearing Moor rate-limit state proves the limit reset so other sessions may resume.
     if agent.provider == "moor":
         try:
-            from agent.nous_rate_guard import clear_nous_rate_limit
-            from hermes_cli.anon_auth import is_anonymous_agent
-            clear_nous_rate_limit(anonymous=is_anonymous_agent(agent))
+            from agent.moor_rate_guard import clear_moor_rate_limit
+            from moor_cli.anon_auth import is_anonymous_agent
+            clear_moor_rate_limit(anonymous=is_anonymous_agent(agent))
         except Exception:
             pass
     from agent import relay_llm

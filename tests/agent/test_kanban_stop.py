@@ -117,7 +117,7 @@ def test_no_nudge_after_handoff_tool(clear_kanban_env, tool_name, who):
     ``kanban_request_changes``. Nudging afterwards asks a worker that did
     the right thing to close a card it must not close.
     """
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_handoff")
+    clear_kanban_env.setenv("MOOR_KANBAN_TASK", "t_handoff")
     messages = [
         {
             "role": "assistant",
@@ -138,7 +138,7 @@ def test_no_nudge_after_handoff_tool(clear_kanban_env, tool_name, who):
 
 def test_nudge_still_fires_for_non_terminal_kanban_tool(clear_kanban_env):
     """Widening the set must not swallow the case the guard exists for."""
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_abc")
+    clear_kanban_env.setenv("MOOR_KANBAN_TASK", "t_abc")
     messages = [
         {
             "role": "assistant",

@@ -307,7 +307,7 @@ DEFAULT_CONFIG = {
         # required_environment_variables pass through automatically).
         "env_passthrough": [],
         # Remote-backend sync-back refuses to extract a downloaded state archive larger than this
-        # (bytes); raise it for a ~/.hermes tree that legitimately exceeds 2 GiB.
+        # (bytes); raise it for a ~/.moor tree that legitimately exceeds 2 GiB.
         "sync_back_max_bytes": 2 * 1024 * 1024 * 1024,
         # HOME for host tool subprocesses: "auto" = host keeps the real OS-user HOME, containers use
         # MOOR_HOME/home; "real" = force real HOME; "profile" = force MOOR_HOME/home when it
@@ -431,7 +431,7 @@ DEFAULT_CONFIG = {
         "use_real_profile": False,
         # Windows only: a running Chrome/Edge/Brave locks its cookie DB, so the profile can't be
         # copied. When on, a locked profile still blocks and the agent ASKS first; on approval it
-        # runs `hermes browser close-profile` (kills that profile's browser tree, unsaved tabs lost)
+        # runs `moor browser close-profile` (kills that profile's browser tree, unsaved tabs lost)
         # and retries once; still locked -> stays blocked, no auto-kill. No effect on macOS/Linux,
         # where a running browser instead makes the Login Data / Web Data SQLite backups miss
         # their deadline; quit the browser by hand there.
@@ -943,7 +943,7 @@ DEFAULT_CONFIG = {
         "runtime_footer": {
             "enabled": False,
             # order shown; drop any to hide. Opt-in extras: latency, served_model (alias → the
-            # deployment a routing proxy reported / Hermes' fallback route).
+            # deployment a routing proxy reported / Moor' fallback route).
             "fields": ["model", "context_pct", "cwd"],
         },
         # CLI/TUI status bar fields. Non-empty = only listed fields show (built-in order kept,
@@ -1232,7 +1232,7 @@ DEFAULT_CONFIG = {
         # an explicit number applies everywhere; 0 = unlimited.
         "max_calls_per_image": None,
     },
-    # "Hey Hermes" hands-free wake word: always-on, on-device hotword detection that starts a fresh
+    # "Hey Moor" hands-free wake word: always-on, on-device hotword detection that starts a fresh
     # voice session. Off by default; toggle with /wake.
     "wake_word": {
         "enabled": False,
@@ -1253,9 +1253,9 @@ DEFAULT_CONFIG = {
         # sherpa only: listen for every wake-enabled profile's phrase and route to it
         "profile_routing": True,
         "openwakeword": {
-            # "hey_hermes" | built-in openWakeWord name ("hey_jarvis", "alexa", ...) | path to a
+            # "hey_moor" | built-in openWakeWord name ("hey_jarvis", "alexa", ...) | path to a
             # custom .tflite model
-            "model": "hey_hermes",
+            "model": "hey_moor",
         },
         "sherpa": {
             # sherpa-onnx KWS model dir; empty = auto-download the small English zipformer
@@ -1354,7 +1354,7 @@ DEFAULT_CONFIG = {
         # Orchestrator role controls. Depth floored at 1, no ceiling; each level multiplies cost.
         "max_spawn_depth": 1,  # 1 = flat, 2 = orchestrator→leaf, 3+ = deeper
         "orchestrator_enabled": True,  # kill switch for role="orchestrator"
-        # Total subagents a finite one-shot run (hermes chat -q / --oneshot) may spawn; 0 = unlimited.
+        # Total subagents a finite one-shot run (moor chat -q / --oneshot) may spawn; 0 = unlimited.
         # Each child re-pays a cold system prompt and re-explores the repo, and one-shot spawns are mostly
         # "review my own work" rather than parallel work (agent/oneshot_footprint.py).
         "oneshot_max_children": 2,
@@ -1478,16 +1478,16 @@ DEFAULT_CONFIG = {
         # LLM consolidation (umbrella-building) pass. OFF = deterministic inactivity prune only, no
         # aux-model cost. `moor curator run --consolidate` overrides once.
         "consolidate": False,
-        # Also prune bundled built-ins (a suppression list stops `hermes update` restoring them);
+        # Also prune bundled built-ins (a suppression list stops `moor update` restoring them);
         # hub-installed skills are NEVER pruned. OFF by default: shipped skills vanishing from
         # `skills_list` because nobody loaded them for 30 days surprised people (57 gone in one
         # startup tick). true = built-ins age out like agent-created skills.
         "prune_builtins": False,
-        # TTL purge of skills/.archive/: 0 = never; > 0 lets the explicit `hermes curator purge`
+        # TTL purge of skills/.archive/: 0 = never; > 0 lets the explicit `moor curator purge`
         # delete older archived skills (never automatic; logged in the ledger).
         "archive_ttl_days": 0,
         # Before a consolidation pass (the only one that rewrites skill content in place), snapshot
-        # ~/.hermes/skills/ to ~/.hermes/skills/.curator_backups/<utc-iso>/skills.tar.gz (`hermes curator
+        # ~/.moor/skills/ to ~/.moor/skills/.curator_backups/<utc-iso>/skills.tar.gz (`moor curator
         # rollback`). The prune-only pass just moves directories into .archive/ and takes none.
         "backup": {
             "enabled": True,
@@ -1700,7 +1700,7 @@ DEFAULT_CONFIG = {
         # old paths raise ImportError once the compat layer is actually removed.
         "allow_deprecated_imports": False,
         # Read-only plugin update-check cadence, hours (gateway tick; 0 disables). Applying stays
-        # explicit: `hermes plugins update <name>`, or auto_apply below (git-class plugins only,
+        # explicit: `moor plugins update <name>`, or auto_apply below (git-class plugins only,
         # scan-gated by that same pipeline).
         "auto_update_check_hours": 24,
         # Opt-in unattended apply for the cadence check. Git-row plugins ONLY; every apply runs the
@@ -1721,16 +1721,16 @@ DEFAULT_CONFIG = {
     "personalities": {},
     "auth": {  # Login policy (credentials themselves live in auth.json / .env).
         # Borrow and refresh the Codex CLI (~/.codex/auth.json) and Claude Code (~/.claude/.credentials.json)
-        # logins automatically when Hermes has no usable login of its own. Their refresh tokens are single-use
-        # and rotate, so two programs on one login can log each other out; set false to make Hermes use only
-        # its own logins (`hermes auth add <provider>`). `hermes auth add openai-codex` still offers the import
+        # logins automatically when Moor has no usable login of its own. Their refresh tokens are single-use
+        # and rotate, so two programs on one login can log each other out; set false to make Moor use only
+        # its own logins (`moor auth add <provider>`). `moor auth add openai-codex` still offers the import
         # interactively.
         "adopt_external_logins": True,
-        # How `hermes auth add openai-codex` / `hermes model` sign in to OpenAI Codex.
+        # How `moor auth add openai-codex` / `moor model` sign in to OpenAI Codex.
         # "device_code" (default): open a URL, enter a code. "browser": authorization-code + PKCE on
         # the loopback listener http://localhost:1455/auth/callback (the redirect OpenAI registered
         # for the Codex client) — for organizations that disable the device-code grant. Falls back
-        # to device code when that port is busy. `hermes auth add openai-codex --browser` opts in
+        # to device code when that port is busy. `moor auth add openai-codex --browser` opts in
         # for one login without changing this key.
         "codex_login_flow": "device_code",
     },
@@ -1846,8 +1846,8 @@ DEFAULT_CONFIG = {
         # fails closed with the enable-linger remedy. Kanban always requires a scope.
         "require_restart_safe_scope": False,
         # A job failing with the SAME error alerts once, then stays silent for this many hours
-        # before one reminder ping (the run is still recorded; `hermes cron incidents` shows it).
-        # A green run or a different error alerts again immediately; `hermes cron incidents ack`
+        # before one reminder ping (the run is still recorded; `moor cron incidents` shows it).
+        # A green run or a different error alerts again immediately; `moor cron incidents ack`
         # silences a signature for good. 0 = re-alert on every failing run. Keep in sync with
         # cron.scheduler.DEFAULT_FAILURE_REPEAT_ALERT_HOURS.
         "failure_repeat_alert_hours": 6,
@@ -2027,7 +2027,7 @@ DEFAULT_CONFIG = {
     # the catalog does not know, so they never clamp known models. Unknown ids start from safe
     # defaults (200K context, tools on) and get patched; supports_vision / supports_reasoning stay
     # UNKNOWN (fail-open) unless the override sets them — a context_window-only entry must not turn
-    # into "text-only" and hide vision_analyze / reasoning controls (#112649). Provider keys: Hermes
+    # into "text-only" and hide vision_analyze / reasoning controls (#112649). Provider keys: Moor
     # or models.dev id; model ids match case-insensitively. Example: {"custom:my-local-vllm":
     # {"my-llava-model": {"context_window": 8192}}}
     # Semantics: 1. NOTE: an explicit model.context_length (global) and a custom_providers per-model
@@ -2119,7 +2119,7 @@ DEFAULT_CONFIG = {
         # stamps the profile into session keys. This is the ONLY supported topology — there is no
         # `false` opt-out any more: an explicit `false` still parses (it is the runtime mode flag
         # every scoped code path reads) but is warned about and IGNORED for process topology, and
-        # `hermes gateway migrate --multiplex` folds any per-profile fleet that is left.
+        # `moor gateway migrate --multiplex` folds any per-profile fleet that is left.
         # An UNSET key is a request, not a verdict: at boot the gateway runs the migration
         # preflight and stays standalone (logging why) while a secondary still runs its own
         # gateway or a blocker exists, then converges once that is resolved.
@@ -2136,15 +2136,15 @@ DEFAULT_CONFIG = {
         #     `Environment=` (no .env) disappears from file-built scopes. A genuinely
         #     single-profile host never activates and is byte-identical.
         # Two profiles configuring the same bot token cannot be served together — the duplicate
-        # adapter is parked; `hermes profile create --clone` therefore leaves messaging channels
+        # adapter is parked; `moor profile create --clone` therefore leaves messaging channels
         # behind unless --clone-channels is passed.
         "multiplex_profiles": True,
-        # May `hermes update` fold this install onto a multiplexed default gateway by itself?
+        # May `moor update` fold this install onto a multiplexed default gateway by itself?
         # True (the default) keeps today's behaviour: a multi-profile install whose secondaries run
         # their own gateways is migrated automatically after an update when nothing blocks it.
         # Set to False to choose WHEN you converge, not whether: the fold is left to you to run by
         # hand (it is not an opt-out from the one-gateway-per-host model, which has none). Only the
-        # AUTOMATIC path reads this: `hermes gateway migrate --multiplex` is explicit and proceeds.
+        # AUTOMATIC path reads this: `moor gateway migrate --multiplex` is explicit and proceeds.
         "auto_multiplex_migration": True,
         # Route inbound chats of the default profile's bots to another profile
         # (gateway/profile_routing.py): [{profile, platform, chat_id|user_id|guild_id|...}].
@@ -2365,7 +2365,7 @@ DEFAULT_CONFIG = {
         # minute). Once the client is up, wait_timeout applies again. 0 = same as wait_timeout.
         "warmup_timeout": 0.0,
         # After a server fails (spawn error or outer timeout) its (server, workspace root) pair is
-        # skipped. 0 = for the process lifetime (until `hermes lsp restart`); N = retried after N
+        # skipped. 0 = for the process lifetime (until `moor lsp restart`); N = retried after N
         # seconds, so one transient stall does not silence a workspace forever.
         "broken_retry_seconds": 0.0,
         # Workspace roots (glob patterns, ~ expanded; a bare path also matches everything under
@@ -2373,11 +2373,11 @@ DEFAULT_CONFIG = {
         # finish in budget, while every other workspace keeps its diagnostics. Must be a list —
         # any other shape logs a warning and skips LSP for every workspace until fixed.
         "exclude_roots": [],
-        # Missing server binaries: auto = install via npm/go/pip into <HERMES_HOME>/lsp/bin/ on
+        # Missing server binaries: auto = install via npm/go/pip into <MOOR_HOME>/lsp/bin/ on
         # first use; manual = only binaries on PATH; off = alias for manual.
         "install_strategy": "auto",
         # Node package manager for the npm-recipe servers: npm | pnpm | yarn. Installs still land in
-        # <HERMES_HOME>/lsp/node_modules; a configured manager that is not installed, or an unknown
+        # <MOOR_HOME>/lsp/node_modules; a configured manager that is not installed, or an unknown
         # value, skips the install (no silent fallback to npm) so a pnpm/yarn supply-chain policy is
         # never bypassed.
         "package_manager": "npm",
@@ -2474,13 +2474,13 @@ DEFAULT_CONFIG = {
     "paste_collapse_threshold_fallback": 5,
     "paste_collapse_char_threshold": 2000,
 
-    # Bot Desktop: a headless Xfce screen per profile on the gateway host (Linux), streamed to Hermes
-    # Desktop where a human can watch, take over (logins, 2FA, CAPTCHAs) and hand back. `hermes computer-use screen`.
+    # Bot Desktop: a headless Xfce screen per profile on the gateway host (Linux), streamed to Moor
+    # Desktop where a human can watch, take over (logins, 2FA, CAPTCHAs) and hand back. `moor computer-use screen`.
     "bot_desktop": {
         "geometry": "1440x900",
         # Opt-in: start the screen automatically the first time computer_use needs a display on a headless
         # host. Off by default so installing TigerVNC for other reasons never yields a screen nobody asked
-        # for; Hermes Desktop's Screen pane offers Start and this toggle.
+        # for; Moor Desktop's Screen pane offers Start and this toggle.
         "auto_start": False,
         # Refuse to start below this much free memory (MB), measured on the host or its container cgroup,
         # whichever is tighter. Xvnc + Xfce idle at ~220 MB and a takeover's browser adds 0.5-1 GB, so a

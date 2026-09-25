@@ -1,8 +1,8 @@
 """Whether the desktop app a catalog plugin drives is on this machine, before the plugin is installed.
 
-A portable plugin declares its app in ``plugin.json`` (``extensions.com.nousresearch.hermes.servers``).
+A portable plugin declares its app in ``plugin.json`` (``extensions.com.moorinc.moor.servers``).
 The catalog pins the commit, so the declaration is read once per pin from the repo at that commit and
-judged by the same ``hermes_platform`` resolver the installer and the Plugins-tab pill use. Nothing is
+judged by the same ``moor_platform`` resolver the installer and the Plugins-tab pill use. Nothing is
 installed, spawned or connected. Any failure to read the declaration is ``unknown``, never a guess.
 """
 
@@ -67,10 +67,10 @@ def _pinned_manifest(repo: str, sha: str, subdir: str) -> Optional[Dict[str, Any
 
 
 def _server_presence(decl: Any, liveness_raw: Any, title: str) -> Presence:
-    from hermes_platform.host import facts
-    from hermes_platform.resolver.app import AppResolver
-    from hermes_platform.resolver.availability import availability
-    from hermes_platform.resolver.base import Effort
+    from moor_platform.host import facts
+    from moor_platform.resolver.app import AppResolver
+    from moor_platform.resolver.availability import availability
+    from moor_platform.resolver.base import Effort
     from tools.mcp_liveness import parse_liveness
 
     available = availability(decl)
@@ -101,12 +101,12 @@ def _server_presence(decl: Any, liveness_raw: Any, title: str) -> Presence:
 
 def presence(entry: Any) -> Presence:
     """The app state of one catalog entry on this host. The worst server wins (missing, then not running)."""
-    from hermes_cli.agent_plugins import _server_declarations
+    from moor_cli.agent_plugins import _server_declarations
 
     manifest = _pinned_manifest(entry.repo, entry.sha, entry.subdir)
     if not manifest:
         return UNKNOWN
-    raw_servers = (manifest.get("extensions") or {}).get("com.nousresearch.hermes", {}).get("servers") or {}
+    raw_servers = (manifest.get("extensions") or {}).get("com.moorinc.moor", {}).get("servers") or {}
     if not isinstance(raw_servers, dict) or not raw_servers:
         return UNKNOWN
     try:
@@ -123,9 +123,9 @@ def presence(entry: Any) -> Presence:
 def onboarding_entries() -> list[Dict[str, Any]]:
     """Catalog entries curated for the onboarding card (``onboarding: true``) that this OS can run,
     each with its app state. Platform mismatch is the only exclusion; a missing app is reported."""
-    from hermes_cli.plugin_catalog import load_catalog_live
-    from hermes_cli.plugins_cmd_catalog import normalized_platforms
-    from hermes_platform.host.facts import os_family
+    from moor_cli.plugin_catalog import load_catalog_live
+    from moor_cli.plugins_cmd_catalog import normalized_platforms
+    from moor_platform.host.facts import os_family
 
     here = os_family()
     rows = []

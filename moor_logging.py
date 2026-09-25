@@ -19,7 +19,7 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from typing import Optional, Sequence
 
-from hermes_constants import get_config_path, get_hermes_home, mkdir_under_hermes_home
+from moor_constants import get_config_path, get_moor_home, mkdir_under_moor_home
 
 # setup_logging() is idempotent: a second call is a no-op unless ``force=True``.
 _logging_initialized = False
@@ -53,7 +53,7 @@ def _portalocker_probe() -> bool:
     except Exception as exc:
         _WINDOWS_CLH_FALLBACK_REASON = repr(exc)
         return False
-    fd, path = tempfile.mkstemp(prefix="hermes-portalocker-")
+    fd, path = tempfile.mkstemp(prefix="moor-portalocker-")
     try:
         with os.fdopen(fd, "r+b") as stream:
             portalocker.lock(stream, portalocker.LOCK_EX)
@@ -194,7 +194,7 @@ def _warn_windows_lock_timeout_once() -> None:
         if _windows_lock_timeout_warned:
             return
         _windows_lock_timeout_warned = True
-    logging.getLogger("hermes_logging").warning(
+    logging.getLogger("moor_logging").warning(
         "concurrent-log-handler timed out acquiring the cross-process log "
         "lock; this and later records were dropped (the Desktop slash-worker "
         "surface stays clean, but file logging is degraded)."
@@ -285,7 +285,7 @@ COMPONENT_PREFIXES = {
     "tools": ("tools",),
     "cli": ("moor_cli", "cli"),
     "cron": ("cron",),
-    "gui": ("hermes_cli.web_server", "hermes_cli.pty_bridge", "hermes_cli.desktop", "tui_gateway", "uvicorn"),
+    "gui": ("moor_cli.web_server", "moor_cli.pty_bridge", "moor_cli.desktop", "tui_gateway", "uvicorn"),
 }
 
 
@@ -337,8 +337,8 @@ def setup_logging(
     """
     global _logging_initialized
     global _fallback_warned
-    home = hermes_home or get_hermes_home()
-    log_dir = mkdir_under_hermes_home(home / "logs")
+    home = moor_home or get_moor_home()
+    log_dir = mkdir_under_moor_home(home / "logs")
 
     # Stdout is block-buffered when piped (no TTY); line-buffer it so a
     # headless supervisor's log stream tracks the agent loop incrementally
@@ -346,8 +346,8 @@ def setup_logging(
     # reaches this function gets it; a no-op once this stdout is line-buffered.
     _line_buffer_piped_stdout()
 
-    # A second Hermes home in a process that already logs for another one — a dashboard or
-    # ``hermes serve`` backend building agents for several profiles, a multiplexed gateway —
+    # A second Moor home in a process that already logs for another one — a dashboard or
+    # ``moor serve`` backend building agents for several profiles, a multiplexed gateway —
     # gets routed by record home. Stacking another file handler here would hand it EVERY
     # profile's records (the handlers carry no home filter), and a duplicate writer on top of
     # an existing router.
@@ -384,7 +384,7 @@ def setup_logging(
         # One-shot, and the file handlers above are already live, so this lands
         # in errors.log/agent.log — the fallback must never be invisible again.
         _fallback_warned = True
-        logging.getLogger("hermes_logging").warning(
+        logging.getLogger("moor_logging").warning(
             "concurrent-log-handler unavailable on this Windows install (%s); "
             "file logging fell back to stdlib rotation without rollover.",
             _WINDOWS_CLH_FALLBACK_REASON or "portalocker probe failed",
@@ -551,7 +551,7 @@ def _new_file_handler(
     path: Path, *, level: int, max_bytes: int, backup_count: int, formatter
 ) -> "_ManagedRotatingFileHandler":
     """Create the ``logs/`` directory and a configured ``_ManagedRotatingFileHandler``."""
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_moor_home(path.parent)
     if _WINDOWS_CLH_FALLBACK:
         # stdlib fallback: no rollover, or the file pins at the size threshold
         # and every emit re-triggers the WinError 32 rename failure (#44873).
@@ -614,12 +614,12 @@ class _ProfileRoutingFileHandler(logging.Handler):
                 return
             # Formatted here, on the listener thread, where the record's profile scope is gone: bind its home so
             # RedactingFormatter applies THAT profile's redact_secrets policy and vault values, not the launch's.
-            from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-            token = set_hermes_home_override(str(home))
+            from moor_constants import reset_moor_home_override, set_moor_home_override
+            token = set_moor_home_override(str(home))
             try:
                 handler.handle(record)
             finally:
-                reset_hermes_home_override(token)
+                reset_moor_home_override(token)
         except Exception:
             self.handleError(record)
 

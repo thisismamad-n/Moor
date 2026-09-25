@@ -70,7 +70,7 @@ def _sweep_killed_run_roots(root: str) -> None:
     there and leaks one root per in-flight worker; nothing else looks at this directory, so
     983 of them (3.4 GB) accumulated on one host in three days. Idle for a day = dead."""
     try:
-        from hermes_constants_scratch import prune_idle_entries
+        from moor_constants_scratch import prune_idle_entries
     except ImportError:  # runner invoked from outside the repo root
         return
     prune_idle_entries(Path(root), 24, frozenset())
@@ -90,7 +90,7 @@ def _runner_scratch_root() -> str:
     """Per-run temp roots live on DISK, never the system temp dir: a full-suite run writes
     gigabytes of tmp_path fixtures and /tmp is RAM-backed tmpfs on many Linux hosts. /var/tmp is
     the FHS disk-backed temp root and is used because the alternatives fail tests that assume
-    the root's shape: under the Hermes home conftest relocates the basetemp; under a dot-dir
+    the root's shape: under the Moor home conftest relocates the basetemp; under a dot-dir
     (~/.cache) the hidden-dir search tests see every fixture as hidden; anything longer than
     the old /tmp root pushes AF_UNIX test sockets past sun_path.
 
@@ -99,7 +99,7 @@ def _runner_scratch_root() -> str:
     later makedirs/mkdtemp here fail with EPERM for every other user on the host, with no way
     back that does not need root. Keying by uid means no run is blocked by another's leftovers.
     """
-    name = "hermes-pytest" + (f"-{os.getuid()}" if hasattr(os, "getuid") else "")
+    name = "moor-pytest" + (f"-{os.getuid()}" if hasattr(os, "getuid") else "")
     if os.name == "nt" or not os.path.isdir("/var/tmp"):  # no-tmp: ok — probing the disk-backed FHS root
         root = os.path.join(tempfile.gettempdir(), name)
     else:
@@ -987,8 +987,8 @@ def main() -> int:
         "-j",
         "--jobs",
         type=int,
-        default=int(os.environ.get("HERMES_TEST_WORKERS") or (os.cpu_count() or 4)),
-        help="Parallel worker count (default: $HERMES_TEST_WORKERS or cpu_count)",
+        default=int(os.environ.get("MOOR_TEST_WORKERS") or (os.cpu_count() or 4)),
+        help="Parallel worker count (default: $MOOR_TEST_WORKERS or cpu_count)",
     )
     parser.add_argument(
         "--paths",

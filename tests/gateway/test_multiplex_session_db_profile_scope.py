@@ -58,7 +58,7 @@ def multiplex_homes(tmp_path, monkeypatch):
     root.mkdir(parents=True)
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker: a bare dir is not a profile
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
 
     # The suite-wide fixture in conftest re-points ``moor_state.DEFAULT_DB_PATH``
     # at a fake home, which trips the deliberate escape hatch in

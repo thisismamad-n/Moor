@@ -18,11 +18,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_cli._subprocess_compat import noninteractive_git_env
-from hermes_cli.archive_safe import normalize_archive_parts
-from hermes_cli.profiles import DEFAULT_EXPORT_EXCLUDE_ROOT
+from moor_cli._subprocess_compat import noninteractive_git_env
+from moor_cli.archive_safe import normalize_archive_parts
+from moor_cli.profiles import DEFAULT_EXPORT_EXCLUDE_ROOT
 from utils import rmtree_readonly
 
 
@@ -50,7 +50,7 @@ def _is_distribution_runtime_path(parts: Tuple[str, ...]) -> bool:
         return False
     if parts[0] == "cron":
         return parts[:2] != _CRON_STORE_REL
-    # Root-level dot entries under skills are Hermes bookkeeping (.hub,
+    # Root-level dot entries under skills are Moor bookkeeping (.hub,
     # .usage.json, curator state, bundled manifest, locks, archives, ...).
     return parts[0] == "skills" and len(parts) == 2 and parts[1].startswith(".")
 
@@ -232,7 +232,7 @@ def _looks_like_git_url(s: str) -> bool:
 def _git_clone(url: str, dest: Path) -> None:
     if _GITHUB_SHORTHAND_RE.match(url):
         url = f"https://{url.rstrip('/')}"
-    from hermes_cli.git_credentials import run_git_with_credential_fallback
+    from moor_cli.git_credentials import run_git_with_credential_fallback
     try:
         result = run_git_with_credential_fallback(
             ["git", "clone", "--depth", "1", url, str(dest)], url, env=noninteractive_git_env(),
@@ -307,8 +307,8 @@ def _has_cron_jobs(staged: Path) -> bool:
 
 def plan_install(source: str, workdir: Path, override_name: Optional[str] = None) -> InstallPlan:
     """Stage *source* and produce a plan describing what install would do."""
-    from hermes_cli.profiles import _canon_valid, get_profile_dir
-    from hermes_cli.version_info import get_version_info
+    from moor_cli.profiles import _canon_valid, get_profile_dir
+    from moor_cli.version_info import get_version_info
     staged, provenance = _stage_source(source, workdir)
     _reject_distribution_symlinks(staged)
     manifest = read_manifest(staged)
@@ -316,7 +316,7 @@ def plan_install(source: str, workdir: Path, override_name: Optional[str] = None
         raise DistributionError(
             f"No {MANIFEST_FILENAME} found at the distribution root — this source is not a Moor distribution."
         )
-    check_hermes_requires(manifest.hermes_requires, get_version_info().base_version)  # fail fast
+    check_moor_requires(manifest.moor_requires, get_version_info().base_version)  # fail fast
     canon = _canon_valid(override_name or manifest.name)
     if canon == "default":
         raise DistributionError(
@@ -398,7 +398,7 @@ def _merge_cron_store(src: Path, home: Path) -> None:
 
     dest = home.joinpath(*_CRON_STORE_REL)
     try:
-        with tempfile.TemporaryDirectory(prefix="hermes_dist_cron_") as tmp:
+        with tempfile.TemporaryDirectory(prefix="moor_dist_cron_") as tmp:
             staged_store = Path(tmp) / "cron"
             staged_store.mkdir()
             shutil.copy2(src, staged_store / "jobs.json")
@@ -532,7 +532,7 @@ def _copy_dist_payload(staged: Path, target: Path, manifest: DistributionManifes
     write_manifest(target, manifest)
     # A shipped profile.yaml must not carry a backend-assigned role.
     if any(rel_parts == ("profile.yaml",) for _, rel_parts in entries):
-        from hermes_cli.profiles import drop_profile_role
+        from moor_cli.profiles import drop_profile_role
         drop_profile_role(target)
 
 

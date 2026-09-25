@@ -36,7 +36,7 @@ _BROWSER_PASSTHROUGH_KEYS: tuple[str, ...] = (
 
 
 def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
-    """Frozen old-updater surface (tests/compat/old_updater_surface.json): a pre-PM ``hermes update``
+    """Frozen old-updater surface (tests/compat/old_updater_surface.json): a pre-PM ``moor update``
     still running mid-swap imports this from the NEW tree. Nothing is warmed — PM owns the browser
     runtime — and the permanent definition must live here, not behind the revert-scheduled compat
     pointer."""
@@ -364,8 +364,8 @@ def _last_session_key(task_id: str) -> str:
 
 def _socket_safe_tmpdir() -> str:
     """Temp root short enough for the agent-browser socket dir and Chrome's SingletonSocket
-    (``hermes_constants.socket_safe_tmpdir``)."""
-    from hermes_constants import socket_safe_tmpdir
+    (``moor_constants.socket_safe_tmpdir``)."""
+    from moor_constants import socket_safe_tmpdir
     return socket_safe_tmpdir()
 
 
@@ -1386,9 +1386,9 @@ _PLUGIN_COMPAT_LAZY = {
     'lightpanda_engine_status': ('tools.browser_tool_lightpanda_fallback', 'lightpanda_engine_status'),
     'node_tool_runnable': ('moor_constants', 'node_tool_runnable'),
     'normalize_browser_cloud_provider': ('tools.tool_backend_helpers', 'normalize_browser_cloud_provider'),
-    'reset_hermes_home_override': ('hermes_constants', 'reset_hermes_home_override'),
-    'set_hermes_home_override': ('hermes_constants', 'set_hermes_home_override'),
-    'windows_hide_flags': ('hermes_cli._subprocess_compat', 'windows_hide_flags'),
+    'reset_moor_home_override': ('moor_constants', 'reset_moor_home_override'),
+    'set_moor_home_override': ('moor_constants', 'set_moor_home_override'),
+    'windows_hide_flags': ('moor_cli._subprocess_compat', 'windows_hide_flags'),
 }
 
 

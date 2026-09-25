@@ -10,7 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from hermes_cli._startup_fast import is_desktop_ssh_backend_argv
+from moor_cli._startup_fast import is_desktop_ssh_backend_argv
 
 # Cmdline substrings identifying the long-lived server (``serve`` = the headless name Desktop
 # spawns; reaped on update for the same reason).
@@ -148,14 +148,14 @@ def _pid_passwd_home(pid: int) -> str | None:
     return None
 
 
-def _hermes_home_for_pid(pid: int) -> str | None:
-    """The Hermes home *pid* runs on, tri-state: ``None`` ONLY when its environment is unreadable
+def _moor_home_for_pid(pid: int) -> str | None:
+    """The Moor home *pid* runs on, tri-state: ``None`` ONLY when its environment is unreadable
     (another user, hardened ``/proc``) — callers spare those, never guess.
 
     A readable environment always resolves, replaying ``_apply_profile_override`` on the target's
-    exec-time env + argv (``hermes -p X serve`` rewrites ``HERMES_HOME`` in ``os.environ`` AFTER
-    startup, which ``/proc/<pid>/environ`` never reflects): a profile-shaped ``HERMES_HOME``
-    without a flag is the home; otherwise the root is ``HERMES_HOME`` (its grandparent when
+    exec-time env + argv (``moor -p X serve`` rewrites ``MOOR_HOME`` in ``os.environ`` AFTER
+    startup, which ``/proc/<pid>/environ`` never reflects): a profile-shaped ``MOOR_HOME``
+    without a flag is the home; otherwise the root is ``MOOR_HOME`` (its grandparent when
     profile-shaped) or the platform default of the process's own ``HOME`` / ``LOCALAPPDATA``
     (its owner's password-database home when a scrubbed unit environment exports neither), and
     the profile is the ``--profile``/``-p`` flag, else the root's sticky ``active_profile`` unless
@@ -164,24 +164,24 @@ def _hermes_home_for_pid(pid: int) -> str | None:
     env = _pid_environ(pid)
     if env is None:
         return None
-    from hermes_cli.main_dashboard import _dashboard_cmdline_for_pid
-    from hermes_cli.profiles import get_active_profile, normalize_profile_name, profile_root_for_env_home
+    from moor_cli.main_dashboard import _dashboard_cmdline_for_pid
+    from moor_cli.profiles import get_active_profile, normalize_profile_name, profile_root_for_env_home
     argv = _dashboard_cmdline_for_pid(pid) or []
-    env_home = env.get("HERMES_HOME", "").strip()
+    env_home = env.get("MOOR_HOME", "").strip()
     profile = _profile_flag_value(argv)
     if profile is None and env_home and (
-        Path(env_home).parent.name == "profiles" or env.get("HERMES_UPDATE_POST_SWAP") == "1"
+        Path(env_home).parent.name == "profiles" or env.get("MOOR_UPDATE_POST_SWAP") == "1"
     ):
         return env_home
     if sys.platform == "win32":
         local_appdata = env.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path(env.get("USERPROFILE") or Path.home()) / "AppData" / "Local"
-        default_home = base / "hermes"
+        default_home = base / "moor"
     else:
-        default_home = Path(env.get("HOME") or _pid_passwd_home(pid) or Path.home()) / ".hermes"
+        default_home = Path(env.get("HOME") or _pid_passwd_home(pid) or Path.home()) / ".moor"
     root = profile_root_for_env_home(env_home, default_home)
-    fixed_identity = any(env.get(k) for k in ("HERMES_SUPERVISED_CHILD", "HERMES_S6_SUPERVISED_CHILD",
-                                               "HERMES_GATEWAY_EXTERNAL_SUPERVISOR")) or is_desktop_ssh_backend_argv(argv)
+    fixed_identity = any(env.get(k) for k in ("MOOR_SUPERVISED_CHILD", "MOOR_S6_SUPERVISED_CHILD",
+                                               "MOOR_GATEWAY_EXTERNAL_SUPERVISOR")) or is_desktop_ssh_backend_argv(argv)
     if profile is None and not fixed_identity:
         profile = get_active_profile(root)
     canon = normalize_profile_name(profile) if profile else "default"
@@ -249,11 +249,11 @@ def _normalized_home_for_compare(home: str) -> str:
     return os.path.normcase(str(_resolved_home(home)))
 
 
-def _pids_owned_by_hermes_home(pids: list[int], home: str) -> list[int]:
-    """Return only *pids* whose resolved Hermes home (``_hermes_home_for_pid``) is ``home``.
+def _pids_owned_by_moor_home(pids: list[int], home: str) -> list[int]:
+    """Return only *pids* whose resolved Moor home (``_moor_home_for_pid``) is ``home``.
 
     Dashboard argv is discovery-only: it is not an ownership proof because
-    several Hermes installs and profiles can run the same command on one
+    several Moor installs and profiles can run the same command on one
     machine.  An unreadable process environment is deliberately not treated
     as a match, so a stop request fails closed rather than taking down an
     unrelated backend.
@@ -261,13 +261,13 @@ def _pids_owned_by_hermes_home(pids: list[int], home: str) -> list[int]:
     target = _normalized_home_for_compare(home)
     return [
         pid for pid in pids
-        if (pid_home := _hermes_home_for_pid(pid))
+        if (pid_home := _moor_home_for_pid(pid))
         and _normalized_home_for_compare(pid_home) == target
     ]
 
 
-def _profile_key_for_respawn(argv: list[str], hermes_home: str | None = None) -> str:
-    """Stable owner key: ``HERMES_HOME`` when known, else ``--profile`` / ``-p``.
+def _profile_key_for_respawn(argv: list[str], moor_home: str | None = None) -> str:
+    """Stable owner key: ``MOOR_HOME`` when known, else ``--profile`` / ``-p``.
 
     A home ending in ``profiles/<name>`` → ``profile:<name>`` (shares a cap with an explicit
     ``--profile``); other homes keep a ``home:`` key so unrelated installs never collapse.
@@ -335,9 +335,9 @@ def _exclude_pids_from_env() -> set[int]:
     return out
 
 
-#: Executables that only *carry* a hermes command line. A process headed by one of these
+#: Executables that only *carry* a moor command line. A process headed by one of these
 #: never serves traffic itself; when its argv matches the dashboard patterns it is a
-#: wrapper around the command (``bash -c 'hermes dashboard --stop'``), not a backend.
+#: wrapper around the command (``bash -c 'moor dashboard --stop'``), not a backend.
 _WRAPPER_HEAD_COMMANDS = frozenset({
     "ash", "bash", "csh", "dash", "fish", "ksh", "sh", "tcsh", "zsh",
     "env", "nohup", "nice", "stdbuf", "timeout", "watch", "xargs",
@@ -399,7 +399,7 @@ def _is_caller_wrapper_shell(pid: int, ancestors: set[int]) -> bool:
     """True when *pid* is a caller ancestor headed by a wrapper executable.
 
     Root selection is a substring match, so the shell a ``--stop`` was typed into (or a
-    ``bash -c 'hermes dashboard --stop'`` wrapper) matches on its own argv. Ancestor alone
+    ``bash -c 'moor dashboard --stop'`` wrapper) matches on its own argv. Ancestor alone
     is not a spare: the backend hosting a shell-escaped TUI is also the caller's ancestor
     and must stay stoppable — only a wrapper-headed ancestor is spared.
     """
@@ -455,7 +455,7 @@ def _is_detached_session_leader(pid: int, tty: str) -> bool:
 
     Messaging-gateway bots and profile actions started from ``/api/gateway/*`` are such processes:
     they are the user's, not the dashboard's, and must survive a dashboard stop. A hosted
-    ``hermes --tui`` child is a session leader too (``pty.fork``) but owns the pts whose master the
+    ``moor --tui`` child is a session leader too (``pty.fork``) but owns the pts whose master the
     dashboard held, so its tty column is set and it stays in the sweep.
 
     Known gap: the turn-isolation ``tui_gateway.compute_host`` and ``slash_worker`` children are
@@ -477,8 +477,8 @@ def _posix_descendants(roots: list[int]) -> dict[int, tuple[int, int | None]]:
     """``{pid: (root, start_time)}`` of every dashboard-owned descendant of *roots*, snapshotted
     BEFORE the kill: once the root dies its children are reparented and the PPID link is gone.
     Detached session leaders (see ``_is_detached_session_leader``) are pruned together with their own
-    subtrees. So is the calling process with its subtree and its ancestor chain: ``hermes dashboard
-    --stop`` / ``hermes update`` run from a shell escape inside the hosted Chat TUI are same-session
+    subtrees. So is the calling process with its subtree and its ancestor chain: ``moor dashboard
+    --stop`` / ``moor update`` run from a shell escape inside the hosted Chat TUI are same-session
     descendants of the backend, and sweeping them would SIGTERM the caller mid-run (POSIX twin of the
     Windows #98814 hazard). The start-time fingerprint is the PID-reuse guard (same one
     ``_kill_pids_windows`` uses). Empty on scan failure → root-only kill, the historical behaviour.
@@ -584,7 +584,7 @@ def _kill_stale_dashboard_processes(
     ``.service`` suffix) are left untouched, not killed twice.
 
     When *scope_home* is supplied, only processes with that exact live
-    ``HERMES_HOME`` are candidates; unknown ownership fails closed. This is
+    ``MOOR_HOME`` are candidates; unknown ownership fails closed. This is
     used by ``dashboard --stop`` and the per-profile update cleanup.
 
     Manually-started dashboards are not auto-restarted because we don't know the original launch args
@@ -748,10 +748,10 @@ def _detect_concurrent_moor_instances(
     scripts_dir: Path, *, exclude_pid: int | None = None) -> list[tuple[int, str]]:
     """Historical main export: stop old updaters without scanning live shims.
 
-    PM stages a fresh generation instead of replacing a mapped hermes.exe.
+    PM stages a fresh generation instead of replacing a mapped moor.exe.
     Returning an empty list would let old callers continue into that mutation.
     """
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
     stop_for_relaunch()
 
 
@@ -853,15 +853,15 @@ def _valid_lockfile_payload(parsed: object, ownership_id: str) -> bool:
 def _remote_lock_roots(base_dir: Path | None) -> list[Path]:
     """Every dir the Desktop may have written ``desktop-ssh/<ownershipId>/backend.lock.json`` under.
 
-    The Desktop writes SSH locks beneath the ROOT home (``~/.hermes/desktop-ssh``), but a profile
-    backend (``hermes --profile X serve``) runs with ``HERMES_HOME=<root>/profiles/X`` — scanning only
+    The Desktop writes SSH locks beneath the ROOT home (``~/.moor/desktop-ssh``), but a profile
+    backend (``moor --profile X serve``) runs with ``MOOR_HOME=<root>/profiles/X`` — scanning only
     the process home found no lock there and its reaper killed the sibling profile's live SSH
     backend on every profile switch (#89811)."""
     if base_dir is not None:
         return [base_dir]
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
     roots: list[Path] = []
-    for home in (_hermes_home_dir(), get_default_hermes_root()):
+    for home in (_moor_home_dir(), get_default_moor_root()):
         root = home / _REMOTE_LOCK_SUBDIR
         if root not in roots:
             roots.append(root)

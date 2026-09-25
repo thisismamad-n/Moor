@@ -6,7 +6,7 @@ description: "Extend the native Moor Desktop app — panes, pages, sidebar nav, 
 
 # Desktop Plugin SDK
 
-The native [Hermes Desktop](../user-guide/desktop.md) app is contribution-driven: every
+The native [Moor Desktop](../user-guide/desktop.md) app is contribution-driven: every
 surface in the window — panes, routes, sidebar nav, status-bar items, palette
 entries, keybinds, themes — registers into one central registry. Core registers
 its surfaces exactly the way a plugin does, so the plugin story is the real one,
@@ -27,7 +27,7 @@ desktop app** (`moor desktop`) SDK — the `@moor/plugin-sdk` module and
 its own, unrelated plugin system on `window.__MOOR_PLUGIN_SDK__` with a
 `manifest.json` — documented at
 [Extending the Dashboard](../user-guide/features/extending-the-dashboard.md). Python
-CLI/gateway plugins are documented at [Build a Hermes Plugin](./plugins/index.md).
+CLI/gateway plugins are documented at [Build a Moor Plugin](./plugins/index.md).
 The three do not share code, APIs, or delivery. Only the backend `plugin_api.py`
 namespace (`/api/plugins/<id>`) is shared between the desktop and dashboard SDKs.
 :::
@@ -441,7 +441,7 @@ composer, in the primary pane or a tile; `'new'` = the fresh draft that has no
 session id yet.
 
 ```javascript
-import { host } from '@hermes/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 
 // Append to the active composer (modes: 'block' | 'inline' | 'prefix';
 // 'prefix' seats a slash command at the start). Acknowledged like setDraft:
@@ -500,8 +500,8 @@ plugin write can never land in another session's composer.
 
 | Plugin | Was | Now |
 |---|---|---|
-| next-prompt (#120660) | `window.dispatchEvent(new CustomEvent('hermes:composer-insert', …))` + a `setTimeout` `hermes:composer-focus`; `[data-composer-target]`/`[data-pane-hidden]` scan for the visible target | `await host.composer.insertText(null, suggestion.text, { mode: 'block' })`, then `host.composer.focus(null)` if the pill lost the caret |
-| prompt-snippets (#116030) | same `hermes:composer-insert` event; `[data-slot="composer-input"]`/ProseMirror `textContent` + synthetic `InputEvent` fallback; `surfaceEditorEl().focus()` | `host.composer.insertText(sid, text, { mode: 'block' })`; `setDraft(sid, (await getDraft(sid) ?? '') + '\n' + text)` replaces the fallback; `host.composer.focus(sid)` — `sid = host.state.focusedSessionId.get()` |
+| next-prompt (#120660) | `window.dispatchEvent(new CustomEvent('moor:composer-insert', …))` + a `setTimeout` `moor:composer-focus`; `[data-composer-target]`/`[data-pane-hidden]` scan for the visible target | `await host.composer.insertText(null, suggestion.text, { mode: 'block' })`, then `host.composer.focus(null)` if the pill lost the caret |
+| prompt-snippets (#116030) | same `moor:composer-insert` event; `[data-slot="composer-input"]`/ProseMirror `textContent` + synthetic `InputEvent` fallback; `surfaceEditorEl().focus()` | `host.composer.insertText(sid, text, { mode: 'block' })`; `setDraft(sid, (await getDraft(sid) ?? '') + '\n' + text)` replaces the fallback; `host.composer.focus(sid)` — `sid = host.state.focusedSessionId.get()` |
 | prompt-enhancer (#116031) | walks the editor's child nodes to serialize, rebuilds chip DOM, `replaceChildren` + synthetic `InputEvent` | `const draft = await host.composer.getDraft(sid)` → transform → `await host.composer.setDraft(sid, enhanced)` (chips hydrate app-side); revert is another `setDraft` |
 | memory-review (#115966) | `host.request('slash.exec', { session_id, command })` for `/memory …` — already SDK-only | optional: `host.composer.insertText(sid, '/memory pending', { mode: 'prefix' })` to seat the command for the user instead of executing it |
 | intelligent-tool-break (#115964) | "Message" button only toasts "type /break" (no composer write) | `host.composer.setDraft(host.state.focusedSessionId.get(), '/break ')` then `host.composer.focus(null)` restores the intended behaviour |
@@ -517,7 +517,7 @@ returns a small element (a badge, a swatch, a tag) or `null` for rows you don't
 own — registering costs nothing on every other row:
 
 ```ts
-import { SESSION_ROW_AREAS, type SessionRowSlotContribution } from '@hermes/plugin-sdk'
+import { SESSION_ROW_AREAS, type SessionRowSlotContribution } from '@moor/plugin-sdk'
 
 ctx.register({
   area: SESSION_ROW_AREAS.trailing,
@@ -573,7 +573,7 @@ Migration for the held catalog plugins:
   within the Pinned section, and `host.sessions.reorder([])` for its
   "reset manual order" path.
 - **better-session-appearance** — replace the `localStorage`
-  `hermes.desktop.sessionColors` write and the fiber-harvested `onChange` with
+  `moor.desktop.sessionColors` write and the fiber-harvested `onChange` with
   `host.sessions.setColor(sessionId, hex)` (`null` clears), and render its
   per-row glyph through `SESSION_ROW_AREAS.leading` instead of mutating the
   row's status dot (the durable id it needed from `_lineage_root_id` is the
@@ -589,7 +589,7 @@ MutationObserver text-rewriting plugins do today.
 #### Model pill label providers
 
 ```ts
-import { COMPOSER_AREAS, type ComposerModelPillContext, type ComposerModelPillProvider } from '@hermes/plugin-sdk'
+import { COMPOSER_AREAS, type ComposerModelPillContext, type ComposerModelPillProvider } from '@moor/plugin-sdk'
 
 interface ComposerModelPillContext {
   model: string            // the model slug the pill would show
@@ -690,7 +690,7 @@ Migrations for the plugins that motivated this slot:
   card renders `<ColorSwatches swatches={PROFILE_SWATCHES} value onChange />`
   plus its bold/glyph/auto-rule controls; drop the `data-better-session-appearance`
   attribute writes and the dropdown `max-height` overrides.
-* **hermes-appearance-hub** — mount its paper-texture / font / intro-copy
+* **moor-appearance-hub** — mount its paper-texture / font / intro-copy
   controls as an `APPEARANCE_AREAS.extra` card instead of a status-bar menu
   that reaches into Settings; the settings *values* still go through
   `host.settings` (allowlisted keys) and `THEMES_AREA`.
@@ -802,7 +802,7 @@ die with a component that's already on screen (a page's own header control
 leaves when the page unmounts), render `<Contribute>` inside it instead:
 
 ```javascript
-import { Contribute, WORKSPACE_PAGE_HEADER_AREA } from '@hermes/plugin-sdk'
+import { Contribute, WORKSPACE_PAGE_HEADER_AREA } from '@moor/plugin-sdk'
 
 jsx(Contribute, {
   area: WORKSPACE_PAGE_HEADER_AREA,
@@ -821,7 +821,7 @@ contribution at render and applies the result to the rows it would otherwise
 show; the default list itself never changes.
 
 ```ts
-import { SIDEBAR_NAV_PREFS_AREA, type SidebarNavPrefsContribution } from '@hermes/plugin-sdk'
+import { SIDEBAR_NAV_PREFS_AREA, type SidebarNavPrefsContribution } from '@moor/plugin-sdk'
 
 // Payload (`data`) of a sidebarNav.prefs contribution
 interface SidebarNavPrefsContribution {
@@ -1110,25 +1110,25 @@ Deliberately **not** keys, and why:
 
 | Wanted | Use instead | Why not a raw key |
 |--------|-------------|-------------------|
-| keybind map (`hermes.desktop.keybinds`) | `KEYBINDS_AREA` contribution | a raw map write rebinds every other plugin's shortcuts; the area merges per plugin and is torn down with it |
+| keybind map (`moor.desktop.keybinds`) | `KEYBINDS_AREA` contribution | a raw map write rebinds every other plugin's shortcuts; the area merges per plugin and is torn down with it |
 | active theme / mode record | `THEMES_AREA` (register a theme; the user selects it) | theme selection is per window/profile and arbitrated by the app, not a flat preference |
 | `pluginDecisions` (desktop plugin on/off) | the app's Plugins tab (a read-only view is a separate SDK hook) | a plugin toggling another plugin's enable state is plugins interfering with each other |
-| `toolView.technical`, `embed-mode`, `titlebarAppActions`, `translucency.v2`, `user-bubble-transparency.v1`, `hermesDesktop.zoom.*` | follow-up keys after each store is audited | some drive the main process or window chrome; each needs its own guard and ownership review before it becomes plugin-writable |
+| `toolView.technical`, `embed-mode`, `titlebarAppActions`, `translucency.v2`, `user-bubble-transparency.v1`, `moorDesktop.zoom.*` | follow-up keys after each store is audited | some drive the main process or window chrome; each needs its own guard and ownership review before it becomes plugin-writable |
 
-Migration — `hermes-appearance-hub`, which today does
-`localStorage.setItem('hermes.desktop.sessionListDensity', id)` followed by
+Migration — `moor-appearance-hub`, which today does
+`localStorage.setItem('moor.desktop.sessionListDensity', id)` followed by
 `window.dispatchEvent(new StorageEvent('storage', …))` to wake the app's store
 (`readSimpleKey`/`writeSimpleKey`, `readBoolKey`/`writeBoolKey`):
 
 ```ts
 // before
-localStorage.setItem('hermes.desktop.backdrop.v1', String(on))
-window.dispatchEvent(new StorageEvent('storage', { key: 'hermes.desktop.backdrop.v1', newValue: String(on) }))
+localStorage.setItem('moor.desktop.backdrop.v1', String(on))
+window.dispatchEvent(new StorageEvent('storage', { key: 'moor.desktop.backdrop.v1', newValue: String(on) }))
 // after — the store notifies its own subscribers; no synthetic StorageEvent
 host.settings.set('backdrop.v1', on)
-host.settings.set('sessionListDensity', id)          // was hermes.desktop.sessionListDensity
-host.settings.set('tabStripDefault', id)             // was hermes.desktop.tabStripDefault
-host.settings.set('reasoning.collapsedByDefault', on) // was hermes.desktop.reasoning.collapsedByDefault
+host.settings.set('sessionListDensity', id)          // was moor.desktop.sessionListDensity
+host.settings.set('tabStripDefault', id)             // was moor.desktop.tabStripDefault
+host.settings.set('reasoning.collapsedByDefault', on) // was moor.desktop.reasoning.collapsedByDefault
 host.settings.set('composerPopout.gesturesEnabled', on)
 host.settings.set('intro-splash.v1', mode !== 'off') // replaces clicking #setting-field-appearance.intro-splash
 ```
@@ -1136,7 +1136,7 @@ host.settings.set('intro-splash.v1', mode !== 'off') // replaces clicking #setti
 Reads become `host.settings.get(key)`; its `MutationObserver` on the Settings
 page's intro-splash switch becomes `host.settings.subscribe('intro-splash.v1', fn)`
 (disposer → `ctx.onDispose`). `prompt-snippets` reads
-`localStorage.getItem('hermes.desktop.keybinds')` to back up its shortcut — that
+`localStorage.getItem('moor.desktop.keybinds')` to back up its shortcut — that
 is the keybind-map row above: contribute the default through `KEYBINDS_AREA` and
 keep the user's override in `ctx.storage`, not in the app's map.
 
@@ -1160,7 +1160,7 @@ scoping. Omit `profile` to act on the app-wide active profile; pass a name or a
 `{ connectionId, profile }` route to configure another profile without swapping
 the foreground one. Nothing new is arbitrated: every call is already reachable
 through `host.request` — the value is typing plus profile scoping, so stop
-calling `window.hermesDesktop.api` raw.
+calling `window.moorDesktop.api` raw.
 
 `host.pluginDecisions` mirrors the app's plugin enable/disable map (plugin id →
 `true`/`false`; an absent id means the user never chose and the plugin's own
@@ -1192,8 +1192,8 @@ desktopApi({ path: `/api/tools/toolsets/${name}`,          host.toolsets.setEnab
   method: 'PUT', body: { enabled } })
 desktopApi({ path: '/api/profiles' })                      host.profiles.list()
 JSON.parse(localStorage.getItem(                           host.pluginDecisions.get()
-  'hermes.desktop.pluginDecisions.v2'))                    ctx.onDispose(host.pluginDecisions.subscribe(fn))
-localStorage.setItem('hermes.desktop.pluginDecisions.v2')  // declined — host.navigate('/capabilities?tab=plugins')
+  'moor.desktop.pluginDecisions.v2'))                    ctx.onDispose(host.pluginDecisions.subscribe(fn))
+localStorage.setItem('moor.desktop.pluginDecisions.v2')  // declined — host.navigate('/capabilities?tab=plugins')
 row.querySelector('[data-slot="switch"]').click()          // same: the app's Plugins tab owns the toggle
 ```
 
@@ -1330,7 +1330,7 @@ the `moor://` scheme — a plain anchor on your website or README:
 The user gets a confirmation dialog (repo id, source links, a probe of what
 the repo ships) and picks components before anything is installed — deep links
 never auto-install. `force=1` replaces an existing install; dev builds use
-`hermes-dev://`. Full link reference:
+`moor-dev://`. Full link reference:
 [One-click install links](../user-guide/features/plugins.md#one-click-install-links-desktop).
 
 ### The Python side
@@ -1363,7 +1363,7 @@ async def action(body: dict):
 
 Routes mount under `/api/plugins/<id>/` (`GET /api/plugins/<id>/board`, …).
 Backend code runs inside the gateway process, so it can import from the
-hermes-agent codebase directly (`hermes_state`, `hermes_cli.config`, …). See
+moor-agent codebase directly (`moor_state`, `moor_cli.config`, …). See
 [Extending the Dashboard → Backend API routes](../user-guide/features/extending-the-dashboard.md#backend-api-routes)
 for the full backend reference — the mount is identical.
 
@@ -1383,7 +1383,7 @@ own desktop half over the app's global event stream — the same stream
 `host.onEvent` subscribes to:
 
 ```python
-from hermes_cli.plugin_events import broadcast_plugin_event
+from moor_cli.plugin_events import broadcast_plugin_event
 
 broadcast_plugin_event("rss-reader", "feed.updated", {"count": 3})
 # → event "plugin.rss-reader.feed.updated" reaches every connected desktop client
@@ -1407,16 +1407,16 @@ your handler). Where it lands depends on the process the call runs in:
 
 | Caller runs in | Reaches |
 |---|---|
-| `hermes serve` (the Desktop backend): `plugin_api.py` routers, plugin slash commands, tools and hooks in the agent turn | every connected Desktop window |
-| the `dashboard.turn_isolation` compute-host child (tools/hooks of an isolated turn) | relayed over the host pipe to `hermes serve`, then every window |
-| the stdio TUI (`hermes` in a terminal) | that terminal's client |
-| `hermes gateway run` (messaging platforms), `hermes chat`, cron, `hermes plugins validate` | nobody — no Desktop client is attached to that process; the call is a logged no-op |
+| `moor serve` (the Desktop backend): `plugin_api.py` routers, plugin slash commands, tools and hooks in the agent turn | every connected Desktop window |
+| the `dashboard.turn_isolation` compute-host child (tools/hooks of an isolated turn) | relayed over the host pipe to `moor serve`, then every window |
+| the stdio TUI (`moor` in a terminal) | that terminal's client |
+| `moor gateway run` (messaging platforms), `moor chat`, cron, `moor plugins validate` | nobody — no Desktop client is attached to that process; the call is a logged no-op |
 
 Use this instead of importing `tui_gateway.server` internals; for plugin-scoped frames
 with a payload tailored per connection, `ctx.socket('/events')` remains the
 richer door.
 
-Migration (rss-reader): drop the `~/.hermes/rss-reader/commands.jsonl` queue,
+Migration (rss-reader): drop the `~/.moor/rss-reader/commands.jsonl` queue,
 `GET /commands` and the 3 s `ctx.rest('/commands')` poll — the Python side
 calls `broadcast_plugin_event('rss-reader', 'feed.updated', payload)` where it
 used to enqueue, and the desktop side replaces the timer with
@@ -1491,7 +1491,7 @@ companion repo.
 
 A loaded plugin is evaluated as ESM in the renderer realm with **full app
 authority** — the React singleton, the whole SDK (`host.request` gateway RPC,
-`ctx.rest`, storage, `navigate`) and the `window.hermesDesktop` native bridge
+`ctx.rest`, storage, `navigate`) and the `window.moorDesktop` native bridge
 (files, git, terminal, installs). The isolation the loader provides is **error
 isolation only**: a plugin can't crash the app (contributions are error-bounded,
 listeners isolated, a throwing `register()` is rolled back and reported on the
@@ -1503,7 +1503,7 @@ your machine — which is why the disk door only loads local files you (or your
 agent) wrote. For [catalog](../user-guide/features/plugin-catalog.md#trust-model)
 installs the trust comes from admission — a human reviewed the exact pinned
 commit — backed by two tripwires: the `desktop surface` lint at admission and
-the loader's import allowlist (`@hermes/plugin-sdk` and `react*` only; a static
+the loader's import allowlist (`@moor/plugin-sdk` and `react*` only; a static
 or dynamic `import` of anything else, including `https:` URLs, fails the load).
 Neither is a sandbox. A future remote-source door will need a real boundary
 (iframe/worker + CSP + capability gating) before it can land; do not treat this
@@ -1548,7 +1548,7 @@ pipeline as a trust boundary.
 | Category | Exports |
 |----------|---------|
 | Host | `host` (`.state.*`, `.settings`, `.notify`, `.notifyError`, `.navigate`, `.onEvent`, `.logs`, `.status`, `.restartGateway`, `.request`, `.composer`, `.sessions`, `.skills`, `.toolsets`, `.profiles`, `.pluginDecisions`) |
-| Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `HermesOpenTarget`, `Contribution` |
+| Plugin contract | `MoorPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `MoorOpenTarget`, `Contribution` |
 | Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `COMPOSER_AREAS`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS` |
 | Area payloads | `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution` |
 | React / state | `useValue`, `atom`, `computed`, `useQuery`, `useMutation`, `useQueryClient`, `queryClient`, `Contribute` |

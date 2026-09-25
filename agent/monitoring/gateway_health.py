@@ -230,7 +230,7 @@ def _safe_profile() -> str:
 
 def _safe_version() -> str:
     try:
-        from hermes_cli.version_info import get_version_info
+        from moor_cli.version_info import get_version_info
         return get_version_info().base_version
     except Exception:
         return "unknown"

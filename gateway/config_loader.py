@@ -395,7 +395,7 @@ def read_yaml_layers(home: Path) -> dict:
         with open(config_yaml_path, encoding="utf-8-sig") as f:
             yaml_cfg = fast_safe_load(f) or {}
 
-    from hermes_cli.config import _expand_env_vars
+    from moor_cli.config import _expand_env_vars
 
     # ${VAR} / ${env:VAR} expansion — the same primitive the CLI loader applies, so platform
     # adapter settings (webhook secret, api_server key, teams credentials) arrive resolved

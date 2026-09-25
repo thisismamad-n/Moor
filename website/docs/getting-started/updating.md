@@ -12,16 +12,16 @@ Choose the update method for the installation that is running:
 
 | Installation | Update method |
 |---|---|
-| Managed source checkout | `hermes update`, or the source-built desktop's update handoff. |
+| Managed source checkout | `moor update`, or the source-built desktop's update handoff. |
 | Windows sideload MSIX | The desktop Update control and Windows App Installer. |
 | Microsoft Store package | Microsoft Store updates. |
 | macOS bundled app | The desktop Update control, through `electron-updater`. |
 | Docker image | Pull the chosen image and recreate the container with the same data mount. |
 | Nix | Update the flake/profile and rebuild. |
-| Termux APT | `pkg update`, then `pkg upgrade hermes-agent`. |
+| Termux APT | `pkg update`, then `pkg upgrade moor-agent`. |
 
-`hermes update` does not rewrite package-owned application files. PM manages
-dependencies, not application distribution: `hermes pm update` is a maintainer
+`moor update` does not rewrite package-owned application files. PM manages
+dependencies, not application distribution: `moor pm update` is a maintainer
 pin-update command, not an alternative application updater.
 
 For a managed source installation:
@@ -57,33 +57,33 @@ does not replace stable, including on Windows with MSIX. Each application keeps
 its own desktop state and updates within the channel baked into its build;
 changing channels means installing the other application, not changing a setting.
 The canary icon has a yellow background (dark yellow in dark mode), and its CLI
-command is `hermes-canary`.
+command is `moor-canary`.
 
 One-off commit bundles are separate from both release channels and from other
 commit bundles. Their red icons show the short build SHA, also used in the
-`hermes-<short-sha>` CLI command. They do not check for or install updates,
-including through `hermes update` or `hermes update --check`. They explain:
+`moor-<short-sha>` CLI command. They do not check for or install updates,
+including through `moor update` or `moor update --check`. They explain:
 
 > This build doesn't get updates. Ask the developer who gave it to you for a new build.
 
-Separate applications still share Hermes profiles, configuration, and sessions
-under the same Hermes home. Running different builds against one profile is not
+Separate applications still share Moor profiles, configuration, and sessions
+under the same Moor home. Running different builds against one profile is not
 schema isolation: newer builds can change stored data that an older build cannot
 read. Back up shared data before testing. The desktop and standalone CLI warn
 when another live installation uses the same profile; this is advisory, not a
 lock. Desktop post-update notices are scoped to the application, so launching
-canary cannot consume stable's pending notice. The `hermes://` URL scheme remains
+canary cannot consume stable's pending notice. The `moor://` URL scheme remains
 shared; the application that most recently registered it handles links.
 
 ### Source channels and install identity
 
 ```bash
-hermes update --install-id
-hermes update --set-channel stable
-hermes update --channel stable --check
+moor update --install-id
+moor update --set-channel stable
+moor update --channel stable --check
 # Or track published canary commits in this source installation:
-hermes update --set-channel canary
-hermes update
+moor update --set-channel canary
+moor update
 ```
 
 `--install-id` prints the installation identity and path. `--set-channel`
@@ -92,9 +92,9 @@ update. `--channel` is a one-run override. An explicit `--branch` takes preceden
 for a source checkout.
 
 Channel names are registered in the release archive on Cloudflare R2, not in a
-fixed list shipped with Hermes. The `main` record selects source-branch delivery;
+fixed list shipped with Moor. The `main` record selects source-branch delivery;
 published-build channels select an exact Git commit. Custom preview channels use
-the same source commands, for example `hermes update --set-channel pm-preview`.
+the same source commands, for example `moor update --set-channel pm-preview`.
 The publisher must have created that channel before an update can resolve it.
 An unavailable or invalid record reports an error rather than falling back to
 `main` or another release. Switching a source channel does not install a desktop
@@ -131,16 +131,16 @@ This suppresses both cached update notices and passive update-check network requ
 
 ### What happens during an update
 
-For an admitted source checkout, `hermes update` runs these phases:
+For an admitted source checkout, `moor update` runs these phases:
 
-1. **Pre-update snapshot** — Hermes saves selected state files for every profile in that profile's `state-snapshots/` directory. These include pairing data, cron jobs, `config.yaml`, `.env`, and `auth.json`. Automatic quick snapshots skip individual files larger than 1 GiB. `updates.pre_update_backup` selects `quick`, `full`, or `off`. Full archives use the [backup exclusions](../reference/faq.md#hermes-backup-vs-hermes-profile-export). Recovery uses [Snapshots and rollback](../user-guide/checkpoints-and-rollback.md). Quick snapshots recover state files, not application code. The snapshot is best-effort: if it fails, the update prints a `⚠ Pre-update snapshot FAILED` warning and continues, and the receipt records `pre_update_backup` as a failed step (a deliberate `off`/`--no-backup` lands in the receipt's skips with its reason instead).
+1. **Pre-update snapshot** — Moor saves selected state files for every profile in that profile's `state-snapshots/` directory. These include pairing data, cron jobs, `config.yaml`, `.env`, and `auth.json`. Automatic quick snapshots skip individual files larger than 1 GiB. `updates.pre_update_backup` selects `quick`, `full`, or `off`. Full archives use the [backup exclusions](../reference/faq.md#moor-backup-vs-moor-profile-export). Recovery uses [Snapshots and rollback](../user-guide/checkpoints-and-rollback.md). Quick snapshots recover state files, not application code. The snapshot is best-effort: if it fails, the update prints a `⚠ Pre-update snapshot FAILED` warning and continues, and the receipt records `pre_update_backup` as a failed step (a deliberate `off`/`--no-backup` lands in the receipt's skips with its reason instead).
 2. **Code update** — applies the configured source branch or stable release tag and updates submodules.
-3. **Post-pull syntax validation + auto-rollback** — after the pull, Hermes compiles the nine critical files every `hermes` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated file), Hermes runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Re-run `hermes update` once the upstream fix lands.
-4. **Dependency preparation** — PM provisions required tools and prepares a complete Python environment from the new lock, existing extras, and enabled plugin requirements. It validates that environment before publishing its selection. A plugin never fails the update. A plugin that no longer fits the new core is added to `plugins.disabled` in every profile that enables it (a memory provider has `memory.provider` cleared). That covers a `requires-python` that excludes Hermes's Python, a `manifest_version` newer than this Hermes supports, and dependencies that the resolver proves can't resolve alongside core and earlier plugins in config order, or that fail their own build. A download or network failure gets one retry and is disabled if it fails again. The update prints `⚠ Disabled plugin '<name>' in <home>: <reason>`, records it in the receipt's warnings, and continues. Re-enable it with `hermes plugins enable <name>` once the plugin ships a compatible release, or once the network is back. A `requires_hermes` range the running version misses never disables a plugin, because a source checkout without release tags can read as an older release. That plugin sits out instead (`⚠ Left plugin '<name>' … out of this update`), stays enabled, and rejoins once Hermes reports a version it accepts. A secondary profile whose config cannot be read sits out the same way until the config is fixed. Only a core that cannot build on its own fails this step.
+3. **Post-pull syntax validation + auto-rollback** — after the pull, Moor compiles the nine critical files every `moor` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated file), Moor runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Re-run `moor update` once the upstream fix lands.
+4. **Dependency preparation** — PM provisions required tools and prepares a complete Python environment from the new lock, existing extras, and enabled plugin requirements. It validates that environment before publishing its selection. A plugin never fails the update. A plugin that no longer fits the new core is added to `plugins.disabled` in every profile that enables it (a memory provider has `memory.provider` cleared). That covers a `requires-python` that excludes Moor's Python, a `manifest_version` newer than this Moor supports, and dependencies that the resolver proves can't resolve alongside core and earlier plugins in config order, or that fail their own build. A download or network failure gets one retry and is disabled if it fails again. The update prints `⚠ Disabled plugin '<name>' in <home>: <reason>`, records it in the receipt's warnings, and continues. Re-enable it with `moor plugins enable <name>` once the plugin ships a compatible release, or once the network is back. A `requires_moor` range the running version misses never disables a plugin, because a source checkout without release tags can read as an older release. That plugin sits out instead (`⚠ Left plugin '<name>' … out of this update`), stays enabled, and rejoins once Moor reports a version it accepts. A secondary profile whose config cannot be read sits out the same way until the config is fixed. Only a core that cannot build on its own fails this step.
 5. **Config migration** — detects new config options added since your version and prompts you to set them
-6. **Desktop rebuild (stage-and-swap)** — if the Hermes Desktop app was built from this checkout, it is rebuilt so the GUI matches the new code. The rebuild packs into a temporary staging directory next to `apps/desktop/release/`, verifies the staged app, and only then renames it over the previous build (on Windows a real-time scanner briefly holding `release/win-unpacked` is ridden out with a few short retries). A rebuild that fails at any point — corrupt Electron download, missing dependency, disk full — leaves the previous app untouched and launchable; the update fails at that step, and `hermes desktop --build-only --force-build` or the next `hermes update` retries the rebuild. On macOS the rebuilt bundle is then copied (with `ditto`, signature intact) over a stale `/Applications/Hermes.app` or `~/Applications/Hermes.app`, so the copy Finder and the Dock launch matches the backend; an installed copy that is currently running is left alone and the update tells you to quit it and run `hermes update` again.
-7. **Gateway auto-restart**: running gateways are refreshed after the update completes. Service-managed gateways (systemd on Linux, launchd on macOS) restart through the service manager. Manual gateways are relaunched when Hermes can map their PID to a profile. Manually launched `hermes serve` / `hermes dashboard` backends are different: the updater leaves them running and asks their owner to restart them. See [Manual backend restart reminders](#manual-backend-restart-reminders). Backends owned by a running Desktop app remain the app's responsibility.
-8. **Multiplex migration (multi-profile installs)** — once the fleet is verified on the new code, an install with two or more profiles that still run **one gateway per profile** is folded into a single multiplexed default gateway when nothing blocks it (same as `hermes gateway migrate --multiplex --yes`); if a blocker exists (a bot token shared by two profiles, a secondary profile binding a port with no `/p/<profile>/` ingress) the update prints the blockers with their fixes and changes nothing. Single-profile installs are never touched. See [Migrating from per-profile gateways](../user-guide/multi-profile-gateways.md#migrating-from-per-profile-gateways).
+6. **Desktop rebuild (stage-and-swap)** — if the Moor Desktop app was built from this checkout, it is rebuilt so the GUI matches the new code. The rebuild packs into a temporary staging directory next to `apps/desktop/release/`, verifies the staged app, and only then renames it over the previous build (on Windows a real-time scanner briefly holding `release/win-unpacked` is ridden out with a few short retries). A rebuild that fails at any point — corrupt Electron download, missing dependency, disk full — leaves the previous app untouched and launchable; the update fails at that step, and `moor desktop --build-only --force-build` or the next `moor update` retries the rebuild. On macOS the rebuilt bundle is then copied (with `ditto`, signature intact) over a stale `/Applications/Moor.app` or `~/Applications/Moor.app`, so the copy Finder and the Dock launch matches the backend; an installed copy that is currently running is left alone and the update tells you to quit it and run `moor update` again.
+7. **Gateway auto-restart**: running gateways are refreshed after the update completes. Service-managed gateways (systemd on Linux, launchd on macOS) restart through the service manager. Manual gateways are relaunched when Moor can map their PID to a profile. Manually launched `moor serve` / `moor dashboard` backends are different: the updater leaves them running and asks their owner to restart them. See [Manual backend restart reminders](#manual-backend-restart-reminders). Backends owned by a running Desktop app remain the app's responsibility.
+8. **Multiplex migration (multi-profile installs)** — once the fleet is verified on the new code, an install with two or more profiles that still run **one gateway per profile** is folded into a single multiplexed default gateway when nothing blocks it (same as `moor gateway migrate --multiplex --yes`); if a blocker exists (a bot token shared by two profiles, a secondary profile binding a port with no `/p/<profile>/` ingress) the update prints the blockers with their fixes and changes nothing. Single-profile installs are never touched. See [Migrating from per-profile gateways](../user-guide/multi-profile-gateways.md#migrating-from-per-profile-gateways).
 
 ### Why the gateway restart can take a while
 
@@ -166,7 +166,7 @@ On Windows, a Desktop reopened during packaging is stopped again immediately bef
 
 ### Updating against a non-default branch: `--branch`
 
-On the default source channel, `hermes update` tracks `origin/main`. Use
+On the default source channel, `moor update` tracks `origin/main`. Use
 `--branch NAME` for a one-run branch override:
 
 ```bash
@@ -189,7 +189,7 @@ When the parked branch has **uncommitted changes** (dirty tree), Moor does **not
 
 ### Local commits on the target branch
 
-Commits made directly on the update target (`main`) stop fast-forwards once upstream moves, and the checkout cannot tell them apart from an upstream force-push, so the update resets `main` to `origin/main`. Before the reset it saves the old HEAD as `refs/hermes-update-backups/diverged-main-<stamp>-<sha>` and prints that ref along with how many commits leave the branch. `git log origin/main..<ref>` lists them; `git branch <name> <ref>` or `git cherry-pick` brings them back. Re-running the installer over an existing checkout (`install.sh` / `install.ps1`, which desktop bootstrap does) writes the same refs. Whenever `hermes update` writes one, it keeps the ten newest per kind and drops any older than 30 days. To carry patches across updates, keep them on a custom branch with `updates.parked_branch_strategy: update_in_place` instead.
+Commits made directly on the update target (`main`) stop fast-forwards once upstream moves, and the checkout cannot tell them apart from an upstream force-push, so the update resets `main` to `origin/main`. Before the reset it saves the old HEAD as `refs/moor-update-backups/diverged-main-<stamp>-<sha>` and prints that ref along with how many commits leave the branch. `git log origin/main..<ref>` lists them; `git branch <name> <ref>` or `git cherry-pick` brings them back. Re-running the installer over an existing checkout (`install.sh` / `install.ps1`, which desktop bootstrap does) writes the same refs. Whenever `moor update` writes one, it keeps the ten newest per kind and drops any older than 30 days. To carry patches across updates, keep them on a custom branch with `updates.parked_branch_strategy: update_in_place` instead.
 
 ### Local changes on non-interactive updates
 
@@ -223,14 +223,14 @@ You can pass `--keep-stash` to a terminal `moor update` too if you want the same
 
 ### Preview-only: `moor update --check`
 
-`hermes update --check` compares the checkout with its source-channel target
+`moor update --check` compares the checkout with its source-channel target
 without applying code, installing dependencies, or restarting gateways. The
 comparison can fetch Git metadata; it is not a promise of zero filesystem writes.
 Package-owned installs report their external update method.
 
 ### Fleet preview: `moor update --plan`
 
-Before updating a machine that runs several profiles or services, run `hermes update --plan`. It prints the install kind, running Hermes services across profiles, their supervisors and running code versions, and the restart mechanism for each service. Manually launched `hermes serve` / `hermes dashboard` backends appear with their recorded bind endpoint, but restart is deferred to their owner; the updater does not stop or relaunch them. Image- or package-managed installs report the external update command instead. The plan is read-only and safe on a live fleet.
+Before updating a machine that runs several profiles or services, run `moor update --plan`. It prints the install kind, running Moor services across profiles, their supervisors and running code versions, and the restart mechanism for each service. Manually launched `moor serve` / `moor dashboard` backends appear with their recorded bind endpoint, but restart is deferred to their owner; the updater does not stop or relaunch them. Image- or package-managed installs report the external update command instead. The plan is read-only and safe on a live fleet.
 
 The same inventory is embedded in every real update's receipt (`~/.moor/logs/update_receipts/`), so after an update you can compare what the updater saw against what it did.
 
@@ -238,17 +238,17 @@ The same inventory is embedded in every real update's receipt (`~/.moor/logs/upd
 
 Every `moor update` run writes a machine-readable receipt to `~/.moor/logs/update_receipts/` (last 20 kept, `latest.json` always points at the most recent): the pre-update fleet plan, each step taken, anything skipped and why, the gateway restart outcome, and the final fleet version matrix. The SQLite runtime repair is one of those steps (`sqlite_runtime_repair`): a failed repair records the actual reason (for example the `uv sync` error) and the SQLite version pair, a deferred or not-applicable repair lands in the skips with its reason. After the restart phase the updater compares each live gateway's running code against the freshly updated checkout and prints a per-profile matrix — a gateway still serving pre-update code is reported loudly with the exact restart command, and the update exits non-zero so automation never treats a mixed-version fleet as healthy. Both `--plan` and the fleet check ask each running gateway directly over its local control socket (`gateway.sock` in the profile's data directory, a named pipe on Windows) when available, so version and supervisor information comes from the gateway itself; gateways from older versions are still discovered through their state files as before.
 
-A multiplexed default gateway is one process serving several profiles, so it appears once in the matrix and vouches for every profile in its `served_profiles` record. The same coverage clears the "A previous `hermes update` pulled new code but did not restart running gateways" hint: once that gateway (or, after a manual `git pull`, every gateway an update restarted) runs the current code, `hermes gateway restart` is enough — the hint no longer waits for the next `hermes update` to write a fresh receipt. The same is true of the restart obligation left by an update that died before recording which gateways it owed (or by an older updater that never recorded them): once every live gateway runs the current checkout, the obligation is retired and the hint stops. On a host that runs no gateway at all (the Desktop app alone), it is retired once no profile has a gateway that went away without a clean stop and every running backend is restarted by its own supervisor or has its own reminder. That obligation is recorded once per HOST, in the cross-profile rendezvous directory (`$HERMES_GATEWAY_LOCK_DIR`, else `$XDG_STATE_HOME/hermes/gateway-locks`) as `host-update-restart.json`, so every profile's CLI sees the same one: `hermes -p coder update` and `hermes -p writer update` restart the shared multiplexed gateway once between them, not once each. An obligation left behind by an older per-profile updater (`fleet_restart_pending` in one profile's Hermes home) is still read and cleared. An update whose pre-update plan found no gateway at all owes nothing and leaves no breadcrumb. A backend supervised by Desktop, systemd or launchd is restarted by its supervisor and never blocks this settlement; only a manual backend whose reminder could not be saved keeps the obligation open.
+A multiplexed default gateway is one process serving several profiles, so it appears once in the matrix and vouches for every profile in its `served_profiles` record. The same coverage clears the "A previous `moor update` pulled new code but did not restart running gateways" hint: once that gateway (or, after a manual `git pull`, every gateway an update restarted) runs the current code, `moor gateway restart` is enough — the hint no longer waits for the next `moor update` to write a fresh receipt. The same is true of the restart obligation left by an update that died before recording which gateways it owed (or by an older updater that never recorded them): once every live gateway runs the current checkout, the obligation is retired and the hint stops. On a host that runs no gateway at all (the Desktop app alone), it is retired once no profile has a gateway that went away without a clean stop and every running backend is restarted by its own supervisor or has its own reminder. That obligation is recorded once per HOST, in the cross-profile rendezvous directory (`$MOOR_GATEWAY_LOCK_DIR`, else `$XDG_STATE_HOME/moor/gateway-locks`) as `host-update-restart.json`, so every profile's CLI sees the same one: `moor -p coder update` and `moor -p writer update` restart the shared multiplexed gateway once between them, not once each. An obligation left behind by an older per-profile updater (`fleet_restart_pending` in one profile's Moor home) is still read and cleared. An update whose pre-update plan found no gateway at all owes nothing and leaves no breadcrumb. A backend supervised by Desktop, systemd or launchd is restarted by its supervisor and never blocks this settlement; only a manual backend whose reminder could not be saved keeps the obligation open.
 
 ### Manual backend restart reminders
 
-After updating, ask the owner of each manually launched backend to relaunch `hermes serve` or `hermes dashboard`; reconnect Desktop for an SSH backend. Restarting gateways alone does not refresh these processes.
+After updating, ask the owner of each manually launched backend to relaunch `moor serve` or `moor dashboard`; reconnect Desktop for an SSH backend. Restarting gateways alone does not refresh these processes.
 
 For a verified live backend, the updater saves a reminder before recording its restart as `deferred`. This allows the update to complete if the remaining checks pass. An unknown process identity cannot qualify for fresh deferral.
 
-Reminders live in `serve_restart_pending/` under the active Hermes home, separately from rotating update receipts. Each reminder identifies a process by PID and creation time. Startup warnings retain it while that process is alive or its liveness is unknown, and remove it only when that exact process is confirmed gone. A later update or a healthy gateway does not remove it.
+Reminders live in `serve_restart_pending/` under the active Moor home, separately from rotating update receipts. Each reminder identifies a process by PID and creation time. Startup warnings retain it while that process is alive or its liveness is unknown, and remove it only when that exact process is confirmed gone. A later update or a healthy gateway does not remove it.
 
-If saving fails, Hermes warns and carries the unsaved obligation into later receipts for retry. Check storage permissions and free space, and restart the backend as instructed. If both reminder and receipt storage fail, durable retention cannot be guaranteed.
+If saving fails, Moor warns and carries the unsaved obligation into later receipts for retry. Check storage permissions and free space, and restart the backend as instructed. If both reminder and receipt storage fail, durable retention cannot be guaranteed.
 
 ### Automated updates from inside the gateway: `--no-gateway-restart`
 
@@ -264,7 +264,7 @@ fleet caused only by the deferral does not make the update `partial`.
 
 ### Interrupted gateway restarts
 
-If an earlier update pulled code but did not finish restarting the fleet, the next `hermes update` retries even when the checkout is already current. An empty process scan does not prove recovery: failed systemd units and installed launchd jobs may have no live PID. If discovery or restart fails, or a requested service cannot be verified active, the marker stays pending and the update exits nonzero. Recover the affected services with the printed commands and retry.
+If an earlier update pulled code but did not finish restarting the fleet, the next `moor update` retries even when the checkout is already current. An empty process scan does not prove recovery: failed systemd units and installed launchd jobs may have no live PID. If discovery or restart fails, or a requested service cannot be verified active, the marker stays pending and the update exits nonzero. Recover the affected services with the printed commands and retry.
 
 A failed historical receipt alone does not prove that gateways are still stale. Startup and gateway-status warnings, as well as update catch-up, check for a live successor on the current checkout for every gateway profile recorded in that receipt. A manual gateway restart can settle receipt-only advice without rewriting the historical outcome. Manual backend obligations must first transfer to their separate reminders.
 
@@ -291,13 +291,13 @@ updates:
 `updates.pre_update_backup` has three modes:
 
 - `quick` saves the selected state files described above. This is the default.
-- `full` adds a zip archive with the [backup exclusions](../reference/faq.md#hermes-backup-vs-hermes-profile-export). Large data directories can take several minutes.
+- `full` adds a zip archive with the [backup exclusions](../reference/faq.md#moor-backup-vs-moor-profile-export). Large data directories can take several minutes.
 - `off` disables pre-update backups. `--no-backup` selects this mode for one run.
 
 Legacy boolean values remain supported: `true` means `full`, and `false` means `off`.
 
 :::tip Moving to a new machine instead?
-Update backups protect an in-place update. If you're migrating your whole setup to different hardware, use `hermes backup` + `hermes import` instead — see [Exporting Hermes to another machine](../reference/faq.md#exporting-hermes-to-another-machine) and [`hermes backup` vs `hermes profile export`](../reference/faq.md#hermes-backup-vs-hermes-profile-export).
+Update backups protect an in-place update. If you're migrating your whole setup to different hardware, use `moor backup` + `moor import` instead — see [Exporting Moor to another machine](../reference/faq.md#exporting-moor-to-another-machine) and [`moor backup` vs `moor profile export`](../reference/faq.md#moor-backup-vs-moor-profile-export).
 :::
 
 ### Windows process ownership and dependency changes
@@ -308,12 +308,12 @@ imported libraries in place. A running process keeps its current imports until
 it restarts.
 
 Follow any blocker diagnostic for the specific process and installation. Do
-not kill every process named Python or Hermes. Source updates and MSIX package
+not kill every process named Python or Moor. Source updates and MSIX package
 replacement have different owners and shutdown requirements.
 
 The parser retains `--force` and `--force-venv` for Windows compatibility. They
 are not normal update instructions or a guarantee that an OS file lock can be
-bypassed. Inspect `hermes update --plan`, the update log, and `hermes pm status`
+bypassed. Inspect `moor update --plan`, the update log, and `moor pm status`
 before retrying a failed update.
 
 ### Recommended Post-Update Validation
@@ -322,10 +322,10 @@ After a source update, run the following diagnostics. For a bundled app, use
 its About page and backend health instead of Git commands inside the package.
 
 1. `git status --short` — if the tree is unexpectedly dirty, inspect before continuing
-2. `hermes doctor` — checks config, dependencies, and service health
-3. `hermes --version` — confirm the version bumped as expected
-4. If you use the gateway: `hermes gateway status`
-5. `hermes pm status` — inspect dependency preparation and any failed steps.
+2. `moor doctor` — checks config, dependencies, and service health
+3. `moor --version` — confirm the version bumped as expected
+4. If you use the gateway: `moor gateway status`
+5. `moor pm status` — inspect dependency preparation and any failed steps.
 
 :::warning Dirty working tree after update
 If `git status --short` shows unexpected changes after `moor update`, stop and inspect them before continuing. This usually means local modifications were reapplied on top of the updated code, or a dependency step refreshed lockfiles.
@@ -352,7 +352,7 @@ You no longer need to wrap `moor update` in `screen` or `tmux` to survive a term
 moor --version
 ```
 
-Compare against the latest release at the [GitHub releases page](https://github.com/NousResearch/hermes-agent/releases).
+Compare against the latest release at the [GitHub releases page](https://github.com/thisismamad-n/Moor/releases).
 
 ### Updating from Messaging Platforms
 
@@ -386,26 +386,26 @@ procedure. Do not run Git or pip inside a signed app or an immutable image.
 
 ### Python 3.14 and older interpreters
 
-Hermes runs only on **Python 3.14**. `pyproject.toml` still declares
+Moor runs only on **Python 3.14**. `pyproject.toml` still declares
 `requires-python = ">=3.11,<3.15"`, but every runtime dependency carries a
 `python_version >= '3.14'` marker. The wider range exists for one reason: a
 source install whose venv predates the PM migration (Python 3.11–3.13) must be
-able to check out the new code and run `hermes update` once more. That update
+able to check out the new code and run `moor update` once more. That update
 hands off to a fresh completion process, PM provisions the pinned 3.14
 interpreter from `pm/lock.json`, builds the dependency environment on it, and
 repoints the launchers. After that the old interpreter is no longer used.
 
-What this means outside `hermes update`:
+What this means outside `moor update`:
 
 - `pip install .`, `uv pip install .`, `pip install -e .`, or a Homebrew/PyPI
-  package built on Python 3.11–3.13 installs `hermes-agent` with **no
+  package built on Python 3.11–3.13 installs `moor-agent` with **no
   dependencies** and the package does not import. These install methods are
   [unsupported](./platform-support.md#unsupported); use the source installer or
   a packaged build.
 - A Nix build outside the repo flake sees the same marker-gated dependency set
   and needs a 3.14 interpreter.
-- A `hermes` launcher that still points at a pre-migration venv should be
-  repaired with `hermes update` (or `python -m pm.cli install` from the
+- A `moor` launcher that still points at a pre-migration venv should be
+  repaired with `moor update` (or `python -m pm.cli install` from the
   checkout), not by reinstalling into the old venv.
 
 ### Image-managed installs (Docker): the provenance marker
@@ -440,22 +440,22 @@ See [Nix Setup](./nix-setup.md) for more details.
 moor uninstall
 ```
 
-For source installs, review `hermes uninstall --dry-run` before removal.
+For source installs, review `moor uninstall --dry-run` before removal.
 The default removal can preserve configuration and user data. `--full` also
 removes data. `--data` removes user data without deleting package-owned code.
 These modes are destructive; make a backup first.
 
 For MSIX/Store, use Windows Settings → Apps → Installed apps. For macOS,
-quit Hermes and move its app bundle to Trash. Docker, Nix, and Termux use the
+quit Moor and move its app bundle to Trash. Docker, Nix, and Termux use the
 same manager that installed them. Their package files are not removed by the
 source uninstaller. Data deletion is separate from package removal.
 
 :::tip Moving to a new machine rather than leaving?
-Run `hermes backup` before you remove the installation. The full archive includes
+Run `moor backup` before you remove the installation. The full archive includes
 credentials but excludes downloaded runtimes, dependency environments, caches,
 and browser profiles. Review its skipped-file report before you delete source data.
-`hermes profile export` packs one profile without credentials.
-See [`hermes backup` vs `hermes profile export`](../reference/faq.md#hermes-backup-vs-hermes-profile-export).
+`moor profile export` packs one profile without credentials.
+See [`moor backup` vs `moor profile export`](../reference/faq.md#moor-backup-vs-moor-profile-export).
 :::
 
 ### Manual Uninstall

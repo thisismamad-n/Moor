@@ -1,7 +1,7 @@
 import queue
 from unittest.mock import patch
 
-from cli import HermesCLI
+from cli import MoorCLI
 
 def _make_cli():
     cli = MoorCLI.__new__(MoorCLI)

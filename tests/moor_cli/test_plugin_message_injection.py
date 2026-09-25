@@ -4,7 +4,7 @@ from queue import SimpleQueue
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.plugins import PluginContext, PluginManager, PluginManifest
 

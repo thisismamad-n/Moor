@@ -51,7 +51,7 @@ class TestUserSkins:
             "branding": {"agent_name": "Custom Agent"},
             "tool_prefix": "▸",
         }
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         skin_file.write_text(yaml.safe_dump(skin_data))
 
         # Patch skins dir
@@ -70,7 +70,7 @@ class TestUserSkins:
 
         skins_dir = tmp_path / "skins"
         skins_dir.mkdir()
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         (skins_dir / "broken.yaml").write_text(
             yaml.safe_dump(
@@ -100,7 +100,7 @@ class TestUserSkins:
         from moor_cli.skin_engine import list_skins
         skins_dir = tmp_path / "skins"
         skins_dir.mkdir()
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         (skins_dir / "pirate.yaml").write_text(yaml.safe_dump({
             "name": "pirate",
             "description": "Arr matey",

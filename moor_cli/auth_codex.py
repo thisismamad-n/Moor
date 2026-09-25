@@ -32,7 +32,7 @@ if TYPE_CHECKING:  # annotation-only; the runtime import would be a cycle
 logger = logging.getLogger("moor_cli.auth")
 
 # ``{relogin}`` is filled at raise time with the profile-aware sign-in command: a bare
-# ``hermes auth`` from a named profile re-signs the ROOT store (93889b770da, #114012).
+# ``moor auth`` from a named profile re-signs the ROOT store (93889b770da, #114012).
 _MISSING_ACCESS_TOKEN_MSG = "Codex auth is missing access_token. Run `{relogin}` to re-authenticate."
 _MISSING_REFRESH_TOKEN_MSG = "Codex auth is missing refresh_token. Run `{relogin}` to re-authenticate."
 _NO_CREDENTIALS_MSG = "No Codex credentials stored. Run `{relogin}` to authenticate."
@@ -195,7 +195,7 @@ def _save_codex_tokens(
 
 def _recover_codex_tokens_from_cli(
         reason: str, observed_access_token: Optional[str] = None) -> Optional[Dict[str, str]]:
-    """Adopt a valid Codex CLI token pair into Hermes auth, if available.
+    """Adopt a valid Codex CLI token pair into Moor auth, if available.
 
     Automatic adoption only; the interactive import offer in ``_login_openai_codex`` asks first and is
     not subject to ``auth.adopt_external_logins``.
@@ -207,7 +207,7 @@ def _recover_codex_tokens_from_cli(
     """
     from agent.credential_pool import _codex_principal_identity
     from agent.credential_sources import adopt_external_logins_enabled
-    from hermes_cli.auth import _import_codex_cli_tokens, _provider_state_transaction, _save_codex_tokens
+    from moor_cli.auth import _import_codex_cli_tokens, _provider_state_transaction, _save_codex_tokens
     if not adopt_external_logins_enabled():
         return None
     imported = _import_codex_cli_tokens()
@@ -227,7 +227,7 @@ def _recover_codex_tokens_from_cli(
         if known and _codex_principal_identity(imported["access_token"]) not in (None, known):
             logger.warning(
                 "Codex CLI recovery refused (%s): the Codex CLI login belongs to a different ChatGPT "
-                "workspace than the Hermes credential. Run `%s` to re-authenticate it.",
+                "workspace than the Moor credential. Run `%s` to re-authenticate it.",
                 reason, _codex_relogin_command())
             return None
         logger.info("Codex auth recovered from Codex CLI auth.json (%s).", reason)
@@ -565,7 +565,7 @@ def resolve_codex_runtime_credentials(
     *, force_refresh: bool = False, refresh_if_expiring: bool = True,
     refresh_skew_seconds: int = CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     read_only: bool = False) -> Dict[str, Any]:
-    """Resolve runtime credentials from Hermes's own Codex token store.
+    """Resolve runtime credentials from Moor's own Codex token store.
 
     ``read_only=True`` (status / doctor / pickers) reports the stored state as-is: no Codex CLI
     adoption, no token refresh, no auth-store write — and it wins over ``force_refresh``. A
@@ -597,7 +597,7 @@ def resolve_codex_runtime_credentials(
             with _auth_store_lock():
                 # Observe the singleton in the same locked snapshot the read validates, so recovery
                 # can compare-and-swap against exactly the credential it is repairing (#73667).
-                from hermes_cli.auth import _load_auth_store, _load_provider_state
+                from moor_cli.auth import _load_auth_store, _load_provider_state
                 raw = (_load_provider_state(_load_auth_store(), "openai-codex") or {}).get("tokens")
                 observed = raw.get("access_token") if isinstance(raw, dict) else None
                 data = _read_codex_tokens(_lock=False)
@@ -778,7 +778,7 @@ def _refresh_expired_codex_probe_token(
     the stale token's probe slot, so neither the refresh nor the doomed 401 probe fire again
     until the interval has elapsed.
     """
-    from hermes_cli.auth import _codex_quota_probe_cache
+    from moor_cli.auth import _codex_quota_probe_cache
     token, refresh = _stripped(access_token), _stripped(refresh_token)
     if not token or not refresh or not _codex_access_token_is_expiring(token, 0):
         return None
@@ -799,7 +799,7 @@ def _refresh_expired_codex_probe_token(
 
 def _probe_codex_pool_entry_quota_restored(entry: Dict[str, Any]) -> Optional[bool]:
     """``_probe_codex_quota_restored`` for a persisted pool entry, refreshing an expired token first."""
-    from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+    from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
     token = _stripped(entry.get("access_token"))
     fresh = _refresh_expired_codex_probe_token(token, entry.get("refresh_token"))
     if fresh:
@@ -896,7 +896,7 @@ def _pool_codex_access_token() -> str:
     through ``read_credential_pool`` so a profile inherits the global-root pool (#34143).
     """
     from agent.credential_pool import _parse_absolute_timestamp
-    from hermes_cli.auth import _nonempty_str, read_credential_pool
+    from moor_cli.auth import _nonempty_str, read_credential_pool
     try:
         for entry in _codex_pool_dicts(read_credential_pool("openai-codex")):
             token = entry.get("access_token")
@@ -913,12 +913,12 @@ def _pool_codex_access_token() -> str:
 
 def _login_openai_codex(args, pconfig: ProviderConfig, *, force_new_login: bool = False) -> None:
     """OpenAI Codex login: device code by default, browser PKCE when opted in (``--browser`` /
-    ``auth.codex_login_flow``). Tokens stored in ~/.hermes/auth.json."""
-    from hermes_cli.auth import (
+    ``auth.codex_login_flow``). Tokens stored in ~/.moor/auth.json."""
+    from moor_cli.auth import (
         _codex_access_token_is_expiring, _import_codex_cli_tokens,
         _offer_existing_oauth_credentials, _print_login_success, _prompt_yes_no, _save_codex_tokens,
         _update_config_for_provider, resolve_codex_runtime_credentials)
-    from hermes_cli.auth_codex_browser import codex_oauth_login
+    from moor_cli.auth_codex_browser import codex_oauth_login
     del pconfig  # kept for parity with other provider login helpers
     if not force_new_login:
         if _offer_existing_oauth_credentials(
@@ -941,7 +941,7 @@ def _login_openai_codex(args, pconfig: ProviderConfig, *, force_new_login: bool 
                 print(f"  Config updated: {config_path} (model.provider=openai-codex)")
                 return
 
-    # Run a fresh OAuth flow — Hermes gets its own session (device code unless the user opted in
+    # Run a fresh OAuth flow — Moor gets its own session (device code unless the user opted in
     # to the browser flow).
     print()
     creds = codex_oauth_login(args)

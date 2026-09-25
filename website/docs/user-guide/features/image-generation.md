@@ -32,9 +32,9 @@ Prices are FAL's pricing at time of writing; check [fal.ai](https://fal.ai/) for
 :::tip Moor Subscribers
 If you have a paid [Moor Portal](https://portal.nousresearch.com) subscription, you can use image generation through the **[Tool Gateway](tool-gateway.md)** without a FAL API key. Your model selection persists across both paths. New installs can run `moor setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Moor Subscription** as the image-gen backend via `moor tools`.
 
-The **Nous Subscription** row is the only managed row. Its model picker spans every gateway the subscription runs — the FAL catalog above, native **Krea 2** (`krea-2-medium`, `krea-2-large`, `krea-2-medium-turbo`) and any Nous Portal image models — each model listed once, and the model you pick decides which gateway serves the request. Free tool-pool accounts see the FAL models only; Krea and Portal models are paid-subscription.
+The **Moor Subscription** row is the only managed row. Its model picker spans every gateway the subscription runs — the FAL catalog above, native **Krea 2** (`krea-2-medium`, `krea-2-large`, `krea-2-medium-turbo`) and any Moor Portal image models — each model listed once, and the model you pick decides which gateway serves the request. Free tool-pool accounts see the FAL models only; Krea and Portal models are paid-subscription.
 
-If the managed gateway returns `HTTP 4xx` for a specific model, that model isn't yet proxied on the portal side — the agent will tell you so, with remediation steps (switch to FAL.ai in `hermes tools` with your own `FAL_KEY` for direct access, or pick a different model).
+If the managed gateway returns `HTTP 4xx` for a specific model, that model isn't yet proxied on the portal side — the agent will tell you so, with remediation steps (switch to FAL.ai in `moor tools` with your own `FAL_KEY` for direct access, or pick a different model).
 :::
 
 ### Get a FAL API Key
@@ -207,7 +207,7 @@ image_gen:
 Only the variable *name* is stored in `config.yaml`; the secret stays in `.env`
 or the process environment. Availability checks and
 generation use the same resolution, so a configured `key_env` is enough — no
-`OPENAI_API_KEY` is required. Requests go through Hermes' own HTTP client, which
+`OPENAI_API_KEY` is required. Requests go through Moor' own HTTP client, which
 honours `HTTP(S)_PROXY`/`NO_PROXY` but ignores macOS system proxies (whose
 exception list is invisible to Python), so `localhost` endpoints connect directly.
 The `OpenAI-Project` header is sent blank on image requests: an `OPENAI_PROJECT_ID`
@@ -377,7 +377,7 @@ If upscaling fails (network issue, rate limit), the original image is returned a
 3. **Submission** — `_submit_fal_request()` routes via direct FAL credentials or the managed Moor gateway, according to the stored `image_gen.provider` selection.
 4. **Upscaling** — runs only when the agent passed `upscale: true`; every model's catalog default is off.
 5. **Delivery** — final image URL returned to the agent, which emits a `MEDIA:<url>` tag that platform adapters convert to native media.
-6. **Usage accounting** — token-billed image models (OpenRouter chat-image and Image API models such as `google/gemini-3.1-flash-lite-image`, OpenAI `gpt-image`) return real token counts, so each call is recorded in `session_model_usage` as task `image_generation` under the billing provider and model, and shows up in `hermes insights` and the dashboard's Usage analytics alongside other model calls. Per-image backends (FAL, xAI, Krea, ...) return no token usage and are not recorded there.
+6. **Usage accounting** — token-billed image models (OpenRouter chat-image and Image API models such as `google/gemini-3.1-flash-lite-image`, OpenAI `gpt-image`) return real token counts, so each call is recorded in `session_model_usage` as task `image_generation` under the billing provider and model, and shows up in `moor insights` and the dashboard's Usage analytics alongside other model calls. Per-image backends (FAL, xAI, Krea, ...) return no token usage and are not recorded there.
 
 ## Debugging
 

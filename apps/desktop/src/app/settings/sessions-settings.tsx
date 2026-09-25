@@ -10,7 +10,7 @@ import {
   listAllProfileSessions,
   peekConfigReadOrigin,
   retainConfigReadOrigin,
-  saveHermesConfig,
+  saveMoorConfig,
   setSessionArchived
 } from '@/moor'
 import { useI18n } from '@/i18n'
@@ -268,7 +268,7 @@ function AutoArchiveSetting() {
       try {
         // Sparse patch: PUT /api/config deep-merges, and echoing the cached
         // snapshot would overwrite keys other surfaces changed since it loaded.
-        await saveHermesConfig({ sessions: { auto_archive: autoArchive, auto_archive_days: archiveDays } }, writeScope)
+        await saveMoorConfig({ sessions: { auto_archive: autoArchive, auto_archive_days: archiveDays } }, writeScope)
       } catch (err) {
         notifyError(err, s.autoArchiveFailed)
       }

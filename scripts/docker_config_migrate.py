@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Iterable
 
-from hermes_cli.config import (
+from moor_cli.config import (
     InvalidUserConfigError,
     _read_config_version_stamp,
     check_config_version,

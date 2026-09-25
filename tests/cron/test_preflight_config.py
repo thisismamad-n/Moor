@@ -203,7 +203,7 @@ class TestMissingProviderKeyBlocks:
         def resolve(**kwargs):
             calls.append(kwargs.get("requested"))
             if kwargs.get("requested") == "anthropic":
-                from hermes_cli.auth import AuthError
+                from moor_cli.auth import AuthError
 
                 raise AuthError("no key")
             return {**_RUNTIME, "provider": kwargs.get("requested")}

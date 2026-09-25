@@ -4,7 +4,7 @@ behind ``/compress here [N]`` (boundary-aware "summarize up to here").
 Inspired by Claude Code's Rewind "Summarize up to here" action.
 """
 
-from hermes_cli.partial_compress import (
+from moor_cli.partial_compress import (
     MAX_KEEP_LAST,
     parse_partial_compress_args,
     rejoin_compressed_head_and_tail,

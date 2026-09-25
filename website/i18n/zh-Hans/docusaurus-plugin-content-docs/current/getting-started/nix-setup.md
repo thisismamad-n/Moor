@@ -61,7 +61,7 @@ moor chat
 <summary><strong>从本地克隆构建</strong></summary>
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/thisismamad-n/Moor.git
 cd moor-agent
 nix build
 ./result/bin/moor setup
@@ -327,8 +327,8 @@ Nix 用户最常见自定义需求的快速参考：
 |---|---|---|
 | 更改 LLM 模型 | `settings.model.default` | `"anthropic/claude-sonnet-4"` |
 | 使用不同的提供商端点 | `settings.model.base_url` | `"https://openrouter.ai/api/v1"` |
-| 添加 API 密钥 | `environmentFiles` | `[ config.sops.secrets."hermes-env".path ]` |
-| 给 Agent 设置个性 | `${services.hermes-agent.stateDir}/.hermes/SOUL.md` | 直接管理该文件 |
+| 添加 API 密钥 | `environmentFiles` | `[ config.sops.secrets."moor-env".path ]` |
+| 给 Agent 设置个性 | `${services.moor-agent.stateDir}/.moor/SOUL.md` | 直接管理该文件 |
 | 添加 MCP 工具服务器 | `mcpServers.<name>` | 参见 [MCP 服务器](#mcp-服务器) |
 | 将主机目录挂载到容器 | `container.extraVolumes` | `[ "/data:/data:rw" ]` |
 | 为容器传入 GPU 访问 | `container.extraOptions` | `[ "--gpus" "all" ]` |
@@ -638,9 +638,9 @@ services.moor-agent.extraPlugins = [
 对于通过 `[project.entry-points."moor_agent.plugins"]` 注册的 pip 打包插件（例如 [rtk-moor](https://github.com/ogallotti/rtk-moor)）：
 
 ```nix
-services.hermes-agent.extraPythonPackages = [
-  (config.services.hermes-agent.package.python.pkgs.buildPythonPackage {
-    pname = "rtk-hermes";
+services.moor-agent.extraPythonPackages = [
+  (config.services.moor-agent.package.python.pkgs.buildPythonPackage {
+    pname = "rtk-moor";
     version = "1.0.0";
     src = pkgs.fetchFromGitHub {
       owner = "ogallotti";
@@ -649,7 +649,7 @@ services.hermes-agent.extraPythonPackages = [
       hash = "sha256-...";
     };
     format = "pyproject";
-    build-system = [ config.services.hermes-agent.package.python.pkgs.setuptools ];
+    build-system = [ config.services.moor-agent.package.python.pkgs.setuptools ];
   })
 ];
 ```
@@ -658,10 +658,10 @@ services.hermes-agent.extraPythonPackages = [
 
 ### 可选依赖组（`extraDependencyGroups`）
 
-对于已在 hermes-agent 的 `pyproject.toml` 中声明的可选 extras（例如 `honcho` 等记忆提供商），使用 `extraDependencyGroups` 在构建时将其包含到封闭的 venv 中：
+对于已在 moor-agent 的 `pyproject.toml` 中声明的可选 extras（例如 `honcho` 等记忆提供商），使用 `extraDependencyGroups` 在构建时将其包含到封闭的 venv 中：
 
 ```nix
-services.hermes-agent = {
+services.moor-agent = {
   extraDependencyGroups = [ "honcho" ];
   settings.memory.provider = "honcho";
 };
@@ -685,7 +685,7 @@ services.hermes-agent = {
 ```nix
 services.moor-agent = {
   extraPlugins = [ my-plugin-src ];          # 插件源码
-  extraPythonPackages = [ config.services.hermes-agent.package.python.pkgs.redis ];  # 其 Python 依赖
+  extraPythonPackages = [ config.services.moor-agent.package.python.pkgs.redis ];  # 其 Python 依赖
   extraPackages = [ pkgs.redis ];            # 其需要的系统二进制文件
 };
 ```
@@ -700,8 +700,8 @@ services.moor-agent = {
   outputs = { moor-agent, nixpkgs, ... }: {
     nixpkgs.overlays = [ moor-agent.overlays.default ];
     # 然后：
-    #   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
-    #   pkgs.hermes-agent.override { extraDependencyGroups = [ "honcho" ]; }
+    #   pkgs.moor-agent.override { extraPythonPackages = [...]; }
+    #   pkgs.moor-agent.override { extraDependencyGroups = [ "honcho" ]; }
   };
 }
 ```
@@ -728,15 +728,15 @@ services.moor-agent.settings.plugins.enabled = [
 ### 开发 Shell
 
 该 flake 提供包含 `dev` 依赖组的可编辑 Python 环境，解释器主/次版本来自 PM 锁文件。
-`HERMES_PYTHON` 指向该解释器，不会把 Python 依赖安装到仓库内的 `.venv`。
+`MOOR_PYTHON` 指向该解释器，不会把 Python 依赖安装到仓库内的 `.venv`。
 shell 还提供 Node.js 和运行时工具。npm hook 根据输入变更刷新 JS workspaces。
 
 ```bash
 cd moor-agent
 nix develop
-"$HERMES_PYTHON" -c "import sys; print(sys.executable); print(sys.version)"
-hermes setup
-hermes chat
+"$MOOR_PYTHON" -c "import sys; print(sys.executable); print(sys.version)"
+moor setup
+moor chat
 ```
 
 ### direnv（推荐）
@@ -840,9 +840,9 @@ nix build .#checks.x86_64-linux.config-roundtrip    # 合并脚本保留用户�
 
 | 选项 | 类型 | 默认值 | 描述 |
 |---|---|---|---|
-| `extraArgs` | `listOf str` | `[]` | `hermes gateway` 的额外参数 |
-| `extraPackages` | `listOf package` | `[]` | Agent 可用的额外包。添加到 hermes 用户的每用户 profile，终端命令、skills 和 cron 任务均可见 |
-| `extraPlugins` | `listOf package` | `[]` | 以符号链接方式安装到 `$HERMES_HOME/plugins/` 的目录插件包。每个包必须包含 `plugin.yaml` |
+| `extraArgs` | `listOf str` | `[]` | `moor gateway` 的额外参数 |
+| `extraPackages` | `listOf package` | `[]` | Agent 可用的额外包。添加到 moor 用户的每用户 profile，终端命令、skills 和 cron 任务均可见 |
+| `extraPlugins` | `listOf package` | `[]` | 以符号链接方式安装到 `$MOOR_HOME/plugins/` 的目录插件包。每个包必须包含 `plugin.yaml` |
 | `extraPythonPackages` | `listOf package` | `[]` | 添加到 PYTHONPATH 用于入口点插件发现的 Python 包。使用所选包的 `python.pkgs` 构建 |
 | `extraDependencyGroups` | `listOf str` | `[]` | 包含到封闭 venv 中的 pyproject.toml 可选 extras（例如 `["honcho"]`）。由 uv 解析——无冲突 |
 | `restart` | `str` | `"always"` | systemd `Restart=` 策略 |
@@ -975,9 +975,9 @@ nix-store --query --roots $(docker exec moor-agent readlink /data/current-packag
 |---|---|---|
 | `Cannot save configuration: managed by NixOS` | CLI 守卫已激活 | 编辑 `configuration.nix` 并执行 `nixos-rebuild switch` |
 | 容器意外重建 | `extraVolumes`、`extraOptions` 或 `image` 发生变更 | 预期行为——可写层重置。重新安装包或使用自定义镜像 |
-| `hermes --version` 显示旧版本 | 容器未重启 | `systemctl restart hermes-agent` |
-| `/var/lib/hermes` 权限拒绝 | 状态目录为 `0750 hermes:hermes` | 使用 `docker exec` 或 `sudo -u hermes` |
-| `nix-collect-garbage` 删除了 hermes | GC root 缺失 | 重启服务（preStart 会重新创建 GC root） |
-| `no container with name or ID "hermes-agent"`（Podman） | Podman rootful 容器对普通用户不可见 | 为 podman 添加免密 sudo（参见[容器模式](#容器架构)章节） |
-| `unable to find user hermes` | 容器仍在启动中（入口点尚未创建用户） | 等待几秒后重试——CLI 会自动重试 |
-| 通过 `extraPackages` 添加的工具在终端中找不到 | 需要 `nixos-rebuild switch` 更新每用户 profile | 重建并重启：`nixos-rebuild switch && systemctl restart hermes-agent` |
+| `moor --version` 显示旧版本 | 容器未重启 | `systemctl restart moor-agent` |
+| `/var/lib/moor` 权限拒绝 | 状态目录为 `0750 moor:moor` | 使用 `docker exec` 或 `sudo -u moor` |
+| `nix-collect-garbage` 删除了 moor | GC root 缺失 | 重启服务（preStart 会重新创建 GC root） |
+| `no container with name or ID "moor-agent"`（Podman） | Podman rootful 容器对普通用户不可见 | 为 podman 添加免密 sudo（参见[容器模式](#容器架构)章节） |
+| `unable to find user moor` | 容器仍在启动中（入口点尚未创建用户） | 等待几秒后重试——CLI 会自动重试 |
+| 通过 `extraPackages` 添加的工具在终端中找不到 | 需要 `nixos-rebuild switch` 更新每用户 profile | 重建并重启：`nixos-rebuild switch && systemctl restart moor-agent` |

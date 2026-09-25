@@ -24,7 +24,7 @@ afterEach(() => {
   $connection.set(null)
   resetProjectTreeState()
   $showIgnoredRoots.set([])
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
 })
 
 function ok(entries: { name: string; path: string; isDirectory: boolean }[]): MoorReadDirResult {
@@ -585,7 +585,7 @@ describe('useProjectTree', () => {
 
       return ok([])
     })
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { gitRoot, readDir, readFileDataUrl }
+    ;(window as unknown as { moorDesktop: unknown }).moorDesktop = { gitRoot, readDir, readFileDataUrl }
 
     const { result } = renderHook(() => useProjectTree('/p'))
 
@@ -632,7 +632,7 @@ describe('useProjectTree', () => {
   it('drops a child listing that was read before the preference flipped', async () => {
     const gitRoot = vi.fn(async () => '/p')
     const readFileDataUrl = vi.fn(async () => `data:text/plain;base64,${btoa('*.log\n')}`)
-    let releaseChild: ((value: HermesReadDirResult) => void) | undefined
+    let releaseChild: ((value: MoorReadDirResult) => void) | undefined
 
     readDir.mockImplementation(async path => {
       if (path === '/p') {
@@ -643,14 +643,14 @@ describe('useProjectTree', () => {
       }
 
       if (path === '/p/src') {
-        return new Promise<HermesReadDirResult>(resolve => {
+        return new Promise<MoorReadDirResult>(resolve => {
           releaseChild = resolve
         })
       }
 
       return ok([])
     })
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { gitRoot, readDir, readFileDataUrl }
+    ;(window as unknown as { moorDesktop: unknown }).moorDesktop = { gitRoot, readDir, readFileDataUrl }
 
     const { result } = renderHook(() => useProjectTree('/p'))
 

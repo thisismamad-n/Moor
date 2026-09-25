@@ -126,7 +126,7 @@ def _normalize_provider_alias(provider_name: str) -> str:
 def _strip_matching_provider_prefix(model_name: str, target_provider: str) -> str:
     """Strip ``provider/`` or ``provider:`` only when the prefix matches the target provider, so
     arbitrary slash-bearing ids aren't mangled while ``zai/glm-5.1`` is repaired for ``zai``. The colon
-    form is Hermes's own ``provider:model`` switch syntax (``-m openai-codex:gpt-5.6-sol``); left intact
+    form is Moor's own ``provider:model`` switch syntax (``-m openai-codex:gpt-5.6-sol``); left intact
     it reaches the wire and the Codex backend rejects it with HTTP 400 (#64787). Only the FIRST separator
     counts, so an Ollama-style ``qwen3:8b`` tag is never split on a later colon. ``custom`` is a bucket,
     not a vendor: an alias resolving to it (``ollama``) may be a real LiteLLM-style routing prefix, so

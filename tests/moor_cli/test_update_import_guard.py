@@ -21,9 +21,9 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import update_cmd
-from hermes_cli import update_cmd_validation
-from hermes_constants import partial_update_hint
+from moor_cli import update_cmd
+from moor_cli import update_cmd_validation
+from moor_constants import partial_update_hint
 
 def _write_skewed_tree(root: Path, *, skewed: bool) -> None:
     """Build a tiny two-package tree that mimics the real failure.
@@ -190,7 +190,7 @@ def test_import_guard_rejects_malformed_health_payload(monkeypatch, tmp_path):
         stdout = ""
 
     def malformed(_cmd, **_kwargs):
-        Result.stdout = "__HERMES_IMPORT_HEALTH_fixed__{}"
+        Result.stdout = "__MOOR_IMPORT_HEALTH_fixed__{}"
         return Result()
 
     monkeypatch.setattr(secrets, "token_hex", lambda _length: "fixed")
@@ -303,35 +303,35 @@ def test_import_guard_rejects_module_satisfied_only_by_inherited_pythonpath(
     """
     stale = probe_root / "stale"
     stale.mkdir()
-    (stale / "hermes_stale_supply.py").write_text("VALUE = 'from the stale tree'\n")
+    (stale / "moor_stale_supply.py").write_text("VALUE = 'from the stale tree'\n")
 
     monkeypatch.setattr(
-        update_cmd, "_UPDATE_CRITICAL_MODULES", ("hermes_stale_supply",)
+        update_cmd, "_UPDATE_CRITICAL_MODULES", ("moor_stale_supply",)
     )
     monkeypatch.setattr(
-        update_cmd_validation, "_UPDATE_CRITICAL_MODULES", ("hermes_stale_supply",)
+        update_cmd_validation, "_UPDATE_CRITICAL_MODULES", ("moor_stale_supply",)
     )
     monkeypatch.setenv("PYTHONPATH", str(stale))
 
     ok, module, error = update_cmd._validate_critical_modules_import(probe_root)
 
     assert ok is False
-    assert module == "hermes_stale_supply"
-    assert error is not None and "hermes_stale_supply" in error
+    assert module == "moor_stale_supply"
+    assert error is not None and "moor_stale_supply" in error
 
 def test_import_guard_accepts_candidate_with_foreign_pythonpath(monkeypatch, probe_root):
     """The env scrub must not overreach: a candidate that carries the module
     still passes while a foreign PYTHONPATH is set (#115032)."""
     stale = probe_root / "stale"
     stale.mkdir()
-    (stale / "hermes_stale_supply.py").write_text("VALUE = 'stale'\n")
-    (probe_root / "hermes_stale_supply.py").write_text("VALUE = 'candidate'\n")
+    (stale / "moor_stale_supply.py").write_text("VALUE = 'stale'\n")
+    (probe_root / "moor_stale_supply.py").write_text("VALUE = 'candidate'\n")
 
     monkeypatch.setattr(
-        update_cmd, "_UPDATE_CRITICAL_MODULES", ("hermes_stale_supply",)
+        update_cmd, "_UPDATE_CRITICAL_MODULES", ("moor_stale_supply",)
     )
     monkeypatch.setattr(
-        update_cmd_validation, "_UPDATE_CRITICAL_MODULES", ("hermes_stale_supply",)
+        update_cmd_validation, "_UPDATE_CRITICAL_MODULES", ("moor_stale_supply",)
     )
     monkeypatch.setenv("PYTHONPATH", str(stale))
 
@@ -350,7 +350,7 @@ def test_import_guard_flags_missing_first_party_module(monkeypatch, probe_root):
     assert module == "consumer"
     assert error is not None and "tools.nonexistent_module" in error
 
-@pytest.mark.parametrize("modname", ["agents", "agentops", "toolsets_x", "hermesx"])
+@pytest.mark.parametrize("modname", ["agents", "agentops", "toolsets_x", "moorx"])
 def test_hint_does_not_claim_partial_update_for_lookalike_third_party(modname):
     """``startswith`` would match third-party ``agents``/``agentops`` and blame
     our updater for someone else's import error."""

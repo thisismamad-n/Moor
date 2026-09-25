@@ -74,9 +74,9 @@ def _print_tui_exit_summary(session_id: Optional[str], active_session_file: Opti
 
 
 def _tui_need_rebuild(root: Path) -> bool:
-    from hermes_cli.source_build import source_product_current
+    from moor_cli.source_build import source_product_current
 
-    force = (os.environ.get("HERMES_TUI_FORCE_BUILD") or "").strip().lower()
+    force = (os.environ.get("MOOR_TUI_FORCE_BUILD") or "").strip().lower()
     return force in {"1", "true", "yes", "on"} or not source_product_current(root.parent, "tui", root / "dist")
 
 
@@ -141,7 +141,7 @@ def _ensure_tui_workspace(tui_dir: Path) -> None:
 
 
 def _tui_node_bin(bin: str) -> str:
-    """Resolve the TUI runtime through PM; an explicit bundled HERMES_NODE wins."""
+    """Resolve the TUI runtime through PM; an explicit bundled MOOR_NODE wins."""
     if bin == "node":
         env_node = os.environ.get("MOOR_NODE")
         if env_node and os.path.isfile(env_node) and os.access(env_node, os.X_OK):
@@ -159,7 +159,7 @@ def _tui_node_bin(bin: str) -> str:
 
 
 def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
-    """TUI: --dev → tsx src; else node dist (HERMES_TUI_DIR prebuilt or esbuild)."""
+    """TUI: --dev → tsx src; else node dist (MOOR_TUI_DIR prebuilt or esbuild)."""
 
     # Footgun: --dev against a prebuilt bundle that has no source/node_modules.
     ext_dir = os.environ.get("MOOR_TUI_DIR")
@@ -196,16 +196,16 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
     if not tui_dev and not _tui_need_rebuild(tui_dir):
         return [_tui_node_bin("node"), "--expose-gc", str(tui_dir / "dist/entry.js")], tui_dir
 
-    from hermes_cli.source_build import build_source_tui, prepare_launch_dependencies, source_build_env
+    from moor_cli.source_build import build_source_tui, prepare_launch_dependencies, source_build_env
 
     project_root = tui_dir.parent
     env = source_build_env()
     prepare_launch_dependencies(project_root, env=env)
     if tui_dev:
-        # tsx imports @hermes/ink's built exports; the production bundle instead
+        # tsx imports @moor/ink's built exports; the production bundle instead
         # compiles its source directly through scripts/build/tui.mjs.
         npm = shutil.which("npm", path=env["PATH"])
-        subprocess.run([npm, "run", "build"], cwd=tui_dir / "packages/hermes-ink", env=env, check=True)
+        subprocess.run([npm, "run", "build"], cwd=tui_dir / "packages/moor-ink", env=env, check=True)
         tsx = tui_dir / "node_modules/.bin/tsx"
         return ([str(tsx), "src/entry.tsx"] if tsx.exists() else [npm, "start"]), tui_dir
 

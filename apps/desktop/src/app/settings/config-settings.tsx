@@ -106,14 +106,14 @@ function ConfigSettingsInner({
   // The editable draft is local (debounced autosave watches it), but it's seeded
   // from — and saved back through — the shared config cache, so edits are visible
   // in the MCP/model surfaces and reopening the page doesn't reload-flash.
-  const [config, setConfig] = useState<HermesConfigRecord | null>(null)
+  const [config, setConfig] = useState<MoorConfigRecord | null>(null)
 
   const {
     data: loadedConfig,
     isError: configLoadFailed,
     refetch: refetchConfig,
     writeScope
-  } = useHermesConfigRecord(scopeProfile)
+  } = useMoorConfigRecord(scopeProfile)
 
   // Writes land on the same cache key the query above reads (base key when
   // following the active profile, suffixed when a scope override is set).
@@ -216,7 +216,7 @@ function ConfigSettingsInner({
       saveQueueRef.current = saveQueueRef.current.then(async () => {
         try {
           const patch = diffConfig(configBaselineRef.current ?? {}, snapshot)
-          const result = await saveHermesConfig(patch, writeScope ?? scopeProfile)
+          const result = await saveMoorConfig(patch, writeScope ?? scopeProfile)
 
           if (!result.ok) {
             throw new Error(c.autosaveFailed)

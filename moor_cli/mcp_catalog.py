@@ -13,13 +13,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_constants import get_hermes_home, get_optional_mcps_dir
-from hermes_cli._subprocess_compat import noninteractive_git_env
-from hermes_cli.colors import Colors, color
-from hermes_cli.config import load_config, save_config, get_env_value, save_env_value
-from hermes_cli.cli_output import prompt as _prompt_input
+from moor_constants import get_moor_home, get_optional_mcps_dir
+from moor_cli._subprocess_compat import noninteractive_git_env
+from moor_cli.colors import Colors, color
+from moor_cli.config import load_config, save_config, get_env_value, save_env_value
+from moor_cli.cli_output import prompt as _prompt_input
 from utils import rmtree_readonly
 
 _MANIFEST_VERSION = 1
@@ -238,7 +238,7 @@ def _parse_suggest(path: Path, suggest_raw: Any) -> Optional[SuggestSpec]:
     hosts_raw = suggest_raw.get("hosts") or []
     _require_str_list(path, "suggest.keywords", kw_raw, non_empty=True)
     _require_str_list(path, "suggest.hosts", hosts_raw, non_empty=True)
-    from hermes_cli.mcp_app_detection import validate_applications
+    from moor_cli.mcp_app_detection import validate_applications
 
     try:
         applications = validate_applications(suggest_raw.get("applications", []))
@@ -430,7 +430,7 @@ def _do_git_install(entry: CatalogEntry) -> Path:
     # upfront so the fast path doesn't always fail noisily before the full-clone fallback.
     is_sha_ref = bool(re.fullmatch(r"[0-9a-f]{7,40}", install.ref))
     # Never hang on a credential prompt: installs run from CLI/dashboard flows nobody can answer.
-    from hermes_cli.git_credentials import run_git_with_credential_fallback
+    from moor_cli.git_credentials import run_git_with_credential_fallback
 
     def _git(*args: str) -> int:
         result = run_git_with_credential_fallback(
@@ -467,7 +467,7 @@ def _expand_install_dir(value: str, install_dir: Optional[Path]) -> str:
 def _prompt_env_vars(specs: List[EnvVarSpec], preloaded: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """Prompt for each env spec.
 
-    Secrets persist to ~/.hermes/.env. Non-secrets are only collected and
+    Secrets persist to ~/.moor/.env. Non-secrets are only collected and
     returned — the caller inlines them into the server config (config.yaml),
     since .env is secrets-only. Values already supplied by the caller
     (``preloaded``, e.g. from a dashboard form) skip the prompt.
@@ -744,7 +744,7 @@ def install_entry(entry: CatalogEntry, *, enable: bool = True, preloaded_env: Op
         _say("  Configure credentials:", Colors.CYAN)
         env_values = _prompt_env_vars(entry.auth.env, preloaded_env or {})
     if entry.auth.type == "oauth" and entry.auth.provider:
-        # Provider-mediated OAuth relies on the existing `hermes auth <provider>` flow; surface
+        # Provider-mediated OAuth relies on the existing `moor auth <provider>` flow; surface
         # guidance rather than auto-running it to keep install decoupled from provider-auth lifecycle.
         _say(
             f"  This MCP uses {entry.auth.provider} OAuth. Run "

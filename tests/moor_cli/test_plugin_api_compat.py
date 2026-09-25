@@ -3,7 +3,7 @@
 from pathlib import Path
 import shutil
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.plugins import PluginManager
 

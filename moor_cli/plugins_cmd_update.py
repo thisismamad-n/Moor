@@ -1,7 +1,7 @@
-"""``hermes plugins update`` plus the provenance verbs around it: ``adopt``, ``trust-update-url`` and the
+"""``moor plugins update`` plus the provenance verbs around it: ``adopt``, ``trust-update-url`` and the
 read-only ``check-updates``; the dashboard update path shares the same pull/re-clone core.
 
-Sibling of :mod:`hermes_cli.plugins_cmd` (the facade re-exports the names other modules use and is
+Sibling of :mod:`moor_cli.plugins_cmd` (the facade re-exports the names other modules use and is
 imported late here, never at module level).
 """
 
@@ -16,7 +16,7 @@ from typing import Any
 
 def _pc():
     """The facade, read at call time: tests patch ``plugins_cmd.<name>`` and sibling calls must see it."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     return plugins_cmd
 
 
@@ -31,7 +31,7 @@ def _pull_plugin_update(target: Path, pinned_msg, not_git_msg, before_pull=None,
         raise _pc().PluginOperationError(pinned_msg(install_record))
     # A URL install whose name/repo later landed on the kill list must not keep pulling or
     # re-cloning new code, including subdirectory installs that carry no local .git directory.
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     catalog.refuse_if_installed_removed(target.name, target)
     if not (target / ".git").exists():
         source = install_record.get("source")
@@ -42,7 +42,7 @@ def _pull_plugin_update(target: Path, pinned_msg, not_git_msg, before_pull=None,
         return _reclone_plugin_update(source, install_record.get("revision"))
     if before_pull is not None:
         before_pull()
-    from hermes_cli.plugins_transaction import update_plugin
+    from moor_cli.plugins_transaction import update_plugin
 
     return update_plugin(target, interactive=interactive)
 
@@ -63,7 +63,7 @@ def _reclone_plugin_update(source: str, previous_revision: object) -> str:
 def cmd_update(name: str, *, interactive: bool = True) -> None:
     """Update an installed plugin by pulling latest from its git remote."""
     from rich.markup import escape
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     console = _pc()._console()
     target = _pc()._require_installed_plugin(name, _pc()._plugins_dir(), console)
     sidecar = catalog.catalog_install_record(target)
@@ -75,7 +75,7 @@ def cmd_update(name: str, *, interactive: bool = True) -> None:
             target,
             lambda rec: (
                 f"Plugin '{name}' is pinned to {rec.get('revision')}. To move it, run "
-                f"`hermes plugins install {escape(str(rec.get('source', '<source>')))} --force "
+                f"`moor plugins install {escape(str(rec.get('source', '<source>')))} --force "
                 "--ref <40-character commit SHA>`."),
             lambda: f"Plugin '{name}' was not installed from git (no .git directory). Cannot update.",
             before_pull=lambda: console.print(f"[dim]Updating {name}...[/dim]"),
@@ -93,12 +93,12 @@ def cmd_update(name: str, *, interactive: bool = True) -> None:
     plugin_id = updated_manifest.get("name") or target.name
     declared_caps = _pc()._declared_capabilities_from_manifest(updated_manifest, plugin_id)
     if declared_caps:
-        from hermes_cli.plugin_capabilities import declared_set_changed, pending_capabilities
+        from moor_cli.plugin_capabilities import declared_set_changed, pending_capabilities
         if pending_capabilities(plugin_id, declared_caps) or declared_set_changed(plugin_id, declared_caps):
             if interactive:
                 _pc()._run_capability_consent(console, plugin_id, declared_caps, context="update")
             else:
-                console.print(f"[yellow]Plugin {plugin_id} has new capabilities; review them with `hermes plugins capabilities {plugin_id}`.[/yellow]")
+                console.print(f"[yellow]Plugin {plugin_id} has new capabilities; review them with `moor plugins capabilities {plugin_id}`.[/yellow]")
 
     out = output.strip()
     if "Already up to date" in out:
@@ -129,7 +129,7 @@ def cmd_adopt(name: str) -> None:
     plugins_dir = _pc()._plugins_dir()
     target = _pc()._require_installed_plugin(name, plugins_dir, console)
 
-    from hermes_cli.plugins_provenance import ProvenanceClass, plugins_provenance
+    from moor_cli.plugins_provenance import ProvenanceClass, plugins_provenance
 
     prov = next((p for p in plugins_provenance(plugins_dir) if p.name == target.name), None)
     if prov is None:
@@ -187,7 +187,7 @@ def cmd_trust_update_url(name: str) -> None:
     plugins_dir = _pc()._plugins_dir()
     target = _pc()._require_installed_plugin(name, plugins_dir, console)
 
-    from hermes_cli.plugins_provenance import read_sidecar_rows
+    from moor_cli.plugins_provenance import read_sidecar_rows
 
     rows = read_sidecar_rows(plugins_dir)
     row = rows.get(target.name)
@@ -208,7 +208,7 @@ def cmd_trust_update_url(name: str) -> None:
         )
         return
     if claimed is not None:
-        from hermes_cli.plugins_updates import https_update_url
+        from moor_cli.plugins_updates import https_update_url
         try:
             claimed = https_update_url(claimed)
         except ValueError as exc:
@@ -233,7 +233,7 @@ def cmd_check_updates(args: Any | None = None) -> None:
     console = Console()
     plugins_dir = _pc()._plugins_dir()
 
-    from hermes_cli.plugins_updates import run_checks
+    from moor_cli.plugins_updates import run_checks
 
     results = run_checks(plugins_dir)
 
@@ -262,14 +262,14 @@ def cmd_check_updates(args: Any | None = None) -> None:
     console.print()
     console.print(table)
     console.print()
-    console.print("[dim]Check-only. Apply with: hermes plugins update <name>[/dim]")
+    console.print("[dim]Check-only. Apply with: moor plugins update <name>[/dim]")
 
 
 def dashboard_update_user_plugin(name: str, *, accept_capabilities: bool = False) -> dict[str, Any]:
-    """``git pull`` inside ``~/.hermes/plugins/<name>``; catalog installs re-pin instead. A re-pin that
+    """``git pull`` inside ``~/.moor/plugins/<name>``; catalog installs re-pin instead. A re-pin that
     widens the plugin returns ``{"ok": False, "consent_required": True, "delta": {...}}`` with nothing
     changed — the surface shows the delta and retries with *accept_capabilities*."""
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     target = _pc()._user_installed_plugin_dir(name)
     if target is None:
         return {"ok": False, "error": f"Plugin '{name}' was not found under {_pc()._plugins_dir()}."}
@@ -281,7 +281,7 @@ def dashboard_update_user_plugin(name: str, *, accept_capabilities: bool = False
             warnings = list(result.warnings)
             new_target = target.parent / result.installed_name
             deps = _pc()._python_dependency_summary(new_target, warnings) if result.changed else []
-            from hermes_cli.plugins_activation import activate_plugin_now
+            from moor_cli.plugins_activation import activate_plugin_now
             activated = activate_plugin_now(result.installed_name) if result.changed else {}
             return {"ok": True, "name": result.installed_name, "sha": result.sha, "unchanged": not result.changed,
                     "python_dependencies": deps, "warnings": warnings, **activated}
@@ -289,7 +289,7 @@ def dashboard_update_user_plugin(name: str, *, accept_capabilities: bool = False
             target,
             lambda rec: (
                 f"Plugin '{name}' is pinned to {rec.get('revision')}; "
-                f"run `hermes plugins install {rec.get('source', '<source>')} --force "
+                f"run `moor plugins install {rec.get('source', '<source>')} --force "
                 "--ref <40-character commit SHA>` to move it."),
             lambda: f"Plugin '{name}' is not a git checkout; cannot pull updates.")
     except catalog.RepinConsentRequired as exc:

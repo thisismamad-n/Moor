@@ -1,4 +1,4 @@
-"""One backend serves every profile, so a REST handler that reads ``get_hermes_home()``
+"""One backend serves every profile, so a REST handler that reads ``get_moor_home()``
 directly mutates the LAUNCH profile's data no matter which profile the request named.
 
 These pin both halves of the contract:
@@ -19,7 +19,7 @@ import json
 import zipfile
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 
 @pytest.fixture(autouse=True)
@@ -45,12 +45,12 @@ def _multiplex_state_is_per_test():
 
 
 @pytest.fixture
-def homes(tmp_path, monkeypatch, _isolate_hermes_home):
+def homes(tmp_path, monkeypatch, _isolate_moor_home):
     """Isolated launch home + one named profile, both seeded with real files."""
-    from hermes_constants import get_hermes_home
-    from hermes_cli import profiles
+    from moor_constants import get_moor_home
+    from moor_cli import profiles
 
-    launch_home = get_hermes_home()
+    launch_home = get_moor_home()
     profiles_root = launch_home / "profiles"
     beta = profiles_root / "worker_beta"
     for home in (launch_home, beta):
@@ -69,7 +69,7 @@ def homes(tmp_path, monkeypatch, _isolate_hermes_home):
     # ``named_profile_has_servable_identity`` deliberately refuses to count as a tenant.
     (beta / ".env").write_text("BETA=1\n", encoding="utf-8")
 
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: launch_home)
+    monkeypatch.setattr(profiles, "_get_default_moor_home", lambda: launch_home)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: profiles_root)
     return {"launch": launch_home, "worker_beta": beta}
 
@@ -81,10 +81,10 @@ def client(monkeypatch, homes):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import hermes_state
-    from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+    import moor_state
+    from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", homes["launch"] / "state.db")
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", homes["launch"] / "state.db")
     c = TestClient(app)
     c.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return c
@@ -116,14 +116,14 @@ class _StubDB:
 def seams(monkeypatch):
     """Record the three off-process effects these routes have, and neutralise them.
 
-    ``spawn`` = the argv of every backgrounded ``hermes`` action, ``db`` = the profile every
+    ``spawn`` = the argv of every backgrounded ``moor`` action, ``db`` = the profile every
     session-store open names, ``pool_home`` = the home the credential-pool body resolves.
     A route that reaches any of them after a 400 shows up as a non-empty list.
     """
     import agent.credential_pool as credential_pool
     import agent.credential_sources as credential_sources
-    from hermes_cli import web_server_gateway, web_server_sessions
-    from hermes_cli.config import get_hermes_home
+    from moor_cli import web_server_gateway, web_server_sessions
+    from moor_cli.config import get_moor_home
 
     record = {"spawn": [], "db": [], "pool_home": []}
 
@@ -140,13 +140,13 @@ def seams(monkeypatch):
 
     class _Pool:
         def remove_index(self, _index):
-            record["pool_home"].append(str(get_hermes_home()))
+            record["pool_home"].append(str(get_moor_home()))
             return type("_Entry", (), {"source": ""})()
 
         def entries(self):
             return []
 
-    monkeypatch.setattr(web_server_gateway, "_spawn_hermes_action", _spawn)
+    monkeypatch.setattr(web_server_gateway, "_spawn_moor_action", _spawn)
     monkeypatch.setattr(web_server_sessions, "_open_session_db_for_profile", _open_db)
     monkeypatch.setattr(credential_pool, "load_pool", lambda _provider: _Pool())
     monkeypatch.setattr(credential_sources, "find_removal_step", lambda *_a: None)
@@ -254,7 +254,7 @@ def test_named_profile_is_the_only_one_touched(client, homes, seams, tmp_path, r
     assert not happened(homes["launch"]), f"{route} also hit the launch profile"
 
 
-# Routes whose effect is a backgrounded ``hermes`` subprocess: the profile must reach its argv,
+# Routes whose effect is a backgrounded ``moor`` subprocess: the profile must reach its argv,
 # because nothing else in that process knows which home the request meant.
 SPAWNING = {
     "checkpoints-prune": DESTRUCTIVE["checkpoints-prune"],
@@ -313,9 +313,9 @@ def test_a_request_for_another_profile_arms_the_guard(client, homes):
 def test_unnamed_profile_still_means_the_launch_profile_on_a_single_profile_host(
     client, homes, monkeypatch, tmp_path
 ):
-    """A plain ``hermes serve`` has nothing to confuse: `curl` with no profile is unchanged."""
+    """A plain ``moor serve`` has nothing to confuse: `curl` with no profile is unchanged."""
     from agent.secret_scope import is_multiplex_active
-    from hermes_cli import profiles
+    from moor_cli import profiles
     from tui_gateway.launch_profile_policy import activate_multi_profile_hosting_eagerly
 
     empty_root = tmp_path / "no-named-profiles"
@@ -352,11 +352,11 @@ def readiness_only_in_beta(homes, monkeypatch):
     configured, and — the dangerous direction — accepts one only the launch profile has and
     writes it into the target as a broken setting.
     """
-    from hermes_cli import web_server_memory
-    from hermes_cli.config import get_hermes_home
+    from moor_cli import web_server_memory
+    from moor_cli.config import get_moor_home
 
     def _statuses():
-        ready = get_hermes_home().resolve() == homes["worker_beta"].resolve()
+        ready = get_moor_home().resolve() == homes["worker_beta"].resolve()
         return [{"name": "mem0", "status": "ready" if ready else "not_configured"}]
 
     monkeypatch.setattr(web_server_memory, "_discover_memory_provider_statuses", _statuses)
@@ -381,8 +381,8 @@ def test_memory_provider_readiness_is_judged_in_the_profile_being_written(
 
 def test_local_models_quickstart_activates_into_the_named_profile(client, homes, monkeypatch):
     """Quickstart is ``activate`` plus a download; its config writes must follow ``?profile=``."""
-    from hermes_cli.config import get_hermes_home
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.config import get_moor_home
+    from moor_cli.web_routers import local_models as lm
 
     entry = type("_Entry", (), {"id": "m1", "display_name": "M One", "min_engine": None})()
     variant = type("_Variant", (), {"model_id": "m1-q4"})()
@@ -396,7 +396,7 @@ def test_local_models_quickstart_activates_into_the_named_profile(client, homes,
     monkeypatch.setattr(lm.bootstrap, "staged_model_ids", lambda: {"m1-q4"})
     monkeypatch.setattr(lm, "_set_runtime_enabled", lambda _on: (lambda: None))
     monkeypatch.setattr(lm, "_ensure_server", lambda *_a, **_k: None)
-    monkeypatch.setattr(lm, "_assign_default", lambda *_a: seen.append(str(get_hermes_home())))
+    monkeypatch.setattr(lm, "_assign_default", lambda *_a: seen.append(str(get_moor_home())))
     # Run the job body inline; the real spawner's ``on_exit`` is what frees the quickstart lock.
     monkeypatch.setattr(lm, "_spawn_job", lambda job, name, body, **kw: (body(), kw["on_exit"]()))
 
@@ -418,21 +418,21 @@ def test_curator_pause_writes_the_named_profiles_state(client, homes):
 
 
 def test_forced_update_check_runs_in_the_named_profiles_scope(client, homes, monkeypatch):
-    from hermes_cli import source_check
-    from hermes_cli.config import get_hermes_home
-    from hermes_cli.web_routers import actions
+    from moor_cli import source_check
+    from moor_cli.config import get_moor_home
+    from moor_cli.web_routers import actions
 
     seen = []
 
     def check(*, force):
-        seen.append((get_hermes_home(), force))
+        seen.append((get_moor_home(), force))
         return {"behind": 0, "commits": []}
 
     monkeypatch.setattr(source_check, "check_for_updates", check)
     monkeypatch.setattr(actions, "_dashboard_local_update_managed_externally", lambda: False)
     monkeypatch.setattr(actions, "detect_install_method", lambda _root: "git")
 
-    resp = client.get("/api/hermes/update/check?force=true&profile=worker_beta")
+    resp = client.get("/api/moor/update/check?force=true&profile=worker_beta")
 
     assert resp.status_code == 200, resp.text
     assert resp.json()["behind"] == 0
@@ -440,8 +440,8 @@ def test_forced_update_check_runs_in_the_named_profiles_scope(client, homes, mon
 
 
 def test_egress_status_reads_the_named_profiles_config(client, homes, monkeypatch):
-    from hermes_cli import proxy_cli
-    from hermes_cli.config import load_config
+    from moor_cli import proxy_cli
+    from moor_cli.config import load_config
 
     monkeypatch.setattr(proxy_cli, "format_status_text",
                         lambda **_kw: str((load_config().get("proxy") or {}).get("label")))
@@ -453,13 +453,13 @@ def test_egress_status_reads_the_named_profiles_config(client, homes, monkeypatc
 
 
 def test_memory_provider_setup_runs_in_the_named_profiles_home(client, homes, monkeypatch):
-    from hermes_cli.config import get_hermes_home
-    from hermes_cli.web_routers import memory_providers as mp
+    from moor_cli.config import get_moor_home
+    from moor_cli.web_routers import memory_providers as mp
 
     monkeypatch.setattr(mp, "_memory_provider_manifest", lambda _name: {"name": "mem0"})
     monkeypatch.setattr(mp, "_load_memory_provider", lambda _name: None)
     monkeypatch.setattr(mp, "_install_memory_provider_setup",
-                        lambda name: {"ok": True, "provider": name, "home": str(get_hermes_home())})
+                        lambda name: {"ok": True, "provider": name, "home": str(get_moor_home())})
 
     resp = client.post("/api/memory/providers/mem0/setup?profile=worker_beta", json={})
 

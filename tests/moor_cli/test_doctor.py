@@ -13,13 +13,13 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_cli.doctor as doctor
-import hermes_constants
-from hermes_cli import config as config_mod
-import hermes_cli.gateway as gateway_cli
-from hermes_cli import doctor as doctor_mod
-from hermes_cli.doctor_config import _has_provider_env_config
-from hermes_cli.doctor_report import Finding
+import moor_cli.doctor as doctor
+import moor_constants
+from moor_cli import config as config_mod
+import moor_cli.gateway as gateway_cli
+from moor_cli import doctor as doctor_mod
+from moor_cli.doctor_config import _has_provider_env_config
+from moor_cli.doctor_report import Finding
 import shutil
 from moor_cli import doctor_tools
 from moor_cli import doctor_state
@@ -90,14 +90,14 @@ class TestDoctorPlatformHints:
         hint = doctor_platform._sqlite_upgrade_hint()
 
         assert "docker pull nousresearch/hermes-agent:latest" in hint
-        assert "hermes update" not in hint
+        assert "moor update" not in hint
 
 
     def test_sqlite_upgrade_hint_apt_stamp_names_termux_external_update(self):
         # The "apt" install method is Termux APT by contract (config.py
         # _UPDATE_COMMAND_BY_METHOD). Deployment kinds are first-class: doctor
         # reports the correct external update command instead of routing an
-        # out-of-place method through the in-place `hermes update` path.
+        # out-of-place method through the in-place `moor update` path.
         hint = doctor_platform._sqlite_upgrade_hint("apt")
 
         assert "run `pkg upgrade moor-agent`" in hint
@@ -345,7 +345,7 @@ class TestDoctorMemoryProviderSection:
         """Create a minimal MOOR_HOME with config.yaml."""
         home = tmp_path / ".moor"
         home.mkdir(parents=True, exist_ok=True)
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         config = dict(memory_config or {})
         if provider:
             config["provider"] = provider
@@ -453,7 +453,7 @@ def test_run_doctor_accepts_named_provider_from_providers_section(monkeypatch, t
     home = tmp_path / ".moor"
     home.mkdir(parents=True, exist_ok=True)
 
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     (home / "config.yaml").write_text(
         yaml.safe_dump(
@@ -744,7 +744,7 @@ def test_run_doctor_vendor_slug_policy_for_openai_api_endpoint(
 ):
     """openai-api behind a custom router owns a vendor/model namespace (#69912); the real
     OpenAI endpoint keeps the warning."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
@@ -754,7 +754,7 @@ def test_run_doctor_vendor_slug_policy_for_openai_api_endpoint(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "MOOR_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -766,8 +766,8 @@ def test_run_doctor_vendor_slug_policy_for_openai_api_endpoint(
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", lambda: {})
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -827,8 +827,8 @@ def test_run_doctor_accepts_kimi_coding_cn_provider(monkeypatch, tmp_path):
 
 def _doctor_env_for_agent_browser(monkeypatch, tmp_path):
     """Shared fixture setup for the agent-browser npx-resolution
-    branch in run_doctor (hermes_cli/doctor.py ~1557-1605)."""
-    home = tmp_path / ".hermes"
+    branch in run_doctor (moor_cli/doctor.py ~1557-1605)."""
+    home = tmp_path / ".moor"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
     project = tmp_path / "project"
@@ -875,7 +875,7 @@ def test_run_doctor_reports_installed_agent_browser(monkeypatch, tmp_path):
 
 
 def test_doctor_fix_does_not_claim_success_without_published_binary(monkeypatch, tmp_path):
-    from hermes_cli import doctor_tools
+    from moor_cli import doctor_tools
     _doctor_env_for_agent_browser(monkeypatch, tmp_path)
 
     def missing(**kwargs):
@@ -894,7 +894,7 @@ def test_doctor_fix_does_not_claim_success_without_published_binary(monkeypatch,
 
 
 def test_doctor_fix_reports_pm_install_failure(monkeypatch, tmp_path):
-    from hermes_cli import doctor_tools
+    from moor_cli import doctor_tools
     import pm
     _doctor_env_for_agent_browser(monkeypatch, tmp_path)
 
@@ -1527,8 +1527,8 @@ def test_docker_daemon_probe_uses_version_not_info(monkeypatch):
 def test_doctor_reports_auxiliary_blocks_that_do_not_resolve(tmp_path, monkeypatch):
     """A routed auxiliary.<task> block that the runtime resolver rejects is a doctor finding, not a
     silent fall-back to the main model (#116055); a resolvable one is not flagged."""
-    import hermes_yaml as yaml
-    from hermes_cli import doctor_config
+    import moor_yaml as yaml
+    from moor_cli import doctor_config
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     cfg_file = tmp_path / "config.yaml"
@@ -1549,7 +1549,7 @@ class TestMacOSTCCGrants:
 
     @staticmethod
     def _darwin_bundle(monkeypatch, tmp_path, dr):
-        monkeypatch.setattr(doctor_platform, "_desktop_app_bundle", lambda: tmp_path / "Hermes.app")
+        monkeypatch.setattr(doctor_platform, "_desktop_app_bundle", lambda: tmp_path / "Moor.app")
         if dr is not ...:
             monkeypatch.setattr(doctor_platform, "_macos_desktop_dr", lambda app: dr)
 
@@ -1561,32 +1561,32 @@ class TestMacOSTCCGrants:
     def test_warns_on_cdhash_pinned_dr(self, monkeypatch, capsys, tmp_path):
         self._darwin_bundle(
             monkeypatch, tmp_path,
-            'designated => identifier "com.nousresearch.hermes" and cdhash H"97e692f3890f781fa0ad5ad6cb9d769cfaf42628"',
+            'designated => identifier "com.moorinc.moor" and cdhash H"97e692f3890f781fa0ad5ad6cb9d769cfaf42628"',
         )
         doctor_platform.check_macos_tcc_grants()
         out = capsys.readouterr().out
         assert "TCC grants will reset after every update" in out
-        assert "hermes update" in out
+        assert "moor update" in out
         assert "signing identity is stable" not in out
 
     def test_identifier_dr_is_stable_with_upgrade_hint_and_repair_info(self, monkeypatch, capsys, tmp_path):
-        self._darwin_bundle(monkeypatch, tmp_path, 'designated => identifier "com.nousresearch.hermes"')
+        self._darwin_bundle(monkeypatch, tmp_path, 'designated => identifier "com.moorinc.moor"')
         doctor_platform.check_macos_tcc_grants()
         out = capsys.readouterr().out
         assert "TCC signing identity is stable" in out
         assert "--setup-tcc-identity" in out
-        assert "tccutil reset ScreenCapture com.nousresearch.hermes" in out
+        assert "tccutil reset ScreenCapture com.moorinc.moor" in out
 
     def test_certificate_anchored_dr_is_stable_without_upgrade_hint(self, monkeypatch, capsys, tmp_path):
         self._darwin_bundle(
             monkeypatch, tmp_path,
-            'designated => identifier "com.nousresearch.hermes" and certificate root = H"aabbcc"',
+            'designated => identifier "com.moorinc.moor" and certificate root = H"aabbcc"',
         )
         doctor_platform.check_macos_tcc_grants()
         out = capsys.readouterr().out
         assert "TCC signing identity is stable" in out
         assert "--setup-tcc-identity" not in out
-        assert "tccutil reset ScreenCapture com.nousresearch.hermes" in out
+        assert "tccutil reset ScreenCapture com.moorinc.moor" in out
 
     @pytest.mark.parametrize("failure", ["none", "empty", "timeout", "no_codesign"])
     def test_unreadable_dr_warns_and_never_claims_stable(self, monkeypatch, capsys, tmp_path, failure):

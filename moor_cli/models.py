@@ -27,9 +27,9 @@ from typing import Any, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import TypeGuard
 
-from hermes_cli.urllib_security import open_credentialed_url
-from hermes_cli.version_info import get_version_info
-from hermes_cli.models_catalog_static import (
+from moor_cli.urllib_security import open_credentialed_url
+from moor_cli.version_info import get_version_info
+from moor_cli.models_catalog_static import (
     CANONICAL_PROVIDERS,
     OPENROUTER_MODELS,
     PREFERRED_SILENT_DEFAULT_MODEL,
@@ -38,6 +38,7 @@ from hermes_cli.models_catalog_static import (
     _AZURE_FOUNDRY_RESPONSES_PREFIXES,
     _BORROWED_MODEL_PROVIDERS,
     _COPILOT_MODEL_ALIASES,
+    _KEYLESS_STABLE_CACHE_PROVIDERS,
     _LIVE_FIRST_PICKER_PROVIDERS,
     _MODELS_DEV_PREFERRED,
     _OPENAI_FAST_MODE_PREFIXES,
@@ -66,7 +67,7 @@ logger = logging.getLogger(__name__)
 
 # Identify ourselves so endpoints fronted by Cloudflare's Browser Integrity
 # Check (error 1010) don't reject the default ``Python-urllib/*`` signature.
-_HERMES_USER_AGENT = f"hermes-cli/{get_version_info().base_version}"
+_MOOR_USER_AGENT = f"moor-cli/{get_version_info().base_version}"
 
 COPILOT_BASE_URL = "https://api.githubcopilot.com"
 COPILOT_MODELS_URL = f"{COPILOT_BASE_URL}/models"
@@ -325,10 +326,10 @@ def check_moor_free_tier(*, force_fresh: bool = False, cached_only: bool = False
 # [{modelName}], {paid,free}Recommended{Compaction,Vision}Model: {modelName} | null
 # ---------------------------------------------------------------------------
 
-NOUS_RECOMMENDED_MODELS_PATH = "/api/nous/recommended-models"
-_NOUS_RECOMMENDED_CACHE_TTL: int = 600  # seconds (10 minutes)
+MOOR_RECOMMENDED_MODELS_PATH = "/api/moor/recommended-models"
+_MOOR_RECOMMENDED_CACHE_TTL: int = 600  # seconds (10 minutes)
 # (result_dict, monotonic timestamp), scoped to the profile and portal.
-_nous_recommended_cache: dict[tuple[str, str], tuple[dict[str, Any], float]] = {}
+_moor_recommended_cache: dict[tuple[str, str], tuple[dict[str, Any], float]] = {}
 
 
 def _moor_recommended_disk_path() -> "Path":
@@ -336,9 +337,9 @@ def _moor_recommended_disk_path() -> "Path":
     return get_moor_home() / "cache" / "moor_recommended_cache.json"
 
 
-def _read_nous_recommended_disk(base: str) -> tuple[dict[str, Any], float] | None:
+def _read_moor_recommended_disk(base: str) -> tuple[dict[str, Any], float] | None:
     """Return the last good payload and its age for the freshness check."""
-    blob = _read_json_cache(_nous_recommended_disk_path(), errors=(OSError, json.JSONDecodeError, UnicodeDecodeError))
+    blob = _read_json_cache(_moor_recommended_disk_path(), errors=(OSError, json.JSONDecodeError, UnicodeDecodeError))
     entry = (blob or {}).get(base)
     data = entry.get("data") if isinstance(entry, dict) else None
     if not isinstance(data, dict) or not data:
@@ -369,24 +370,24 @@ def fetch_moor_recommended_models(
 ) -> dict[str, Any]:
     """Fetch the Portal's public ``/api/moor/recommended-models`` payload (no auth).
 
-    Reuse successful results for ``_NOUS_RECOMMENDED_CACHE_TTL`` seconds, including across
+    Reuse successful results for ``_MOOR_RECOMMENDED_CACHE_TTL`` seconds, including across
     process restarts. ``force_refresh`` bypasses both caches. Stale disk data remains a fallback
     on live failure; reading it never renews its freshness.
     """
     base = (portal_base_url or "https://portal.nousresearch.com").rstrip("/")
     now = time.monotonic()
     cache_key = (_pricing_profile_key(), base)
-    cached = _nous_recommended_cache.get(cache_key)
-    if not force_refresh and cached is not None and now - cached[1] < _NOUS_RECOMMENDED_CACHE_TTL:
+    cached = _moor_recommended_cache.get(cache_key)
+    if not force_refresh and cached is not None and now - cached[1] < _MOOR_RECOMMENDED_CACHE_TTL:
         return cached[0]
-    disk = _read_nous_recommended_disk(base)
-    if not force_refresh and disk is not None and 0 <= disk[1] < _NOUS_RECOMMENDED_CACHE_TTL:
+    disk = _read_moor_recommended_disk(base)
+    if not force_refresh and disk is not None and 0 <= disk[1] < _MOOR_RECOMMENDED_CACHE_TTL:
         data, age = disk
-        _nous_recommended_cache[cache_key] = (data, now - age)
+        _moor_recommended_cache[cache_key] = (data, now - age)
         return data
     try:
         data = _get_json(
-            f"{base}{NOUS_RECOMMENDED_MODELS_PATH}", timeout=timeout,
+            f"{base}{MOOR_RECOMMENDED_MODELS_PATH}", timeout=timeout,
             headers={"Accept": "application/json", "Accept-Encoding": "gzip"}
         )
         if not isinstance(data, dict):
@@ -397,7 +398,7 @@ def fetch_moor_recommended_models(
         _write_moor_recommended_disk(base, data)
     else:
         data = disk[0] if disk is not None else data
-    _nous_recommended_cache[cache_key] = (data, now)
+    _moor_recommended_cache[cache_key] = (data, now)
     return data
 
 
@@ -484,10 +485,10 @@ def recommended_moor_default_model() -> dict[str, Any]:
     model_ids, pricing = union(model_ids, pricing, portal_url)
     model_ids = mp.restrict_to_moor_policy(model_ids, policy_allowed, rescue_empty=True)
     if free_tier:
-        model_ids, _unavailable = partition_nous_models_by_tier(model_ids, pricing, free_tier=True)
+        model_ids, _unavailable = partition_moor_models_by_tier(model_ids, pricing, free_tier=True)
         # Never default onto a subscription-billed row: spending that plan is the user's call.
         model_ids = [mid for mid in model_ids if not _is_subscription_billed(pricing.get(mid))] or model_ids
-    return {"provider": "nous", "model": pick_silent_default_model(model_ids, provider="nous"),
+    return {"provider": "moor", "model": pick_silent_default_model(model_ids, provider="moor"),
             "free_tier": bool(free_tier)}
 
 
@@ -1296,7 +1297,7 @@ def _codex_catalog(normalized: str, force_refresh: bool) -> list[str]:
     # refreshes or persists a credential, so an expired stored token means the hardcoded catalog
     # until the runtime lease refreshes it.
     try:
-        from hermes_cli.auth import _codex_access_token_is_expiring, resolve_codex_runtime_credentials
+        from moor_cli.auth import _codex_access_token_is_expiring, resolve_codex_runtime_credentials
 
         access_token = resolve_codex_runtime_credentials(read_only=True).get("api_key")
         if _codex_access_token_is_expiring(access_token, 0):
@@ -1475,8 +1476,8 @@ def _azure_foundry_catalog(normalized: str, force_refresh: bool) -> Optional[lis
     ``/anthropic`` routes serve no ``/models``; the probe never raises, so any miss keeps ``[]``.
     """
     try:
-        from hermes_cli.azure_detect import _probe_openai_models
-        from hermes_cli.runtime_provider import _resolve_azure_foundry_runtime
+        from moor_cli.azure_detect import _probe_openai_models
+        from moor_cli.runtime_provider import _resolve_azure_foundry_runtime
 
         runtime = _resolve_azure_foundry_runtime(requested_provider=normalized, model_cfg=_get_model_config_dict())
         base_url = str(runtime.get("base_url") or "").strip().rstrip("/")
@@ -1487,6 +1488,12 @@ def _azure_foundry_catalog(normalized: str, force_refresh: bool) -> Optional[lis
         return ids if ok and ids else None
     except Exception:
         return None
+
+
+def _opencode_free_catalog(normalized: str, force_refresh: bool) -> list[str]:
+    # Live keyless catalog filtered to the anonymous-servable `*-free` tier ourselves (models.dev's
+    # cost.input==0 lags reality); the curated floor applies only when the live fetch fails/is empty.
+    return _fetch_opencode_free_models(force_refresh=force_refresh) or list(_PROVIDER_MODELS.get(normalized, []))
 
 
 # Per-provider catalog sources tried before the generic profile fetch. A fetcher returning None
@@ -1509,7 +1516,9 @@ _PROVIDER_CATALOG_FETCHERS: dict[str, Any] = {
     "openai-api": _openai_catalog,
     "custom": _custom_catalog,
     "bedrock": _bedrock_catalog,
-    "azure-foundry": _azure_foundry_catalog}
+    "azure-foundry": _azure_foundry_catalog,
+    "opencode-free": _opencode_free_catalog,
+}
 
 
 # ``-free`` slugs the relay still LISTS but no longer serves: the Go-only twin (``ox-alpha-free``)
@@ -1546,7 +1555,7 @@ def _profile_live_catalog(normalized: str) -> Optional[list[str]]:
             logger.debug("external_process catalog fetch failed for %s: %s", normalized, exc)
             live = None
         # Same merge as setup (`_model_flow_plugin_provider`) so /model, the Desktop picker and
-        # `hermes model` offer one list: live ids plus any pinned id the probe omitted.
+        # `moor model` offer one list: live ids plus any pinned id the probe omitted.
         return merge_profile_catalog(normalized, profile, list(live) if live else None)
     if not (profile.auth_type == "api_key" and profile.base_url):
         return list(profile.fallback_models) or None
@@ -1732,6 +1741,11 @@ def _credential_fingerprint(provider: str) -> str:
     """
     import hashlib
 
+    # Keyless providers serve the catalog anonymously: nothing the user rotates should invalidate
+    # the entry, so a stable fingerprint keeps the SWR cache alive and busts only on TTL expiry.
+    if (provider or "").strip().lower() in _KEYLESS_STABLE_CACHE_PROVIDERS:
+        return "keyless:" + (provider or "").strip().lower()
+
     parts: list[str] = []
     try:
         from moor_cli.auth import PROVIDER_REGISTRY
@@ -1769,7 +1783,7 @@ def _credential_fingerprint(provider: str) -> str:
     # resource switch under the same key must not serve the previous resource's catalog (#27989).
     if provider == "azure-foundry":
         try:
-            from hermes_cli.runtime_provider import _config_base_url_for_provider
+            from moor_cli.runtime_provider import _config_base_url_for_provider
             parts.append(f"effective_base={_config_base_url_for_provider(_get_model_config_dict(), 'azure-foundry')}")
         except Exception:
             pass
@@ -1802,14 +1816,14 @@ def _credential_fingerprint(provider: str) -> str:
             pass
 
     if provider == "openai-codex":
-        from hermes_cli.codex_models import codex_catalog_credential_identity
+        from moor_cli.codex_models import codex_catalog_credential_identity
 
         parts.append(f"codex_identity={codex_catalog_credential_identity()}")
     else:
         try:
-            from hermes_constants import get_hermes_home
+            from moor_constants import get_moor_home
             for rel in ("auth.json", "credentials.json"):
-                _mtime_part(rel, get_hermes_home() / rel)
+                _mtime_part(rel, get_moor_home() / rel)
         except Exception:
             pass
         for rel in ("~/.codex/auth.json", "~/.claude/.credentials.json",
@@ -2601,7 +2615,7 @@ def probe_api_models(
                 alternate_base if alternate_base != normalized else None)
     headers: dict[str, str] = {"User-Agent": _MOOR_USER_AGENT}
     if urllib.parse.urlparse(normalized).hostname == "generativelanguage.googleapis.com":
-        headers["X-Goog-Api-Client"] = f"hermes-agent/{get_version_info().base_version}"
+        headers["X-Goog-Api-Client"] = f"moor-agent/{get_version_info().base_version}"
     if api_key and api_mode == "anthropic_messages":
         headers["x-api-key"] = api_key
         headers["anthropic-version"] = "2023-06-01"

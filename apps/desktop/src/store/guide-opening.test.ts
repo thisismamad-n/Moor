@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 afterEach(() => vi.unstubAllGlobals())
 
 it('covers the pre-queue frame and a persisted guide until kickoff completes', async () => {
-  vi.stubGlobal('hermesDesktop', { guestOnboardingEnabled: true })
+  vi.stubGlobal('moorDesktop', { guestOnboardingEnabled: true })
   const { $guideOpening, $onboardingGate } = await import('./onboarding-gate')
 
   for (const phase of ['cinematic', 'guided'] as const) {
@@ -20,7 +20,7 @@ it('covers the pre-queue frame and a persisted guide until kickoff completes', a
 })
 
 it('keeps the opening visible through a shared kickoff and settles only after the seed is durable', async () => {
-  vi.stubGlobal('hermesDesktop', { guestOnboardingEnabled: true })
+  vi.stubGlobal('moorDesktop', { guestOnboardingEnabled: true })
   const { $guideOpening, $onboardingGate, runGuideKickoff, skipGuide } = await import('./onboarding-gate')
   $onboardingGate.set({ phase: 'cinematic', guideQueued: true, guideKickoff: 'idle' })
 

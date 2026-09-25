@@ -7,7 +7,7 @@ The whole point is that changing one token never disturbs the rest of the look
 import os
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli import skin_cmd
 from moor_constants import get_moor_home

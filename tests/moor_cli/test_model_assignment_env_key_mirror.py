@@ -13,8 +13,8 @@ import importlib
 import os
 
 import pytest
-import hermes_yaml as yaml
-import hermes_cli.web_server_config as _web_server_config
+import moor_yaml as yaml
+import moor_cli.web_server_config as _web_server_config
 
 
 @pytest.fixture()

@@ -46,8 +46,8 @@ def test_create_get_list(conn):
     assert proj.slug == "moor-agent"
     assert proj.name == "Moor Agent"
     # First folder becomes primary.
-    assert proj.primary_path == os.path.abspath("/tmp/hermes")
-    assert [f.path for f in proj.folders] == [os.path.abspath("/tmp/hermes")]
+    assert proj.primary_path == os.path.abspath("/tmp/moor")
+    assert [f.path for f in proj.folders] == [os.path.abspath("/tmp/moor")]
     assert proj.folders[0].is_primary is True
 
     # Lookup by slug too.

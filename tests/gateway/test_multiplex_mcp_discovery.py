@@ -350,8 +350,8 @@ def test_deregister_scope_kwarg_targets_overlay_and_keeps_plugin_confinement() -
     assert reg.snapshot_registration("mcp__s__t", scope="/home/p1") is None
 
     # A plugin module may not name another profile's overlay.
-    from hermes_constants import hermes_home_key
-    reg._plugin_module_scopes["hermes_plugins.p"] = {hermes_home_key("/home/p1")}
-    reg._caller_module = staticmethod(lambda: "hermes_plugins.p")
+    from moor_constants import moor_home_key
+    reg._plugin_module_scopes["moor_plugins.p"] = {moor_home_key("/home/p1")}
+    reg._caller_module = staticmethod(lambda: "moor_plugins.p")
     with pytest.raises(PermissionError):
         reg.deregister("anything", scope="/home/p2")

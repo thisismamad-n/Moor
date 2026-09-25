@@ -53,13 +53,13 @@ def test_mint_proxy_token_has_prefix_and_length():
     assert len(t) >= len("alpha-") + 32
 
 
-def test_management_token_path_is_single_authority(hermes_home):
-    """One token path: <hermes_home>/proxy/management.token, shared by mint, reuse and readers."""
+def test_management_token_path_is_single_authority(moor_home):
+    """One token path: <moor_home>/proxy/management.token, shared by mint, reuse and readers."""
     assert ip._management_token_path() == ip._proxy_state_dir_ro() / "management.token"
-    assert not (hermes_home / "proxy").exists()
+    assert not (moor_home / "proxy").exists()
 
     token = ip.ensure_management_token()
-    assert token.startswith("hermes-mgmt-")
+    assert token.startswith("moor-mgmt-")
     p = ip._management_token_path()
     assert p.is_file()
     assert p.read_text(encoding="utf-8-sig").strip() == token
@@ -139,7 +139,7 @@ def test_audit_log_kwarg_does_not_inject_audit_path_v039(tmp_path):
     )
 
 
-def test_load_mappings_handles_corrupt_json(hermes_home):
+def test_load_mappings_handles_corrupt_json(moor_home):
     state = ip._proxy_state_dir()
     (state / "mappings.json").write_text("{not json", encoding="utf-8")
     assert ip.load_mappings() == []
@@ -175,7 +175,7 @@ def test_verify_checksums_signature_skips_without_gpg(moor_home, monkeypatch, tm
 # ---------------------------------------------------------------------------
 
 
-def test_start_proxy_idempotent_when_already_running(hermes_home, monkeypatch):
+def test_start_proxy_idempotent_when_already_running(moor_home, monkeypatch):
     state = ip._proxy_state_dir()
     pid_file = state / "iron-proxy.pid"
     pid_file.write_text("12345")
@@ -233,7 +233,7 @@ def test_subprocess_env_strips_unrelated_secrets(moor_home, monkeypatch):
 
 
 @pytest.mark.platforms("linux")
-def test_ca_key_created_with_0o600(hermes_home, monkeypatch):
+def test_ca_key_created_with_0o600(moor_home, monkeypatch):
     """The CA private key must NEVER exist on disk with default umask
     permissions, even transiently.  Fix: open with explicit mode=0o600
     so the very first byte is written under tight perms."""
@@ -269,7 +269,7 @@ def test_ca_key_created_with_0o600(hermes_home, monkeypatch):
 
 
 @pytest.mark.platforms("linux")
-def test_ensure_audit_log_creates_with_0o600(hermes_home, tmp_path):
+def test_ensure_audit_log_creates_with_0o600(moor_home, tmp_path):
     audit = tmp_path / "audit.log"
     ip.ensure_audit_log(audit)
     assert audit.exists()
@@ -278,7 +278,7 @@ def test_ensure_audit_log_creates_with_0o600(hermes_home, tmp_path):
 
 
 @pytest.mark.platforms("linux")
-def test_ensure_audit_log_tightens_existing_perms(hermes_home, tmp_path):
+def test_ensure_audit_log_tightens_existing_perms(moor_home, tmp_path):
     audit = tmp_path / "audit.log"
     audit.write_text("preexisting content\n")
     os.chmod(audit, 0o644)
@@ -293,7 +293,7 @@ def test_ensure_audit_log_tightens_existing_perms(hermes_home, tmp_path):
 
 
 @pytest.mark.platforms("linux")
-def test_proxy_state_dir_is_0o700(hermes_home):
+def test_proxy_state_dir_is_0o700(moor_home):
     state = ip._proxy_state_dir()
     mode = state.stat().st_mode & 0o777
     assert mode == 0o700
@@ -329,7 +329,7 @@ def test_proxy_state_dir_is_0o700(hermes_home):
 # ---------------------------------------------------------------------------
 
 
-def test_mappings_roundtrip_preserves_headers_and_aliases(hermes_home):
+def test_mappings_roundtrip_preserves_headers_and_aliases(moor_home):
     m = ip.TokenMapping(
         proxy_token=ip.mint_proxy_token("gemini"),
         real_env_name="GEMINI_API_KEY",
@@ -349,7 +349,7 @@ def test_mappings_roundtrip_preserves_headers_and_aliases(hermes_home):
 
 
 @pytest.mark.platforms("linux")
-def test_management_token_is_private(hermes_home):
+def test_management_token_is_private(moor_home):
     ip.ensure_management_token()
     assert (ip._management_token_path().stat().st_mode & 0o777) == 0o600
 
@@ -360,7 +360,7 @@ def test_reload_proxy_refuses_when_not_running(moor_home, monkeypatch):
         ip.reload_proxy()
 
 
-def test_reload_proxy_posts_bearer_to_management_endpoint(hermes_home, monkeypatch):
+def test_reload_proxy_posts_bearer_to_management_endpoint(moor_home, monkeypatch):
     monkeypatch.setattr(ip, "_read_pid", lambda: 4242)
     monkeypatch.setattr(ip, "_pid_alive", lambda pid: True)
     monkeypatch.setattr(
@@ -395,7 +395,7 @@ def test_reload_proxy_posts_bearer_to_management_endpoint(hermes_home, monkeypat
 
 
 @pytest.mark.platforms("linux")
-def test_start_proxy_injects_management_key_env(hermes_home, monkeypatch):
+def test_start_proxy_injects_management_key_env(moor_home, monkeypatch):
     """When the generated config has a management listener, start_proxy
     must inject the bearer key env var — v0.39 refuses to start when
     api_key_env is empty."""
@@ -527,7 +527,7 @@ def test_persisted_nonce_roundtrip(moor_home, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_get_status_probes_configured_bind_host(hermes_home, monkeypatch):
+def test_get_status_probes_configured_bind_host(moor_home, monkeypatch):
     """get_status must probe the configured bind host (e.g. the docker
     bridge IP), not loopback unconditionally."""
 

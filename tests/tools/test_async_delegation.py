@@ -1107,7 +1107,7 @@ def test_one_child_unit_keeps_its_finished_child_when_the_owner_dies(tmp_path):
     must replay the child's real result to the parent."""
     repo = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     marker = tmp_path / "child-returned.flag"
-    env = {**os.environ, "HERMES_HOME": str(tmp_path), "PYTHONPATH": repo, "REPRO_MARKER": str(marker)}
+    env = {**os.environ, "MOOR_HOME": str(tmp_path), "PYTHONPATH": repo, "REPRO_MARKER": str(marker)}
     producer = r'''
 import os, sys, time
 from unittest.mock import MagicMock

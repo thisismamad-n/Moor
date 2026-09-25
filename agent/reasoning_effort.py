@@ -161,7 +161,7 @@ def route_supported_efforts(provider: Optional[str], model: Optional[str]) -> tu
 
 def effort_display_label(effort: Optional[str], provider: Optional[str] = None, model: Optional[str] = None) -> str:
     """Picker / ``/reasoning`` status label for a ladder level: the level itself when the route sends
-    it verbatim, else ``"<level> (sends <clamped> on this route)"`` so a Hermes-internal step such as
+    it verbatim, else ``"<level> (sends <clamped> on this route)"`` so a moor-internal step such as
     ``ultra`` (#61634) is never presented as a distinct wire level the route does not have."""
     requested = str(effort or "").strip().lower()
     clamped = clamp_effort(requested, route_supported_efforts(provider, model))

@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import update_cmd
+from moor_cli import update_cmd
 
 
 @pytest.fixture(autouse=True)
@@ -13,7 +13,7 @@ def _isolate_venv_holders(monkeypatch):
     """The update flow's venv-holder guard sees the live gateway processes on
     a dev machine and aborts with SystemExit 2 before reaching the branch
     logic under test.  Isolate it so the test exercises the intended path."""
-    monkeypatch.setattr("hermes_cli.update_cmd_windows._detect_venv_python_processes", lambda: [])
+    monkeypatch.setattr("moor_cli.update_cmd_windows._detect_venv_python_processes", lambda: [])
 
 
 class TestGitTrampolineSelfHeal:
@@ -101,7 +101,7 @@ class TestGitTrampolineSelfHeal:
         from moor_cli import update_cmd
 
         git_cmd = ["git"]
-        with patch("hermes_cli.update_cmd.subprocess.run") as run:
+        with patch("moor_cli.update_cmd.subprocess.run") as run:
             result = update_cmd._ensure_non_trampoline_git(git_cmd)
         assert result == git_cmd
         run.assert_not_called()
@@ -111,14 +111,14 @@ class TestGitTrampolineSelfHeal:
         # PortableGit tree lives under the SHARED root (monerostar review on
         # #88136). The candidate list must check get_default_moor_root()
         # before the profile home.
-        import hermes_constants
-        from hermes_cli.update_cmd_git import _portable_git_candidates
+        import moor_constants
+        from moor_cli.update_cmd_git import _portable_git_candidates
 
         root = tmp_path / "root"
         profile_home = root / "profiles" / "foo"
 
-        monkeypatch.setattr(hermes_constants, "get_default_hermes_root", lambda: root)
-        monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: profile_home)
+        monkeypatch.setattr(moor_constants, "get_default_moor_root", lambda: root)
+        monkeypatch.setattr(moor_constants, "get_moor_home", lambda: profile_home)
 
         candidates = _portable_git_candidates()
         assert candidates[0] == (

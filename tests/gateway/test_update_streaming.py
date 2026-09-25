@@ -30,7 +30,7 @@ def _make_event(text="/update", platform=Platform.TELEGRAM,
     )
     return MessageEvent(text=text, source=source)
 
-def _make_runner(hermes_home=None):
+def _make_runner(moor_home=None):
     """Create a bare GatewayRunner without calling __init__."""
     from gateway.run import GatewayRunner
     runner = object.__new__(GatewayRunner)
@@ -150,12 +150,12 @@ class TestWatchUpdateProgress:
         async def receive(chat_id, text, **kwargs):
             sent.append(text)
             if "Fetching updates" in text:
-                assert not (hermes_home / ".update_exit_code").exists()
+                assert not (moor_home / ".update_exit_code").exists()
                 streamed.set()
 
         mock_adapter.send.side_effect = receive
 
-        with patch("gateway.run._hermes_home", hermes_home):
+        with patch("gateway.run._moor_home", moor_home):
             watcher = asyncio.create_task(runner._watch_update_progress(
                 poll_interval=0.01, stream_interval=0.02, timeout=15.0,
             ))
@@ -164,9 +164,9 @@ class TestWatchUpdateProgress:
                 await asyncio.wait_for(streamed.wait(), timeout=5.0)
                 assert not watcher.done()
                 assert not any("update finished" in text.lower() for text in sent)
-                with (hermes_home / ".update_output.txt").open("a", encoding="utf-8") as output:
+                with (moor_home / ".update_output.txt").open("a", encoding="utf-8") as output:
                     output.write("✓ Code updated!\n")
-                (hermes_home / ".update_exit_code").write_text("0")
+                (moor_home / ".update_exit_code").write_text("0")
                 await asyncio.wait_for(watcher, timeout=5.0)
             finally:
                 if not watcher.done():
@@ -343,7 +343,7 @@ class TestCmdUpdateGatewayMode:
         """With --gateway, stash restore uses _gateway_prompt instead of input()."""
         import subprocess
         from types import SimpleNamespace
-        from hermes_cli import main, update_cmd
+        from moor_cli import main, update_cmd
 
         root = tmp_path / "checkout"
         root.mkdir()
@@ -366,7 +366,7 @@ class TestCmdUpdateGatewayMode:
         monkeypatch.setattr(main, "_finalize_update_output", lambda state: None)
         monkeypatch.setattr(main, "_run_pre_update_backup", lambda args: None)
         monkeypatch.setattr(main, "_pause_windows_gateways_for_update", lambda: None)
-        monkeypatch.setattr("hermes_cli.update_inventory.collect_runtime_inventory", lambda: None)
+        monkeypatch.setattr("moor_cli.update_inventory.collect_runtime_inventory", lambda: None)
         monkeypatch.setattr(update_cmd, "_prepare_git_command", lambda: (False, ["git"], False))
         monkeypatch.setattr(update_cmd, "run_completion", lambda request: {"exit_code": 0, "receipt": None})
         gateway_prompt = MagicMock(return_value="n")

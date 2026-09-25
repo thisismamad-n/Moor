@@ -1,7 +1,7 @@
 """macOS Full Disk Access onboarding guidance (issue #52010 follow-up).
 
 One FDA grant silences every per-folder TCC prompt permanently. Doctor reports
-the state and prints the one-switch setup; ``hermes setup`` surfaces the same
+the state and prints the one-switch setup; ``moor setup`` surfaces the same
 tip at onboarding. The probe reads the FDA-gated TCC db directory, which
 returns EPERM (no dialog) without the grant; any other error is indeterminate
 and must stay silent. The probe is gated on the real host, so the macOS
@@ -15,8 +15,8 @@ import pathlib
 
 import pytest
 
-from hermes_cli import doctor_platform
-from hermes_cli.setup_quick import _print_macos_fda_tip
+from moor_cli import doctor_platform
+from moor_cli.setup_quick import _print_macos_fda_tip
 
 
 def _capture(fn):

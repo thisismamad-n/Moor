@@ -593,7 +593,7 @@ async def test_side_thread_expansion_guards_the_served_profile_home(tmp_path: Pa
     """Inside a running loop (the gateway / TUI turn) the sync wrapper hops to a side thread; that
     thread must inherit the caller's profile scope so the credential guard checks the SERVED
     profile's home, not the launch profile's (a served profile's skill-hub cache was attachable)."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     from agent.context_references import preprocess_context_references
 
     launch_home = tmp_path / "launch"
@@ -602,35 +602,35 @@ async def test_side_thread_expansion_guards_the_served_profile_home(tmp_path: Pa
     hub_file.parent.mkdir(parents=True)
     hub_file.write_text("HUB-CACHE-BODY\n", encoding="utf-8")
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
 
-    token = set_hermes_home_override(served_home)
+    token = set_moor_home_override(served_home)
     try:
         result = preprocess_context_references(
             "read @file:profiles/b/skills/.hub/injected.md", cwd=launch_home, allowed_root=launch_home,
             context_length=100_000)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
     assert "HUB-CACHE-BODY" not in result.message
-    assert any("internal Hermes path" in w for w in result.warnings)
+    assert any("internal Moor path" in w for w in result.warnings)
 
 
 @pytest.mark.asyncio
 async def test_composer_paste_outside_workspace_is_attached_but_sibling_dir_is_not(tmp_path, monkeypatch):
-    """Desktop saves a large paste under <HERMES_HOME>/composer-pastes and attaches it
+    """Desktop saves a large paste under <MOOR_HOME>/composer-pastes and attaches it
     as `@file:`; the chat cwd is almost never an ancestor of that directory, so the
     workspace guard must admit exactly that anchored root (#117149) — and nothing
     that merely contains the substring next to it."""
     from agent.context_references import preprocess_context_references_async
 
     monkeypatch.setenv("HOME", str(tmp_path))
-    hermes_home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    paste = hermes_home / "composer-pastes" / "pasted_content_1.txt"
+    moor_home = tmp_path / ".moor"
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
+    paste = moor_home / "composer-pastes" / "pasted_content_1.txt"
     paste.parent.mkdir(parents=True)
     paste.write_text("PASTED-BODY-MARKER\n", encoding="utf-8")
-    lookalike = hermes_home / "my-composer-pastes-backup" / "secret.txt"
+    lookalike = moor_home / "my-composer-pastes-backup" / "secret.txt"
     lookalike.parent.mkdir(parents=True)
     lookalike.write_text("LOOKALIKE-SECRET\n", encoding="utf-8")
     workspace = tmp_path / "project"

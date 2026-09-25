@@ -54,7 +54,7 @@ def plugin_api(tmp_path, monkeypatch):
     # swap ``sys.modules['moor_state']`` with auto-restoration. Without
     # this, a raw ``sys.modules[...] = fake`` assignment would leak the
     # fake into later tests in the same process — breaking every
-    # test that does ``from hermes_state import SessionDB``.
+    # test that does ``from moor_state import SessionDB``.
     module._test_monkeypatch = monkeypatch
     yield module
 
@@ -119,7 +119,7 @@ def _install_fake_session_db(plugin_api, fake_db):
     """Inject a fake SessionDB so ``scan_sessions`` finds it via its local import.
 
     Uses the monkeypatch stashed on ``plugin_api`` by the fixture, so the
-    ``sys.modules['hermes_state']`` swap is auto-restored at test teardown
+    ``sys.modules['moor_state']`` swap is auto-restored at test teardown
     and cannot leak into unrelated tests in the same process.
     """
     fake_module = type(sys)("moor_state")

@@ -48,8 +48,8 @@ def scoped_aws_session_kwargs() -> Dict[str, str]:
     launch context's identity, exactly the borrow the Entra adapter refuses. ``AWS_PROFILE`` counts as
     an explicit per-profile choice (it names an entry in the shared AWS config, like the Entra
     ``AZURE_CLIENT_ID``-only managed-identity opt-in)."""
-    from hermes_constants import get_hermes_home_override
-    if get_hermes_home_override() is None:
+    from moor_constants import get_moor_home_override
+    if get_moor_home_override() is None:
         return {}
     from agent.secret_scope import current_secret_scope, is_multiplex_active
     scope = current_secret_scope() or {}
@@ -110,7 +110,7 @@ def _require_boto3():
     if version < _MIN_BOTO3_VERSION:
         raise RuntimeError(
             f"boto3 {boto3.__version__} does not support converse_stream "
-            f"(minimum 1.34.59 required). Run: hermes pm repair"
+            f"(minimum 1.34.59 required). Run: moor pm repair"
         )
     return boto3
 
@@ -201,12 +201,12 @@ def is_bedrock_openai_base_url(base_url: str) -> bool:
 def resolve_bedrock_bearer_token(env: Optional[Dict[str, str]] = None) -> str:
     """Return AWS_BEARER_TOKEN_BEDROCK when Bedrock API-key auth is configured.
 
-    Under a HERMES_HOME override the read goes through the profile secret scope so a
+    Under a MOOR_HOME override the read goes through the profile secret scope so a
     served profile never inherits the launch profile's bearer from the process env."""
     if env is not None:
         return (env.get("AWS_BEARER_TOKEN_BEDROCK", "") or "").strip()
-    from hermes_constants import get_hermes_home_override
-    if get_hermes_home_override() is not None:
+    from moor_constants import get_moor_home_override
+    if get_moor_home_override() is not None:
         from agent.secret_scope import get_secret
         return (get_secret("AWS_BEARER_TOKEN_BEDROCK", "") or "").strip()
     return (os.environ.get("AWS_BEARER_TOKEN_BEDROCK", "") or "").strip()

@@ -202,7 +202,7 @@ def ensure_google_chat_deps() -> bool:
         return True
     from pm import InstallError, ensure_import
     # Request BOTH extras before surfacing a failure: a successful install raises
-    # InstallError("restart Hermes to activate…") for the first extra, and aborting
+    # InstallError("restart Moor to activate…") for the first extra, and aborting
     # there would leave the second uninstalled — the restart would land back here.
     failures: list[InstallError] = []
     for extra in ("google", "google-chat"):

@@ -117,12 +117,12 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
         return _SUCCESS_EXIT
     if not platforms:
         print("No messaging platforms configured or no channels discovered yet.")
-        print("Set one up with `hermes gateway setup`, or run the gateway once so")
-        from hermes_constants import get_default_hermes_root, get_hermes_home, hermes_home_key
-        home, root = get_hermes_home(), get_default_hermes_root()
+        print("Set one up with `moor gateway setup`, or run the gateway once so")
+        from moor_constants import get_default_moor_root, get_moor_home, moor_home_key
+        home, root = get_moor_home(), get_default_moor_root()
         print(f"channel discovery can populate {home / 'channel_directory.json'}.")
         # A gateway started from the default root writes that root's directory, never this profile's.
-        if hermes_home_key(root) != hermes_home_key(home) and (root / "channel_directory.json").exists():
+        if moor_home_key(root) != moor_home_key(home) and (root / "channel_directory.json").exists():
             print(f"A gateway running from {root} already has {root / 'channel_directory.json'}; "
                   f"this shell is scoped to profile home {home}, which has none.")
         return _SUCCESS_EXIT
@@ -144,8 +144,8 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
     return _SUCCESS_EXIT
 
 
-def _load_hermes_env() -> None:
-    """Populate the credential environment from ``<HERMES_HOME>/.env`` AND bridge top-level ``config.yaml``
+def _load_moor_env() -> None:
+    """Populate the credential environment from ``<MOOR_HOME>/.env`` AND bridge top-level ``config.yaml``
     keys into it so the gateway config loader sees platform credentials and home channels.
 
     The target is ``os.environ`` for the standalone CLI. Inside a multi-profile host (dashboard console
@@ -209,11 +209,11 @@ def cmd_send(args: argparse.Namespace) -> None:
             _USAGE_EXIT)
     mentions = list(getattr(args, "mentions", None) or [])
     if mentions and target.split(":", 1)[0].strip().lower() != "whatsapp":
-        _fail("hermes send: --mention is only supported for WhatsApp targets.", _USAGE_EXIT)
+        _fail("moor send: --mention is only supported for WhatsApp targets.", _USAGE_EXIT)
     invalid_mentions = _invalid_whatsapp_mentions(mentions)
     if invalid_mentions:
         _fail(
-            "hermes send: invalid --mention value(s): "
+            "moor send: invalid --mention value(s): "
             f"{', '.join(invalid_mentions)}. Use a phone number or participant JID.",
             _USAGE_EXIT)
     message = _read_message_body(getattr(args, "message", None), getattr(args, "file", None))
@@ -264,29 +264,29 @@ _SEND_ARGUMENTS = (
 
 def register_send_subparser(subparsers) -> argparse.ArgumentParser:
     """Create the ``send`` subparser and return it."""
-    from hermes_constants import get_hermes_home
-    hermes_home = get_hermes_home()
+    from moor_constants import get_moor_home
+    moor_home = get_moor_home()
     parser = subparsers.add_parser(
         "send",
         help="Send a message to a configured platform (scripts, cron jobs, CI).",
         description=(
             "Pipe text from any shell script to any messaging platform Moor "
             "is already configured for. Reuses the gateway's platform "
-            f"credentials ({hermes_home / '.env'} + "
-            f"{hermes_home / 'config.yaml'}) — no LLM, "
+            f"credentials ({moor_home / '.env'} + "
+            f"{moor_home / 'config.yaml'}) — no LLM, "
             "no agent loop, no running gateway required for bot-token "
             "platforms like Telegram/Discord/Slack/Signal."
         ),
         epilog=(
             "Examples:\n"
-            "  hermes send --to telegram \"deploy finished\"\n"
-            "  echo \"RAM 92%\" | hermes send --to telegram:-1001234567890\n"
-            "  hermes send --to discord:#ops --file ./report.md\n"
-            "  hermes send --to slack:#eng --subject \"[CI]\" --file build.log\n"
-            "  hermes send --to whatsapp:GROUP@g.us --mention 15551234567 \"@15551234567 hello\"\n"
-            "  hermes send --to telegram \"MEDIA:./chart.png\"   # send a media attachment\n"
-            "  hermes send --list                  # all platforms\n"
-            "  hermes send --list telegram         # filter by platform\n"
+            "  moor send --to telegram \"deploy finished\"\n"
+            "  echo \"RAM 92%\" | moor send --to telegram:-1001234567890\n"
+            "  moor send --to discord:#ops --file ./report.md\n"
+            "  moor send --to slack:#eng --subject \"[CI]\" --file build.log\n"
+            "  moor send --to whatsapp:GROUP@g.us --mention 15551234567 \"@15551234567 hello\"\n"
+            "  moor send --to telegram \"MEDIA:./chart.png\"   # send a media attachment\n"
+            "  moor send --list                  # all platforms\n"
+            "  moor send --list telegram         # filter by platform\n"
             "\n"
             "Exit codes: 0 ok, 1 delivery/backend error, 2 usage error."
         ),

@@ -80,7 +80,7 @@ CLI 会自动检测多行粘贴。直接粘贴代码块或错误堆栈——不�
 
 想让 Moor 拥有稳定的默认风格？编辑 `~/.moor/SOUL.md`（如果使用自定义 Moor home，则为 `$MOOR_HOME/SOUL.md`）。Moor 现在会自动生成一个初始 SOUL 文件，并将该全局文件作为实例级个性来源。
 
-完整说明请参阅 [在 Hermes 中使用 SOUL.md](./use-soul-with-hermes.md)。
+完整说明请参阅 [在 Moor 中使用 SOUL.md](./use-soul-with-moor.md)。
 
 ```markdown
 # Soul

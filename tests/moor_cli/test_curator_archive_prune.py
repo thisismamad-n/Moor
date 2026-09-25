@@ -1,4 +1,4 @@
-"""`hermes curator archive` refuses pinned skills (with an `unpin` hint) and never archives them."""
+"""`moor curator archive` refuses pinned skills (with an `unpin` hint) and never archives them."""
 
 from __future__ import annotations
 

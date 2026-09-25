@@ -18,8 +18,8 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_constants import find_node_executable, with_hermes_node_path
+from moor_cli._subprocess_compat import windows_hide_flags
+from moor_constants import find_node_executable, with_moor_node_path
 
 logger = logging.getLogger("agent.lsp.install")
 
@@ -114,7 +114,7 @@ def _first_existing(*bases: Path, is_windows: Optional[bool] = None) -> Optional
 
 def _npm_bin_dir() -> Path:
     """npm's own ``node_modules/.bin`` under the staging tree, where its ``%~dp0``-relative wrappers work."""
-    return hermes_lsp_bin_dir().parent / "node_modules" / ".bin"
+    return moor_lsp_bin_dir().parent / "node_modules" / ".bin"
 
 
 def _existing_binary(name: str, *, is_windows: Optional[bool] = None) -> Optional[str]:
@@ -123,7 +123,7 @@ def _existing_binary(name: str, *, is_windows: Optional[bool] = None) -> Optiona
     ``is_windows`` overrides the host check so the Windows resolution is testable as data on every lane.
     """
     win = _is_windows() if is_windows is None else is_windows
-    bases = [hermes_lsp_bin_dir() / name] + ([_npm_bin_dir() / name] if win else [])
+    bases = [moor_lsp_bin_dir() / name] + ([_npm_bin_dir() / name] if win else [])
     for staged in (c for base in bases for c in _native_binary_candidates(base, is_windows=win)):
         if staged.exists() and os.access(staged, os.X_OK):
             return str(staged)
@@ -224,7 +224,7 @@ _NODE_PM_ARGV: Dict[str, Callable[[str], list]] = {
 def _node_package_manager() -> Optional[str]:
     """``lsp.package_manager`` from config (npm default); an unknown value fails closed (``None``)."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         lsp_cfg = load_config_readonly().get("lsp") or {}
     except Exception:  # noqa: BLE001 — installer must not die on a broken config; npm is the historical default
         return "npm"
@@ -242,8 +242,8 @@ def _install_npm(pkg: str, bin_name: str, extra_pkgs: Optional[list] = None) -> 
     pm = _node_package_manager()
     if pm is None:
         return None
-    # Managed Node first: $HERMES_HOME/node isn't on an arbitrary process's
-    # PATH, so a bare which() would miss the Node that Hermes installed.
+    # Managed Node first: $MOOR_HOME/node isn't on an arbitrary process's
+    # PATH, so a bare which() would miss the Node that Moor installed.
     pm_bin = find_node_executable(pm)
     if pm_bin is None:
         # Deliberately no silent fallback to npm: a pnpm/yarn choice is usually a supply-chain policy.
@@ -254,7 +254,7 @@ def _install_npm(pkg: str, bin_name: str, extra_pkgs: Optional[list] = None) -> 
     install_targets = [pkg] + list(extra_pkgs or [])
     cmd = [pm_bin, *_NODE_PM_ARGV[pm](str(staging)), *install_targets]
     logger.info("[install] %s %s", pm, " ".join(cmd[1:]))
-    if not _run_installer(pm, pkg, cmd, timeout=300, env=with_hermes_node_path()):
+    if not _run_installer(pm, pkg, cmd, timeout=300, env=with_moor_node_path()):
         return None
     found = _first_existing(staging / "node_modules" / ".bin" / bin_name)
     if found is not None:

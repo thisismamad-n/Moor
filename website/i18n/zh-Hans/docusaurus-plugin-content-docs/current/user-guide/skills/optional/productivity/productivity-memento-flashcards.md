@@ -229,7 +229,7 @@ python -c "import youtube_transcript_api; print(youtube_transcript_api.__file__)
 
 准备前按照[包管理](https://hermes-agent.nousresearch.com/docs/reference/package-management#developer-workflow)
 选择独立开发数据目录。重试时使用该 Python 和 `skill_view` 返回的实际 skill 目录。
-远程或沙箱终端需在其主机上准备独立辅助环境；不要向 Hermes 选中的环境 pip 安装。
+远程或沙箱终端需在其主机上准备独立辅助环境；不要向 Moor 选中的环境 pip 安装。
 
 **第 3 步：** 从字幕生成 5 道测验题。使用以下规则：
 

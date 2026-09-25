@@ -419,9 +419,9 @@ function SkillCard({
               </div>
             )}
             <div className={styles.installHint}>
-              <code>{skill.installCmd || `hermes skills install ${skill.name}`}</code>
+              <code>{skill.installCmd || `moor skills install ${skill.name}`}</code>
               <CopyButton
-                text={skill.installCmd || `hermes skills install ${skill.name}`}
+                text={skill.installCmd || `moor skills install ${skill.name}`}
               />
             </div>
             {onPick ? (
@@ -524,7 +524,7 @@ export default function SkillsDashboard() {
           type: "moor-skill-pick",
           name: skill.name,
           identifier: skill.identifier || skill.name,
-          installCmd: skill.installCmd || `hermes skills install ${skill.name}`,
+          installCmd: skill.installCmd || `moor skills install ${skill.name}`,
           source: skill.source,
         },
         "*"

@@ -20,10 +20,10 @@ from moor_cli.auth import (
     resolve_api_key_provider_credentials,
     resolve_provider,
 )
-from hermes_cli.models import normalize_provider as normalize_model_provider
-from hermes_cli.models import provider_model_ids
-from hermes_cli.providers import determine_api_mode
-from hermes_cli.providers import normalize_provider as normalize_overlay_provider
+from moor_cli.models import normalize_provider as normalize_model_provider
+from moor_cli.models import provider_model_ids
+from moor_cli.providers import determine_api_mode
+from moor_cli.providers import normalize_provider as normalize_overlay_provider
 from providers import get_provider_profile
 
 def _clear_actual_env(monkeypatch):
@@ -36,7 +36,7 @@ def _clear_ca_bundle_env(monkeypatch):
     # SSL_CERT_FILE into os.environ; an explicit CA env var disables the
     # scoped certifi default these tests assert.
     for key in (
-        "HERMES_CA_BUNDLE",
+        "MOOR_CA_BUNDLE",
         "SSL_CERT_FILE",
         "REQUESTS_CA_BUNDLE",
         "CURL_CA_BUNDLE",

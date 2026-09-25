@@ -32,7 +32,7 @@ _MARKER_NAME = ".tcc-anchor-source"
 
 _STORE_COMMON_MARKERS = ("cpython-", "-macos-")
 # Recognize both historical interpreter locations during upgrades.
-_STORE_ROOT_MARKERS = ("/uv/python/", "/.hermes-runtime/python/")
+_STORE_ROOT_MARKERS = ("/uv/python/", "/.moor-runtime/python/")
 
 _ALIAS_NAMES = ("python3", f"python3.{sys.version_info.minor}")
 _STORE_BIN_NAMES = (f"python3.{sys.version_info.minor}", "python3", "python")
@@ -281,7 +281,7 @@ def _passes_boot_gate(staged: Path, venv_dir: Path) -> bool:
 
 def _install_anchor(venv_dir: Path, source_file: Path) -> None:
     """Replace ``bin/python`` with a signed copy, gated on a real boot."""
-    from hermes_cli.macos_signing import sign_managed_python
+    from moor_cli.macos_signing import sign_managed_python
 
     venv_py = venv_python(venv_dir)
     venv_bin = venv_py.parent

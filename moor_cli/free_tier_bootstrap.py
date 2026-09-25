@@ -90,15 +90,15 @@ def reconcile_record() -> Optional[SetupRecord]:
     and its retries mint. A record that already says ``True`` is never re-probed, so the answer
     only moves false -> true here. Every write path that assigns the main model (the Models page,
     a picker key save) calls this for the immediate broadcast; ``setup.status`` calls it for
-    writes this process never saw (``hermes setup`` / ``hermes model`` from a shell, a hand edit).
+    writes this process never saw (``moor setup`` / ``moor model`` from a shell, a hand edit).
     The record is the LAUNCH profile's: a call scoped to another profile's home (a dashboard
     write with ``?profile=B``) leaves it alone, or B's providers would open the launch gate."""
     global _record
     record = _record
     if record is None or record.provider_configured:
         return record
-    from hermes_constants import get_process_hermes_home, hermes_home_key
-    if hermes_home_key() != hermes_home_key(get_process_hermes_home()) or _inventory_stamp == _config_stamp():
+    from moor_constants import get_process_moor_home, moor_home_key
+    if moor_home_key() != moor_home_key(get_process_moor_home()) or _inventory_stamp == _config_stamp():
         return record
     if not _inventory_other_providers():
         return _record
@@ -122,8 +122,8 @@ def reset_for_tests() -> None:
 
 
 def _config_stamp() -> tuple:
-    from hermes_cli.config import get_hermes_home
-    home = get_hermes_home()
+    from moor_cli.config import get_moor_home
+    home = get_moor_home()
     stamp = []
     for name in _INVENTORY_FILES:
         try:
@@ -146,7 +146,7 @@ def _inventory_other_providers() -> bool:
     seen by the next :func:`reconcile_record`.
     """
     global _inventory_stamp
-    from hermes_cli.auth import resolve_provider
+    from moor_cli.auth import resolve_provider
     _inventory_stamp = _config_stamp()
     try:
         return resolve_provider("auto", skip_free_tier=True) != "moor"

@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import source_completion, venv_sync
+from moor_cli import source_completion, venv_sync
 
 
 def test_pre_pm_version_reads_checkout_stamp_without_importing_pm():
@@ -21,7 +21,7 @@ def test_pre_pm_version_reads_checkout_stamp_without_importing_pm():
         "        raise ModuleNotFoundError(\"No module named 'pm'\", name='pm')\n"
         "    return original(name, *args, **kwargs)\n"
         "builtins.__import__ = restricted\n"
-        "from hermes_cli import __version__\n"
+        "from moor_cli import __version__\n"
         "print(__version__)\n"
     )
     result = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True,
@@ -55,7 +55,7 @@ def test_foreign_owned_venv_file_refused_before_sync(tmp_path, monkeypatch):
 
 
 def test_completed_maintenance_survives_stamp_io_error(tmp_path, monkeypatch, capsys):
-    from hermes_cli import source_build, source_stamp, update_cmd_maint
+    from moor_cli import source_build, source_stamp, update_cmd_maint
 
     monkeypatch.setattr(venv_sync, "publish_launchers", lambda root: None)
     monkeypatch.setattr(source_build, "build_update_products", lambda root, *, desktop: None)
@@ -71,7 +71,7 @@ def test_sealed_stamp_reader_honors_external_install_root(tmp_path, monkeypatch)
     stamped = tmp_path / "payload"
     stamped.mkdir()
     (tmp_path / "install-stamp.json").write_text(json.dumps({"updateMechanism": "external"}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(tmp_path))
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(tmp_path))
     # The executing tree may be mapped into a wrapper-owned installation root.
     monkeypatch.setattr(paths, "repo_root", lambda: stamped)
     monkeypatch.setattr(paths, "install_root", lambda: tmp_path)

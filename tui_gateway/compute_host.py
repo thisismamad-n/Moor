@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-# First, like every entry point: stdio, import-path and environ-lifetime fixes (hermes_bootstrap).
+# First, like every entry point: stdio, import-path and environ-lifetime fixes (moor_bootstrap).
 # Only as ``python -m``: tests import this module, and the bootstrap's TMPDIR/scratch exports
 # must not fire in a library importer.
 if __name__ == "__main__":
-    import hermes_bootstrap  # noqa: F401
+    import moor_bootstrap  # noqa: F401
 
 import argparse
 import concurrent.futures
@@ -331,9 +331,9 @@ class ComputeHost:
             if profile_home:
                 from moor_constants import set_moor_home_override
                 from agent.secret_scope import build_profile_secret_scope, set_secret_scope
-                from hermes_cli.env_loader import hydrate_profile_secret_sources
-                from hermes_state_registry import acquire
-                home_token = set_hermes_home_override(profile_home)
+                from moor_cli.env_loader import hydrate_profile_secret_sources
+                from moor_state_registry import acquire
+                home_token = set_moor_home_override(profile_home)
                 # External sources first (1Password / Bitwarden / secrets.command): this isolated
                 # turn process never ran the launch dotenv path for the routed profile, so without
                 # hydration the scope is built on an empty external snapshot and a vault-only
@@ -521,7 +521,7 @@ def _default_workers() -> int:
 
 
 def run_host(stdin: Any = None, stdout: Any = None) -> None:
-    os.environ["HERMES_COMPUTE_HOST_CHILD"] = "1"
+    os.environ["MOOR_COMPUTE_HOST_CHILD"] = "1"
     # JSONL framing is byte-oriented; avoid text-stream read-ahead on Windows pipes.
     stdin = stdin if stdin is not None else getattr(sys.stdin, "buffer", sys.stdin)
     host = ComputeHost(stdout=stdout or sys.stdout)

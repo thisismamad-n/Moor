@@ -104,7 +104,7 @@ def _skill_commands() -> dict:
 def _exec_help(ctx: CommandContext) -> CommandReply:
     """Core gateway /help body (pre platform mention decoration)."""
     from agent.i18n import t
-    from hermes_cli.commands import gateway_help_lines
+    from moor_cli.commands import gateway_help_lines
     # ``allowed_commands`` (gateway, non-admin caller): only the commands the slash-access
     # policy lets this user run; skill commands are hidden too since the gate refuses them.
     allowed = ctx.options.get("allowed_commands")

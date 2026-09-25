@@ -2,11 +2,11 @@
 
 Build the real image and verify at runtime:
 
-  1. /opt/hermes is not writable by the hermes user (immutable install tree)
-  2. A stale "docker" stamp in $HERMES_HOME is healed (removed) on boot
+  1. /opt/moor is not writable by the moor user (immutable install tree)
+  2. A stale "docker" stamp in $MOOR_HOME is healed (removed) on boot
 
 The hosted write-policy env (PYTHONDONTWRITEBYTECODE,
-HERMES_WRITE_SAFE_ROOT, ...) is covered by
+MOOR_WRITE_SAFE_ROOT, ...) is covered by
 test_immutable_install_permissions.py.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ from tests.docker.conftest import (
 
 
 @pytest.mark.parametrize("uid", [10000, 23456])
-def test_install_tree_not_writable_by_hermes(
+def test_install_tree_not_writable_by_moor(
     built_image: str, container_name: str, uid: int,
 ) -> None:
     """The moor user must not be able to modify /opt/moor.
@@ -31,19 +31,19 @@ def test_install_tree_not_writable_by_hermes(
     root-owned and non-writable so an agent session cannot self-modify
     the installation and brick the gateway.
     """
-    start_container(built_image, container_name, f"HERMES_UID={uid}", f"HERMES_GID={uid}")
+    start_container(built_image, container_name, f"MOOR_UID={uid}", f"MOOR_GID={uid}")
     identity = docker_exec(container_name, "id", "-u")
     assert identity.returncode == 0 and identity.stdout.strip() == str(uid)
 
-    probe = docker_exec(container_name, "/opt/hermes/.venv/bin/python", "-c", """
+    probe = docker_exec(container_name, "/opt/moor/.venv/bin/python", "-c", """
 import os
 from pathlib import Path
-from hermes_cli.config import detect_install_method
+from moor_cli.config import detect_install_method
 assert os.geteuid() != 0
-code = Path('/opt/hermes/.install_method')
+code = Path('/opt/moor/.install_method')
 home = Path('/opt/data/.install_method')
 assert code.read_text().strip() == 'docker'
-assert detect_install_method(Path('/opt/hermes')) == 'docker'
+assert detect_install_method(Path('/opt/moor')) == 'docker'
 assert not home.exists() or home.read_text().strip() != 'docker'
 try:
     with code.open('a'):
@@ -54,13 +54,13 @@ else:
     raise AssertionError('runtime user can alter installation method')
 assert code.read_text().strip() == 'docker'
 for relative in ('pm-runtime/pm-runtime.json', 'tools/facts.json', 'manifest.json'):
-    path = Path('/opt/hermes') / relative
+    path = Path('/opt/moor') / relative
     assert path.stat().st_uid == 0, path
     assert path.read_bytes(), path
     assert not os.access(path, os.W_OK), path
     assert path.stat().st_mode & 0o022 == 0, path
 for relative in ('.venv/.lock', 'pm-runtime/.lock'):
-    path = Path('/opt/hermes') / relative
+    path = Path('/opt/moor') / relative
     assert not path.exists() or not os.access(path, os.W_OK), path
 """)
     assert probe.returncode == 0, probe.stdout + probe.stderr

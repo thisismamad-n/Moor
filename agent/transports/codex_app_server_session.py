@@ -107,7 +107,7 @@ _IMAGE_URL_SCHEMES = ("data:", "http://", "https://")
 
 
 def _image_part_to_turn_input(item: dict) -> Optional[dict]:
-    """Map one Hermes image part onto the app-server ``UserInput`` shape.
+    """Map one Moor image part onto the app-server ``UserInput`` shape.
 
     ``turn/start`` accepts ``{type: image, url}`` (data:/http URLs) and ``{type: localImage, path}``
     natively (protocol schema ``v2/UserInput``), so nothing here is flattened into a text marker.
@@ -222,23 +222,23 @@ class CodexAppServerSession:
         self._cwd = cwd or os.getcwd()
         self._codex_bin = codex_bin
         self._codex_home = codex_home
-        # A codex thread id persisted by an earlier process for this Hermes session: the first
+        # A codex thread id persisted by an earlier process for this Moor session: the first
         # ``ensure_started`` issues ``thread/resume`` for it instead of ``thread/start``.
         self._resume_thread_id = resume_thread_id
         # ``thread/start.model`` / ``.modelProvider``: select a provider from codex's own
         # ``[model_providers.<id>]`` table. Only the id travels; codex reads base_url/env_key itself.
         self._model = (model or "").strip() or None
         self._model_provider = (model_provider or "").strip() or None
-        # Hermes' composed system prompt (SOUL.md, memory, channel overrides). Sent ONCE per thread as
+        # Moor' composed system prompt (SOUL.md, memory, channel overrides). Sent ONCE per thread as
         # ``thread/start.developerInstructions``: codex keeps its own base instructions (tool guidance) and
         # inserts this as the first developer message of every model request. ``baseInstructions`` would
         # REPLACE codex's base and ``instructions`` is accepted but ignored (verified against codex 0.147).
         self._developer_instructions = developer_instructions
-        # Hermes' prior transcript, appended to developerInstructions ONLY when a thread is started from
+        # Moor' prior transcript, appended to developerInstructions ONLY when a thread is started from
         # scratch: a resumed thread already holds the conversation (agent/codex_runtime_history_seed.py).
         self._history_seed = history_seed
-        self._permission_profile = permission_profile or _HERMES_TO_CODEX_PERMISSION_PROFILE.get(
-            os.environ.get("HERMES_TERMINAL_SECURITY_MODE", "auto"), "workspace-write"
+        self._permission_profile = permission_profile or _MOOR_TO_CODEX_PERMISSION_PROFILE.get(
+            os.environ.get("MOOR_TERMINAL_SECURITY_MODE", "auto"), "workspace-write"
         )
         self._approval_callback = approval_callback
         self._on_event = on_event  # Display hook (kawaii spinner ticks etc.)
@@ -263,10 +263,10 @@ class CodexAppServerSession:
             return self._thread_id
         if self._client is None:
             self._client = self._client_factory(codex_bin=self._codex_bin, codex_home=self._codex_home)
-            self._client.initialize(client_name="hermes", client_title="Hermes Agent", client_version=_get_hermes_version())
+            self._client.initialize(client_name="moor", client_title="Moor Agent", client_version=_get_moor_version())
         # Permissions are NOT sent on thread/start: codex gates ``thread/start.permissions``
         # behind experimentalApi + a matching ``[permissions]`` table in ~/.codex/config.toml.
-        # Hermes supplies the agent identity through its own system prompt; ``personality: "none"`` strips
+        # Moor supplies the agent identity through its own system prompt; ``personality: "none"`` strips
         # codex's built-in "# Personality" section from the base instructions so it cannot compete (#72104).
         params: dict[str, Any] = {"cwd": self._cwd, "personality": "none"}
         if self._developer_instructions and self._developer_instructions.strip():

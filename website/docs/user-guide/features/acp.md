@@ -8,10 +8,10 @@ description: "Use Moor Agent inside ACP-compatible editors and collaboration pla
 
 Python dependency commands on this page use a
 [PM-prepared source checkout](../../reference/package-management.md#developer-workflow).
-After a dependency change, reactivate the checkout and restart Hermes.
+After a dependency change, reactivate the checkout and restart Moor.
 
-Hermes Agent can run as an ACP server, letting ACP-compatible hosts talk to
-Hermes over stdio. Editors can render:
+Moor Agent can run as an ACP server, letting ACP-compatible hosts talk to
+Moor over stdio. Editors can render:
 
 - chat messages
 - tool activity
@@ -42,11 +42,11 @@ It intentionally excludes things that do not fit typical editor UX, such as mess
 The toolset resolves the same way as on the messaging gateway for the same
 platform config. That includes the extras the gateway adds on top of the
 list, such as enabled plugin toolsets, so ACP sessions get those too.
-`platform_toolsets.acp` replaces the `hermes-acp` default, and
+`platform_toolsets.acp` replaces the `moor-acp` default, and
 `agent.disabled_toolsets` removes toolsets from every ACP session. MCP
 servers from `mcp_servers` follow the same rules too. By default ACP gets
 every enabled server. If you list server names in `platform_toolsets.acp`,
-only those servers are included, and `no_mcp` drops them all. `hermes tools`
+only those servers are included, and `no_mcp` drops them all. `moor tools`
 has no ACP entry, so edit `config.yaml` directly:
 
 ```yaml
@@ -64,7 +64,7 @@ client asks for them per session, and they are always added.
 Install Moor normally, then add the ACP extra from the install checkout:
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"
 ```
 
 This installs the `agent-client-protocol` dependency and enables:
@@ -292,7 +292,7 @@ therefore runs shell commands on the host without prompting. I asked one to run
 Selecting `Anyone` hands that same shell access to every author who can reach
 the channel. Buzz does not warn when you pick it.
 
-`approvals.mode: manual` does not help: Hermes raises the permission request,
+`approvals.mode: manual` does not help: Moor raises the permission request,
 but Buzz auto-approves it and the command still runs. To take the shell away,
 narrow the toolset instead: set `platform_toolsets.acp` to a list without
 `terminal` and `code_execution`, or add them to `agent.disabled_toolsets`.
@@ -401,9 +401,9 @@ The ACP bridge maps these options onto Moor' internal approval semantics — `al
 
 Check:
 
-- For manual/local development, verify the host command points to `hermes acp`.
-- Hermes is installed and on your PATH.
-- The ACP extra is installed (`cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"`).
+- For manual/local development, verify the host command points to `moor acp`.
+- Moor is installed and on your PATH.
+- The ACP extra is installed (`cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"`).
 
 ### ACP starts but immediately errors
 

@@ -98,7 +98,7 @@ def _porcelain_run(stdout: str, returncode: int = 0):
         if "status" in joined and "--porcelain" in joined:
             return subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr="")
         if "ls-tree" in joined:  # tracked root entries = what the ZIP ships
-            return subprocess.CompletedProcess(cmd, 0, stdout="hermes_cli\nscratch\n", stderr="")
+            return subprocess.CompletedProcess(cmd, 0, stdout="moor_cli\nscratch\n", stderr="")
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     return fake_run

@@ -524,7 +524,7 @@ class MoorACPAgent(SlashCommandsMixin, acp.Agent):
         self, protocol_version: int | None = None, client_capabilities: ClientCapabilities | None = None,
         client_info: Implementation | None = None, **kwargs: Any,
     ) -> InitializeResponse:
-        from hermes_cli.version_info import get_version_info
+        from moor_cli.version_info import get_version_info
 
         auth_methods = build_auth_methods()
         logger.info(
@@ -534,7 +534,7 @@ class MoorACPAgent(SlashCommandsMixin, acp.Agent):
 
         return InitializeResponse(
             protocol_version=acp.PROTOCOL_VERSION,
-            agent_info=Implementation(name="hermes-agent", version=get_version_info().base_version),
+            agent_info=Implementation(name="moor-agent", version=get_version_info().base_version),
             agent_capabilities=AgentCapabilities(
                 load_session=True,
                 prompt_capabilities=PromptCapabilities(image=True),
@@ -811,7 +811,7 @@ class MoorACPAgent(SlashCommandsMixin, acp.Agent):
                 return {"final_response": f"Error: {e}", "messages": state.history}
 
     async def prompt(self, prompt: list[PromptBlock], session_id: str, **kwargs: Any) -> PromptResponse:
-        """Run Hermes on the user's prompt and stream events back to the editor."""
+        """Run Moor on the user's prompt and stream events back to the editor."""
         state = await asyncio.to_thread(self.session_manager.get_session, session_id)
         if state is None:
             logger.error("prompt: session %s not found", session_id)
@@ -953,12 +953,12 @@ class MoorACPAgent(SlashCommandsMixin, acp.Agent):
                 self.session_manager.save_session(session_id)
 
             # Head rotated (compression split): emit provenance so clients can render the boundary.
-            post_turn_hermes_id = getattr(state.agent, "session_id", None)
-            if conn and post_turn_hermes_id and pre_turn_hermes_id and post_turn_hermes_id != pre_turn_hermes_id:
+            post_turn_moor_id = getattr(state.agent, "session_id", None)
+            if conn and post_turn_moor_id and pre_turn_moor_id and post_turn_moor_id != pre_turn_moor_id:
                 try:
                     await self._send_session_info_update(
-                        session_id, current_hermes_session_id=post_turn_hermes_id,
-                        previous_hermes_session_id=pre_turn_hermes_id,
+                        session_id, current_moor_session_id=post_turn_moor_id,
+                        previous_moor_session_id=pre_turn_moor_id,
                     )
                 except Exception:
                     logger.debug("Could not emit ACP provenance update after rotation for %s", session_id, exc_info=True)
@@ -1035,7 +1035,7 @@ class MoorACPAgent(SlashCommandsMixin, acp.Agent):
                     self._switch_model, state, model_id, keep_endpoint=True)
             except ModelRejected as exc:
                 # A model no provider can serve is a bad ``modelId`` param (-32602), not an agent
-                # internal error (-32603): the client attributes it to the request, not to Hermes (#72439).
+                # internal error (-32603): the client attributes it to the request, not to Moor (#72439).
                 # Only the switch_model rejection maps here; a ValueError from the rebuild itself
                 # (disabled provider, context window below the floor) stays on the -32603 path.
                 from acp.exceptions import RequestError
@@ -1069,7 +1069,7 @@ class MoorACPAgent(SlashCommandsMixin, acp.Agent):
     async def set_config_option(
         self, config_id: str, session_id: str, value: str, **kwargs: Any
     ) -> SetSessionConfigOptionResponse | None:
-        """Accept ACP config option updates even when Hermes has no typed ACP config surface yet."""
+        """Accept ACP config option updates even when Moor has no typed ACP config surface yet."""
         state = await asyncio.to_thread(self.session_manager.get_session, session_id)
         if state is None:
             logger.warning("Session %s: config update requested for missing session", session_id)

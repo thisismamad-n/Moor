@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli.auth import (
+from moor_cli.auth import (
     AuthError,
     MINIMAX_OAUTH_CLIENT_ID,
     MINIMAX_OAUTH_GLOBAL_BASE,
@@ -456,7 +456,7 @@ def test_refresh_error_body_bounded_and_readable_with_real_client():
     import socketserver
     import threading
 
-    from hermes_cli.auth import _refresh_minimax_oauth_state
+    from moor_cli.auth import _refresh_minimax_oauth_state
 
     big_body = b"invalid_grant " + b"x" * (64 * 1024)  # 64KB error body
 

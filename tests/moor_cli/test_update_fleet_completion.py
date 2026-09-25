@@ -5,8 +5,8 @@ import json
 
 import pytest
 
-from hermes_cli import update_cmd, update_cmd_fleet, update_cmd_maint, update_receipt
-from hermes_constants import get_hermes_home
+from moor_cli import update_cmd, update_cmd_fleet, update_cmd_maint, update_receipt
+from moor_constants import get_moor_home
 
 
 @pytest.mark.parametrize(
@@ -20,7 +20,7 @@ def test_fleet_completion_preserves_runtime_verdict_and_restart_obligation(
     snapshot = [{"profile": "default", "pid": 1234, "state": state}] if state else []
     restart = update_cmd_fleet._GatewayRestartOutcome(
         incomplete=False, phase_errors=[], pre_restart_gateway_pids=[1234],
-        restarted_services=["hermes-gateway"], failed_or_stale_units=[],
+        restarted_services=["moor-gateway"], failed_or_stale_units=[],
         relaunched_profiles=[], externally_supervised_profiles=[], killed_pids=set(),
     )
     monkeypatch.setattr(update_cmd_fleet, "_print_legacy_units_warning", lambda: None)
@@ -31,7 +31,7 @@ def test_fleet_completion_preserves_runtime_verdict_and_restart_obligation(
     )
     monkeypatch.setattr(update_receipt, "_code_identity", lambda **kwargs: {})
     monkeypatch.setattr(
-        "hermes_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: migrated.append(True),
+        "moor_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: migrated.append(True),
     )
 
     def collect(outcome, rows_expected):
@@ -53,10 +53,10 @@ def test_fleet_completion_preserves_runtime_verdict_and_restart_obligation(
         if not healthy:
             assert exc.value.code == 1
 
-    receipt = json.loads((get_hermes_home() / "logs/update_receipts/latest.json").read_text())
+    receipt = json.loads((get_moor_home() / "logs/update_receipts/latest.json").read_text())
     assert receipt["outcome"] == ("success" if healthy else "partial")
     assert receipt["fleet"] == snapshot
     assert restart.incomplete is (state != "current")
     assert update_cmd_fleet._fleet_restart_obligation_armed() is (state != "current")
     assert migrated == ([True] if healthy else [])
-    assert refreshed == [{"already_restarted_units": {"hermes-gateway"}}]
+    assert refreshed == [{"already_restarted_units": {"moor-gateway"}}]

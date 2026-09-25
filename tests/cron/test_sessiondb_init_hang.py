@@ -158,7 +158,7 @@ class TestSessionDbInitTimeout:
     def test_timeout_resolved_from_config_yaml(self, tmp_path, monkeypatch):
         """cron.session_db_timeout_seconds in config.yaml is respected when
         the env var is not set — the canonical config-first resolution path."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         monkeypatch.delenv("MOOR_CRON_SESSION_DB_TIMEOUT", raising=False)
         monkeypatch.setenv("MOOR_HOME", str(tmp_path))
@@ -201,7 +201,7 @@ class TestDispatchGuardReleasedAfterHang:
     def test_guard_is_released_and_job_refires_after_sessiondb_hang(self, tmp_path, monkeypatch):
         import cron.scheduler as sched
 
-        monkeypatch.setenv("HERMES_CRON_SESSION_DB_TIMEOUT", "0.2")
+        monkeypatch.setenv("MOOR_CRON_SESSION_DB_TIMEOUT", "0.2")
         sched._parallel_pools.clear()
         sched._parallel_pool_max_workers.clear()
         sched._running_job_ids.clear()

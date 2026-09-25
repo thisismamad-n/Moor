@@ -91,7 +91,7 @@ def test_set_session_context_injects_session_profile(tmp_path, monkeypatch):
 
     server._set_session_context("skey-work")
 
-    assert get_session_env("HERMES_SESSION_PROFILE") == "work"
+    assert get_session_env("MOOR_SESSION_PROFILE") == "work"
 
 
 def test_set_session_context_uses_launch_profile_without_override(monkeypatch):
@@ -105,4 +105,4 @@ def test_set_session_context_uses_launch_profile_without_override(monkeypatch):
 
     server._set_session_context("skey-default")
 
-    assert get_session_env("HERMES_SESSION_PROFILE") == "default"
+    assert get_session_env("MOOR_SESSION_PROFILE") == "default"

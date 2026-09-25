@@ -4,7 +4,7 @@ Sandboxes (Docker/Modal/SSH) hold only opaque proxy tokens; iron-proxy — a TLS
 default-deny egress firewall — swaps them for real credentials on the way out, so a leaked
 token is useless outside the trusted proxy boundary.  The pinned binary is auto-installed
 into the PM tool store; CA, ``proxy.yaml``, ``mappings.json``, pidfile and logs live in
-``<hermes_home>/proxy``.  Failures warn and never block agent startup.
+``<moor_home>/proxy``.  Failures warn and never block agent startup.
 """
 
 from __future__ import annotations
@@ -197,7 +197,7 @@ def _verify_checksums_signature(tmp: Path, checksum_path: Path) -> bool:
     if not sig_path.is_file() or not pubkey_path.is_file():
         logger.warning("iron-proxy release signature assets unavailable — skipping GPG verification (SHA-256 checksum check still enforced).")
         return False
-    with tempfile.TemporaryDirectory(prefix="hermes-iron-signature-") as gnupg_home:
+    with tempfile.TemporaryDirectory(prefix="moor-iron-signature-") as gnupg_home:
         gpg_base = [gpg, "--homedir", gnupg_home, "--batch", "--no-tty"]
         if (imp := _run([*gpg_base, "--import", str(pubkey_path)], timeout=60)).returncode != 0:
             logger.warning("Could not import iron-proxy signing key — skipping GPG verification (SHA-256 still enforced): %s", imp.stderr.decode("utf-8", "replace")[:200])
@@ -303,9 +303,9 @@ def ensure_management_token(*, force: bool = False) -> str:
     """Return the management-API bearer key, minting it on first call.
 
     Stored at the path from :func:`_management_token_path` with 0600 perms.
-    The daemon receives it via the ``HERMES_IRON_PROXY_MGMT_KEY`` env var
+    The daemon receives it via the ``MOOR_IRON_PROXY_MGMT_KEY`` env var
     (named in the generated config's ``management.api_key_env``);
-    ``hermes egress reload`` reads the same file to authenticate.
+    ``moor egress reload`` reads the same file to authenticate.
     """
 
     _proxy_state_dir()
@@ -321,7 +321,7 @@ def _yaml():
     """Shared YAML helpers or None (not a hard requirement for proxy discovery)."""
 
     try:
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         return yaml
     except ImportError:
         return None
@@ -376,7 +376,7 @@ def reload_proxy() -> bool:
             "The generated proxy.yaml has no management listener (written before reload support).  Re-run `moor egress setup` and use `moor egress restart` this one time."
         )
     if not (token := _read_text_or_none(_management_token_path())):
-        raise RuntimeError("management.token is missing — re-run `hermes egress setup`, then `hermes egress restart`.")
+        raise RuntimeError("management.token is missing — re-run `moor egress setup`, then `moor egress restart`.")
     host, port = mgmt
     req = urllib.request.Request(f"http://{host}:{port}/v1/reload", method="POST", headers={"Authorization": f"Bearer {token}"}, data=b"")
     try:

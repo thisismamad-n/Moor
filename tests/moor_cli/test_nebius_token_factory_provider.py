@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from hermes_cli.auth import (
+from moor_cli.auth import (
     resolve_api_key_provider_credentials,
     resolve_provider,
 )
-from hermes_cli.model_normalize import normalize_model_for_provider
-from hermes_cli.models import (
+from moor_cli.model_normalize import normalize_model_for_provider
+from moor_cli.models import (
     normalize_provider,
     provider_model_ids,
 )

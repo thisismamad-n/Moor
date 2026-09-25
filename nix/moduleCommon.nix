@@ -443,16 +443,16 @@ let
         description = ''
           Python packages to add to PYTHONPATH for entry-point plugin discovery.
           These are pip-packaged plugins that register via the
-          hermes_agent.plugins entry-point group. Each package must be built
-          with the same Python interpreter as hermes. The interpreter
+          moor_agent.plugins entry-point group. Each package must be built
+          with the same Python interpreter as moor. The interpreter
           major.minor is derived from pm/lock.json by nix/pythonLock.nix —
-          take packages from config.services.hermes-agent.package.python.pkgs so the set always
-          matches the interpreter hermes was built with.
+          take packages from config.services.moor-agent.package.python.pkgs so the set always
+          matches the interpreter moor was built with.
         '';
         example = literalExpression ''
           [
-            (config.services.hermes-agent.package.python.pkgs.buildPythonPackage {
-              pname = "rtk-hermes";
+            (config.services.moor-agent.package.python.pkgs.buildPythonPackage {
+              pname = "rtk-moor";
               version = "1.0.0";
               src = pkgs.fetchFromGitHub {
                 owner = "ogallotti";
@@ -473,7 +473,7 @@ let
           the sealed Python venv. These are resolved by uv alongside core
           dependencies — no PYTHONPATH patching or collision risk.
 
-          Use this for optional extras already declared in hermes-agent's
+          Use this for optional extras already declared in moor-agent's
           pyproject.toml (e.g. "honcho", "voice").
           Use extraPythonPackages for external packages not in pyproject.toml.
         '';

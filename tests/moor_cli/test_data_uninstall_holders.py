@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import uninstall
-from tests.hermes_cli.test_data_uninstall import layout  # noqa: F401 — isolated layout
+from moor_cli import uninstall
+from tests.moor_cli.test_data_uninstall import layout  # noqa: F401 — isolated layout
 
 
 @pytest.mark.parametrize("mode", ["confirmed", "cancel", "dry-run"])
@@ -16,7 +16,7 @@ def test_unconfirmed_removal_never_contacts_the_gateway(layout, monkeypatch, mod
 
     def identify(target, **kwargs):
         calls.append(target)
-        return {"pid": 42, "hermes_home": str(home), "supervisor": "systemd"}
+        return {"pid": 42, "moor_home": str(home), "supervisor": "systemd"}
 
     monkeypatch.setattr("gateway.control_socket.identify_gateway", identify)
     monkeypatch.setattr("builtins.input", lambda *args: "no")
@@ -32,7 +32,7 @@ def test_unconfirmed_removal_never_contacts_the_gateway(layout, monkeypatch, mod
 
 
 def test_live_chat_lease_blocks_data_deletion(layout):
-    from hermes_cli.active_sessions import release_active_session, try_acquire_active_session
+    from moor_cli.active_sessions import release_active_session, try_acquire_active_session
 
     home, _, data = layout
     lease, refusal = try_acquire_active_session(
@@ -67,7 +67,7 @@ def test_manual_gateway_drains_over_real_control_transport_before_deletion(layou
 
     def identify():
         return {"pid": child.pid, "start_time": get_process_start_time(child.pid),
-                "hermes_home": str(home), "supervisor": "manual"}
+                "moor_home": str(home), "supervisor": "manual"}
 
     def drain():
         paused.set()
@@ -107,7 +107,7 @@ def test_manual_gateway_drains_over_real_control_transport_before_deletion(layou
 
 @pytest.mark.parametrize("profile", ["", "sibling"])
 def test_backend_initial_profile_is_not_its_write_scope(layout, profile):
-    from hermes_cli.process_identity import register_self
+    from moor_cli.process_identity import register_self
 
     _, _, data = layout
     assert register_self("serve", project_root=uninstall.get_project_root(), detail={"profile": profile})
@@ -139,12 +139,12 @@ def test_named_profile_cannot_delete_data_served_by_the_default_multiplexer(layo
     profile.mkdir()
     config = profile / "config.yaml"
     config.write_text("{}", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(profile))
-    monkeypatch.setattr(uninstall, "get_hermes_home", lambda: profile)
+    monkeypatch.setenv("MOOR_HOME", str(profile))
+    monkeypatch.setattr(uninstall, "get_moor_home", lambda: profile)
 
     def identify(target, **kwargs):
         if target == home:
-            return {"pid": 42, "hermes_home": str(home), "served_profiles": ["active"]}
+            return {"pid": 42, "moor_home": str(home), "served_profiles": ["active"]}
         return None
 
     monkeypatch.setattr("gateway.control_socket.identify_gateway", identify)

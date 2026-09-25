@@ -27,7 +27,7 @@ def no_policy(monkeypatch):
     """An unrestricted org — lists must come through untouched."""
     monkeypatch.setattr(models_pricing, "moor_policy_allowed_ids", lambda **_k: None)
 
-class TestLoginNous:
+class TestLoginMoor:
 
     def _run(self, monkeypatch, tmp_path):
         import moor_cli.auth as auth_mod
@@ -198,8 +198,8 @@ class TestAuxiliaryFastModel:
         )
         assert picked == "vendor/allowed"
 
-class TestNousPrefetch:
-    """The nous disk-cache entry is write-only, so prefetching it is a round
+class TestMoorPrefetch:
+    """The moor disk-cache entry is write-only, so prefetching it is a round
     trip for nothing."""
 
 class TestPolicyNoticeIsShown:
@@ -207,9 +207,9 @@ class TestPolicyNoticeIsShown:
     def test_login_prints_it(self, monkeypatch, tmp_path, policy, capsys):
         import moor_cli.moor_account as account_mod
 
-        monkeypatch.setattr(account_mod, "nous_policy_present", lambda: True)
-        TestLoginNous()._run(monkeypatch, tmp_path)
-        assert account_mod.nous_policy_notice(removed=True) in capsys.readouterr().out
+        monkeypatch.setattr(account_mod, "moor_policy_present", lambda: True)
+        TestLoginMoor()._run(monkeypatch, tmp_path)
+        assert account_mod.moor_policy_notice(removed=True) in capsys.readouterr().out
 
 class TestAuxFallbackRespectsPolicy:
     """Steps 2-4 of the aux ladder are policy-blind: `resolve_aux_model` queries

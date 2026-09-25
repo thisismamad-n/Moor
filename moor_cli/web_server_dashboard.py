@@ -8,7 +8,7 @@ import os
 import sys
 import threading
 import time
-import hermes_yaml as yaml
+import moor_yaml as yaml
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -152,7 +152,7 @@ def mount_spa(application: FastAPI):
             return JSONResponse({"error": "Frontend not built. Run: cd web && npm run build"}, status_code=404)
         chat_js = "true" if _DASHBOARD_EMBEDDED_CHAT_ENABLED else "false"
         gated = bool(getattr(app.state, "auth_required", False))
-        token_js = "" if gated else f'window.__HERMES_SESSION_TOKEN__="{_server()._SESSION_TOKEN}";'
+        token_js = "" if gated else f'window.__MOOR_SESSION_TOKEN__="{_server()._SESSION_TOKEN}";'
         # Launcher-preselected profile (``--open-profile``): the SPA's fallback scope when the URL
         # omits ``?profile=`` (#73085). ``</`` escaped so a hostile name cannot close the script tag.
         initial_profile_js = json.dumps(str(getattr(application.state, "initial_profile", "") or "")).replace("</", "<\\/")
@@ -160,15 +160,15 @@ def mount_spa(application: FastAPI):
         # falls back to it when neither the URL nor --open-profile names one, so requests carry an
         # explicit scope from the first paint: destructive routes 400 on an unnamed profile as soon
         # as the host serves more than one, and the switcher shows the same profile it writes.
-        from hermes_cli.web_server_profiles import serving_profile_name as _serving_profile_name
+        from moor_cli.web_server_profiles import serving_profile_name as _serving_profile_name
         serving_profile_js = json.dumps(_serving_profile_name()).replace("</", "<\\/")
         bootstrap_script = (
             f"<script>{token_js}"
-            f"window.__HERMES_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
-            f'window.__HERMES_BASE_PATH__="{prefix}";'
-            f"window.__HERMES_AUTH_REQUIRED__={'true' if gated else 'false'};"
-            f"window.__HERMES_INITIAL_PROFILE__={initial_profile_js};"
-            f"window.__HERMES_DASHBOARD_PROFILE__={serving_profile_js};"
+            f"window.__MOOR_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
+            f'window.__MOOR_BASE_PATH__="{prefix}";'
+            f"window.__MOOR_AUTH_REQUIRED__={'true' if gated else 'false'};"
+            f"window.__MOOR_INITIAL_PROFILE__={initial_profile_js};"
+            f"window.__MOOR_DASHBOARD_PROFILE__={serving_profile_js};"
             f"</script>"
         )
         if prefix:
@@ -664,12 +664,12 @@ def _merged_plugins_hub(force_refresh: bool = False) -> Dict[str, Any]:
     event loop). Only cached availability is consumed and the payload is memoized briefly to
     collapse the dashboard's bursty duplicate fetches.
     """
-    from hermes_cli.web_server_memory import _discover_memory_provider_statuses, _normalize_memory_provider_name
-    from hermes_cli.web_server import _get_dashboard_plugins
-    from hermes_cli.config import get_hermes_home, load_config
-    from hermes_constants import hermes_home_key
+    from moor_cli.web_server_memory import _discover_memory_provider_statuses, _normalize_memory_provider_name
+    from moor_cli.web_server import _get_dashboard_plugins
+    from moor_cli.config import get_moor_home, load_config
+    from moor_constants import moor_home_key
 
-    cache_key = hermes_home_key(get_hermes_home())
+    cache_key = moor_home_key(get_moor_home())
     now = time.monotonic()
     if not force_refresh:
         with _plugins_hub_cache_lock:
@@ -678,7 +678,7 @@ def _merged_plugins_hub(force_refresh: bool = False) -> Dict[str, Any]:
                 return cached
 
     started_at = time.monotonic()
-    from hermes_cli.plugins_cmd import (
+    from moor_cli.plugins_cmd import (
         _category_active_names,
         _discover_all_plugins,
         _get_current_context_engine,
@@ -689,8 +689,8 @@ def _merged_plugins_hub(force_refresh: bool = False) -> Dict[str, Any]:
         _plugin_status,
         _read_manifest as _read_plugin_manifest_at,
     )
-    from hermes_cli.plugins_cmd_catalog import removed_annotation
-    from hermes_cli.plugin_catalog import resolved_removed_entries
+    from moor_cli.plugins_cmd_catalog import removed_annotation
+    from moor_cli.plugin_catalog import resolved_removed_entries
 
     dashboard_list = _get_dashboard_plugins()
     dash_by_name = {str(p["name"]): p for p in dashboard_list}
@@ -706,7 +706,7 @@ def _merged_plugins_hub(force_refresh: bool = False) -> Dict[str, Any]:
     active = _category_active_names()
 
     for name, version, description, source, dir_str, key in _discover_all_plugins():
-        # Same verdict as `hermes plugins list` / the TUI hub: name+key aliases for the lists, bundled
+        # Same verdict as `moor plugins list` / the TUI hub: name+key aliases for the lists, bundled
         # backends/platforms/providers and the live memory provider count as enabled without a list
         # entry (#73131, #82898).
         runtime_status = _plugin_status(

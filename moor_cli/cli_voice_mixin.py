@@ -84,7 +84,7 @@ class CLIVoiceMixin:
         if not reqs.get("stt_available", reqs.get("stt_key_set")):
             raise RuntimeError(
                 "Voice mode requires an STT provider for transcription.\n"
-                "Run hermes tools and configure Speech-to-Text, then restart Hermes.")
+                "Run moor tools and configure Speech-to-Text, then restart Moor.")
 
         # Prevent double-start from concurrent threads (atomic check-and-set)
         with self._voice_lock:

@@ -153,7 +153,7 @@ def test_cancel_marks_the_flow_terminal_for_a_retrying_worker():
         flow_id="flow-cancel-retry",
         server_name="reports",
         profile=None,
-        hermes_home="/tmp/hermes-test",
+        moor_home="/tmp/moor-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/reports",
     )
     asyncio.run(flow.publish_authorization_url("https://idp.example/authorize?state=first"))

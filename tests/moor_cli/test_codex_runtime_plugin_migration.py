@@ -7,7 +7,7 @@ from __future__ import annotations
 from moor_cli.codex_runtime_plugin_migration import (
     MIGRATION_MARKER,
     MIGRATION_END_MARKER,
-    _build_hermes_tools_mcp_entry,
+    _build_moor_tools_mcp_entry,
     _strip_existing_managed_block,
     _strip_unmanaged_plugin_tables,
     _translate_one_server,
@@ -158,7 +158,7 @@ class TestMigrate:
         """Discovered curated plugins land as [plugins."<name>@<marketplace>"]
         blocks. This is what OpenClaw calls 'migrate native codex plugins.'
         The discovery spawn must use the configured ``model.codex_bin`` (#61360)."""
-        from hermes_cli import codex_runtime_plugin_migration as crpm
+        from moor_cli import codex_runtime_plugin_migration as crpm
 
         seen: dict = {}
 
@@ -414,7 +414,7 @@ class TestMoorHomeLeakGuard:
 
 
 class TestSameNameUserMcpTable:
-    """Issue #79023: a Hermes server whose name the user already declares outside the managed
+    """Issue #79023: a Moor server whose name the user already declares outside the managed
     block must not be emitted twice (duplicate table header = TOML codex refuses to load)."""
 
     def test_user_table_wins_and_output_stays_valid_toml(self, tmp_path):
@@ -424,7 +424,7 @@ class TestSameNameUserMcpTable:
         target.write_text('[mcp_servers.gbrain]\ncommand = "existing-gbrain"\n', encoding="utf-8")
         report = migrate(
             {"mcp_servers": {"gbrain": {"command": "projected-gbrain"}, "other": {"command": "o"}}},
-            codex_home=tmp_path, discover_plugins=False, expose_hermes_tools=False,
+            codex_home=tmp_path, discover_plugins=False, expose_moor_tools=False,
             default_permission_profile=None)
         text = target.read_text(encoding="utf-8")
         parsed = tomllib.loads(text)  # would raise "Cannot declare ... twice" before the fix
@@ -444,7 +444,7 @@ class TestSameNameUserMcpTable:
         target.write_text('[mcp_servers]\ngbrain = { command = "existing-gbrain" }\n', encoding="utf-8")
         report = migrate(
             {"mcp_servers": {"gbrain": {"command": "projected-gbrain"}, "other": {"command": "o"}}},
-            codex_home=tmp_path, discover_plugins=False, expose_hermes_tools=False,
+            codex_home=tmp_path, discover_plugins=False, expose_moor_tools=False,
             default_permission_profile=None)
         parsed = tomllib.loads(target.read_text(encoding="utf-8"))
         assert report.written and report.errors == []
@@ -454,12 +454,12 @@ class TestSameNameUserMcpTable:
 
 
     def test_cli_migrate_dry_run_json_reports_without_writing(self, tmp_path, monkeypatch, capsys):
-        """`hermes codex-runtime migrate --dry-run --json` is the supported automation seam:
-        drive it through the real ``hermes`` argparse tree so the subcommand registration in
-        hermes_cli/main.py stays pinned, and honour ``CODEX_HOME`` like every codex sibling."""
+        """`moor codex-runtime migrate --dry-run --json` is the supported automation seam:
+        drive it through the real ``moor`` argparse tree so the subcommand registration in
+        moor_cli/main.py stays pinned, and honour ``CODEX_HOME`` like every codex sibling."""
         import json
 
-        import hermes_cli.main as main
+        import moor_cli.main as main
 
         codex_home = tmp_path / "alt-codex"
         codex_home.mkdir()
@@ -468,7 +468,7 @@ class TestSameNameUserMcpTable:
         monkeypatch.setenv("CODEX_HOME", str(codex_home))
         monkeypatch.setattr("pathlib.Path.home", classmethod(lambda cls: tmp_path))
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "moor_cli.config.load_config",
             lambda: {"mcp_servers": {"gbrain": {"command": "projected"}, "other": {"command": "o"}}})
         parser, _subparsers = main._build_cli_parser()
         args = parser.parse_args(["codex-runtime", "migrate", "--dry-run", "--json"])

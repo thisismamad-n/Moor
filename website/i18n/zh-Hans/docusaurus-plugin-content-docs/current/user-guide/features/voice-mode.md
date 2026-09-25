@@ -8,22 +8,22 @@ description: "与 Moor Agent 进行实时语音对话 — CLI、Telegram、Disco
 
 Moor Agent 支持在 CLI 和消息平台上进行完整的语音交互。通过麦克风与 Agent 对话，听取语音回复，并在 Discord 语音频道中进行实时语音对话。
 
-如需包含推荐配置和实际使用模式的实践指南，请参阅 [使用 Hermes 的语音模式](../../guides/use-voice-mode-with-hermes.md)。
+如需包含推荐配置和实际使用模式的实践指南，请参阅 [使用 Moor 的语音模式](../../guides/use-voice-mode-with-moor.md)。
 
 ## 前提条件
 
 使用语音功能前，请确保已完成以下准备：
 
-1. **已安装 Hermes Agent** — 通过安装脚本（参见 [安装](../../getting-started/installation.md)）
-2. **已配置 LLM 提供商** — 运行 `hermes model` 或在 `~/.hermes/.env` 中设置首选提供商的凭据
-3. **基础设置正常** — 运行 `hermes` 验证 Agent 能够响应文字消息，再启用语音功能
+1. **已安装 Moor Agent** — 通过安装脚本（参见 [安装](../../getting-started/installation.md)）
+2. **已配置 LLM 提供商** — 运行 `moor model` 或在 `~/.moor/.env` 中设置首选提供商的凭据
+3. **基础设置正常** — 运行 `moor` 验证 Agent 能够响应文字消息，再启用语音功能
 
 :::tip
 `~/.moor/` 目录和默认的 `config.yaml` 会在首次运行 `moor` 时自动创建。只需手动创建 `~/.moor/.env` 来存放 API 密钥。
 :::
 
-:::tip Nous Portal 同时覆盖两项
-付费的 [Nous Portal](./tool-gateway.md) 订阅通过 Tool Gateway 同时提供 LLM（第 2 步）**和** OpenAI TTS — 无需单独的 OpenAI 密钥。全新安装时，`hermes setup --portal` 可一次性完成两项配置。
+:::tip Moor Portal 同时覆盖两项
+付费的 [Moor Portal](./tool-gateway.md) 订阅通过 Tool Gateway 同时提供 LLM（第 2 步）**和** OpenAI TTS — 无需单独的 OpenAI 密钥。全新安装时，`moor setup --portal` 可一次性完成两项配置。
 :::
 
 ## 概览
@@ -38,8 +38,8 @@ Moor Agent 支持在 CLI 和消息平台上进行完整的语音交互。通过�
 
 ### Python 包
 
-通过 `hermes tools` 配置语音提供商。缺失的内置功能依赖由 PM 按策略和目标平台支持准备。
-如果选择的环境改变，请按提示重启 Hermes。
+通过 `moor tools` 配置语音提供商。缺失的内置功能依赖由 PM 按策略和目标平台支持准备。
+如果选择的环境改变，请按提示重启 Moor。
 桌面包预装其支持的引擎；Docker 使用较小集合并关闭按需安装。
 不要修改签名载荷或系统 Python。手动开发环境参见[开发配置](../../developer-guide/contributing.md)。
 

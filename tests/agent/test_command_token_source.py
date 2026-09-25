@@ -377,8 +377,8 @@ class TestExplicitCallableSurvivesCustomResolution:
 
     def _resolve(self, monkeypatch, shape, key):
         import agent.auxiliary_client as ac
-        from hermes_cli import auth as hauth
-        from hermes_cli import runtime_provider as rp
+        from moor_cli import auth as hauth
+        from moor_cli import runtime_provider as rp
 
         seen = self._spy_client(monkeypatch)
         if shape == "bare_custom":

@@ -8,7 +8,7 @@ import pytest
 
 
 def test_native_discovery_returns_only_curated_boundary_matches(tmp_path, monkeypatch):
-    from hermes_cli import mcp_app_detection as detection
+    from moor_cli import mcp_app_detection as detection
 
     root = tmp_path / "applications"
     root.mkdir()
@@ -39,7 +39,7 @@ def test_native_discovery_returns_only_curated_boundary_matches(tmp_path, monkey
 
 
 def test_discovery_failure_or_budget_is_unknown_not_absence(tmp_path, monkeypatch):
-    from hermes_cli import mcp_app_detection as detection
+    from moor_cli import mcp_app_detection as detection
 
     monkeypatch.setattr(detection, "_application_roots", lambda: [tmp_path])
     monkeypatch.setenv("PATH", "")

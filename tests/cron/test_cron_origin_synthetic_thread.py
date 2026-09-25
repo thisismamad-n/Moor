@@ -25,7 +25,7 @@ import json
 from datetime import timedelta
 from unittest.mock import patch
 
-import hermes_time
+import moor_time
 from tools.cronjob_tools import _origin_from_env
 
 
@@ -93,17 +93,17 @@ class TestSlackSyntheticThreadCapture:
 
 
 _TOP_LEVEL_SLACK = {
-    "HERMES_SESSION_PLATFORM": "slack",
-    "HERMES_SESSION_CHAT_ID": "C0AGENERAL",
+    "MOOR_SESSION_PLATFORM": "slack",
+    "MOOR_SESSION_CHAT_ID": "C0AGENERAL",
     # reply_in_thread default: the assistant's whole exchange lives in the thread keyed on the
     # asking message's own id (ts == thread_ts on the wire).
-    "HERMES_SESSION_THREAD_ID": "1755043010.123456",
-    "HERMES_SESSION_MESSAGE_ID": "1755043010.123456",
+    "MOOR_SESSION_THREAD_ID": "1755043010.123456",
+    "MOOR_SESSION_MESSAGE_ID": "1755043010.123456",
 }
 
 
 def _run_at_in(minutes: int) -> str:
-    return (hermes_time.now() + timedelta(minutes=minutes)).isoformat()
+    return (moor_time.now() + timedelta(minutes=minutes)).isoformat()
 
 
 class TestNearHorizonSlackThreadKept:
@@ -152,10 +152,10 @@ class TestNearHorizonSlackThreadKept:
         """A fire at this instant still happens inside the live conversation: the lower
         bound is inclusive on purpose. The clock is frozen so the boundary itself is
         tested, not the microseconds between two now() calls."""
-        frozen = hermes_time.now()
+        frozen = moor_time.now()
         with (
             _session_env(_TOP_LEVEL_SLACK),
-            patch("tools.cronjob_job_args.hermes_time") as frozen_clock,
+            patch("tools.cronjob_job_args.moor_time") as frozen_clock,
         ):
             frozen_clock.now.return_value = frozen
             origin = _origin_from_env({"kind": "once", "run_at": frozen.isoformat()})

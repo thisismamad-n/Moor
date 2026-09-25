@@ -55,8 +55,8 @@ def _get_git_commit(project_root: Path) -> str:
 
     The requested *project_root* is authoritative: when it has no git,
     the install-stamp fallback is only valid for the RUNNING install
-    (``hermes_cli.version_info`` has no per-root API — it reads
-    HERMES_INSTALL_ROOT / the running code root, never an arbitrary
+    (``moor_cli.version_info`` has no per-root API — it reads
+    MOOR_INSTALL_ROOT / the running code root, never an arbitrary
     directory). For any other root the provenance is unknown.
     """
     value = _git_output(project_root, "rev-parse", "--short=8", "HEAD")
@@ -65,7 +65,7 @@ def _get_git_commit(project_root: Path) -> str:
     if project_root.resolve() != get_project_root():
         return "(unknown)"
     try:
-        from hermes_cli.version_info import get_code_identity  # deferred: keeps dump cheap on non-dump paths
+        from moor_cli.version_info import get_code_identity  # deferred: keeps dump cheap on non-dump paths
         return get_code_identity().get("short_sha") or "(unknown)"
     except Exception:
         return "(unknown)"
@@ -85,7 +85,7 @@ def _get_git_commit_date(project_root: Path) -> str:
     try:
         from datetime import datetime, timezone
 
-        from hermes_cli.version_info import get_version_info  # deferred: keeps dump cheap on non-dump paths
+        from moor_cli.version_info import get_version_info  # deferred: keeps dump cheap on non-dump paths
         commit_date = get_version_info().commit_date
         return datetime.fromtimestamp(commit_date, tz=timezone.utc).strftime("%Y-%m-%d") if commit_date else ""
     except Exception:
@@ -201,7 +201,7 @@ _API_KEYS = [
 def _version_line(project_root: Path) -> str:
     """``<version> [<commit>] (<commit date>)`` using the running code identity."""
     try:
-        from hermes_cli.version_info import get_version_info
+        from moor_cli.version_info import get_version_info
 
         version = get_version_info().derived_version
     except Exception:

@@ -22,7 +22,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from gateway.config import Platform
-from hermes_cli.platform_actions import PlatformActions
+from moor_cli.platform_actions import PlatformActions
 
 
 def _grant(granted: bool):

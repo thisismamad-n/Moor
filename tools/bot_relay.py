@@ -26,7 +26,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Optional
 
-from tools.bot_mode_probe import _default_home, _hermes_root, alias_forms
+from tools.bot_mode_probe import _default_home, _moor_root, alias_forms
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -90,8 +90,8 @@ BOT_CHAT_TURN_ARGS = ("chat", "--in", "~", "-c", "Bot Chat", "--create-if-missin
 # ``tui_gateway.methods_bot_relay``). The failed attempt's turn-start persist already left the DM as the
 # Bot Chat's unanswered tail row, and a fresh process cannot tell that from a new message on its own — so
 # the re-run is told to adopt that row instead of appending a second copy
-# (``hermes_cli.quiet_single_query.adopt_unanswered_turn``, which consumes the variable before the turn).
-RESUME_UNANSWERED_TURN_ENV = "HERMES_RESUME_UNANSWERED_TURN"
+# (``moor_cli.quiet_single_query.adopt_unanswered_turn``, which consumes the variable before the turn).
+RESUME_UNANSWERED_TURN_ENV = "MOOR_RESUME_UNANSWERED_TURN"
 
 
 def retry_turn_env(env: Optional[Mapping[str, str]]) -> dict[str, str]:
@@ -183,7 +183,7 @@ def _target_ids(row: dict) -> set[str]:
 def _target_aliases(row: dict) -> set[str]:
     """Every lower-cased bare form that addresses ``row``: routing ids plus the Bot Mode title's
     mention slugs (``"CoS Bot"`` → ``cos-bot``/``cosbot``, what the Desktop picker inserts). A remote
-    ``default`` is ``@hermes`` on every gateway, so its title is the only bare form that can single it out."""
+    ``default`` is ``@moor`` on every gateway, so its title is the only bare form that can single it out."""
     return _target_ids(row) | alias_forms(row.get("title") or "")
 
 
@@ -205,7 +205,7 @@ def resolve_remote_target(raw_target: str, roster: list[dict]) -> Any:
 
 def _title_slug(row: dict) -> str:
     """The Bot Mode title's slug form (``"CoS Bot"`` → ``cos-bot``, what the picker inserts); "" when the
-    title is empty, reserved (a bot titled "Hermes") or not a valid handle."""
+    title is empty, reserved (a bot titled "Moor") or not a valid handle."""
     title = str(row.get("title") or "")
     slug = re.sub(r"[^a-z0-9_-]+", "-", title.strip().lower()).strip("-")
     return slug if slug in alias_forms(title) else ""
@@ -215,7 +215,7 @@ def remote_target_forms(roster: list[dict], local_taken: "set[str] | frozenset[s
     """One unambiguous target string per row, shortest first: the bare handle when no other remote
     row and no LOCAL profile (``local_taken``: this gateway's handles and friendly-name slugs) answers
     to it; else the title slug under the same test (a remote ``default`` titled "CoS Bot" is
-    ``@cos-bot``, since bare ``@hermes`` is always this gateway's own default); else
+    ``@cos-bot``, since bare ``@moor`` is always this gateway's own default); else
     ``handle@connection``. Mirrors ``resolve_remote_target``."""
     taken = {form.lower() for form in local_taken}
     id_claims: dict[str, int] = {}
@@ -244,7 +244,7 @@ def qualify_sender_stamp(message: str, from_handle: Any, from_connection: Any, r
                          local_taken: "set[str] | frozenset[str]" = frozenset()) -> str:
     """Rewrite a relayed DM's ``Message from 🤖 <name> (@<handle>):`` stamp so the handle is the
     form THIS gateway can reply to: the sender's row in the local relay roster as
-    ``remote_target_forms`` renders it, else ``handle@connection``. A relayed ``@hermes`` is another
+    ``remote_target_forms`` renders it, else ``handle@connection``. A relayed ``@moor`` is another
     machine's default — left bare, a reply lands on the recipient's own default (#103731)."""
     handle, conn = str(from_handle or "").strip().lstrip("@"), str(from_connection or "").strip()
     match = _SENDER_STAMP_RE.match(str(message or ""))

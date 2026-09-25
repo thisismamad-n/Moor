@@ -2005,7 +2005,7 @@ export interface StatusResponse {
   gateway_exit_reason: string | null;
   /** Why a multi-profile host's gateway came up STANDALONE on a boot guard (unset
    * ``gateway.multiplex_profiles`` refused): the other profiles' bots are silent until
-   * ``hermes gateway migrate --multiplex`` runs. null/absent when it multiplexes or only one
+   * ``moor gateway migrate --multiplex`` runs. null/absent when it multiplexes or only one
    * profile exists. */
   multiplex_standalone_reason?: string | null;
   /** Every profile installed on this host (multiplex or not). */

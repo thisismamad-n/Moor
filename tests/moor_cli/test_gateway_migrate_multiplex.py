@@ -89,8 +89,8 @@ def fleet(tmp_path, monkeypatch):
     # name a real root-owned process in /proc on a CI runner (a spurious "UNIX privilege boundary"
     # blocker), and the user-scope unit path lives under the real $HOME. The whole fleet runs as this
     # user with no unit files on disk unless a test writes some (it repoints _SYSTEM_UNIT_DIR itself).
-    from hermes_cli import gateway as gw
-    from hermes_cli import gateway_migrate_guards as guards
+    from moor_cli import gateway as gw
+    from moor_cli import gateway_migrate_guards as guards
     monkeypatch.setattr(guards, "_pid_uid", lambda pid: root.stat().st_uid if pid in state.pids.values() else None)
     _unit_path = gw.get_systemd_unit_path
     monkeypatch.setattr(gw, "get_systemd_unit_path", lambda system=False: _unit_path(system=True) if system
@@ -101,7 +101,7 @@ def fleet(tmp_path, monkeypatch):
 
 def _fake_spawn(state, home: Path) -> bool:
     root = state.root
-    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(root)}))
+    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "moor_home": str(root)}))
     return True
 
 
@@ -129,7 +129,7 @@ _real_preflight = gm._preflight_apply
 
 
 def _config_flag(root: Path):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
     raw = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8")) or {}
     return (raw.get("gateway") or {}).get("multiplex_profiles")
 
@@ -179,7 +179,7 @@ def test_migration_removes_parked_footprint_without_waiting_for_it_to_serve(flee
     def boot_unparked_profiles(kind, system, verb, home, **kwargs):
         service_op(kind, system, verb, home, **kwargs)
         if _name(home) == "default" and verb in ("start", "restart"):
-            from hermes_cli.profiles import profiles_to_serve
+            from moor_cli.profiles import profiles_to_serve
             path = fleet.root / "gateway_state.json"
             runtime = json.loads(path.read_text())
             runtime["served_profiles"] = [name for name, _ in profiles_to_serve(True)]
@@ -456,7 +456,7 @@ def test_update_hook_folds_a_unit_less_default_when_every_secondary_shares_one_m
     elects as the target (``target_service_kind``) is the reference the guard must agree with — not the
     default's empty unit list, which turned every such fleet into "blockers" instead of a fold.
     Controls: a default unit under another manager, and two managers among the secondaries, still refuse."""
-    from hermes_cli.gateway_migrate_guards import auto_migration_blockers
+    from moor_cli.gateway_migrate_guards import auto_migration_blockers
     monkeypatch.setattr(gm, "_gateway_identity", lambda home, pid, service: (1000, home), raising=False)
     fleet.services.update({"coder": ("launchd", False), "ops": ("launchd", False)})
     assert "default" not in fleet.services
@@ -868,10 +868,10 @@ def test_plan_names_every_process_it_will_sigterm_before_it_signals_anything(fle
 
 
 def test_windows_task_detection_reads_both_the_task_and_the_startup_fallback(monkeypatch):
-    """`hermes gateway install` falls back to a Startup-folder entry when it cannot register a
+    """`moor gateway install` falls back to a Startup-folder entry when it cannot register a
     task; a migration that removed only the task would leave that entry launching a second
     gateway at the next logon."""
-    from hermes_cli import gateway_windows as gww
+    from moor_cli import gateway_windows as gww
     for task, startup, expected in ((True, False, True), (False, True, True), (False, False, False)):
         monkeypatch.setattr(gww, "is_task_registered", lambda t=task: t)
         monkeypatch.setattr(gww, "is_startup_entry_installed", lambda s=startup: s)
@@ -884,7 +884,7 @@ def test_windows_task_detection_reads_both_the_task_and_the_startup_fallback(mon
 def test_windows_is_migratable_and_only_s6_is_refused(monkeypatch):
     """The host predicate: Windows used to be a flat refusal with hand-migration instructions.
     s6 stays refused -- its per-profile gateways are slots the container's own boot registers."""
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     monkeypatch.setattr(gw, "_running_under_s6", lambda: False)
     assert gm._host_supports_migration() is None
 

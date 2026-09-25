@@ -141,7 +141,7 @@ def _boot_in_flight(config: dict | None) -> bool:
         config = _load_config_if_none(config)
         if not ((config or {}).get("local_runtime") or {}).get("enabled"):
             return False
-        from hermes_cli.local_runtime.binaries import installed_engine
+        from moor_cli.local_runtime.binaries import installed_engine
 
         return installed_engine() is not None
     return False

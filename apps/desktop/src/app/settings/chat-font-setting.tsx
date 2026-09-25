@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { saveHermesConfig } from '@/hermes'
+import { saveMoorConfig } from '@/moor'
 import { useI18n } from '@/i18n'
 import { notifyError } from '@/store/notifications'
 import {
@@ -10,7 +10,7 @@ import {
   resolveChatFontFamily,
   setChatFontFamilyFromConfig
 } from '@/themes/chat-font'
-import type { HermesConfigRecord } from '@/types/hermes'
+import type { MoorConfigRecord } from '@/types/moor'
 
 import { setMoorConfigCache, useMoorConfigRecord } from '../hooks/use-config-record'
 import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
@@ -35,7 +35,7 @@ function fontFamilyFromConfig(config: MoorConfigRecord): string {
 export function ChatFontSetting() {
   const { t } = useI18n()
   const copy = t.settings.appearance
-  const { data: loadedConfig, dataUpdatedAt, writeScope } = useHermesConfigRecord()
+  const { data: loadedConfig, dataUpdatedAt, writeScope } = useMoorConfigRecord()
   const [draft, setDraft] = useState<string | null>(null)
   // The seed effect refuses to reseed while the query still carries the
   // previous profile's stamp. A structurally-shared refetch keeps the object
@@ -85,7 +85,7 @@ export function ChatFontSetting() {
 
       // Sparse patch: PUT /api/config deep-merges; echoing the cached snapshot
       // would overwrite keys other surfaces changed since it loaded.
-      void saveHermesConfig(setNested({}, CONFIG_PATH, value), writeScope)
+      void saveMoorConfig(setNested({}, CONFIG_PATH, value), writeScope)
         .then(result => {
           if (!result.ok) {
             throw new Error(t.settings.config.autosaveFailed)

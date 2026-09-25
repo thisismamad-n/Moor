@@ -14,7 +14,7 @@ import {
 import { isMessagingSource } from '@/lib/session-source'
 import type { TileSessionFocusStamp } from '@/lib/session-timer-since'
 import { persistBoolean, persistString, readJson, storedBoolean, storedString, writeJson } from '@/lib/storage'
-import type { SessionInfo, UsageStats } from '@/types/hermes'
+import type { SessionInfo, UsageStats } from '@/types/moor'
 
 import { isSessionRemovalPending } from './session-removal'
 import type { SessionOwnerRoute, SessionOwnerScope } from './session-request-router'
@@ -1601,7 +1601,7 @@ export const setCurrentReasoningEffort = (next: Updater<string>) => {
 
 /** The level the route actually sends for `$currentReasoningEffort`
  *  (`session.info.reasoning_effort_wire`): '' when unknown, equal when verbatim,
- *  weaker when the route clamps a Hermes-internal step such as `ultra`. Never
+ *  weaker when the route clamps a moor-internal step such as `ultra`. Never
  *  persisted — it describes the live route, not a user preference. */
 export const $currentReasoningEffortWire = atom('')
 

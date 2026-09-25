@@ -168,8 +168,8 @@ def is_anonymous_request(provider: Any, api_key: Any) -> bool:
     This is display/recovery metadata, not token verification; the gateway authenticates the JWT.
     Named free accounts and opaque API keys must retain normal provider errors.
     """
-    from hermes_cli.auth_constants import _decode_jwt_claims
-    return provider == "nous" and _decode_jwt_claims(api_key).get("account_tier") == ANON_ACCOUNT_TIER
+    from moor_cli.auth_constants import _decode_jwt_claims
+    return provider == "moor" and _decode_jwt_claims(api_key).get("account_tier") == ANON_ACCOUNT_TIER
 
 
 def is_anonymous_agent(agent: Any) -> bool:
@@ -177,9 +177,9 @@ def is_anonymous_agent(agent: Any) -> bool:
     return is_anonymous_request(getattr(agent, "provider", ""), getattr(agent, "api_key", None))
 
 
-def current_nous_state() -> Optional[Dict[str, Any]]:
-    """The profile's ``providers.nous`` state without locking or network (status/picker reads)."""
-    from hermes_cli.auth import _load_auth_store, _load_provider_state
+def current_moor_state() -> Optional[Dict[str, Any]]:
+    """The profile's ``providers.moor`` state without locking or network (status/picker reads)."""
+    from moor_cli.auth import _load_auth_store, _load_provider_state
     try:
         return _load_provider_state(_load_auth_store(), "moor")
     except Exception as exc:

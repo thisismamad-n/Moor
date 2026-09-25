@@ -665,7 +665,7 @@ describe('attached shared-remote group turns (#96493)', () => {
   })
 
   it('never collapses a pooled LOCAL profile onto the primary when its pool probe fails', async () => {
-    // A local Desktop primary is one `hermes serve --profile <primary>` child;
+    // A local Desktop primary is one `moor serve --profile <primary>` child;
     // pooled profiles get their own child. Sending `session.create` with
     // `profile: sean` to the primary still succeeds (profile_home
     // multiplexing), but the lease then belongs to the primary's pid while
@@ -674,7 +674,7 @@ describe('attached shared-remote group turns (#96493)', () => {
     const primary = makePrimary()
     setPrimaryGateway(primary as never, 'default')
     setPrimaryGatewayConnection({ connectionId: 'local', mode: 'local' })
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+    ;(window as unknown as { moorDesktop: unknown }).moorDesktop = {
       getConnection: vi.fn(async (profile: null | string) => ({ mode: 'local', port: 4242, profile, token: 't' })),
       getConnectionFor: vi.fn(async () => {
         throw new Error('Timed out connecting to profile "sean"')
@@ -753,7 +753,7 @@ describe('session-owner calls for a profile on the shared local host backend (#1
       ...descriptorFor(profile)
     }))
 
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+    ;(window as unknown as { moorDesktop: unknown }).moorDesktop = {
       getConnection: vi.fn(async (profile: null | string) => ({ mode: 'local', port: 4242, profile, token: 't' })),
       getConnectionFor,
       getGatewayWsUrlFor: vi.fn(async ({ connectionId, profile }: { connectionId: string; profile: string }) => ({
@@ -767,7 +767,7 @@ describe('session-owner calls for a profile on the shared local host backend (#1
   }
 
   it('reuses the primary socket when main says the profile rides the host backend (sharedPrimary)', async () => {
-    // Under multiplex-only (#118246) one local `hermes serve` serves every
+    // Under multiplex-only (#118246) one local `moor serve` serves every
     // profile. A registry secondary here is a second WebSocket to the SAME
     // process: the backend joins it to the chat and the renderer processes
     // every event twice (garbled deltas, duplicate interim bubble).

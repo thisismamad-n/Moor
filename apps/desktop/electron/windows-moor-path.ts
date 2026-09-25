@@ -80,7 +80,7 @@ export interface ResolveVenvMoorCommandDeps {
   isCommandScript: (command: string) => boolean
   fileExists: (filePath: string) => boolean
   directoryExists: (filePath: string) => boolean
-  canImportHermesCli: (python: string, opts?: { env?: Record<string, string>; cwd?: string }) => Promise<boolean>
+  canImportMoorCli: (python: string, opts?: { env?: Record<string, string>; cwd?: string }) => Promise<boolean>
   getVenvPython: (venvRoot: string) => string
   buildDesktopBackendEnv: () => Record<string, string>
   resolvePath: (...segments: string[]) => string
@@ -163,7 +163,7 @@ export async function resolveVenvMoorCommand(
 
   // Probe with the same semantics the real spawn uses: venv interpreter,
   // cwd at the checkout root, no PYTHONPATH.
-  if (!(await canImportHermesCli(python, { cwd: directoryExists(root) ? root : undefined }))) {
+  if (!(await canImportMoorCli(python, { cwd: directoryExists(root) ? root : undefined }))) {
     rememberLog?.(
       `Ignoring venv Moor at ${python}: runtime import probe failed (broken/partial venv); falling through to bootstrap.`
     )

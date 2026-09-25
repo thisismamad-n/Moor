@@ -99,7 +99,7 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
         job.get("provider") or str((_cron_cfg or {}).get("model_provider") or "").strip() or None)
     model = job.get("model") or cron_env_setting("MOOR_MODEL") or ""
 
-    from hermes_cli.auth import AuthError, is_rate_limited_auth_error
+    from moor_cli.auth import AuthError, is_rate_limited_auth_error
     try:
         from moor_cli.runtime_provider import resolve_runtime_provider
         kwargs = {"requested": requested, "target_model": model}
@@ -113,8 +113,8 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
             return None
         return (
             f"provider credential missing: {exc} {_credential_store_scope_label()}. "
-            "Set the provider API key in .env (or `hermes setup`) for that home, or pin a "
-            "working provider via `hermes cron edit "
+            "Set the provider API key in .env (or `moor setup`) for that home, or pin a "
+            "working provider via `moor cron edit "
             f"{job.get('id')} --provider <p>`."
         )
     except Exception:
@@ -123,16 +123,16 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
 
 
 def _credential_store_scope_label() -> str:
-    """``[profile '<name>', HERMES_HOME <path>]`` for the home this preflight read credentials from.
+    """``[profile '<name>', MOOR_HOME <path>]`` for the home this preflight read credentials from.
 
     The verdict must name the store it judged: a scheduler process whose home differs from the
-    shell where "the same credential works" (Docker HOME vs HERMES_HOME, a multiplexed satellite
+    shell where "the same credential works" (Docker HOME vs MOOR_HOME, a multiplexed satellite
     profile, a gateway launched without the shell's env) otherwise reports a bare "No credentials
     stored" that cannot be told apart from a real login gap (#116213).
     """
-    from hermes_cli.profiles import get_active_profile_name
-    from hermes_constants import get_hermes_home
-    return f"[profile '{get_active_profile_name() or 'default'}', HERMES_HOME {get_hermes_home()}]"
+    from moor_cli.profiles import get_active_profile_name
+    from moor_constants import get_moor_home
+    return f"[profile '{get_active_profile_name() or 'default'}', MOOR_HOME {get_moor_home()}]"
 
 
 def _primary_profile_routes_for_current_home() -> list:

@@ -25,7 +25,7 @@ def main():
                          "[console_scripts]\nbrowser-use = browser_use_probe.cli:main\n")
     monkeypatch.setattr(bu, "_CLI_REQUIREMENTS", (f"browser-use-probe @ {wheel.as_uri()}",))
     monkeypatch.setattr(bu, "_find_cli", bu._find_cli_unpatched)
-    monkeypatch.setattr("hermes_cli.config.read_raw_config", lambda: {"browser": {"backend": "browser-use"}})
+    monkeypatch.setattr("moor_cli.config.read_raw_config", lambda: {"browser": {"backend": "browser-use"}})
     monkeypatch.setattr("tools.browser_tool_cdp._get_cdp_override", lambda: "")
     monkeypatch.setattr("tools.browser_tool_cdp._resolve_cdp_override", lambda url: url)
     monkeypatch.setattr("tools.browser_tool_cloud._get_cloud_provider", lambda: None)
@@ -44,7 +44,7 @@ def main():
     (ambient / "browser-use").chmod(0o755)
     monkeypatch.setenv("PATH", str(ambient) + os.pathsep + os.environ["PATH"])
     assert bu._find_cli() is None
-    assert "hermes tools" in json.loads(bu.browser_exec("print(1)"))["error"]
+    assert "moor tools" in json.loads(bu.browser_exec("print(1)"))["error"]
     ok, message = bu.install_cli(timeout_s=120)
     assert ok, message
     binary = pm.python_tool("browser-use", "browser-use")
@@ -64,7 +64,7 @@ def main():
     # Windows console-script launchers report sys.argv[0] without the .exe suffix.
     assert Path(child["argv"][0]).with_suffix("") == binary.with_suffix("")
     assert child["stdin"] == "print('payload')"
-    for key in ("PYTHONPATH", "PYTHONHOME", "OPENAI_API_KEY", "_HERMES_BU_PRIVATE_BROWSER"):
+    for key in ("PYTHONPATH", "PYTHONHOME", "OPENAI_API_KEY", "_MOOR_BU_PRIVATE_BROWSER"):
         assert key not in child["env"]
     assert child["env"]["BU_NAME"] == "research"
     assert child["env"]["BU_CDP_WS"] == "ws://127.0.0.1:47000/private"

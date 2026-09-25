@@ -1,4 +1,4 @@
-import { Box, Text, useInput } from '@hermes/ink'
+import { Box, Text, useInput } from '@moor/ink'
 import type {
   ConnectionOperationTarget,
   ConnectionRespondParams,
@@ -7,7 +7,7 @@ import type {
   ConnectionTargetEnvField,
   ConnectionTargetState,
   ConnectorsConnectResult
-} from '@hermes/shared/gateway-events'
+} from '@moor/shared/gateway-events'
 import { useStore } from '@nanostores/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -427,7 +427,7 @@ export function ConnectionSetupOverlay({ cols, t }: ConnectionSetupOverlayProps)
           owner: { session_id: sid, type: 'session' },
           result
         }),
-      'That answer did not reach Hermes. Try again.'
+      'That answer did not reach Moor. Try again.'
     )
   }
 
@@ -474,7 +474,7 @@ export function ConnectionSetupOverlay({ cols, t }: ConnectionSetupOverlayProps)
           owner: { session_id: sid, type: 'session' },
           reconnect: true
         }),
-      'Hermes could not start that again. Try again.'
+      'Moor could not start that again. Try again.'
     )
   }
 

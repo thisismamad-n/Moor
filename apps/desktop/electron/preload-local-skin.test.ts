@@ -13,7 +13,7 @@ const electron = vi.hoisted(() => ({
     invoke: vi.fn(async () => ({ ok: true })),
     on: vi.fn(),
     removeListener: vi.fn(),
-    sendSync: vi.fn((channel: string) => (channel === 'hermes:skin:local' ? skin : {}))
+    sendSync: vi.fn((channel: string) => (channel === 'moor:skin:local' ? skin : {}))
   },
   webFrame: {},
   webUtils: {}
@@ -26,5 +26,5 @@ test('the preload carries the local skin across before the renderer starts', asy
   const [, bridge] = electron.contextBridge.exposeInMainWorld.mock.calls[0]
 
   assert.deepEqual(bridge.localSkin, skin)
-  assert.equal(electron.ipcRenderer.sendSync.mock.calls.some(([channel]) => channel === 'hermes:skin:local'), true)
+  assert.equal(electron.ipcRenderer.sendSync.mock.calls.some(([channel]) => channel === 'moor:skin:local'), true)
 })

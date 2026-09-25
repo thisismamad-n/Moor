@@ -188,6 +188,6 @@ export function registerPetOverlayIpc({
       payload = { ...payload, bounds: placePetOverlay(payload.bounds, mainWindow) ?? payload.bounds }
     }
 
-    mainWindow.webContents.send('hermes:pet-overlay:control', payload)
+    mainWindow.webContents.send('moor:pet-overlay:control', payload)
   })
 }

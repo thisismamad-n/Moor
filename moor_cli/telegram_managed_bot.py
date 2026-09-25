@@ -78,9 +78,9 @@ def render_qr_terminal(url: str) -> str:
 def print_qr_code(url: str, *, include_link: bool = True) -> None:
     """Print a QR code to stdout, with URL fallback if qrcode is missing."""
     print(render_qr_terminal(url) or (
-        "  (QR code unavailable. From the Hermes environment, run: "
+        "  (QR code unavailable. From the Moor environment, run: "
         f"{install_hint('messaging')}. "
-        "Then restart Hermes.)"))
+        "Then restart Moor.)"))
     if include_link:
         print(f"  Link: {url}")
 

@@ -17,14 +17,14 @@ def test_provider_overlay_dual_env_vars():
 
 
 def test_alias_groups_moor_mappings():
-    """Verify alias groups normalize legacy nous provider slugs to moor."""
+    """Verify alias groups normalize legacy moor provider slugs to moor."""
     assert "moor" in _ALIAS_GROUPS
     aliases = _ALIAS_GROUPS["moor"]
-    assert "nous" in aliases
+    assert "moor" in aliases
     assert "nousresearch" in aliases
     assert "moor-portal" in aliases
 
-    assert ALIASES.get("nous") == "moor"
+    assert ALIASES.get("moor") == "moor"
     assert ALIASES.get("nousresearch") == "moor"
     assert ALIASES.get("moor-portal") == "moor"
 
@@ -37,7 +37,7 @@ def test_model_provider_plugin_moor_profile():
     assert provider.display_name == "Moor Cloud"
     assert "MOOR_API_KEY" in provider.env_vars
     assert "NOUS_API_KEY" in provider.env_vars
-    assert "nous" in provider.aliases
+    assert "moor" in provider.aliases
 
 
 def test_official_repo_canonical_target():

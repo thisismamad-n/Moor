@@ -20,7 +20,7 @@ def moor_env(tmp_path, monkeypatch):
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
     (home / "scripts" / "watch.sh").write_text("#!/usr/bin/env bash\necho alert\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     import importlib
     import moor_constants
@@ -121,7 +121,7 @@ def test_replace_flag_allows_wholesale_rewrite(moor_env):
 
 
 
-def test_sibling_write_inside_section_is_merged(hermes_env):
+def test_sibling_write_inside_section_is_merged(moor_env):
     """A write that lands on disk after the section's load changes the stamp,
     so the save must re-merge instead of trusting its stale snapshot."""
     import cron.jobs as jobs

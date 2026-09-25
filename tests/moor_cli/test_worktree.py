@@ -8,7 +8,7 @@ import os
 import subprocess
 import pytest
 
-from hermes_cli import worktree_ops
+from moor_cli import worktree_ops
 
 
 @pytest.fixture
@@ -174,7 +174,7 @@ class TestWorktreeLockPredicate:
         return p
 
     def test_unlocked_returns_none(self, git_repo):
-        p = git_repo / ".worktrees" / "hermes-x"
+        p = git_repo / ".worktrees" / "moor-x"
         (git_repo / ".worktrees").mkdir(exist_ok=True)
         subprocess.run(
             ["git", "worktree", "add", str(p), "-b", "moor/moor-x", "HEAD"],
@@ -184,7 +184,7 @@ class TestWorktreeLockPredicate:
 
 
     def test_foreign_lock_reason_returns_dead(self, git_repo):
-        p = self._mk_locked(git_repo, "hermes-foreign", "some other tool")
+        p = self._mk_locked(git_repo, "moor-foreign", "some other tool")
         assert worktree_ops._worktree_lock_is_live(str(git_repo), str(p)) == "dead"
 
     def test_bad_repo_root_fails_safe_to_live(self, tmp_path):
@@ -327,7 +327,7 @@ class TestMergeVerdictCache:
 
     def test_cache_hit_matches_uncached_verdict(self, git_repo):
         """A cached verdict must equal what the real git call returns."""
-        wt, sha = self._mk(git_repo, "hermes-cachehit", commit=True)
+        wt, sha = self._mk(git_repo, "moor-cachehit", commit=True)
         self._merge_upstream(git_repo, sha)
 
         uncached = worktree_ops._worktree_commits_all_merged_upstream(str(wt))
@@ -345,7 +345,7 @@ class TestMergeVerdictCache:
         This is the guard against the cache turning a 'merged, reapable' verdict
         into a stale approval to delete a tree that has since gained real work.
         """
-        wt, sha = self._mk(git_repo, "hermes-moves", commit=True)
+        wt, sha = self._mk(git_repo, "moor-moves", commit=True)
         self._merge_upstream(git_repo, sha)
 
         cache = {}
@@ -363,7 +363,7 @@ class TestMergeVerdictCache:
 
     def test_cache_is_bounded(self, monkeypatch, tmp_path):
         """The cache file must not grow without limit across sessions."""
-        from hermes_cli import worktree_ops
+        from moor_cli import worktree_ops
         path = tmp_path / "verdicts.json"
         monkeypatch.setattr(worktree_ops, "_worktree_merge_cache_path", lambda: path)
         monkeypatch.setattr(worktree_ops, "_WORKTREE_MERGE_CACHE_MAX", 10)
@@ -700,7 +700,7 @@ class TestPrMergedEscapeHatch:
     def test_merged_verdict_memoized_by_branch_and_head(
         self, git_repo, tmp_path, monkeypatch
     ):
-        wt = self._mk_diverged(git_repo, "hermes-memo")
+        wt = self._mk_diverged(git_repo, "moor-memo")
         self._stub_gh(tmp_path, monkeypatch)
         cache: dict = {}
         assert worktree_ops._worktree_branch_pr_merged(str(wt), cache=cache) is True
@@ -711,7 +711,7 @@ class TestPrMergedEscapeHatch:
         assert worktree_ops._worktree_branch_pr_merged(str(wt), cache=cache) is True
 
     def test_negative_verdict_not_cached(self, git_repo, tmp_path, monkeypatch):
-        wt = self._mk_diverged(git_repo, "hermes-nocache-neg")
+        wt = self._mk_diverged(git_repo, "moor-nocache-neg")
         self._stub_gh(tmp_path, monkeypatch, stdout="[]")
         cache: dict = {}
         assert worktree_ops._worktree_branch_pr_merged(str(wt), cache=cache) is False

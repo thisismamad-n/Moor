@@ -50,18 +50,18 @@ Bash:
 
 ```bash
 source ./activate
-hermes --version
+moor --version
 ```
 
 PowerShell:
 
 ```powershell
 . .\activate.ps1
-hermes --version
+moor --version
 ```
 
-Run `hermes` for this checkout. Activation defines it as a function for this
-worktree, so it hides a global `hermes` alias and refuses outside the worktree.
+Run `moor` for this checkout. Activation defines it as a function for this
+worktree, so it hides a global `moor` alias and refuses outside the worktree.
 PM activation syncs tools and Python dependencies before adding them to the shell. It does
 not install JS workspaces or rewrite launchers and shell configuration. `deactivate` restores the prior shell environment and removes the function.
 
@@ -69,7 +69,7 @@ not install JS workspaces or rewrite launchers and shell configuration. `deactiv
 
 Use the [PM developer workflow](../reference/package-management.md#developer-workflow) to prepare Python 3.14 first.
 Run these commands from that checkout with its prepared Python. Keep the same
-development `HERMES_HOME`. PM must be able to start before it can build another
+development `MOOR_HOME`. PM must be able to start before it can build another
 environment. On Windows, initialize the native C++ build environment for your
 architecture before building source dependencies.
 
@@ -90,18 +90,18 @@ that disposable environment first. PM does not delete an existing destination.
 Do not run raw pip or uv commands to change a PM-built environment.
 
 To keep the test environment outside the checkout, replace `.venv` with a fresh absolute
-path. Set `HERMES_PYTHON` to that environment's interpreter:
+path. Set `MOOR_PYTHON` to that environment's interpreter:
 
-- POSIX: `export HERMES_PYTHON="/absolute/path/to/hermes-dev/bin/python"`
-- PowerShell: `$env:HERMES_PYTHON = 'C:\absolute\path\to\hermes-dev\Scripts\python.exe'`
+- POSIX: `export MOOR_PYTHON="/absolute/path/to/moor-dev/bin/python"`
+- PowerShell: `$env:MOOR_PYTHON = 'C:\absolute\path\to\moor-dev\Scripts\python.exe'`
 
 The canonical runner discovers repository `.venv` automatically. It clears
 `PYTHONPATH`, so pytest must be installed in the interpreter's own environment.
 This test environment does not replace PM's application selection or tool
 store. Do not point a bundled app at it or install into an MSIX payload.
 
-For an isolated development instance, select a disposable `HERMES_HOME` before
-starting the source command. Use `hermes setup` to configure it rather
+For an isolated development instance, select a disposable `MOOR_HOME` before
+starting the source command. Use `moor setup` to configure it rather
 than copying production credentials into the checkout.
 
 ### JavaScript workspaces and website
@@ -117,9 +117,9 @@ npm run build:fast --prefix website
 Use a Node/npm version accepted by the corresponding `package.json` engines.
 Native desktop dependencies can also require the platform build toolchain.
 
-Logos and icons are generated from `assets/nous-girl-*.svg` and
+Logos and icons are generated from `assets/moor-girl-*.svg` and
 `assets/backgrounds/`. `node scripts/generate-icons.mjs` renders them with the
-Hermes runtime Python (`HERMES_PYTHON`, else `python` on PATH): Pillow and
+Moor runtime Python (`MOOR_PYTHON`, else `python` on PATH): Pillow and
 resvg-py are core dependencies. Do not commit generated PNG/ICO/ICNS outputs.
 
 ### Run tests
@@ -132,13 +132,13 @@ scripts/run_tests.sh tests/agent/ -v
 ```
 
 On Windows, run the script through Bash. When no local `.venv` or `venv`
-contains pytest, the runner accepts the explicit `HERMES_PYTHON` above. It
-clears credentials, isolates `HERMES_HOME`, and runs each test file in a separate
+contains pytest, the runner accepts the explicit `MOOR_PYTHON` above. It
+clears credentials, isolates `MOOR_HOME`, and runs each test file in a separate
 subprocess through `scripts/run_tests_parallel.py`. It does not use xdist.
-When `tests/conftest.py` redirects a production `HERMES_HOME` to a temporary
-session home, it sets the internal `HERMES_TEST_SANDBOX_HOME` marker. This lets
+When `tests/conftest.py` redirects a production `MOOR_HOME` to a temporary
+session home, it sets the internal `MOOR_TEST_SANDBOX_HOME` marker. This lets
 re-imported test fixtures recognize their own sandbox instead of flagging it as
-real-home I/O. Do not set this marker yourself; set `HERMES_HOME` for a
+real-home I/O. Do not set this marker yourself; set `MOOR_HOME` for a
 disposable development home and let the test runner isolate it.
 
 Run the relevant JS workspace checks for JS changes. Native install/update
@@ -151,7 +151,7 @@ See [Package management](../reference/package-management.md) for PM commands and
 - **Comments**: Only when explaining non-obvious intent, trade-offs, or API quirks
 - **Error handling**: Catch specific exceptions. Use `logger.warning()`/`logger.error()` with `exc_info=True` for unexpected errors
 - **Cross-platform**: Never assume Unix (see below)
-- **Profile-safe paths**: Never hardcode `~/.moor` — use `get_moor_home()` from `moor_constants` for code paths and `display_moor_home()` for user-facing messages. See [AGENTS.md](https://github.com/NousResearch/hermes-agent/blob/main/AGENTS.md#profiles-multi-instance-support) for full rules.
+- **Profile-safe paths**: Never hardcode `~/.moor` — use `get_moor_home()` from `moor_constants` for code paths and `display_moor_home()` for user-facing messages. See [AGENTS.md](https://github.com/thisismamad-n/Moor/blob/main/AGENTS.md#profiles-multi-instance-support) for full rules.
 
 ## Cross-Platform Compatibility
 
@@ -294,7 +294,7 @@ When you ask Moor to review a PR in a repository that has `.agents/checks/`, tel
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
+- Use [GitHub Issues](https://github.com/thisismamad-n/Moor/issues)
 - Include: OS, Python version, Moor version (`moor --version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates
@@ -308,4 +308,4 @@ When you ask Moor to review a PR in a repository that has `.agents/checks/`, tel
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](https://github.com/NousResearch/hermes-agent/blob/main/LICENSE).
+By contributing, you agree that your contributions will be licensed under the [MIT License](https://github.com/thisismamad-n/Moor/blob/main/LICENSE).

@@ -578,24 +578,24 @@ class TestFollowProfileConfigRuntimeOverrides:
         launch, secondary = tmp_path / "a", tmp_path / "b"
         for home, model in ((launch, "launch/model"), (secondary, "profile/default")):
             home.mkdir()
-            (home / "config.yaml").write_text(f"model:\n  default: {model}\n  provider: nous\n")
+            (home / "config.yaml").write_text(f"model:\n  default: {model}\n  provider: moor\n")
             (home / ".env").write_text("")
         stored = "20260919-000000-botc"
         db = SessionDB(db_path=secondary / "state.db")
         db.create_session(stored, "desktop", model="profile/default",
-                          model_config={"model": "profile/default", "provider": "nous", "follow_profile_config": True})
+                          model_config={"model": "profile/default", "provider": "moor", "follow_profile_config": True})
         db.append_message(stored, "user", "hi")
         db.append_message(stored, "assistant", "hello")
 
         class _FakeAgent:
-            model, provider, base_url, api_key, api_mode = "profile/default", "nous", "", "", ""
+            model, provider, base_url, api_key, api_mode = "profile/default", "moor", "", "", ""
             _session_db = db
 
             def switch_model(self, **kw):
                 self.model, self.provider = kw["new_model"], kw["new_provider"]
 
-        monkeypatch.setenv("HERMES_HOME", str(launch))
-        monkeypatch.setattr(server, "_hermes_home", str(launch))
+        monkeypatch.setenv("MOOR_HOME", str(launch))
+        monkeypatch.setattr(server, "_moor_home", str(launch))
         monkeypatch.setattr(server, "_profile_home", lambda p: secondary if p == "b" else None)
         monkeypatch.setattr(server, "_get_db", lambda: SessionDB(db_path=launch / "state.db"))
         monkeypatch.setattr(server, "_enable_gateway_prompts", lambda: None)
@@ -612,15 +612,15 @@ class TestFollowProfileConfigRuntimeOverrides:
         known = set(server._sessions)
         try:
             with (
-                patch("hermes_cli.model_switch.parse_model_flags", return_value=("glm-5.1", None, False, False, None)),
-                patch("hermes_cli.model_switch.resolve_persist_behavior", return_value=False),
-                patch("hermes_cli.model_switch.switch_model", return_value=result),
+                patch("moor_cli.model_switch.parse_model_flags", return_value=("glm-5.1", None, False, False, None)),
+                patch("moor_cli.model_switch.resolve_persist_behavior", return_value=False),
+                patch("moor_cli.model_switch.switch_model", return_value=result),
                 server._profile_build_scope(secondary),
             ):
                 server._apply_model_switch("sid-live", live, "glm-5.1")
 
             row = json.loads(db.get_session(stored)["model_config"])
-            assert row["composer_override_profile"] == {"model": "profile/default", "provider": "nous"}
+            assert row["composer_override_profile"] == {"model": "profile/default", "provider": "moor"}
             assert row["model"] == "zai/glm-5.1"
 
             def resume():
@@ -634,9 +634,9 @@ class TestFollowProfileConfigRuntimeOverrides:
 
             record = resume()
             assert record["model_override"]["model"] == "zai/glm-5.1"
-            assert record["composer_override_profile"] == {"model": "profile/default", "provider": "nous"}
+            assert record["composer_override_profile"] == {"model": "profile/default", "provider": "moor"}
 
-            (secondary / "config.yaml").write_text("model:\n  default: profile/new-default\n  provider: nous\n")
+            (secondary / "config.yaml").write_text("model:\n  default: profile/new-default\n  provider: moor\n")
             assert resume().get("model_override") is None
         finally:
             db.close()
@@ -648,26 +648,26 @@ class TestFollowProfileConfigRuntimeOverrides:
         """Changing the Bot profile invalidates both stored and live chat pins."""
         import tui_gateway.server as server
 
-        monkeypatch.setattr(server, "_config_model_target", lambda: ("profile/new-default", "nous"))
+        monkeypatch.setattr(server, "_config_model_target", lambda: ("profile/new-default", "moor"))
         row = {
             "title": "Bot Chat",
             "model": "openai/gpt-5.6-luna-pro",
             "model_config": json.dumps(
                 {
                     "model": "openai/gpt-5.6-luna-pro",
-                    "provider": "nous",
+                    "provider": "moor",
                     "follow_profile_config": True,
-                    "composer_override_profile": {"model": "profile/old-default", "provider": "nous"},
+                    "composer_override_profile": {"model": "profile/old-default", "provider": "moor"},
                 }
             ),
         }
         assert server._stored_session_runtime_overrides(row) == {}
 
         session = {
-            "agent": types.SimpleNamespace(model="openai/gpt-5.6-luna-pro", provider="nous"),
-            "model_override": {"model": "openai/gpt-5.6-luna-pro", "provider": "nous"},
-            "composer_override_profile": {"model": "profile/old-default", "provider": "nous"},
-            "config_model_seen": ("profile/old-default", "nous"),
+            "agent": types.SimpleNamespace(model="openai/gpt-5.6-luna-pro", provider="moor"),
+            "model_override": {"model": "openai/gpt-5.6-luna-pro", "provider": "moor"},
+            "composer_override_profile": {"model": "profile/old-default", "provider": "moor"},
+            "config_model_seen": ("profile/old-default", "moor"),
         }
         apply_switch = MagicMock()
         monkeypatch.setattr(server, "_apply_model_switch", apply_switch)
@@ -677,7 +677,7 @@ class TestFollowProfileConfigRuntimeOverrides:
         assert "model_override" not in session
         assert session["composer_override_profile"] is None
         apply_switch.assert_called_once_with(
-            "sid", session, "profile/new-default --provider nous",
+            "sid", session, "profile/new-default --provider moor",
             confirm_expensive_model=True, pin_session_override=False, persist_override=False,
         )
 
@@ -758,12 +758,12 @@ class TestFollowProfileConfigRuntimeOverrides:
             "session_key": "key-1",
             "model_override": {"model": "glm-5.1", "provider": "ollama-cloud"},
             "follow_profile_config": True,
-            "composer_override_profile": {"model": "profile/default", "provider": "nous"},
+            "composer_override_profile": {"model": "profile/default", "provider": "moor"},
         }
         server._ensure_session_db_row(session)
         assert captured["model_config"].get("follow_profile_config") is True
         # A pick made before the first send rides the same first-write projection as the marker.
-        assert captured["model_config"].get("composer_override_profile") == {"model": "profile/default", "provider": "nous"}
+        assert captured["model_config"].get("composer_override_profile") == {"model": "profile/default", "provider": "moor"}
 
     def test_ensure_db_row_omits_marker_without_contract(self, monkeypatch):
         """Sessions without the contract do NOT get the marker — normal chats

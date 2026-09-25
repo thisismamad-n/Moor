@@ -55,7 +55,7 @@ def test_gateway_room_grant_secret_is_private_persistent_and_not_an_api_key(
 
 @pytest.mark.platforms("posix")
 def test_gateway_room_grant_secret_has_owner_only_mode(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     gateway_room_grant_secret()
     assert stat.S_IMODE((tmp_path / ".room-link-grant-secret").stat().st_mode) == 0o600
 
@@ -284,7 +284,7 @@ def test_room_grant_fails_closed_for_tamper_expiry_and_permission():
 def test_local_catalog_is_honest_for_app_managed_process(monkeypatch):
     from gateway.hosted_room_peer import local_catalog_mapping
 
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
+    monkeypatch.setenv("MOOR_DESKTOP", "1")
     catalog = local_catalog_mapping(target_profile="default", installation_id="install-desktop")
     assert catalog["persistent_process"] is False
     assert catalog["link_modes"] == ["direct"]
@@ -307,7 +307,7 @@ def test_self_advertised_endpoint_is_explicit_and_validated(
     if configured is None:
         monkeypatch.delenv("MOOR_ROOM_LINK_URL", raising=False)
     else:
-        monkeypatch.setenv("HERMES_ROOM_LINK_URL", configured)
+        monkeypatch.setenv("MOOR_ROOM_LINK_URL", configured)
     endpoint = local_catalog_mapping(target_profile="default", installation_id="install-peer")["endpoint"]
     assert endpoint["available"] is available
     if reason is not None:

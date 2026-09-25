@@ -309,8 +309,8 @@ def test_legacy_exporter_env_without_plugins_toml_warns_and_stays_disabled(
             is relay_runtime._RelayPluginConfigurationState.DISABLED
         )
         assert relay.events == []
-        assert "HERMES_NEMO_RELAY_ATOF_ENABLED" in caplog.text
-        assert "HERMES_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S" in caplog.text
+        assert "MOOR_NEMO_RELAY_ATOF_ENABLED" in caplog.text
+        assert "MOOR_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S" in caplog.text
     finally:
         host.shutdown()
 

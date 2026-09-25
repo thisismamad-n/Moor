@@ -4,7 +4,7 @@ import path from 'node:path'
 
 // macOS apps launched from Finder/Dock inherit only /usr/bin:/bin:/usr/sbin:/sbin,
 // which misses Homebrew and user-installed CLI tools (codex, git credential
-// helpers). Hermes' own managed tools need no PATH help — the backend composes
+// helpers). Moor' own managed tools need no PATH help — the backend composes
 // their environment in-process via pm — but user tools on PATH do.
 const POSIX_SANE_PATH_ENTRIES = Object.freeze([
   '/opt/homebrew/bin',
@@ -57,10 +57,10 @@ function appendUniquePathEntries(entries, { delimiter = path.delimiter } = {}) {
   return ordered.join(delimiter)
 }
 
-function resolveHermesHomePath(hermesHome, { pathModule, homedir = os.homedir() }: any) {
+function resolveMoorHomePath(moorHome, { pathModule, homedir = os.homedir() }: any) {
   // fish (and any shell when the value is quoted) hands a literal `~` through; path.resolve()
-  // would pin it under cwd and the Python backend inherits that absolute path via HERMES_HOME.
-  let raw = String(hermesHome)
+  // would pin it under cwd and the Python backend inherits that absolute path via MOOR_HOME.
+  let raw = String(moorHome)
 
   if (raw === '~' || raw.startsWith('~/') || (pathModule === path.win32 && raw.startsWith('~\\'))) {
     raw = pathModule.join(homedir, raw.slice(1))
@@ -73,15 +73,15 @@ function isProfileHome(resolved, pathModule) {
   return pathModule.basename(pathModule.dirname(resolved)).toLowerCase() === 'profiles'
 }
 
-function normalizeHermesHomeRoot(
-  hermesHome,
+function normalizeMoorHomeRoot(
+  moorHome,
   { pathModule = pathModuleForPlatform(process.platform), homedir = os.homedir() }: any = {}
 ) {
-  if (!hermesHome) {
-    return hermesHome
+  if (!moorHome) {
+    return moorHome
   }
 
-  const resolved = resolveHermesHomePath(hermesHome, { pathModule, homedir })
+  const resolved = resolveMoorHomePath(moorHome, { pathModule, homedir })
 
   return isProfileHome(resolved, pathModule) ? pathModule.dirname(pathModule.dirname(resolved)) : resolved
 }
@@ -90,7 +90,7 @@ function normalizeHermesHomeRoot(
 const PROCESS_ENV_NAMES = new Set([
   'APPDATA',
   'COMSPEC',
-  'HERMES_HOME',
+  'MOOR_HOME',
   'HOME',
   'LANG',
   'LC_ALL',
@@ -126,9 +126,9 @@ function readTextOrEmpty(fsModule, file) {
 }
 
 /**
- * Parent env for a local `hermes serve` child of `profile` (#68367).
+ * Parent env for a local `moor serve` child of `profile` (#68367).
  *
- * `hermes desktop` loads its launch profile's `.env`/`.op.env` into os.environ
+ * `moor desktop` loads its launch profile's `.env`/`.op.env` into os.environ
  * before exec'ing Electron, so `process.env` carries that profile's platform
  * credentials. A child for ANOTHER profile would inherit them ahead of its own
  * dotenv (`.op.env` is even skipped once OP_SERVICE_ACCOUNT_TOKEN is set) and,
@@ -139,10 +139,10 @@ function readTextOrEmpty(fsModule, file) {
  * declared pass through everywhere.
  *
  * `profile` null/empty means no `--profile` flag: the child follows the sticky
- * `active_profile` like a bare `hermes serve` (`_apply_profile_override`).
+ * `active_profile` like a bare `moor serve` (`_apply_profile_override`).
  */
 function profileBackendParentEnv({
-  hermesHome,
+  moorHome,
   profile,
   currentEnv = process.env,
   platform = process.platform,
@@ -151,15 +151,15 @@ function profileBackendParentEnv({
 }: any = {}) {
   const env = { ...(currentEnv || {}) }
 
-  if (!hermesHome) {
+  if (!moorHome) {
     return env
   }
 
   const fold = platform === 'win32' ? (value: string) => value.toUpperCase() : (value: string) => value
-  const inheritedHome = currentEnv?.HERMES_HOME ? resolveHermesHomePath(currentEnv.HERMES_HOME, { pathModule }) : null
-  const launchHome = inheritedHome && isProfileHome(inheritedHome, pathModule) ? inheritedHome : hermesHome
-  const name = profile || readTextOrEmpty(fsModule, pathModule.join(hermesHome, 'active_profile')).trim()
-  const targetHome = !name || name === 'default' ? hermesHome : pathModule.join(hermesHome, 'profiles', name)
+  const inheritedHome = currentEnv?.MOOR_HOME ? resolveMoorHomePath(currentEnv.MOOR_HOME, { pathModule }) : null
+  const launchHome = inheritedHome && isProfileHome(inheritedHome, pathModule) ? inheritedHome : moorHome
+  const name = profile || readTextOrEmpty(fsModule, pathModule.join(moorHome, 'active_profile')).trim()
+  const targetHome = !name || name === 'default' ? moorHome : pathModule.join(moorHome, 'profiles', name)
 
   if (fold(pathModule.resolve(launchHome)) === fold(pathModule.resolve(targetHome))) {
     return env
@@ -211,7 +211,7 @@ export {
   appendUniquePathEntries,
   buildDesktopBackendEnv,
   delimiterForPlatform,
-  normalizeHermesHomeRoot,
+  normalizeMoorHomeRoot,
   pathEnvKey,
   POSIX_SANE_PATH_ENTRIES,
   profileBackendParentEnv

@@ -11,8 +11,8 @@ import types
 
 import pytest
 
-from hermes_cli import main as main_mod
-from hermes_cli import mcp_startup
+from moor_cli import main as main_mod
+from moor_cli import mcp_startup
 
 
 @pytest.fixture(autouse=True)

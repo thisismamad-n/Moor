@@ -1,7 +1,7 @@
 """Invariant: a profile's OWN ``sessions:`` config governs its store's auto-archive.
 
 ``_maybe_auto_archive_for_profile`` sweeps an arbitrary profile's store, but the config it
-read came from a zero-arg ``load_config()`` — i.e. the PROCESS HERMES_HOME. On a host serving
+read came from a zero-arg ``load_config()`` — i.e. the PROCESS MOOR_HOME. On a host serving
 several profiles, the launch profile's ``auto_archive`` / ``auto_archive_days`` silently
 decided every other profile's retention.
 
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import web_server_sessions as wss
+from moor_cli import web_server_sessions as wss
 
 
 def _write_config(home: Path, *, auto_archive_days: int) -> None:
@@ -32,7 +32,7 @@ def _write_config(home: Path, *, auto_archive_days: int) -> None:
 @pytest.fixture
 def two_profile_homes(tmp_path, monkeypatch):
     """Launch profile 'a' never archives; served profile 'b' archives immediately."""
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     home_a, home_b = tmp_path / "a", tmp_path / "b"
     _write_config(home_a, auto_archive_days=3650)
@@ -44,7 +44,7 @@ def two_profile_homes(tmp_path, monkeypatch):
     db.close()
 
     # Process home is the LAUNCH profile's.
-    monkeypatch.setenv("HERMES_HOME", str(home_a))
+    monkeypatch.setenv("MOOR_HOME", str(home_a))
     monkeypatch.setattr(
         wss, "_session_db_path_for_profile",
         lambda profile: (home_b if profile == "b" else home_a) / "state.db")
@@ -53,7 +53,7 @@ def two_profile_homes(tmp_path, monkeypatch):
 
 
 def _archived(db_path: Path) -> bool:
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db = SessionDB(db_path=db_path)
     try:

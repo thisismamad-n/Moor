@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { atom } = await import('nanostores')
 
   return { atom, host: { request } }
 })
 
-vi.mock('./shared', () => ({ getPluginCtx: () => null, ID: 'hermes-bots' }))
+vi.mock('./shared', () => ({ getPluginCtx: () => null, ID: 'moor-bots' }))
 
 import { generateAvatarImage, IMAGE_GENERATE_TIMEOUT_MS } from './avatar-image'
 

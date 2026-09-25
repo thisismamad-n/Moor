@@ -535,7 +535,7 @@ export const UserEditComposer: FC<UserEditComposerProps> = ({ cwd, gateway, sess
   }
 
   const handleDrop = (event: ReactDragEvent<HTMLElement>) => {
-    if (!dragHasAttachments(event.dataTransfer, HERMES_PATHS_MIME)) {
+    if (!dragHasAttachments(event.dataTransfer, MOOR_PATHS_MIME)) {
       // A plain text drag within the editor mutates the DOM without a
       // React-visible beforeinput (insertFromDrop), so the undo snapshot has
       // to be banked here — before Chromium applies the move.

@@ -25,7 +25,7 @@ resolved result.
 
 import types
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
 from gateway.config import Platform

@@ -23,7 +23,7 @@ These tests pin that precedence at every layer that makes the decision:
     ``cmd_chat`` and the fast-TUI path.
   * ``_wants_tui_early(argv)``  — the dependency-free early resolver used by
     mouse-residue suppression and the fast paths, before argparse and
-    ``hermes_cli.config`` are importable.
+    ``moor_cli.config`` are importable.
   * the argument parser   — both ``--cli`` and ``--tui`` parse at the top
     level and under the ``chat`` subcommand and are relaunch-inherited.
 """
@@ -125,9 +125,9 @@ class TestWantsTuiEarly:
         assert m._wants_tui_early([]) is False
 
     # REGRESSION (#116902): mouse-residue suppression reads the interface
-    # before `_apply_profile_override()` sets HERMES_HOME, so a cache that
+    # before `_apply_profile_override()` sets MOOR_HOME, so a cache that
     # ignored the home answered every later caller with the DEFAULT home's
-    # interface — `hermes -p <name>` booted the wrong one.
+    # interface — `moor -p <name>` booted the wrong one.
     def test_reread_after_the_profile_rehomes_the_process(self, tmp_path, monkeypatch):
         default_home = tmp_path / "default"
         profile_home = tmp_path / "profiles" / "coder"
@@ -139,12 +139,12 @@ class TestWantsTuiEarly:
 
         # The import-time read, on the home the process starts in.
         _fake_tty(monkeypatch, True)
-        monkeypatch.setenv("HERMES_HOME", str(default_home))
+        monkeypatch.setenv("MOOR_HOME", str(default_home))
         m._suppress_mouse_residue_early()
         assert m._config_default_interface_early() == "cli"
 
         # What `-p coder` does, after that read already happened.
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("MOOR_HOME", str(profile_home))
         assert m._config_default_interface_early() == "tui"
         assert m._wants_tui_early([]) is True
 

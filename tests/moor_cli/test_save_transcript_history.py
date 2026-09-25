@@ -8,7 +8,7 @@ import pytest
 
 
 def _compacted_store(path):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db = SessionDB(db_path=path)
     db.create_session("s1", "telegram")
@@ -28,7 +28,7 @@ def _cli_save(db, fmt, out):
 
     stub = SimpleNamespace(_session_db=db, session_id="s1", conversation_history=[], model="m",
                            session_start=datetime(2026, 1, 1))
-    cli.HermesCLI.save_conversation(stub, f"/save {fmt} {out}")
+    cli.MoorCLI.save_conversation(stub, f"/save {fmt} {out}")
     return out.read_text(encoding="utf-8")
 
 
@@ -37,7 +37,7 @@ def _gateway_save(db, fmt, out):
     from gateway.platforms.event import MessageEvent
     from gateway.run import GatewayRunner
     from gateway.session import SessionEntry, SessionSource, build_session_key
-    from hermes_state import AsyncSessionDB
+    from moor_state import AsyncSessionDB
 
     source = SessionSource(platform=Platform.TELEGRAM, user_id="u1", chat_id="c1", user_name="t", chat_type="dm")
     runner = object.__new__(GatewayRunner)
@@ -58,7 +58,7 @@ def _gateway_save(db, fmt, out):
 
 @pytest.mark.parametrize("save", [_cli_save, _gateway_save], ids=["cli", "gateway"])
 def test_save_transcript_holds_display_history(tmp_path, monkeypatch, save):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     db = _compacted_store(tmp_path / "state.db")
     try:
         text = save(db, "md", tmp_path / "saved.md")

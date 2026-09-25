@@ -60,16 +60,16 @@ _PROVIDER_FAILURE_ACTION: dict[str, str] = {
     ),
     "auth": (
         "Sign in again with /login (or `{relogin}` in a terminal), or pin a "
-        "working provider with `hermes cron edit {job_id} --provider <name>`, then "
-        "`hermes cron run {job_id}` to retry."
+        "working provider with `moor cron edit {job_id} --provider <name>`, then "
+        "`moor cron run {job_id}` to retry."
     ),
-    "model_not_found": "Pick another model with `hermes cron edit {job_id} --model <name>`.",
+    "model_not_found": "Pick another model with `moor cron edit {job_id} --model <name>`.",
     "upstream_blocked": (
         "A firewall in front of the provider blocked the request (not your key): set a User-Agent "
         "via `extra_headers` on the provider's custom_providers entry, or pin another provider with "
-        "`hermes cron edit {job_id} --provider <name>`."
+        "`moor cron edit {job_id} --provider <name>`."
     ),
-    "context_overflow": "Shorten the job's prompt with `hermes cron edit {job_id} --prompt <text>`.",
+    "context_overflow": "Shorten the job's prompt with `moor cron edit {job_id} --prompt <text>`.",
 }
 _PROVIDER_FAILURE_ACTION["auth_permanent"] = _PROVIDER_FAILURE_ACTION["auth"]
 _PROVIDER_FAILURE_ACTION["billing_unverified"] = _PROVIDER_FAILURE_ACTION["billing"]
@@ -80,9 +80,9 @@ _PROVIDER_FAILURE_ACTION["content_policy_blocked"] = (
 )
 _PROVIDER_FAILURE_ACTION["provider_policy_blocked"] = (
     "Retrying won't help: check the account's status and data/privacy settings with the provider, "
-    "or pin another model with `hermes cron edit {job_id} --model <name>`."
+    "or pin another model with `moor cron edit {job_id} --model <name>`."
 )
-_DEFAULT_FAILURE_ACTION = "Run it again with `hermes cron run {job_id}`, or edit it with `hermes cron edit {job_id}`."
+_DEFAULT_FAILURE_ACTION = "Run it again with `moor cron run {job_id}`, or edit it with `moor cron edit {job_id}`."
 
 
 def provider_failure_notice(
@@ -142,7 +142,7 @@ def blocked_config_notice(job_name: str, reason: str) -> str:
     if reason and reason[-1] not in ".!?":
         reason += "."
     return (
-        f"⛔ Cron '{job_name}' did not run: {reason} Nothing was charged. Hermes will try again at "
+        f"⛔ Cron '{job_name}' did not run: {reason} Nothing was charged. Moor will try again at "
         "the next scheduled time and will not repeat this alert; check with "
-        "`hermes cron doctor`."
+        "`moor cron doctor`."
     )

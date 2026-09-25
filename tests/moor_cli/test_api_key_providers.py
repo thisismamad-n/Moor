@@ -97,10 +97,10 @@ class TestResolveProvider:
 
     def test_alias_chatgpt_every_alias_table(self):
         """Issue #95794: the runtime (providers.py), the /model parser (models_catalog_static via
-        parse_model_input) and ``hermes auth login`` all resolve the ChatGPT alias, not just auth."""
-        from hermes_cli.providers import normalize_provider
-        from hermes_cli.models import parse_model_input
-        from hermes_cli.auth_commands import _normalize_provider
+        parse_model_input) and ``moor auth login`` all resolve the ChatGPT alias, not just auth."""
+        from moor_cli.providers import normalize_provider
+        from moor_cli.models import parse_model_input
+        from moor_cli.auth_commands import _normalize_provider
 
         assert normalize_provider("chatgpt") == "openai-codex"
         assert normalize_provider("chatgpt-codex") == "openai-codex"
@@ -190,8 +190,8 @@ class TestResolveApiKeyProviderCredentials:
 
 
     def test_try_gh_cli_token_uses_homebrew_path_when_not_on_path(self, monkeypatch, tmp_path):
-        from hermes_cli.copilot_auth import _invalidate_gh_cli_token_cache
-        from hermes_platform.resolver import known_dirs
+        from moor_cli.copilot_auth import _invalidate_gh_cli_token_cache
+        from moor_platform.resolver import known_dirs
 
         _invalidate_gh_cli_token_cache()
         brew = tmp_path / "homebrew" / "bin"
@@ -314,13 +314,13 @@ class TestHasAnyProviderConfigured:
 
 
     def test_claude_code_creds_ignored_on_fresh_install(self, monkeypatch, tmp_path):
-        """Claude Code credentials should NOT skip the wizard when Hermes is unconfigured."""
-        from hermes_cli import config as config_module
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
-        monkeypatch.setattr("hermes_cli.copilot_auth.resolve_copilot_token", lambda: ("", ""))
+        """Claude Code credentials should NOT skip the wizard when Moor is unconfigured."""
+        from moor_cli import config as config_module
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        monkeypatch.setattr(config_module, "get_env_path", lambda: moor_home / ".env")
+        monkeypatch.setattr(config_module, "get_moor_home", lambda: moor_home)
+        monkeypatch.setattr("moor_cli.copilot_auth.resolve_copilot_token", lambda: ("", ""))
         # Clear all provider env vars so earlier checks don't short-circuit
         _all_vars = {"OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                       "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"}
@@ -345,11 +345,11 @@ class TestHasAnyProviderConfigured:
 
     def test_config_provider_counts(self, monkeypatch, tmp_path):
         """config.yaml with model.provider set should count as configured."""
-        import hermes_yaml as yaml
-        from hermes_cli import config as config_module
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_file = hermes_home / "config.yaml"
+        import moor_yaml as yaml
+        from moor_cli import config as config_module
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        config_file = moor_home / "config.yaml"
         config_file.write_text(yaml.safe_dump({
             "model": {"default": "anthropic/claude-opus-4.6", "provider": "openrouter"},
         }))
@@ -393,9 +393,9 @@ class TestHasAnyProviderConfigured:
         loop in ``except Exception``, so we also record every call — any
         recorded call proves the sweep ran even if the raise was swallowed.
         """
-        import hermes_yaml as yaml
-        hermes_home = self._setup_home(monkeypatch, tmp_path)
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump({
+        import moor_yaml as yaml
+        moor_home = self._setup_home(monkeypatch, tmp_path)
+        (moor_home / "config.yaml").write_text(yaml.safe_dump({
             "model": {"default": "anthropic/claude-opus-4.6", "provider": "openrouter"},
         }))
         sweep_calls = []
@@ -414,9 +414,9 @@ class TestHasAnyProviderConfigured:
     def test_config_base_url_api_key_skips_registry_sweep(self, monkeypatch, tmp_path):
         """Custom endpoint (base_url/api_key in config, no provider) must also
         short-circuit before the registry sweep."""
-        import hermes_yaml as yaml
-        hermes_home = self._setup_home(monkeypatch, tmp_path)
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump({
+        import moor_yaml as yaml
+        moor_home = self._setup_home(monkeypatch, tmp_path)
+        (moor_home / "config.yaml").write_text(yaml.safe_dump({
             "model": {
                 "default": "local/custom-model",
                 "base_url": "http://localhost:8000/v1",
@@ -541,11 +541,11 @@ class TestZaiEndpointAutoDetect:
     def test_failed_probe_is_not_repeated_within_ttl(self, monkeypatch):
         """A key whose detection fails (429 on every endpoint) is probed once, not on every
         credential resolution — the picker resolves Z.AI dozens of times per open (#114215)."""
-        from hermes_cli import auth_zai_kimi
+        from moor_cli import auth_zai_kimi
         monkeypatch.setenv("GLM_API_KEY", "glm-key-that-429s")
         monkeypatch.setattr(auth_zai_kimi, "_zai_probe_failed_until", {})
         calls = []
-        monkeypatch.setattr("hermes_cli.auth.detect_zai_endpoint", lambda *a, **kw: calls.append(1))
+        monkeypatch.setattr("moor_cli.auth.detect_zai_endpoint", lambda *a, **kw: calls.append(1))
         for _ in range(3):
             assert resolve_api_key_provider_credentials("zai")["base_url"] == "https://api.z.ai/api/paas/v4"
         assert len(calls) == 1
@@ -785,7 +785,7 @@ def _deepinfra_cache_isolation(monkeypatch):
     reset too, so a test that simulates an unreachable catalog can't suppress
     a later test's fetch within the failure TTL.
     """
-    import hermes_cli.models as _models_mod
+    import moor_cli.models as _models_mod
     monkeypatch.setattr(_models_mod, "_deepinfra_catalog_cache", {})
     monkeypatch.setattr(_models_mod, "_deepinfra_catalog_neg_cache", {})
     yield
@@ -811,7 +811,7 @@ class TestFetchDeepInfraModels:
                     {"id": "stabilityai/stable-diffusion-xl-base-1.0", "metadata": {}},
                 ]}).encode()
 
-        import hermes_cli.models as models
+        import moor_cli.models as models
         monkeypatch.setattr(
             models, "_urlopen_model_catalog_request", lambda *a, **kw: _Resp()
         )
@@ -827,7 +827,7 @@ class TestFetchDeepInfraModels:
 
 
     def test_catalog_uses_credential_safe_opener(self, monkeypatch):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         seen = {}
 
@@ -896,8 +896,8 @@ class TestDeepInfraTagFiltering:
             # null metadata — stub model, must be skipped
             {"id": "stub-model", "metadata": None},
         ]}
-        from hermes_cli.models import _fetch_deepinfra_models_by_tag
-        import hermes_cli.models as _m
+        from moor_cli.models import _fetch_deepinfra_models_by_tag
+        import moor_cli.models as _m
 
         for surface in ("chat", "image-gen", "tts", "stt", "embed"):
             monkeypatch.setattr(
@@ -949,7 +949,7 @@ class TestDeepInfraPricingFetcher:
             # non-chat — must not appear
             {"id": "vendor/model-image", "metadata": {"tags": ["image-gen"], "pricing": {"per_image_unit": 0.05}}},
         ]}
-        import hermes_cli.models as models
+        import moor_cli.models as models
         monkeypatch.setattr(
             models,
             "_urlopen_model_catalog_request",
@@ -973,9 +973,9 @@ class TestDeepInfraProviderProfile:
     def test_profile_registered_with_alias_and_aux(self):
         from providers import get_provider_profile
         from agent.auxiliary_client import _get_aux_model_for_provider
-        from hermes_cli.auth import resolve_provider
-        from hermes_cli.config import OPTIONAL_ENV_VARS
-        from hermes_cli.models import CANONICAL_PROVIDERS
+        from moor_cli.auth import resolve_provider
+        from moor_cli.config import OPTIONAL_ENV_VARS
+        from moor_cli.models import CANONICAL_PROVIDERS
 
         profile = get_provider_profile("deepinfra")
         assert profile is not None

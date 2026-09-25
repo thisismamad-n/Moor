@@ -7,7 +7,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 import moor_cli.commands_completion as commands_mod
 
@@ -34,7 +34,7 @@ class TestPersonalityCompletionsMemo:
             return {c.text for c in commands_mod.SlashCommandCompleter._personality_completions("zz", "zz")}
 
         with patch("cli.load_cli_config", load_cli_config_from_disk), \
-             patch("hermes_cli.config.get_config_path", lambda: cfg_path):
+             patch("moor_cli.config.get_config_path", lambda: cfg_path):
             assert "zzfirst" in names()
 
             cfg_path.write_text("agent:\n  personalities:\n    zzsecond: v2\n", encoding="utf-8")

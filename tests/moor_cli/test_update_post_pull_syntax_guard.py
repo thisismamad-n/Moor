@@ -14,8 +14,8 @@ command afterward.
 
 from __future__ import annotations
 
-from hermes_cli import update_cmd
-from hermes_cli import main
+from moor_cli import update_cmd
+from moor_cli import main
 import pytest
 import subprocess
 import sys
@@ -50,7 +50,7 @@ def test_pull_rolls_back_broken_critical_file_and_accepts_corrected_retry(tmp_pa
     git("init", "-b", "main")
     git("config", "user.email", "test@example.invalid")
     git("config", "user.name", "Test")
-    source = tmp_path / "hermes_constants.py"
+    source = tmp_path / "moor_constants.py"
     source.write_text("print('runnable')\n", encoding="utf-8")
     git("add", ".")
     git("commit", "-m", "working")

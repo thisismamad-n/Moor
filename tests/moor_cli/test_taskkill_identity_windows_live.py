@@ -141,4 +141,4 @@ class TestPidIsMoorLive:
     def test_nonexistent_pid_is_refused(self):
         from moor_cli._subprocess_compat import pid_is_moor
 
-        assert pid_is_hermes(2**24) is False
+        assert pid_is_moor(2**24) is False

@@ -1510,7 +1510,7 @@ class TestV1SpecRegressionFixes:
         assert "two" not in adapter._agents
 
     @pytest.mark.platforms("linux")
-    def test_forward_to_profile_first_contact_creates_then_resumes_fake_hermes(self, monkeypatch, tmp_path):
+    def test_forward_to_profile_first_contact_creates_then_resumes_fake_moor(self, monkeypatch, tmp_path):
         from plugins.platforms.a2a.adapter import A2AAdapter
         from gateway.config import PlatformConfig
 
@@ -1666,7 +1666,7 @@ class TestMultiplexConstructionScope:
 def test_load_conversation_skips_non_dict_lines(monkeypatch, tmp_path):
     """A scalar line in a conversation file must not break replay or pollute
     the list[dict] contract."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     protocol.persist_message("ctx-mixed", "user", "hello", "t1")
     path = protocol._conv_path("ctx-mixed")
     with open(path, "a", encoding="utf-8") as f:

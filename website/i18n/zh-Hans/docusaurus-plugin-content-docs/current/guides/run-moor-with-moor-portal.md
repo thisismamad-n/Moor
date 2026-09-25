@@ -6,11 +6,11 @@ description: "完整操作指南：订阅、配置、切换模型、启用 gatew
 
 # 通过 Moor Portal 运行 Moor Agent
 
-本指南带你从头到尾完成在 [Nous Portal](https://portal.nousresearch.com) 订阅下运行 Hermes Agent 的全过程——从注册账号到验证每个工具的路由是否正确。如果你只想了解 Portal 的概述及订阅内容，请参阅 [Nous Portal 集成页面](../integrations/nous-portal.md)。本页是操作步骤脚本。
+本指南带你从头到尾完成在 [Moor Portal](https://portal.nousresearch.com) 订阅下运行 Moor Agent 的全过程——从注册账号到验证每个工具的路由是否正确。如果你只想了解 Portal 的概述及订阅内容，请参阅 [Moor Portal 集成页面](../integrations/moor-portal.md)。本页是操作步骤脚本。
 
 ## 前提条件
 
-- 已安装 Hermes Agent（[快速入门](../getting-started/quickstart.md)）
+- 已安装 Moor Agent（[快速入门](../getting-started/quickstart.md)）
 - 在你正在配置的机器上有可用的浏览器（或 SSH 端口转发——参见 [OAuth over SSH](./oauth-over-ssh.md)）
 - 约 5 分钟时间
 
@@ -91,7 +91,7 @@ moor chat
 Hey, search the web for "Moor Agent release notes" and summarize the top 3 hits.
 ```
 
-你应该看到 Hermes 调用 `web_search`（通过 gateway）并返回摘要。如果搜索正常执行且响应内容合理，说明配置完成——Portal 已端到端连通。
+你应该看到 Moor 调用 `web_search`（通过 gateway）并返回摘要。如果搜索正常执行且响应内容合理，说明配置完成——Portal 已端到端连通。
 
 ## 5. 选择你实际需要的模型
 
@@ -120,7 +120,7 @@ moor config set model.default anthropic/claude-sonnet-4.6
 
 ### 不要在 agent 任务中使用 Hermes-4
 
-Hermes-4-70B 和 Hermes-4-405B 在 Portal 上以大幅折扣提供，但它们是**对话/推理模型**，并非针对工具调用优化的模型。它们在多步骤 agent 循环中表现不佳。请通过[订阅代理](../user-guide/features/subscription-proxy.md)从非 agent 工具中将它们用于对话或研究工作。对于 Hermes Agent 本身，请坚持使用上述前沿 agentic 模型。
+Hermes-4-70B 和 Hermes-4-405B 在 Portal 上以大幅折扣提供，但它们是**对话/推理模型**，并非针对工具调用优化的模型。它们在多步骤 agent 循环中表现不佳。请通过[订阅代理](../user-guide/features/subscription-proxy.md)从非 agent 工具中将它们用于对话或研究工作。对于 Moor Agent 本身，请坚持使用上述前沿 agentic 模型。
 
 Portal 的[信息页面](https://portal.nousresearch.com/info)也有此说明——这是 Moor 官方指导，并非仅代表 Moor 一方的意见。
 
@@ -169,7 +169,7 @@ moor cron add "Daily AI news summary" "every day at 9am" \
 
 ## Profiles 与多用户配置
 
-如果你使用 [Hermes profiles](../user-guide/profiles.md)（例如每个项目单独一套配置），每个 profile 都是独立的凭证孤岛：从未登录过 Portal 的 profile 会直接失败，而不会采用其他 profile 的会话。请在每个 profile 上用 `hermes -p <name> portal` 登录一次——如果机器上已有共享的 Portal 会话，它会提示导入且无需再走浏览器流程；此后共享 token 存储会让该 profile 的令牌保持最新。参见 [Profile 配置](../integrations/nous-portal.md#profile-setup)。
+如果你使用 [Moor profiles](../user-guide/profiles.md)（例如每个项目单独一套配置），每个 profile 都是独立的凭证孤岛：从未登录过 Portal 的 profile 会直接失败，而不会采用其他 profile 的会话。请在每个 profile 上用 `moor -p <name> portal` 登录一次——如果机器上已有共享的 Portal 会话，它会提示导入且无需再走浏览器流程；此后共享 token 存储会让该 profile 的令牌保持最新。参见 [Profile 配置](../integrations/moor-portal.md#profile-setup)。
 
 对于多人共用一台机器的团队场景，每个人有自己的 Portal 账号 → 每个 home 目录保存各自的 `~/.moor/auth.json` → 用户之间不共享 token。这是正确的边界划分。
 
@@ -232,7 +232,7 @@ Portal 目录基于 OpenRouter 的模型列表（300+ 个），并补充了通�
 /model openai/o1-2025-12-17
 ```
 
-如果某个模型确实不可用，请[提交 issue](https://github.com/NousResearch/hermes-agent/issues)——大多数缺失是我们可以更新的路由配置问题。
+如果某个模型确实不可用，请[提交 issue](https://github.com/thisismamad-n/Moor/issues)——大多数缺失是我们可以更新的路由配置问题。
 
 ### 账单未出现在我的 Portal 账号中
 
@@ -265,9 +265,9 @@ moor auth logout moor       # 清除本地 refresh token
 
 ## 另请参阅
 
-- **[Nous Portal 集成页面](../integrations/nous-portal.md)** — 订阅内容概述
+- **[Moor Portal 集成页面](../integrations/moor-portal.md)** — 订阅内容概述
 - **[Tool Gateway](../user-guide/features/tool-gateway.md)** — 每个 gateway 路由工具的完整说明
-- **[订阅代理](../user-guide/features/subscription-proxy.md)** — 在非 Hermes 工具中使用你的 Portal 订阅
+- **[订阅代理](../user-guide/features/subscription-proxy.md)** — 在非 Moor 工具中使用你的 Portal 订阅
 - **[语音模式](../user-guide/features/voice-mode.md)** — 在 Portal 订阅上配置语音对话
 - **[OAuth over SSH](./oauth-over-ssh.md)** — 远程/无头主机登录方案
-- **[Profiles](../user-guide/profiles.md)** — 在多个 Hermes 配置之间共享一个 Portal 登录
+- **[Profiles](../user-guide/profiles.md)** — 在多个 Moor 配置之间共享一个 Portal 登录

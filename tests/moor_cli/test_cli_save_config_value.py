@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 import pytest
 
@@ -13,9 +13,9 @@ class TestSaveConfigValueAtomic:
     @pytest.fixture
     def config_env(self, tmp_path, monkeypatch):
         """Isolated config environment with a writable config.yaml."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        config_path = moor_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "model": {"default": "test-model", "provider": "openrouter"},
             "display": {"skin": "default"},

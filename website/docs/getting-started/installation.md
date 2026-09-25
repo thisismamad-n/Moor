@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: "Installation"
-description: "Install Hermes Agent with desktop bundles, source installers, Docker, Nix, or the Termux APT package"
+description: "Install Moor Agent with desktop bundles, source installers, Docker, Nix, or the Termux APT package"
 ---
 
 # Installation
@@ -17,21 +17,21 @@ platform-gated features are supported), see **[Platform Support](./platform-supp
 ### Desktop packages on macOS or Windows
 
 Download the package for your platform from the
-[Hermes website](https://hermes-agent.nousresearch.com/).
+[Moor website](https://hermes-agent.nousresearch.com/).
 
 - **Windows:** open the `.appinstaller` download with Windows App Installer.
   It installs the signed MSIX bundle and records its update source.
   Microsoft Store packages have separate Store ownership.
-- **macOS:** open the DMG, then copy `Hermes.app` to Applications. The ZIP
+- **macOS:** open the DMG, then copy `Moor.app` to Applications. The ZIP
   artifact carries the signed app used by the automatic updater.
 
 Bundled packages contain the agent, Python, supported dependencies, and prebuilt
 interfaces. First launch does not build that base runtime. Provider access and
 optional integrations can still require network access.
 
-A `Hermes-Setup` bootstrap installer is different: it downloads a source
+A `moor-setup` bootstrap installer is different: it downloads a source
 installation and builds the desktop app. Light is a remote-only build variant,
-not a bundled local runtime. See [Hermes Desktop](../user-guide/desktop.md).
+not a bundled local runtime. See [Moor Desktop](../user-guide/desktop.md).
 
 :::note
 The macOS installer is **Apple Silicon only**. macOS on x86 (Intel) processors is [not a supported platform](./platform-support.md#unsupported).
@@ -60,7 +60,7 @@ moor desktop
 ### Android / Termux
 
 Use the [Termux APT package](./termux.md) on aarch64 Android devices.
-Configure its signed repository before running `pkg install hermes-agent`.
+Configure its signed repository before running `pkg install moor-agent`.
 The desktop/server scripts are not the Termux installation path.
 
 ### What the source installer does
@@ -74,8 +74,8 @@ command to retry. Other optional tools use their feature-specific installation
 paths.
 
 To leave the browser tools out, pass `--skip-browser` on POSIX or `-SkipBrowser`
-on Windows. Hermes remembers this choice: later installs and `hermes update` do
-not add them back. Run `hermes pm install agent-browser` to install them and
+on Windows. Moor remembers this choice: later installs and `moor update` do
+not add them back. Run `moor pm install agent-browser` to install them and
 undo the choice.
 
 The scripts create a launcher and prepare the data directory. Interactive runs
@@ -84,23 +84,23 @@ also invoke setup and gateway configuration. `--non-interactive` on POSIX, or
 `--include-desktop` / `-IncludeDesktop` stage builds the desktop from source.
 
 On a terminal the scripts show one status line per step and write the output
-of git, uv and the builds to `logs/install.log` under the Hermes data
+of git, uv and the builds to `logs/install.log` under the Moor data
 directory; a failed step prints its last lines and the log path. CI (`CI` or
 `GITHUB_ACTIONS` set), redirected output, `--verbose` / `-Verbose` or
-`HERMES_INSTALL_VERBOSE=1` stream everything instead.
+`MOOR_INSTALL_VERBOSE=1` stream everything instead.
 
 #### Install layout
 
 | Method | Code | CLI entry point | Default user data |
 |---|---|---|---|
-| POSIX source script | `~/.hermes/hermes-agent/` | `~/.local/bin/hermes` wrapper | `~/.hermes/` |
-| Windows source script | `%LOCALAPPDATA%\hermes\hermes-agent\` | `%LOCALAPPDATA%\hermes\bin\` | `%LOCALAPPDATA%\hermes\` |
-| Desktop bundle | Inside the installed app package | Packaged launchers; Windows execution aliases | Platform default Hermes data directory |
-| Docker | `/opt/hermes/` | Image entrypoint and `hermes` shim | Mounted `/opt/data/` |
-| Termux APT | `$PREFIX/lib/hermes-agent/` | Symlinks in `$PREFIX/bin/` | `~/.hermes/` |
+| POSIX source script | `~/.moor/moor-agent/` | `~/.local/bin/moor` wrapper | `~/.moor/` |
+| Windows source script | `%LOCALAPPDATA%\moor\moor-agent\` | `%LOCALAPPDATA%\moor\bin\` | `%LOCALAPPDATA%\moor\` |
+| Desktop bundle | Inside the installed app package | Packaged launchers; Windows execution aliases | Platform default Moor data directory |
+| Docker | `/opt/moor/` | Image entrypoint and `moor` shim | Mounted `/opt/data/` |
+| Termux APT | `$PREFIX/lib/moor-agent/` | Symlinks in `$PREFIX/bin/` | `~/.moor/` |
 
-`HERMES_HOME` selects user data. The POSIX script's `--dir` selects its source
-checkout independently. Windows provides `-HermesHome` and `-InstallDir`.
+`MOOR_HOME` selects user data. The POSIX script's `--dir` selects its source
+checkout independently. Windows provides `-MoorHome` and `-InstallDir`.
 Running the POSIX script as root does not select an automatic FHS layout:
 it uses root's home unless you provide an explicit source path.
 
@@ -128,7 +128,7 @@ moor config get     # Inspect individual config values
 moor setup          # Or run the full setup wizard to configure everything at once
 ```
 
-:::tip Fastest path: Nous Portal
+:::tip Fastest path: Moor Portal
 One subscription covers 300+ models plus the [Tool Gateway](../user-guide/features/tool-gateway.md) (web search, image generation, TTS, cloud browser). Skip the per-tool key juggling:
 
 ```bash
@@ -138,8 +138,8 @@ moor setup --portal
 That logs you in, sets Moor as your provider, and turns on the Tool Gateway in one command.
 :::
 
-:::tip Already running Hermes on another machine?
-You don't need to rebuild your setup from scratch. Restore a full backup with `hermes import` (see [Exporting Hermes to another machine](../reference/faq.md#exporting-hermes-to-another-machine)), or bring over a single agent with `hermes profile import` (see [Moving a single profile to another machine](../reference/faq.md#moving-a-single-profile-to-another-machine)). Note that a profile export excludes credentials by design, so an export alone is not a full backup — [`hermes backup` vs `hermes profile export`](../reference/faq.md#hermes-backup-vs-hermes-profile-export) explains which to use.
+:::tip Already running Moor on another machine?
+You don't need to rebuild your setup from scratch. Restore a full backup with `moor import` (see [Exporting Moor to another machine](../reference/faq.md#exporting-moor-to-another-machine)), or bring over a single agent with `moor profile import` (see [Moving a single profile to another machine](../reference/faq.md#moving-a-single-profile-to-another-machine)). Note that a profile export excludes credentials by design, so an export alone is not a full backup — [`moor backup` vs `moor profile export`](../reference/faq.md#moor-backup-vs-moor-profile-export) explains which to use.
 :::
 
 ---
@@ -196,8 +196,8 @@ configuration, and launcher must belong to that user.
    export PATH="$HOME/.local/bin:$PATH"
    ```
 
-4. Run `hermes doctor` from that account. Use the installed wrapper, not a
-   hardcoded `venv/bin/hermes` path.
+4. Run `moor doctor` from that account. Use the installed wrapper, not a
+   hardcoded `venv/bin/moor` path.
 5. For a Linux user service that must survive logout, enable lingering as an administrator:
 
    ```bash
@@ -247,5 +247,5 @@ an existing directory cannot establish that the intended volume is mounted.
 The update owner depends on the running installation, not only its data home.
 Source checkouts use the managed Git update path. Desktop bundles, Docker,
 Nix, and Termux packages retain their package owner's update mechanism.
-`hermes doctor` reports installation provenance. See
+`moor doctor` reports installation provenance. See
 [Updating & Uninstalling](./updating.md) before changing package-owned files.

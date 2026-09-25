@@ -30,15 +30,15 @@ from pydantic import BaseModel
 
 from starlette.concurrency import run_in_threadpool
 
-from hermes_cli import config as config_mod, web_deps
-from hermes_cli.web_routers._common import _CONFIG_MUTATION_LOCK, _config_profile_scope
-from hermes_cli.local_runtime import (
+from moor_cli import config as config_mod, web_deps
+from moor_cli.web_routers._common import _CONFIG_MUTATION_LOCK, _config_profile_scope
+from moor_cli.local_runtime import (
     binaries, bootstrap, catalog, context_policy, estimator, growth, hardware, hf_browse,
     load_progress, presets, supervisor,
 )
 from pm.downloader import Download, DownloadPaused, Source
 
-from hermes_cli.local_runtime.endpoint import _state_endpoint
+from moor_cli.local_runtime.endpoint import _state_endpoint
 
 logger = logging.getLogger(__name__)
 

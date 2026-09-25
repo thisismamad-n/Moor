@@ -322,7 +322,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     };
 
     let legacy_install = !install_root.join("pm").is_dir();
-    let hermes = resolve_hermes(&install_root).await.ok_or_else(|| {
+    let moor = resolve_moor(&install_root).await.ok_or_else(|| {
         let msg = format!(
             "Could not find the moor CLI under {}. Is Moor installed? \
              Re-run the installer to repair the install.",
@@ -519,7 +519,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
         emit_stage(&app, "rebuild", StageState::Running, None, None);
         let started = Instant::now();
         let rebuild_args: Vec<String> = vec!["desktop".into(), "--build-only".into()];
-        let mut rebuild = run_streamed(&app, &hermes, &rebuild_args, &install_root, &child_env, Some("rebuild")).await?;
+        let mut rebuild = run_streamed(&app, &moor, &rebuild_args, &install_root, &child_env, Some("rebuild")).await?;
 
         // Retry-once: the first `--build-only` can return nonzero on a still-settling
         // post-update tree or a network-blocked Electron fetch that our self-heal
@@ -527,7 +527,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
         // (the content-hash stamp makes it a near-no-op when the first actually
         // succeeded). Without this the updater bails here and never reaches the
         // relaunch below — the app updates but doesn't restart. Matches the
-        // retry-once `hermes update` already does above, and `hermes update`'s own
+        // retry-once `moor update` already does above, and `moor update`'s own
         // desktop rebuild in cmd_update.
         if rebuild_needs_retry(rebuild.exit_code) {
             emit_log(
@@ -539,7 +539,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
             );
             rebuild = run_streamed(
                 &app,
-                &hermes,
+                &moor,
                 &rebuild_args,
                 &install_root,
                 &child_env,
@@ -552,7 +552,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
         if rebuild.exit_code != Some(0) {
             let msg = format!(
                 "Rebuilding the desktop app failed (exit {:?}). The update was \
-                 applied but the app could not be rebuilt; run `hermes desktop` \
+                 applied but the app could not be rebuilt; run `moor desktop` \
                  from a terminal to see the error.",
                 rebuild.exit_code
             );
@@ -676,14 +676,14 @@ fn exit_after_success(app: &AppHandle) {
 pub(crate) async fn wait_for_install_locks_free(install_root: &Path, app: &AppHandle, stage: &str) -> Result<()> {
     let lock_targets = install_lock_probe_paths(install_root);
     let deadline = Instant::now() + DESKTOP_EXIT_WAIT;
-    emit_log(app, Some(stage), LogStream::Stdout, "[handoff] waiting for Hermes to exit…");
+    emit_log(app, Some(stage), LogStream::Stdout, "[handoff] waiting for Moor to exit…");
     loop {
         let locked = locked_paths(&lock_targets);
         if locked.is_empty() {
             return Ok(());
         }
         if Instant::now() >= deadline {
-            return Err(anyhow!("Desktop application files are still locked: {}. Close the other Hermes window and retry.", format_locked_paths(&locked)));
+            return Err(anyhow!("Desktop application files are still locked: {}. Close the other Moor window and retry.", format_locked_paths(&locked)));
         }
         tokio::time::sleep(DESKTOP_EXIT_POLL).await;
     }
@@ -745,10 +745,10 @@ fn rebuild_needs_retry(exit_code: Option<i32>) -> bool {
 /// is a handful of lines printed right before `sys.exit(2)`.
 const STDOUT_TAIL_LINES: usize = 40;
 
-/// User-facing message for an exit-2 refusal from `hermes update`.
+/// User-facing message for an exit-2 refusal from `moor update`.
 ///
 /// Exit 2 has several causes (another update holds the marker, a live
-/// hermes.exe or venv holder, a self-mapped `.pyd` after the code swap), and
+/// moor.exe or venv holder, a self-mapped `.pyd` after the code swap), and
 /// the child always prints the specific one as a block starting with `✗`
 /// just before exiting. Show that block — it names the real holder/PID — and
 /// fall back to the generic "still running" text only when none was captured
@@ -756,13 +756,13 @@ const STDOUT_TAIL_LINES: usize = 40;
 fn concurrent_update_message(stdout_tail: &[String]) -> String {
     match stdout_tail.iter().rposition(|l| l.trim_start().starts_with('✗')) {
         Some(start) => stdout_tail[start..].join("\n").trim().to_string(),
-        None => "Hermes is still running. Close all Hermes windows and try \
+        None => "Moor is still running. Close all Moor windows and try \
                  the update again."
             .to_string(),
     }
 }
 
-/// Spawn `hermes <args>` from `cwd`, stream stdout/stderr as Log events on the
+/// Spawn `moor <args>` from `cwd`, stream stdout/stderr as Log events on the
 /// bootstrap channel, and return the exit code. Mirrors powershell::run_script
 /// but for an arbitrary command (no install.ps1 -File wrapping).
 async fn run_streamed(
@@ -774,9 +774,9 @@ async fn run_streamed(
     stage: Option<&str>,
 ) -> Result<CmdResult> {
     let mut stdout_tail: VecDeque<String> = VecDeque::with_capacity(STDOUT_TAIL_LINES);
-    let current = resolve_hermes(cwd).await.ok_or_else(|| anyhow!("Installation launcher missing under {}", cwd.display()))?;
+    let current = resolve_moor(cwd).await.ok_or_else(|| anyhow!("Installation launcher missing under {}", cwd.display()))?;
     let mut command: Vec<String> = vec![current.to_string_lossy().into_owned()];
-    if current.starts_with(cwd.join(".hermes").join("bin")) {
+    if current.starts_with(cwd.join(".moor").join("bin")) {
         let mut query = Command::new(&current);
         query.arg("--print-runtime-command").current_dir(cwd);
         #[cfg(windows)]
@@ -855,19 +855,19 @@ struct CmdResult {
 }
 
 /// Resolve only a launcher owned by this installation, never PATH.
-async fn resolve_hermes(install_root: &Path) -> Option<PathBuf> {
-    let names: &[&str] = if cfg!(target_os = "windows") { &["hermes.exe", "hermes.cmd"] } else { &["hermes"] };
+async fn resolve_moor(install_root: &Path) -> Option<PathBuf> {
+    let names: &[&str] = if cfg!(target_os = "windows") { &["moor.exe", "moor.cmd"] } else { &["moor"] };
     for name in names {
-        let launcher = install_root.join(".hermes").join("bin").join(name);
+        let launcher = install_root.join(".moor").join("bin").join(name);
         if launcher.is_file() { return Some(launcher); }
     }
     // Earlier PM publication lived in user-bin only. The CLI's existing
     // version surface proves which source tree that command belongs to.
-    if install_root.join("hermes_cli/_launchers.py").is_file() {
-        let mut directories = vec![crate::paths::hermes_home().join("bin")];
+    if install_root.join("moor_cli/_launchers.py").is_file() {
+        let mut directories = vec![crate::paths::moor_home().join("bin")];
         if let Some(home) = dirs::home_dir() { directories.push(home.join(".local/bin")); }
         if let Some(parent) = install_root.parent() { directories.push(parent.join("bin")); }
-        if let Some(local) = std::env::var_os("LOCALAPPDATA") { directories.push(PathBuf::from(local).join("hermes/bin")); }
+        if let Some(local) = std::env::var_os("LOCALAPPDATA") { directories.push(PathBuf::from(local).join("moor/bin")); }
         for directory in directories {
             for name in names {
                 let candidate = directory.join(name);
@@ -927,7 +927,7 @@ fn update_child_env(install_root: &Path) -> Vec<(String, OsString)> {
         "MOOR_UPDATE_HANDOFF_PID".to_string(),
         OsString::from(std::process::id().to_string()),
     ));
-    envs.push(("HERMES_INSTALL_ROOT".to_string(), install_root.as_os_str().to_os_string()));
+    envs.push(("MOOR_INSTALL_ROOT".to_string(), install_root.as_os_str().to_os_string()));
     envs
 }
 
@@ -1213,16 +1213,16 @@ mod tests {
     async fn launcher_resolution_is_installation_bound() {
         let root = unique_tmp_dir("launcher");
         let legacy = root.join("venv").join(if cfg!(windows) { "Scripts" } else { "bin" })
-            .join(if cfg!(windows) { "hermes.exe" } else { "hermes" });
+            .join(if cfg!(windows) { "moor.exe" } else { "moor" });
         std::fs::create_dir_all(legacy.parent().unwrap()).unwrap();
         std::fs::write(&legacy, "old").unwrap();
-        assert_eq!(resolve_hermes(&root).await, Some(legacy));
+        assert_eq!(resolve_moor(&root).await, Some(legacy));
         std::fs::create_dir(root.join("pm")).unwrap();
-        assert_eq!(resolve_hermes(&root).await, None, "PM must never fall back to the old venv");
-        let launcher = root.join(".hermes/bin").join(if cfg!(windows) { "hermes.cmd" } else { "hermes" });
+        assert_eq!(resolve_moor(&root).await, None, "PM must never fall back to the old venv");
+        let launcher = root.join(".moor/bin").join(if cfg!(windows) { "moor.cmd" } else { "moor" });
         std::fs::create_dir_all(launcher.parent().unwrap()).unwrap();
         std::fs::write(&launcher, "new").unwrap();
-        assert_eq!(resolve_hermes(&root).await, Some(launcher));
+        assert_eq!(resolve_moor(&root).await, Some(launcher));
         std::fs::remove_dir_all(root).unwrap();
     }
 
@@ -1289,19 +1289,19 @@ mod tests {
         let tail = lines(
             "→ Fetching updates...\n\
              ✓ Updated to 6b2c23ae42\n\
-             ✗ Another Hermes update is already running (started 3m 42s ago, process 65285).\n\
-             \n  Wait for it to finish, then run `hermes update` again.\n",
+             ✗ Another Moor update is already running (started 3m 42s ago, process 65285).\n\
+             \n  Wait for it to finish, then run `moor update` again.\n",
         );
         assert_eq!(
             concurrent_update_message(&tail),
-            "✗ Another Hermes update is already running (started 3m 42s ago, process 65285).\n\
-             \n  Wait for it to finish, then run `hermes update` again."
+            "✗ Another Moor update is already running (started 3m 42s ago, process 65285).\n\
+             \n  Wait for it to finish, then run `moor update` again."
         );
     }
 
     #[test]
     fn concurrent_update_message_falls_back_without_a_refusal_block() {
-        let generic = "Hermes is still running. Close all Hermes windows and try the update again.";
+        let generic = "Moor is still running. Close all Moor windows and try the update again.";
         assert_eq!(concurrent_update_message(&[]), generic);
         assert_eq!(concurrent_update_message(&lines("→ Fetching updates...\n")), generic);
     }

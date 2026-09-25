@@ -42,8 +42,8 @@ export function readUseRealProfile(record: Record<string, unknown> | undefined):
 export function BrowserRealProfilePanel({ profile }: BrowserRealProfilePanelProps) {
   const { t } = useI18n()
   const copy = t.settings.toolsets.browserRealProfile
-  const { data: config, writeScope } = useHermesConfigRecord(profile)
-  const setConfig = hermesConfigCacheWriter(profile)
+  const { data: config, writeScope } = useMoorConfigRecord(profile)
+  const setConfig = moorConfigCacheWriter(profile)
   const [busy, setBusy] = useState(false)
 
   const enabled = readUseRealProfile(config)
@@ -67,7 +67,7 @@ export function BrowserRealProfilePanel({ profile }: BrowserRealProfilePanelProp
       try {
         // Sparse patch: PUT /api/config deep-merges, and echoing the cached
         // snapshot would overwrite keys other surfaces changed since it loaded.
-        await saveHermesConfigRecord({ browser: { use_real_profile: on } }, writeScope ?? profile)
+        await saveMoorConfigRecord({ browser: { use_real_profile: on } }, writeScope ?? profile)
 
         notify({
           kind: 'info',

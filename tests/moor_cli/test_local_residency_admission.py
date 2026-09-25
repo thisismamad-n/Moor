@@ -11,8 +11,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.local_runtime import presets
-from hermes_cli.local_runtime.estimator import HardwareBudget, ModelProfile
+from moor_cli.local_runtime import presets
+from moor_cli.local_runtime.estimator import HardwareBudget, ModelProfile
 
 GIB = 1 << 30
 
@@ -57,7 +57,7 @@ NO_DEVICE = HardwareBudget(usable_vram_bytes=0, total_device_bytes=0, ram_availa
     ({"tiny": 2 * GIB, "huge": 200 * GIB}, ROOMY, 4, 4),
 ])
 def test_residency_cap_is_priced_against_the_card(tmp_path, monkeypatch, weights, budget, configured, expected):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     mdir = _staged(tmp_path, monkeypatch, weights)
     assert presets.admitted_residency_count(mdir, budget, configured) == expected
 
@@ -74,10 +74,10 @@ def _boom(**_kw):
 ])
 def test_boot_hands_the_router_the_derived_cap(tmp_path, monkeypatch, configured, probe, expected):
     """The wiring, not just the math: what ``ensure_local_runtime`` passes as ``--models-max``."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    import hermes_cli.local_runtime.bootstrap as bs
-    from hermes_cli.local_runtime import binaries, hardware, supervisor
-    from hermes_cli.local_runtime import endpoint
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    import moor_cli.local_runtime.bootstrap as bs
+    from moor_cli.local_runtime import binaries, hardware, supervisor
+    from moor_cli.local_runtime import endpoint
 
     mdir = _staged(tmp_path, monkeypatch, {"nine-b": 6 * GIB})
     monkeypatch.setattr(bs, "models_dir", lambda: mdir)

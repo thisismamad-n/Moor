@@ -7,15 +7,15 @@ import time
 
 import pytest
 
-import hermes_cli.plugins_cadence as cad
+import moor_cli.plugins_cadence as cad
 
 
 @pytest.fixture
 def homed(tmp_path, monkeypatch):
-    """Cadence state (markers) inside a temp hermes home."""
-    import hermes_constants
+    """Cadence state (markers) inside a temp moor home."""
+    import moor_constants
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(moor_constants, "get_moor_home", lambda: tmp_path)
     return tmp_path
 
 
@@ -91,7 +91,7 @@ def test_auto_apply_selects_only_updateable_git_and_persists_receipt(homed, enab
 @pytest.mark.parametrize('failed', [False, True])
 def test_housekeeping_runs_real_cadence_and_backs_off(homed, monkeypatch, caplog, failed):
     import gateway.run as gateway
-    from hermes_cli import plugins_updates, plugins_cmd
+    from moor_cli import plugins_updates, plugins_cmd
     from pm import receipt
 
     calls, applied = [], []

@@ -23,7 +23,7 @@
 #                            target sha, marker cleanup, result JSON (when
 #                            the script path wrote one), working moor,
 #                            and the relaunched app window.
-#                 update     run `hermes update` from the installed command
+#                 update     run `moor update` from the installed command
 #                            (the CLI route a GUI user might take).
 #                 installer  re-run the bootstrap installer over the
 #                            existing install (download moor-setup.exe
@@ -112,7 +112,7 @@ param(
     [string]$SetupExeUrl = "https://hermes-assets.nousresearch.com/Hermes-Setup.exe",
 
     # Driver dependencies come from the current checkout lockfile.
-    [string]$DriverNode = $env:HERMES_E2E_NODE
+    [string]$DriverNode = $env:MOOR_E2E_NODE
 )
 
 $ErrorActionPreference = "Stop"
@@ -135,8 +135,8 @@ $ProofRoot   = Join-Path $WorkRoot "proof"
 $AhkDir      = Join-Path $WorkRoot "ahk"
 $AssetsDir   = Join-Path $PSScriptRoot "e2e-assets"
 if (-not $DriverNode) { $DriverNode = (Get-Command node.exe -ErrorAction Stop).Source }
-$env:HERMES_E2E_NODE = $DriverNode
-$env:HERMES_DESKTOP_USER_DATA_DIR = Join-Path $WorkRoot 'electron-user-data'
+$env:MOOR_E2E_NODE = $DriverNode
+$env:MOOR_DESKTOP_USER_DATA_DIR = Join-Path $WorkRoot 'electron-user-data'
 $script:ChatMock = $null
 $script:ChatFailure = $false
 . (Join-Path $AssetsDir 'desktop-smoke-windows.ps1')
@@ -144,7 +144,7 @@ $script:ChatFailure = $false
 function Start-JourneyChat {
     if (-not $script:ChatMock) {
         $script:ChatFailure = $true
-        $script:ChatMock = Start-DesktopJourneyMock $DriverNode $AssetsDir $WorkRoot $HermesHome $ProofRoot
+        $script:ChatMock = Start-DesktopJourneyMock $DriverNode $AssetsDir $WorkRoot $MoorHome $ProofRoot
         $script:ChatFailure = $false
     }
 }
@@ -155,7 +155,7 @@ function Invoke-DesktopCheckpoint([string]$ChatPhase, [string]$Commit, [string]$
     try {
         $ErrorActionPreference = 'Continue'
         & $DriverNode (Join-Path $AssetsDir 'source-desktop-smoke.mjs') `
-            --root $InstallDir --home $HermesHome --user-data $env:HERMES_DESKTOP_USER_DATA_DIR `
+            --root $InstallDir --home $MoorHome --user-data $env:MOOR_DESKTOP_USER_DATA_DIR `
             --out $ProofRoot --phase $ChatPhase --expect-commit $Commit --desktop $script:ExpectedDesktop --method $Method
         $chatExit = $LASTEXITCODE
     } finally { $ErrorActionPreference = $prevEap }
@@ -169,7 +169,7 @@ function Confirm-OldChat([string]$Out) {
     $script:ChatFailure = $false
 }
 
-$RepoUrlHttps = "https://github.com/NousResearch/hermes-agent.git"
+$RepoUrlHttps = "https://github.com/thisismamad-n/Moor.git"
 $RepoUrlSsh   = "git@github.com:NousResearch/hermes-agent.git"
 
 function Write-Step([string]$Message) {
@@ -256,7 +256,7 @@ function Set-GitRedirect {
         # the shim below is on PATH, `git` reports the official origin for
         # `remote get-url origin` (so fork detection sees it); any check that must
         # see the file:// redirect instead has to bypass the shim via this path.
-        $env:HERMES_E2E_REAL_GIT = $realGit
+        $env:MOOR_E2E_REAL_GIT = $realGit
 
     if ($script:FreshMachine) {
         # A fresh Windows box has no git. install.ps1's Get-PinnedGit returns
@@ -375,20 +375,20 @@ function Save-InstallSideState([string]$Label) {
 
 function Test-MoorRuns([string]$Label) {
     Save-InstallSideState $Label
-    $hermesExe = $null
+    $moorExe = $null
     try {
-        $hermesExe = Get-SourceHermes $InstallDir
+        $moorExe = Get-SourceMoor $InstallDir
     } catch {
-        # A pre-handoff release cannot complete inside `hermes update`: its
+        # A pre-handoff release cannot complete inside `moor update`: its
         # update path reaches no retired-hook seam, so the update ends with the
         # tree at HEAD and no published launcher. The NEXT ordinary startup
-        # completes it (hermes_bootstrap -> prepare_launch -> sync PM, publish
+        # completes it (moor_bootstrap -> prepare_launch -> sync PM, publish
         # launchers, re-exec). Drive that startup here, WITHOUT the lazy-install
         # ban, and only when the launcher is missing -- so a healthy update is
         # still judged by the strict checks below, and `--version` probes keep
         # their ban: a probe must never complete an unfinished update.
         Write-Host "  no published launcher yet; running the next ordinary startup (this is what completes a pre-handoff release)"
-        $startupHermes = Get-SourceHermesForStartup $InstallDir
+        $startupMoor = Get-SourceMoorForStartup $InstallDir
         $startupLog = Join-Path $WorkRoot 'logs\post-update-startup.log'
         New-Item -ItemType Directory -Force -Path (Split-Path $startupLog) | Out-Null
         # prepare_launch reports its progress on stderr, and a native command's
@@ -398,31 +398,31 @@ function Test-MoorRuns([string]$Label) {
         $prevStartupEap = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
-            & $startupHermes status 2>&1 | Out-File -Encoding UTF8 $startupLog
+            & $startupMoor status 2>&1 | Out-File -Encoding UTF8 $startupLog
             $startupExit = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $prevStartupEap
         }
         Write-Host "  first startup after the update ran (exit $startupExit); the checks below assert the launcher it must have published"
-        $hermesExe = Get-SourceHermes $InstallDir
+        $moorExe = Get-SourceMoor $InstallDir
     }
-    & python -B (Join-Path $AssetsDir 'source_driver.py') --root $InstallDir --launcher $hermesExe --desktop $script:ExpectedDesktop
+    & python -B (Join-Path $AssetsDir 'source_driver.py') --root $InstallDir --launcher $moorExe --desktop $script:ExpectedDesktop
     Assert-True ($LASTEXITCODE -eq 0) "$Label -- read-only install verification (no repair)"
-    $prevLazy = $env:HERMES_DISABLE_LAZY_INSTALLS
+    $prevLazy = $env:MOOR_DISABLE_LAZY_INSTALLS
     $prevBytecode = $env:PYTHONDONTWRITEBYTECODE
     $prevEap = $ErrorActionPreference
     try {
-        $env:HERMES_DISABLE_LAZY_INSTALLS = '1'
+        $env:MOOR_DISABLE_LAZY_INSTALLS = '1'
         $env:PYTHONDONTWRITEBYTECODE = '1'
         $ErrorActionPreference = 'Continue'
-        & $hermesExe --version 2>&1 | ForEach-Object { Write-Host "    hermes --version| $_" }
+        & $moorExe --version 2>&1 | ForEach-Object { Write-Host "    moor --version| $_" }
         $versionExit = $LASTEXITCODE
     } finally {
-        $env:HERMES_DISABLE_LAZY_INSTALLS = $prevLazy
+        $env:MOOR_DISABLE_LAZY_INSTALLS = $prevLazy
         $env:PYTHONDONTWRITEBYTECODE = $prevBytecode
         $ErrorActionPreference = $prevEap
     }
-    Assert-True ($versionExit -eq 0) "$Label -- hermes --version exits 0"
+    Assert-True ($versionExit -eq 0) "$Label -- moor --version exits 0"
 }
 
 # ----------------------------------------------------------------------------
@@ -446,7 +446,7 @@ function Invoke-RefInstaller {
     $script = Join-Path $WorkRoot "install-$Label.ps1"
     (Invoke-Git @("-C", $RepoRoot, "show", "$Ref`:scripts/install.ps1")) -join "`n" |
         Set-Content -LiteralPath $script -Encoding UTF8
-    $flags = @("-HermesHome", $HermesHome, "-InstallDir", $InstallDir)
+    $flags = @("-MoorHome", $MoorHome, "-InstallDir", $InstallDir)
     $text = Get-Content -LiteralPath $script -Raw
     if ($text -match '\$NonInteractive') { $flags += "-NonInteractive" }
     else { $flags += "-SkipSetup" }
@@ -484,13 +484,13 @@ function Assert-DesktopArtifact([string]$Label) {
     Assert-True ($null -ne (Get-DesktopExe)) "$Label -- desktop app built by installer under apps\desktop\release"
 }
 
-function Invoke-HermesUpdate {
+function Invoke-MoorUpdate {
     # --yes reaches the update subcommand only in later
     # releases; ask the installed binary, never parse its source.
-    $hermesExe = Get-SourceHermes $InstallDir
+    $moorExe = Get-SourceMoor $InstallDir
     $updateArgs = @("update")
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
-    $helpText = & $hermesExe update --help 2>&1 | Out-String
+    $helpText = & $moorExe update --help 2>&1 | Out-String
     $helpExit = $LASTEXITCODE
     if ($helpExit -ne 0) {
         $ErrorActionPreference = $prevEap
@@ -514,11 +514,11 @@ function Invoke-HermesUpdate {
 function Invoke-ManualCardUpdate([string]$ReceiptPath, [string]$TargetSha) {
     Assert-True (Test-Path -LiteralPath $ReceiptPath) "manual update card produced a receipt"
     $manual = Get-Content -LiteralPath $ReceiptPath -Raw | ConvertFrom-Json
-    Assert-True ($manual.command -match '^hermes update(?:\s|$)') "manual update card instructed hermes update"
-    Invoke-HermesUpdate
+    Assert-True ($manual.command -match '^moor update(?:\s|$)') "manual update card instructed moor update"
+    Invoke-MoorUpdate
     Assert-True ((Get-InstalledHead) -eq $TargetSha) "manual update landed on target commit"
-    Test-HermesRuns "post-manual-update"
-    Assert-True ($null -ne (Get-DesktopExe)) "Hermes.exe still present after manual update"
+    Test-MoorRuns "post-manual-update"
+    Assert-True ($null -ne (Get-DesktopExe)) "Moor.exe still present after manual update"
 }
 
 function Clear-HistoricalInstallerChurn {
@@ -552,12 +552,12 @@ function Clear-HistoricalInstallerChurn {
     Assert-True ($left.Count -eq 0) "undid only installer-generated source churn before the GUI update"
 }
 
-function Invoke-HermesDesktopAppUpdate([string]$TargetSha) {
-    # The hermes-desktop launch surface: `hermes desktop` runs its whole
+function Invoke-MoorDesktopAppUpdate([string]$TargetSha) {
+    # The moor-desktop launch surface: `moor desktop` runs its whole
     # real pipeline; the driver intercepts the product's final spawn
     # (argv/cwd/env captured by e2e-assets/launch-capture/sitecustomize.py)
     # and re-executes it under Playwright, which clicks Update now.
-    $hermesExe = Get-SourceHermes $InstallDir
+    $moorExe = Get-SourceMoor $InstallDir
     $spec = Join-Path $WorkRoot "launch-spec.json"
     New-Item -ItemType Directory -Path (Join-Path $WorkRoot "logs") -Force | Out-Null
     $log = Join-Path $WorkRoot "logs\desktop-launch-capture.log"
@@ -591,8 +591,8 @@ function Invoke-HermesDesktopAppUpdate([string]$TargetSha) {
     Push-Location $WorkRoot
     try {
         & $node (Join-Path $AssetsDir "launch-from-spec.mjs") --spec $spec `
-            --old-sha (Read-State).old --chat-out $chatOut --mock-url $env:HERMES_E2E_MOCK_URL `
-            --result (Join-Path $HermesHome ".hermes-update-result.json") `
+            --old-sha (Read-State).old --chat-out $chatOut --mock-url $env:MOOR_E2E_MOCK_URL `
+            --result (Join-Path $MoorHome ".moor-update-result.json") `
             --expect-sha $TargetSha --repo-dir $InstallDir 2>&1 |
             ForEach-Object { Write-Host "  pw| $_" }
         $driveExit = $LASTEXITCODE
@@ -606,9 +606,9 @@ function Invoke-HermesDesktopAppUpdate([string]$TargetSha) {
         Invoke-ManualCardUpdate $manualReceipt $TargetSha
         return
     }
-    Assert-True ($driveExit -eq 0) "app driven via captured hermes desktop spec; update completed"
+    Assert-True ($driveExit -eq 0) "app driven via captured moor desktop spec; update completed"
 
-    # The production updater relaunches Hermes. Close that verified window
+    # The production updater relaunches Moor. Close that verified window
     # normally so the test-owned checkpoint starts and owns its own backend.
     $desktopExe = Get-DesktopExe
     $deadline = (Get-Date).AddMinutes(5)
@@ -623,21 +623,21 @@ function Invoke-HermesDesktopAppUpdate([string]$TargetSha) {
     Close-VerifiedDesktop $desktopExe $windows[0].Id
 }
 
-# Evidence for a GUI-driver failure, taken while the installer is still alive: which Hermes
-# processes exist (was Hermes.exe ever started, and by whom), the installer's thread states,
+# Evidence for a GUI-driver failure, taken while the installer is still alive: which Moor
+# processes exist (was Moor.exe ever started, and by whom), the installer's thread states,
 # and a full memory dump of the installer. The installer's tracing log is buffered and never
 # reaches disk when the job kills it; the dump still holds it. A Launch that left the
 # installer on LAUNCHING had no other trace (tests/install/e2e-assets/install-and-launch.ahk).
 function Save-GuiDriverFailureEvidence([System.Diagnostics.Process]$Installer, [string]$OutDir) {
     New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
     Get-CimInstance Win32_Process |
-        Where-Object { $_.Name -match '^(hermes|msedgewebview2|python|uv|git|node)' -or $_.ParentProcessId -eq $Installer.Id } |
+        Where-Object { $_.Name -match '^(moor|msedgewebview2|python|uv|git|node)' -or $_.ParentProcessId -eq $Installer.Id } |
         Sort-Object CreationDate |
         Select-Object ProcessId, ParentProcessId, CreationDate, Name, CommandLine |
         Format-Table -AutoSize -Wrap | Out-String -Width 400 |
         Tee-Object -FilePath (Join-Path $OutDir "processes.txt") | Write-Host
     if ($Installer.HasExited) {
-        Write-Host "  Hermes-Setup.exe already exited (code $($Installer.ExitCode) at $($Installer.ExitTime))"
+        Write-Host "  moor-setup.exe already exited (code $($Installer.ExitCode) at $($Installer.ExitTime))"
         return
     }
     $Installer.Refresh()
@@ -651,7 +651,7 @@ function Save-GuiDriverFailureEvidence([System.Diagnostics.Process]$Installer, [
 public static extern bool MiniDumpWriteDump(IntPtr hProcess, uint processId, Microsoft.Win32.SafeHandles.SafeFileHandle hFile, uint dumpType, IntPtr exceptionParam, IntPtr userStreamParam, IntPtr callbackParam);
 '@
     }
-    $dumpPath = Join-Path $OutDir "Hermes-Setup.dmp"
+    $dumpPath = Join-Path $OutDir "moor-setup.dmp"
     $file = [System.IO.File]::Create($dumpPath)
     try {
         # MiniDumpWithFullMemory | MiniDumpWithHandleData | MiniDumpWithThreadInfo
@@ -661,8 +661,8 @@ public static extern bool MiniDumpWriteDump(IntPtr hProcess, uint processId, Mic
     finally {
         $file.Close()
     }
-    if ($ok) { Write-Host "  Hermes-Setup.exe dump: $dumpPath ($([math]::Round((Get-Item $dumpPath).Length / 1MB, 1)) MB)" }
-    else { Write-Host "  Hermes-Setup.exe dump failed (Win32 error $err)" }
+    if ($ok) { Write-Host "  moor-setup.exe dump: $dumpPath ($([math]::Round((Get-Item $dumpPath).Length / 1MB, 1)) MB)" }
+    else { Write-Host "  moor-setup.exe dump failed (Win32 error $err)" }
 }
 
 function Save-DesktopScreenshot([string]$OutFile) {
@@ -746,13 +746,13 @@ function New-NextCommit([string]$Repo, [string]$Parent) {
     $saved = @{}
     $vars = @{
         GIT_INDEX_FILE = (Join-Path $WorkRoot "next.index")
-        GIT_AUTHOR_NAME = "Hermes E2E"; GIT_AUTHOR_EMAIL = "e2e@hermes.invalid"
-        GIT_COMMITTER_NAME = "Hermes E2E"; GIT_COMMITTER_EMAIL = "e2e@hermes.invalid"
+        GIT_AUTHOR_NAME = "Moor E2E"; GIT_AUTHOR_EMAIL = "e2e@moor.invalid"
+        GIT_COMMITTER_NAME = "Moor E2E"; GIT_COMMITTER_EMAIL = "e2e@moor.invalid"
     }
     foreach ($k in $vars.Keys) { $saved[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, $vars[$k]) }
     try {
         Invoke-Git @("-C", $Repo, "read-tree", $Parent) | Out-Null
-        Invoke-Git @("-C", $Repo, "update-index", "--add", "--cacheinfo", "100644,$blob,.hermes-e2e-next") | Out-Null
+        Invoke-Git @("-C", $Repo, "update-index", "--add", "--cacheinfo", "100644,$blob,.moor-e2e-next") | Out-Null
         $tree = Invoke-Git @("-C", $Repo, "write-tree")
         return Invoke-Git @("-C", $Repo, "commit-tree", $tree, "-p", $Parent, "-m", "e2e: synthetic next commit")
     } finally {
@@ -858,7 +858,7 @@ function Invoke-PhaseInstallGui {
     ) | Set-Content -LiteralPath (Join-Path $proof "bootstrap-install-script.txt") -Encoding ASCII
     Write-Host "  bootstrap script is scripts/install.ps1 from $ExpectedLabel ($ExpectedSha)"
 
-    $setupExe = Join-Path $WorkRoot "Hermes-Setup.exe"
+    $setupExe = Join-Path $WorkRoot "moor-setup.exe"
     if (-not (Test-Path -LiteralPath $setupExe)) {
         Write-Host "  downloading $SetupExeUrl"
         Invoke-WebRequest -Uri $SetupExeUrl -OutFile $setupExe
@@ -878,8 +878,8 @@ function Invoke-PhaseInstallGui {
     # relative to the script dir).
     Copy-Item -Path (Join-Path $AssetsDir "install-and-launch.ahk"), (Join-Path $AssetsDir "install-button.png"), (Join-Path $AssetsDir "launch-button.png") -Destination $AhkDir -Force
 
-    $env:HERMES_HOME = $HermesHome
-    New-Item -ItemType Directory -Path $HermesHome -Force | Out-Null
+    $env:MOOR_HOME = $MoorHome
+    New-Item -ItemType Directory -Path $MoorHome -Force | Out-Null
 
     $recorder = Start-DesktopRecorder (Join-Path $proof "desktop-frames")
     $ahkLog = Join-Path $proof "ahk.log"
@@ -888,20 +888,20 @@ function Invoke-PhaseInstallGui {
 
         # Launch the real headed installer. Scope the paired script source to
         # this process only so later product launches cannot inherit it.
-        $previousSetupSource = $env:HERMES_SETUP_DEV_REPO_ROOT
-        $env:HERMES_SETUP_DEV_REPO_ROOT = $bootstrapRoot
+        $previousSetupSource = $env:MOOR_SETUP_DEV_REPO_ROOT
+        $env:MOOR_SETUP_DEV_REPO_ROOT = $bootstrapRoot
         try {
             $installer = Start-Process -FilePath $setupExe -PassThru
         }
         finally {
             if ($null -eq $previousSetupSource) {
-                Remove-Item Env:HERMES_SETUP_DEV_REPO_ROOT -ErrorAction SilentlyContinue
+                Remove-Item Env:MOOR_SETUP_DEV_REPO_ROOT -ErrorAction SilentlyContinue
             }
             else {
-                $env:HERMES_SETUP_DEV_REPO_ROOT = $previousSetupSource
+                $env:MOOR_SETUP_DEV_REPO_ROOT = $previousSetupSource
             }
         }
-        Write-Host "  Hermes-Setup.exe launched (pid $($installer.Id))"
+        Write-Host "  moor-setup.exe launched (pid $($installer.Id))"
 
         # Drive it: Install click -> wait -> Launch click -> Moor.exe window.
         # Arg 3 lets the AHK script use the installer's own log as the
@@ -968,10 +968,10 @@ function Invoke-PhaseInstallGui {
     # default OpenRouter choice and override the mock on the checkpoint relaunch.
     # Reset only this driver-owned pre-checkpoint state; OLD -> HEAD keeps the
     # state created by the checkpoint itself.
-    if (Test-Path -LiteralPath $env:HERMES_DESKTOP_USER_DATA_DIR) {
-        Remove-Item -LiteralPath $env:HERMES_DESKTOP_USER_DATA_DIR -Recurse -Force
+    if (Test-Path -LiteralPath $env:MOOR_DESKTOP_USER_DATA_DIR) {
+        Remove-Item -LiteralPath $env:MOOR_DESKTOP_USER_DATA_DIR -Recurse -Force
     }
-    New-Item -ItemType Directory -Path $env:HERMES_DESKTOP_USER_DATA_DIR -Force | Out-Null
+    New-Item -ItemType Directory -Path $env:MOOR_DESKTOP_USER_DATA_DIR -Force | Out-Null
     $chatPhase = if ($Mode -eq 'install') { 'old' } else { 'new' }
     @{ phase=$chatPhase; launch='post-installer-launch'; handoffProof=$proof } | ConvertTo-Json |
         Set-Content (Join-Path $ProofRoot "desktop-chat-$chatPhase-launch.json")
@@ -1149,7 +1149,7 @@ function Invoke-GuiUpdateDesktopRoute([string]$TargetSha) {
 # after install, verified after update.
 function Seed-PreservationFixtures {
     $external = Join-Path $WorkRoot "external-mnemosyne-runtime"
-    & python (Join-Path $AssetsDir "verify-plugin-preservation.py") seed --home $HermesHome --external $external
+    & python (Join-Path $AssetsDir "verify-plugin-preservation.py") seed --home $MoorHome --external $external
     if ($LASTEXITCODE -ne 0) { throw "could not seed fresh preservation fixtures (exit $LASTEXITCODE)" }
 }
 
@@ -1157,7 +1157,7 @@ function Invoke-PreserveSnapshot {
     $out = Join-Path $WorkRoot "plugin-preservation-snapshot.json"
     if (Test-Path -LiteralPath $out) { throw "refusing to overwrite an existing preservation snapshot" }
     Seed-PreservationFixtures
-    & python (Join-Path $AssetsDir "verify-plugin-preservation.py") snapshot --home $HermesHome --out $out
+    & python (Join-Path $AssetsDir "verify-plugin-preservation.py") snapshot --home $MoorHome --out $out
     if ($LASTEXITCODE -ne 0) { throw "plugin preservation snapshot failed (exit $LASTEXITCODE)" }
 
     Write-Host "  pre-upgrade plugin snapshot: $out"
@@ -1166,7 +1166,7 @@ function Invoke-PreserveSnapshot {
 function Invoke-PreserveVerify {
     $snap = Join-Path $WorkRoot "plugin-preservation-snapshot.json"
     if (-not (Test-Path -LiteralPath $snap)) { throw "no pre-upgrade plugin snapshot at $snap; cannot verify preservation" }
-    & python (Join-Path $AssetsDir "verify-plugin-preservation.py") verify --home $HermesHome --snapshot $snap `
+    & python (Join-Path $AssetsDir "verify-plugin-preservation.py") verify --home $MoorHome --snapshot $snap `
         --report (Join-Path $WorkRoot "logs\plugin-preservation-report.json")
     if ($LASTEXITCODE -ne 0) { throw "plugin preservation violated by the upgrade (exit $LASTEXITCODE); see the report for deleted/modified entries" }
     Write-Host "  plugins/** and profile plugin trees survived the upgrade intact"
@@ -1194,7 +1194,7 @@ except Exception:
 '@ | Set-Content -LiteralPath $probe -Encoding ASCII
     }
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-    try { $value = (& python $probe (Join-Path $HermesHome 'state.db') 2>$null | Out-String).Trim() }
+    try { $value = (& python $probe (Join-Path $MoorHome 'state.db') 2>$null | Out-String).Trim() }
     finally { $ErrorActionPreference = $prevEap }
     if ($value -match '^-?\d+$') { return [int]$value }
     return -1
@@ -1203,20 +1203,20 @@ except Exception:
 function Invoke-UserStateActions {
     # Everything here is a command a user would run against the real installed
     # CLI with a real (mocked-inference) provider configured.
-    $hermes = Get-SourceHermes $InstallDir
+    $moor = Get-SourceMoor $InstallDir
     if (-not $script:ChatMock) {
         # Same mock + config writer the desktop chat checkpoints use, so the
         # leg has a genuinely configured provider rather than a dummy key.
-        $script:ChatMock = Start-DesktopJourneyMock $DriverNode $AssetsDir $WorkRoot $HermesHome $ProofRoot
+        $script:ChatMock = Start-DesktopJourneyMock $DriverNode $AssetsDir $WorkRoot $MoorHome $ProofRoot
     }
-    $prevLazy = $env:HERMES_DISABLE_LAZY_INSTALLS
+    $prevLazy = $env:MOOR_DISABLE_LAZY_INSTALLS
     $prevEap = $ErrorActionPreference
     try {
-        $env:HERMES_DISABLE_LAZY_INSTALLS = '1'
+        $env:MOOR_DISABLE_LAZY_INSTALLS = '1'
         $ErrorActionPreference = 'Continue'
 
         # Probe, do not assume (the harness rule for old refs).
-        $chatHelp = (& $hermes chat --help 2>&1 | Out-String)
+        $chatHelp = (& $moor chat --help 2>&1 | Out-String)
         if (-not ($chatHelp -match '(^|\s)-q(\s|,|$)' -or $chatHelp -match '--quiet')) {
             throw 'the installed CLI has no one-shot chat flag; this leg cannot produce a session through the user path'
         }
@@ -1226,7 +1226,7 @@ function Invoke-UserStateActions {
         # a console screen buffer: piping the CLI's stdout into the log takes that away
         # and the turn dies with NoConsoleScreenBufferError. Run it under a real
         # pseudoconsole (pty-run.py) and keep the capture.
-        & python -B (Join-Path $AssetsDir 'pty-run.py') --out $log --timeout 900 -- $hermes chat -q "Reply with the single word: ok"
+        & python -B (Join-Path $AssetsDir 'pty-run.py') --out $log --timeout 900 -- $moor chat -q "Reply with the single word: ok"
         $chatExit = $LASTEXITCODE
         Write-LogGroup 'first real chat turn' $log
         if ($chatExit -ne 0) { throw "the first chat turn failed (exit $chatExit); see $log" }
@@ -1240,12 +1240,12 @@ function Invoke-UserStateActions {
         }
         Write-Host "  a real turn created a session (state.db sessions $before -> $after)"
 
-        if (-not (Test-Path -LiteralPath (Join-Path $HermesHome 'auth.json'))) {
+        if (-not (Test-Path -LiteralPath (Join-Path $MoorHome 'auth.json'))) {
             # A starting tag may not have this subcommand yet: a harness
             # limitation, not a preservation failure.
-            & $hermes auth add --help *> $null
+            & $moor auth add --help *> $null
             if ($LASTEXITCODE -ne 0) {
-                Write-Host '  SKIP hermes auth add does not exist on this ref; auth.json is not covered by this leg'
+                Write-Host '  SKIP moor auth add does not exist on this ref; auth.json is not covered by this leg'
             }
             else {
             # The provider id and the flags are vintage surfaces, so probe them
@@ -1256,51 +1256,51 @@ function Invoke-UserStateActions {
             # first provider the installed CLI accepts.
             $authLog = Join-Path $WorkRoot 'logs\user-state-auth.log'
             $labelFlags = @()
-            if ((& $hermes auth add --help 2>&1 | Out-String) -match '--label') {
+            if ((& $moor auth add --help 2>&1 | Out-String) -match '--label') {
                 $labelFlags = @('--label', 'e2e-preservation')
             }
             $added = $false
             foreach ($provider in @('openrouter', 'anthropic')) {
-                Add-Content -LiteralPath $authLog -Value "=== hermes auth add $provider ==="
-                & $hermes auth add $provider --type api-key `
+                Add-Content -LiteralPath $authLog -Value "=== moor auth add $provider ==="
+                & $moor auth add $provider --type api-key `
                     --api-key 'e2e-preservation-not-a-real-key' @labelFlags 2>&1 |
                     Out-File -Encoding UTF8 -Append $authLog
-                if (Test-Path -LiteralPath (Join-Path $HermesHome 'auth.json')) {
+                if (Test-Path -LiteralPath (Join-Path $MoorHome 'auth.json')) {
                     $added = $true
                     break
                 }
             }
             if (-not $added) {
-                throw "hermes auth add failed for openrouter and anthropic; see $authLog"
+                throw "moor auth add failed for openrouter and anthropic; see $authLog"
             }
             Write-Host '  a pooled credential exists (auth.json)'
             }
         }
 
-        if (-not (Test-Path -LiteralPath (Join-Path $HermesHome 'profiles\e2e-second'))) {
+        if (-not (Test-Path -LiteralPath (Join-Path $MoorHome 'profiles\e2e-second'))) {
             # Same vintage surface as auth add above: a starting tag may predate
             # the profile command entirely, and that is a harness limitation,
             # not a preservation failure.
-            & $hermes profile create --help *> $null
+            & $moor profile create --help *> $null
             if ($LASTEXITCODE -ne 0) {
-                Write-Host '  SKIP hermes profile create does not exist on this ref; profiles/e2e-second is not covered by this leg'
+                Write-Host '  SKIP moor profile create does not exist on this ref; profiles/e2e-second is not covered by this leg'
             }
             else {
-            & $hermes profile create e2e-second 2>&1 |
+            & $moor profile create e2e-second 2>&1 |
                 Out-File -Encoding UTF8 (Join-Path $WorkRoot 'logs\user-state-profile.log')
-            if ($LASTEXITCODE -ne 0) { throw 'hermes profile create failed' }
-            if (-not (Test-Path -LiteralPath (Join-Path $HermesHome 'profiles\e2e-second'))) {
-                throw 'hermes profile create produced no profile dir'
+            if ($LASTEXITCODE -ne 0) { throw 'moor profile create failed' }
+            if (-not (Test-Path -LiteralPath (Join-Path $MoorHome 'profiles\e2e-second'))) {
+                throw 'moor profile create produced no profile dir'
             }
             # Factory templates migrate intentionally; preserve an authored profile instead.
-            Add-Content -LiteralPath (Join-Path $HermesHome 'profiles\e2e-second\SOUL.md') `
+            Add-Content -LiteralPath (Join-Path $MoorHome 'profiles\e2e-second\SOUL.md') `
                 -Encoding UTF8 -Value "`nUser preference: preserve my e2e-second profile identity across upgrades."
             Write-Host '  a second profile exists (profiles/e2e-second)'
             }
         }
     }
     finally {
-        $env:HERMES_DISABLE_LAZY_INSTALLS = $prevLazy
+        $env:MOOR_DISABLE_LAZY_INSTALLS = $prevLazy
         $ErrorActionPreference = $prevEap
     }
 }
@@ -1308,7 +1308,7 @@ function Invoke-UserStateActions {
 function Invoke-UserStateSnapshot {
     $snap = Join-Path $WorkRoot 'user-state-snapshot.json'
     if (Test-Path -LiteralPath $snap) { throw 'refusing to overwrite an existing user-state snapshot' }
-    & python (Join-Path $AssetsDir 'verify-user-state.py') snapshot --home $HermesHome --out $snap
+    & python (Join-Path $AssetsDir 'verify-user-state.py') snapshot --home $MoorHome --out $snap
     if ($LASTEXITCODE -ne 0) { throw "user-state snapshot failed (exit $LASTEXITCODE)" }
     Write-Host "  pre-upgrade user-state snapshot: $snap"
 }
@@ -1321,7 +1321,7 @@ function Invoke-UserStateVerify {
     $report = Join-Path $WorkRoot 'logs\user-state-report.json'
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     try {
-        & python (Join-Path $AssetsDir 'verify-user-state.py') verify --home $HermesHome `
+        & python (Join-Path $AssetsDir 'verify-user-state.py') verify --home $MoorHome `
             --snapshot $snap --report $report
         $code = $LASTEXITCODE
     }
@@ -1333,16 +1333,16 @@ function Invoke-UserStateVerify {
 }
 
 function Assert-RedirectIsTransportOnly {
-    # The redirect must stay at TRANSPORT level: `hermes update` resolves its
+    # The redirect must stay at TRANSPORT level: `moor update` resolves its
     # channel from the release archive and validates the record against
     # `git config --get remote.origin.url`. If the configured URL ever looked
     # like the rehearsal source, channel resolution would fail and this leg
     # would be testing a fork install rather than the real user path.
-    $official = @('https://github.com/NousResearch/hermes-agent.git',
+    $official = @('https://github.com/thisismamad-n/Moor.git',
                   'git@github.com:NousResearch/hermes-agent.git')
     $configured = (Invoke-Git @('-C', $InstallDir, 'config', '--get', 'remote.origin.url') | Out-String).Trim()
     Assert-True ($official -contains $configured) "origin stays configured as an official URL (got '$configured')"
-    $real = if ($env:HERMES_E2E_REAL_GIT) { $env:HERMES_E2E_REAL_GIT } else { 'git' }
+    $real = if ($env:MOOR_E2E_REAL_GIT) { $env:MOOR_E2E_REAL_GIT } else { 'git' }
     $observed = (& $real -C $InstallDir remote get-url origin 2>$null | Out-String).Trim()
     Assert-True ($observed -match 'serve\.git|^file://') "git transport is redirected to the staged repo (got '$observed')"
 }
@@ -1350,10 +1350,10 @@ function Assert-RedirectIsTransportOnly {
 function Assert-UserShims {
     # A launcher left pointing at a vanished tree is the "update lost
     # something" shape a checkout-hash assertion cannot see.
-    $hermes = Get-SourceHermes $InstallDir
-    Assert-True (Test-Path -LiteralPath $hermes) "a usable launcher still exists after the upgrade ($hermes)"
-    $userShim = Join-Path $HermesHome 'bin\hermes.exe'
-    if (-not (Test-Path -LiteralPath $userShim)) { $userShim = Join-Path $HermesHome 'bin\hermes.cmd' }
+    $moor = Get-SourceMoor $InstallDir
+    Assert-True (Test-Path -LiteralPath $moor) "a usable launcher still exists after the upgrade ($moor)"
+    $userShim = Join-Path $MoorHome 'bin\moor.exe'
+    if (-not (Test-Path -LiteralPath $userShim)) { $userShim = Join-Path $MoorHome 'bin\moor.cmd' }
     if (Test-Path -LiteralPath $userShim) {
         $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
         try {
@@ -1361,13 +1361,13 @@ function Assert-UserShims {
             $shimExit = $LASTEXITCODE
         }
         finally { $ErrorActionPreference = $prevEap }
-        Assert-True ($shimExit -eq 0) "the $HermesHome\bin launcher still runs after the upgrade"
+        Assert-True ($shimExit -eq 0) "the $MoorHome\bin launcher still runs after the upgrade"
     }
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
     if ($userPath) {
         # The fixture home contains ``..`` while Windows can persist the same
         # directory canonically. Compare path identities, not raw substrings.
-        $expectedUserBin = [IO.Path]::GetFullPath((Join-Path $HermesHome 'bin')).TrimEnd('\')
+        $expectedUserBin = [IO.Path]::GetFullPath((Join-Path $MoorHome 'bin')).TrimEnd('\')
         $userPathEntries = @(
             foreach ($entry in ($userPath -split ';')) {
                 if (-not $entry) { continue }
@@ -1421,9 +1421,9 @@ function Invoke-PhaseInstall {
 function Invoke-PhaseUpdate {
     $state = Read-State
     $script:ExpectedDesktop = if ($InstallMethod -ne 'installer-script' -or $Route -in @(
-        'installer-script+desktop', 'desktop-installer@latest', 'open-app-update', 'hermes-desktop-app-update'
+        'installer-script+desktop', 'desktop-installer@latest', 'open-app-update', 'moor-desktop-app-update'
     )) { 'present' } else { 'absent' }
-    $env:HERMES_HOME = $HermesHome
+    $env:MOOR_HOME = $MoorHome
     # Match the POSIX driver's explicit opt-out when a detached updater bypasses
     # the PATH shim and sees our local transport as a fork.
     New-Item -ItemType File -Path (Join-Path $MoorHome ".skip_upstream_prompt") -Force | Out-Null
@@ -1434,7 +1434,7 @@ function Invoke-PhaseUpdate {
     # helper used to own this step.
     # The mock provider is journey setup, not an upgrade mutation. Configure it
     # before preservation snapshots so its stable endpoint is part of baseline state.
-    if ($Route -in @('open-app-update', 'hermes-desktop-app-update', 'desktop-installer@latest')) {
+    if ($Route -in @('open-app-update', 'moor-desktop-app-update', 'desktop-installer@latest')) {
         Start-JourneyChat
     }
     # Snapshot every plugin tree BEFORE the upgrade moves anything.
@@ -1486,7 +1486,7 @@ function Invoke-PhaseUpdate {
     }
 
     Assert-True ((Get-InstalledHead) -eq $state.current) "checkout landed on $($state.target_label)"
-    Test-HermesRuns "post-update"
+    Test-MoorRuns "post-update"
     Assert-UserShims
     Invoke-PreserveVerify
     Invoke-UserStateVerify
@@ -1533,7 +1533,7 @@ function Invoke-PhaseVerifyStamp {
     Assert-True ($head -match '^[0-9a-f]{40}$') "installed HEAD readable: '$head'"
     Write-Host "  install HEAD: $($head.Substring(0, 12))"
     & python -B (Join-Path $RepoRoot 'scripts\verify-bootstrap-version-stamp.py') `
-        --stamp (Join-Path $InstallDir '.hermes-bootstrap-complete') `
+        --stamp (Join-Path $InstallDir '.moor-bootstrap-complete') `
         --repo $InstallDir --expect-commit $state.current
     if ($LASTEXITCODE -ne 0) { throw "stamp verification failed (exit $LASTEXITCODE)" }
 }

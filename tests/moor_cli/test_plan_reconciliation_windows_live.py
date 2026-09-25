@@ -5,7 +5,7 @@ Real processes with real moor-shaped argv, real inventory collection
 reconciliation. No mocks on the components under test.
 
  1. Spawn a real process with a `gateway run` command line registered as the
-    profile gateway (state file in a temp HERMES_HOME) — real
+    profile gateway (state file in a temp MOOR_HOME) — real
     collect_runtime_inventory() must verify and find it, classify
     supervisor=manual, mechanism id 'manual' (machine id, not display string).
  2. Reconcile with bookkeeping that MISSES it -> unaccounted + escalation.
@@ -54,7 +54,7 @@ def test_plan_reconciliation_live_windows(tmp_path, monkeypatch):
     # which requires a live `gateway run` command line (#109680), so the
     # stand-in wears one; a bare sleeper is recorded too and must NOT count.
     child = subprocess.Popen(
-        [sys.executable, "-c", "import time; time.sleep(120)", "hermes", "gateway", "run"],
+        [sys.executable, "-c", "import time; time.sleep(120)", "moor", "gateway", "run"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     foreign = subprocess.Popen(
@@ -125,7 +125,7 @@ def test_plan_reconciliation_live_windows(tmp_path, monkeypatch):
             "pid": foreign.pid,
             "create_time": psutil.Process(foreign.pid).create_time(),
             "gateway_state": "running",
-            "kind": "hermes-gateway",
+            "kind": "moor-gateway",
             "code_sha": "f" * 40,
         }), encoding="utf-8")
         plan2 = collect_runtime_inventory()

@@ -3,9 +3,9 @@ import argparse
 import json
 import shutil
 
-from hermes_cli import update_completion
-from hermes_cli.subcommands.update import build_update_parser
-from tests.hermes_cli.test_update_completion_process import transition  # noqa: F401
+from moor_cli import update_completion
+from moor_cli.subcommands.update import build_update_parser
+from tests.moor_cli.test_update_completion_process import transition  # noqa: F401
 
 
 def test_restart_deferral_crosses_real_completion_process(transition):
@@ -13,10 +13,10 @@ def test_restart_deferral_crosses_real_completion_process(transition):
     parser = argparse.ArgumentParser()
     build_update_parser(parser.add_subparsers(), cmd_update=lambda args: None)
     request["no_gateway_restart"] = parser.parse_args(["update", "--no-gateway-restart"]).no_gateway_restart
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
-    receipt = root / "hermes_cli/update_receipt.py"
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
+    receipt = root / "moor_cli/update_receipt.py"
     with receipt.open("a", encoding="utf-8") as stream:
-        stream.write("\nfrom hermes_cli.probe import event\ndef record_skip(*args): event('deferred')\n")
+        stream.write("\nfrom moor_cli.probe import event\ndef record_skip(*args): event('deferred')\n")
     marker = root / "fleet_restart_pending"
     marker.write_text("pending", encoding="utf-8")
 

@@ -1,9 +1,9 @@
 /**
  * The pending cold-open mark is a spinner on the clicked row, not a new owner.
- * Highlight still follows the chat on screen (hermes-agent#120277).
+ * Highlight still follows the chat on screen (moor-agent#120277).
  */
 
-import type * as HermesSdk from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
@@ -13,8 +13,8 @@ import { $groupChatWorkspace } from './group-chat'
 import { translateBotsIn } from './i18n-test-helper'
 import type { RosterRow } from './types'
 
-vi.mock('@hermes/plugin-sdk', async importOriginal => {
-  const sdk = await importOriginal<typeof HermesSdk>()
+vi.mock('@moor/plugin-sdk', async importOriginal => {
+  const sdk = await importOriginal<typeof MoorSdk>()
 
   return {
     ...sdk,

@@ -76,17 +76,17 @@ class _TinyImageHandler(http.server.BaseHTTPRequestHandler):
 
 @pytest.fixture
 def http_server(tmp_path, monkeypatch):
-    """Spin up a localhost HTTP server and isolate HERMES_HOME under tmp_path.
+    """Spin up a localhost HTTP server and isolate MOOR_HOME under tmp_path.
 
-    ``HERMES_ALLOW_PRIVATE_URLS`` opts the loopback test server into private-IP
+    ``MOOR_ALLOW_PRIVATE_URLS`` opts the loopback test server into private-IP
     reach (the same toggle a LAN-hosted provider would set) — save_url now
     refuses private targets by default.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "1")
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    monkeypatch.setenv("MOOR_ALLOW_PRIVATE_URLS", "1")
     from tools import url_safety
     url_safety._reset_allow_private_cache()
-    (tmp_path / ".hermes").mkdir()
+    (tmp_path / ".moor").mkdir()
 
     # Force the constants/image cache helpers to re-read MOOR_HOME.
     import sys
@@ -100,7 +100,7 @@ def http_server(tmp_path, monkeypatch):
     thread.start()
     yield f"http://127.0.0.1:{port}", httpd
     httpd.shutdown()
-    monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
+    monkeypatch.delenv("MOOR_ALLOW_PRIVATE_URLS", raising=False)
     url_safety._reset_allow_private_cache()
 
 

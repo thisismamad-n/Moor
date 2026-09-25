@@ -9,17 +9,17 @@ import sys
 
 import pytest
 
-from hermes_cli import _launchers
+from moor_cli import _launchers
 from pm.environments import install_state_dir, site_packages
 
 ROOT = Path(__file__).resolve().parents[2]
 BOOT_FILES = (
-    "hermes_bootstrap.py", "hermes_constants.py", "hermes_cli/__init__.py", "hermes_cli/_launchers.py",
-    "pm/environments.py", "pm/filesystem.py", "pm/paths.py", "hermes_cli/runtime_state.py",
-    "hermes_cli/_early_recovery.py", "hermes_cli/_parser.py",
-    "hermes_cli/venv_sync.py", "hermes_cli/steward.py",
-    "hermes_cli/stderr_timestamp.py",
-    "scripts/hermes-gateway",
+    "moor_bootstrap.py", "moor_constants.py", "moor_cli/__init__.py", "moor_cli/_launchers.py",
+    "pm/environments.py", "pm/filesystem.py", "pm/paths.py", "moor_cli/runtime_state.py",
+    "moor_cli/_early_recovery.py", "moor_cli/_parser.py",
+    "moor_cli/venv_sync.py", "moor_cli/steward.py",
+    "moor_cli/stderr_timestamp.py",
+    "scripts/moor-gateway",
 )
 
 
@@ -36,19 +36,19 @@ def fixture_tree(tmp_path, monkeypatch):
         "def main():\n"
         "    import selected_probe\n"
         "    print(json.dumps({'value': selected_probe.VALUE, 'argv': sys.argv[1:], "
-        "'home': os.environ.get('HERMES_HOME'), 'exe': sys.executable}))\n"
+        "'home': os.environ.get('MOOR_HOME'), 'exe': sys.executable}))\n"
         "    return 7\n"
         "if __name__ == '__main__':\n    sys.exit(main())\n"
     )
-    for path in (repo / "hermes_cli/main.py", repo / "acp_adapter/entry.py"):
+    for path in (repo / "moor_cli/main.py", repo / "acp_adapter/entry.py"):
         path.write_text(entry, encoding="utf-8")
     # Windows resolves its default under LOCALAPPDATA, not HOME.
     if os.name == "nt":
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-    home = tmp_path / ("hermes" if os.name == "nt" else ".hermes")
+    home = tmp_path / ("moor" if os.name == "nt" else ".moor")
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_RUNTIME_DIR", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.delenv("MOOR_RUNTIME_DIR", raising=False)
     store = home / "tools"
     store.mkdir(parents=True)
     interpreter = Path(sys._base_executable).resolve()
@@ -90,8 +90,8 @@ def test_source_launchers_boot_selected_generation_from_custom_home(tmp_path, mo
     for number in (1, 2):
         select_generation(repo, number, number)
         env = dict(os.environ)
-        env.pop("HERMES_HOME", None)
-        env.pop("HERMES_RUNTIME_DIR", None)
+        env.pop("MOOR_HOME", None)
+        env.pop("MOOR_RUNTIME_DIR", None)
         env["PYTHONHOME"] = str(tmp_path / "foreign-python")
         env["PYTHONPATH"] = str(tmp_path / "foreign-deps")
         for launcher in launchers:
@@ -116,16 +116,16 @@ def test_launcher_resolves_default_home_at_use_not_publication(tmp_path, monkeyp
     new_user_home = tmp_path / "second-user"
     new_user_home.mkdir()
     monkeypatch.setenv("HOME", str(new_user_home))
-    monkeypatch.setenv("HERMES_HOME", str(new_user_home / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(new_user_home / ".moor"))
     select_generation(repo, "second", "from-second-user")
     env = dict(os.environ)
-    env.pop("HERMES_HOME")
+    env.pop("MOOR_HOME")
     result = subprocess.run([str(launcher)], cwd=tmp_path, env=env,
                             capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert result.returncode == 7, result.stdout + result.stderr
-    assert json.loads(result.stdout)["home"] == str(new_user_home / ".hermes")
+    assert json.loads(result.stdout)["home"] == str(new_user_home / ".moor")
     assert json.loads(result.stdout)["value"] == "from-second-user"
-    assert published_home != new_user_home / ".hermes"
+    assert published_home != new_user_home / ".moor"
 
 
 @pytest.mark.parametrize("publisher", [
@@ -135,11 +135,11 @@ def test_launcher_resolves_default_home_at_use_not_publication(tmp_path, monkeyp
     pytest.param("cmd", marks=pytest.mark.platforms("windows")),
 ])
 def test_profile_publication_preserves_shared_launcher_default_home(tmp_path, monkeypatch, publisher):
-    from hermes_cli import boot_bootstrap, post_update
+    from moor_cli import boot_bootstrap, post_update
 
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(repo))
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(repo))
     profile = home / "profiles" / "coder"
     profile.mkdir(parents=True)
     (home / "active_profile").write_text("default\n", encoding="utf-8")
@@ -157,9 +157,9 @@ def test_profile_publication_preserves_shared_launcher_default_home(tmp_path, mo
 
     def assert_home(override, expected):
         env = dict(os.environ)
-        env.pop("HERMES_HOME", None)
+        env.pop("MOOR_HOME", None)
         if override is not None:
-            env["HERMES_HOME"] = str(override)
+            env["MOOR_HOME"] = str(override)
         for launcher in launchers:
             result = subprocess.run([str(launcher)], cwd=tmp_path, env=env,
                                     capture_output=True, text=True, encoding="utf-8", timeout=30)
@@ -170,7 +170,7 @@ def test_profile_publication_preserves_shared_launcher_default_home(tmp_path, mo
             assert Path(receipt["exe"]).samefile(interpreter)
 
     assert_home(None, home)
-    monkeypatch.setenv("HERMES_HOME", str(profile))
+    monkeypatch.setenv("MOOR_HOME", str(profile))
     if publisher == "boot":
         # Keep the real per-profile boot gate and exposure step, not unrelated
         # migrations. A named profile's first boot republishes the shared files.
@@ -190,7 +190,7 @@ def test_profile_publication_preserves_shared_launcher_default_home(tmp_path, mo
     other_home = tmp_path / "explicit custom home"
     other_home.mkdir()
     # A custom home is its own dependency root: it sees only generations committed there.
-    monkeypatch.setenv("HERMES_HOME", str(other_home))
+    monkeypatch.setenv("MOOR_HOME", str(other_home))
     select_generation(repo, "shared", "ready")
     assert_home(other_home, other_home)
 
@@ -205,16 +205,16 @@ def test_posix_materializer_publishes_only_executable_shell_launchers(tmp_path, 
     assert {p.name for p in launchers} == set(_launchers.ENTRY_POINTS)
     assert all(os.access(p, os.X_OK) for p in launchers)
     assert set(out.iterdir()) == set(launchers)
-    local = repo / ".hermes" / "bin"
+    local = repo / ".moor" / "bin"
     assert {p.name for p in local.iterdir()} == set(_launchers.ENTRY_POINTS)
-    launcher = local / "hermes"
+    launcher = local / "moor"
     expected = launcher.read_bytes()
     launcher.write_bytes(b"\xef\xbb\xbf" + expected if corruption == "bom" else expected.replace(b"\n", b"\r\n"))
     assert _launchers.ensure_install_launchers(repo, out)
     # Shell executables need exact bytes: neither a BOM before #! nor CRLF is
     # interchangeable with the generated script, even if text decoding agrees.
     assert launcher.read_bytes() == expected
-    result = subprocess.run([str(out / "hermes"), "--print-runtime-command"],
+    result = subprocess.run([str(out / "moor"), "--print-runtime-command"],
                             capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert result.returncode == 0, result.stderr
     assert Path(json.loads(result.stdout)[0]).samefile(_interpreter)
@@ -230,7 +230,7 @@ def test_materializer_cli_refuses_missing_store_without_publishing(tmp_path, mon
     orphan.parent.mkdir(parents=True)
     orphan.touch()  # uncommitted tool bytes are not an installed interpreter
     out = tmp_path / "bin"
-    result = subprocess.run([sys.executable, "-I", str(repo / "hermes_cli/_launchers.py"), str(out)],
+    result = subprocess.run([sys.executable, "-I", str(repo / "moor_cli/_launchers.py"), str(out)],
                             cwd=tmp_path, capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert result.returncode == 1, result.stdout + result.stderr
     assert "store interpreter" in result.stderr
@@ -241,22 +241,22 @@ def test_materializer_cli_refuses_missing_store_without_publishing(tmp_path, mon
 def test_boot_migrates_legacy_conveniences_to_selected_runtime(tmp_path, monkeypatch):
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(repo))
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(repo))
     select_generation(repo, 'current', 'migrated')
     out = home / ".local" / "bin"
     out.mkdir(parents=True)
     # Old venv and sibling-ACP wrappers, with an unrelated command sharing bin.
-    (out / "hermes").write_text(f'#!/bin/sh\nexec "{repo}/venv/bin/python" "{repo}/hermes" "$@"\n', encoding="utf-8")
-    (out / "hermes-acp").write_text(
-        '#!/usr/bin/env bash\n# Hermes Agent — ACP launcher (written by `hermes update`).\n'
-        f'exec "{out}/hermes" acp "$@"\n', encoding="utf-8")
+    (out / "moor").write_text(f'#!/bin/sh\nexec "{repo}/venv/bin/python" "{repo}/moor" "$@"\n', encoding="utf-8")
+    (out / "moor-acp").write_text(
+        '#!/usr/bin/env bash\n# Moor Agent — ACP launcher (written by `moor update`).\n'
+        f'exec "{out}/moor" acp "$@"\n', encoding="utf-8")
     foreign = f'#!/bin/sh\n# user note about {repo}\nexit 19\n'
-    (out / "hermes-agent").write_text(foreign, encoding="utf-8")
+    (out / "moor-agent").write_text(foreign, encoding="utf-8")
 
     result = _launchers.expose_cli()
     assert result["ok"], result
-    assert set(result["written"]) == {"hermes", "hermes-acp"}
-    for name in ("hermes", "hermes-acp"):
+    assert set(result["written"]) == {"moor", "moor-acp"}
+    for name in ("moor", "moor-acp"):
         run = subprocess.run([str(out / name), "quoted argument"], cwd=tmp_path,
                              capture_output=True, text=True, timeout=30, encoding="utf-8")
         assert run.returncode == 7, run.stderr
@@ -264,20 +264,20 @@ def test_boot_migrates_legacy_conveniences_to_selected_runtime(tmp_path, monkeyp
         assert receipt["value"] == "migrated"
         assert receipt["argv"] == ["quoted argument"]
         assert Path(receipt["exe"]).samefile(interpreter)
-    assert (out / "hermes-agent").read_text(encoding="utf-8-sig") == foreign
+    assert (out / "moor-agent").read_text(encoding="utf-8-sig") == foreign
     before = {p: p.stat().st_mtime_ns for p in out.iterdir()}
     assert _launchers.expose_cli()["written"] == []
     assert before == {p: p.stat().st_mtime_ns for p in out.iterdir()}
 
 
 def _command_survives_generation_collection(tmp_path, monkeypatch, surface):
-    from hermes_cli.runtime_state import collect_generations
+    from moor_cli.runtime_state import collect_generations
 
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     out = tmp_path / "bin"
     out.mkdir()
     _launchers.ensure_install_launchers(repo, out)
-    launcher = next(path for path in out.iterdir() if path.stem == "hermes")
+    launcher = next(path for path in out.iterdir() if path.stem == "moor")
     args = ["café ' quoted", "", "$HOME; not a shell"]
     command = []
     for value in ("old", "new"):
@@ -285,10 +285,10 @@ def _command_survives_generation_collection(tmp_path, monkeypatch, surface):
         (selected.parent / ".lease-managed").touch()
         if value == "old":
             if surface == "legacy":
-                command = [sys.executable, "-I", str(repo / "scripts/hermes-gateway"), "--help"]
+                command = [sys.executable, "-I", str(repo / "scripts/moor-gateway"), "--help"]
                 args = ["gateway", "--help"]
             elif surface == "ssh":
-                from hermes_cli.windows_ssh_runtime import _resolve_direct_command
+                from moor_cli.windows_ssh_runtime import _resolve_direct_command
                 command = [*_resolve_direct_command(str(launcher)), *args]
             elif surface == "published":
                 result = subprocess.run([str(launcher), "--print-runtime-command", "--", *args],
@@ -296,11 +296,11 @@ def _command_survives_generation_collection(tmp_path, monkeypatch, surface):
                 assert result.returncode == 0, result.stderr
                 command = json.loads(result.stdout)
             else:
-                from hermes_cli import gateway
+                from moor_cli import gateway
                 monkeypatch.setattr(gateway, "PROJECT_ROOT", repo)
                 if surface == "launchd":
                     import plistlib
-                    from tests.hermes_cli.test_gateway_service import _osascript_exec_argv
+                    from tests.moor_cli.test_gateway_service import _osascript_exec_argv
                     unit = gateway.generate_launchd_plist()
                     # The job runs through osascript (#71206); exec the child it would spawn, minus the
                     # `>> log 2>> log` tail that only means something to the shell.
@@ -343,23 +343,23 @@ def test_running_source_launcher_can_republish_itself(tmp_path, monkeypatch, lau
         import distlib
 
         shutil.copytree(Path(distlib.__file__).parent, site_packages(selected) / "distlib")
-    entry = repo / "hermes_cli/main.py"
+    entry = repo / "moor_cli/main.py"
     entry.write_text(
         "from pathlib import Path\n"
-        "from hermes_cli._launchers import ensure_install_launchers, ENTRY_POINTS\n"
+        "from moor_cli._launchers import ensure_install_launchers, ENTRY_POINTS\n"
         "def main():\n"
         "    root = Path(__file__).resolve().parents[1]\n"
-        "    written = ensure_install_launchers(root, root / '.hermes/bin')\n"
+        "    written = ensure_install_launchers(root, root / '.moor/bin')\n"
         "    print('published', len(written), len(ENTRY_POINTS), flush=True)\n"
         "    return 0 if len(written) == len(ENTRY_POINTS) else 1\n",
         encoding="utf-8",
     )
-    out = repo / ".hermes/bin"
+    out = repo / ".moor/bin"
     if launcher_form == "cmd":
         monkeypatch.setattr(_launchers, "_load_script_maker", lambda: None)
     launchers = _launchers.ensure_install_launchers(repo, out)
     assert len(launchers) == len(_launchers.ENTRY_POINTS)
-    command = next(Path(p) for p in launchers if Path(p).stem == "hermes")
+    command = next(Path(p) for p in launchers if Path(p).stem == "moor")
     assert command.suffix == (".cmd" if launcher_form == "cmd" else ".exe")
     result = subprocess.run([str(command)], cwd=tmp_path, capture_output=True,
                             text=True, encoding="utf-8", timeout=30)
@@ -373,7 +373,7 @@ def test_running_source_launcher_can_republish_itself(tmp_path, monkeypatch, lau
 @pytest.mark.platforms("windows")
 def test_repin_without_distlib_retires_stale_native_launcher(tmp_path, monkeypatch):
     repo, home, _interpreter = fixture_tree(tmp_path, monkeypatch)
-    local = repo / ".hermes/bin"
+    local = repo / ".moor/bin"
     original = Path(_launchers.ensure_install_launchers(repo, local)[0])
     assert original.suffix == ".exe"
     new_python = home / "tools" / "repinned" / "python.exe"
@@ -382,28 +382,28 @@ def test_repin_without_distlib_retires_stale_native_launcher(tmp_path, monkeypat
     (home / "tools/facts.json").write_text(
         json.dumps({"packages": {"python": {"entry": "repinned"}}}), encoding="utf-8")
     monkeypatch.setattr(_launchers, "_load_script_maker", lambda: None)
-    result = _launchers.stage_launcher("hermes", repo, local)
-    assert result == local / "hermes.cmd"
+    result = _launchers.stage_launcher("moor", repo, local)
+    assert result == local / "moor.cmd"
     assert not original.exists()  # cmd.exe must not run the old exe first
     assert result is not None and str(new_python) in result.read_text(encoding="utf-8-sig")
 
 
 @pytest.mark.platforms("windows")
 def test_windows_repair_upgrades_healthy_old_pm_external_launchers(tmp_path, monkeypatch):
-    from hermes_cli._install_repair import ensure_windows_bin_launchers
+    from moor_cli._install_repair import ensure_windows_bin_launchers
 
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
-    managed = home / "hermes-agent"
+    managed = home / "moor-agent"
     shutil.move(repo, managed)
     external = home / "bin"
     external.mkdir()
     for name in _launchers.ENTRY_POINTS:
         (external / f"{name}.exe").write_bytes(b"old PM launcher without a venv binding")
     assert ensure_windows_bin_launchers(managed, user_path_entries=[])
-    local = managed / ".hermes" / "bin"
-    launcher = local / "hermes.exe"
+    local = managed / ".moor" / "bin"
+    launcher = local / "moor.exe"
     if not launcher.exists():
-        launcher = local / "hermes.cmd"
+        launcher = local / "moor.cmd"
     result = subprocess.run([str(launcher), "--print-runtime-command"], capture_output=True,
                             text=True, timeout=30, encoding="utf-8")
     assert result.returncode == 0, result.stderr
@@ -411,13 +411,13 @@ def test_windows_repair_upgrades_healthy_old_pm_external_launchers(tmp_path, mon
 
 
 def test_dashboard_action_boots_selected_dependencies(tmp_path, monkeypatch):
-    from hermes_cli import web_server, web_server_gateway
+    from moor_cli import web_server, web_server_gateway
 
     repo, home, _ = fixture_tree(tmp_path, monkeypatch)
     select_generation(repo, 'current', 'selected')
     monkeypatch.setattr(web_server, "PROJECT_ROOT", repo)
     monkeypatch.setattr(web_server_gateway, "_ACTION_LOG_DIR", home / "logs")
-    proc = web_server_gateway._spawn_hermes_action(["--version"], "gateway-restart")
+    proc = web_server_gateway._spawn_moor_action(["--version"], "gateway-restart")
     try:
         assert proc.wait(timeout=30) == 7
         log = (home / "logs" / web_server_gateway._ACTION_LOG_FILES["gateway-restart"]).read_text(encoding="utf-8-sig")
@@ -448,8 +448,8 @@ def test_pre_pm_base_dependencies_activate_only_at_boot(tmp_path, monkeypatch):
 
 
 def test_external_interpreter_keeps_its_owned_dependencies(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "empty-store"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(tmp_path / "empty-store"))
     command = _launchers.runtime_command(ROOT, code="import ruamel.yaml; print('external-runtime-ready')")
     result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, timeout=30, encoding="utf-8")
     assert result.returncode == 0, result.stderr
@@ -459,7 +459,7 @@ def test_external_interpreter_keeps_its_owned_dependencies(tmp_path, monkeypatch
 @pytest.mark.platforms("posix")
 @pytest.mark.spawns_gateway_lookalike
 def test_service_survives_python_tool_replacement(tmp_path, monkeypatch):
-    from hermes_cli import gateway
+    from moor_cli import gateway
 
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     monkeypatch.setattr(gateway, "PROJECT_ROOT", repo)
@@ -486,7 +486,7 @@ def test_service_survives_python_tool_replacement(tmp_path, monkeypatch):
 def test_sync_migrates_old_store_wrapper_before_python_collection(tmp_path, monkeypatch, create):
     import builtins
 
-    from hermes_cli.venv_sync import publish_launchers
+    from moor_cli.venv_sync import publish_launchers
 
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     monkeypatch.setattr(Path, "home", lambda: home)
@@ -497,7 +497,7 @@ def test_sync_migrates_old_store_wrapper_before_python_collection(tmp_path, monk
         original_import = builtins.__import__
 
         def without_config(name, *args, **kwargs):
-            assert name != "hermes_cli.config", "bootstrap publication imported application config"
+            assert name != "moor_cli.config", "bootstrap publication imported application config"
             return original_import(name, *args, **kwargs)
 
         monkeypatch.setattr(builtins, "__import__", without_config)
@@ -508,18 +508,18 @@ def test_sync_migrates_old_store_wrapper_before_python_collection(tmp_path, monk
         python.symlink_to(interpreter)
         (store / "facts.json").write_text(json.dumps({"schema": 1, "packages": {"python": {"entry": version}}}), encoding="utf-8")
         if version == "python-A":
-            _launchers.mint_launcher("hermes", repo, out, python, None)
+            _launchers.mint_launcher("moor", repo, out, python, None)
         else:
             if create:
                 publish_launchers(repo)
             else:
                 publish_launchers(repo, create=False)
-                assert set(out.iterdir()) == {out / "hermes"}
+                assert set(out.iterdir()) == {out / "moor"}
                 assert not (home / "bin").exists()
                 assert not (home / "config.yaml").exists()
                 assert not (home / "skills").exists()
     shutil.rmtree(store / "python-A")
-    result = subprocess.run([str(out / "hermes")], cwd=tmp_path,
+    result = subprocess.run([str(out / "moor")], cwd=tmp_path,
                             capture_output=True, text=True, timeout=30, encoding="utf-8")
     assert result.returncode == 7, result.stderr
     assert json.loads(result.stdout)["value"] == "ready"
@@ -527,7 +527,7 @@ def test_sync_migrates_old_store_wrapper_before_python_collection(tmp_path, monk
 
 
 def test_update_import_probe_uses_selected_dependencies(tmp_path, monkeypatch):
-    from hermes_cli import update_cmd, update_cmd_validation
+    from moor_cli import update_cmd, update_cmd_validation
 
     repo, _, _ = fixture_tree(tmp_path, monkeypatch)
     selected = install_state_dir(repo) / "environments" / "current" / "venv"
@@ -537,6 +537,6 @@ def test_update_import_probe_uses_selected_dependencies(tmp_path, monkeypatch):
     (site / "selected_probe.py").write_text("VALUE = 'selected'\n", encoding="utf-8")
     (install_state_dir(repo) / "facts.json").write_text(
         json.dumps({"packages": {"venv": {"environment": str(selected)}}}), encoding="utf-8")
-    (repo / "hermes_integrity_probe.py").write_text("import selected_probe\n", encoding="utf-8")
-    monkeypatch.setattr(update_cmd, "_UPDATE_CRITICAL_MODULES", ("hermes_integrity_probe",))
+    (repo / "moor_integrity_probe.py").write_text("import selected_probe\n", encoding="utf-8")
+    monkeypatch.setattr(update_cmd, "_UPDATE_CRITICAL_MODULES", ("moor_integrity_probe",))
     assert update_cmd_validation._critical_module_import_failures(repo, report_runtime_errors=True) == {}

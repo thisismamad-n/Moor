@@ -71,23 +71,23 @@ profile on the box.
 The default profile's lifecycle verbs target that process. Named profiles can
 stop or restart just their own bots without stopping the host:
 
-- `hermes -p <name> gateway run` while it is live **attaches** instead of
+- `moor -p <name> gateway run` while it is live **attaches** instead of
   starting a second process: it prints the host gateway's PID and served set and
   exits 0. If `<name>` is not served yet, it asks the host gateway to re-scan
   `profiles/` and attaches once the answer includes it; it refuses (non-zero)
   only when the host gateway cannot be made to serve it.
-- `hermes gateway start --all` / `restart --all` mean *the one host
+- `moor gateway start --all` / `restart --all` mean *the one host
   multiplexer*. They never sweep every gateway process on the box; a profile
   that still runs its own gateway is reported, never killed, with the
-  `hermes gateway migrate --multiplex` one-liner.
-- `hermes gateway run --replace` takes over the process **serving this
+  `moor gateway migrate --multiplex` one-liner.
+- `moor gateway run --replace` takes over the process **serving this
   profile**, whichever profile launched it. When the host owner is another
   profile's standalone gateway (an unmigrated per-profile fleet) it never serves
   this profile, so `--replace` starts beside it exactly as a plain `run` does,
-  instead of refusing and respawn-storming under the supervisor. An older Hermes
-  wrote a systemd drop-in (`hermes-gateway.service.d/20-replace.conf`) that
-  forced `--replace` onto the unit; `hermes update` / `hermes gateway restart`
-  now remove that file. `hermes gateway run --force` starts a separate gateway
+  instead of refusing and respawn-storming under the supervisor. An older Moor
+  wrote a systemd drop-in (`moor-gateway.service.d/20-replace.conf`) that
+  forced `--replace` onto the unit; `moor update` / `moor gateway restart`
+  now remove that file. `moor gateway run --force` starts a separate gateway
   without asking the host process at all (the escape hatch when it is wedged or
   answering wrongly).
 - Under a service supervisor the attach exits 75, not 0 — systemd, s6 and
@@ -101,7 +101,7 @@ stop or restart just their own bots without stopping the host:
 Multiplexing is **on by default** (`gateway.multiplex_profiles` defaults to
 `true`), with one safety rule: an *unset* flag is a request the default gateway
 settles at boot, never a verdict. Each start it runs the same preflight as
-[`hermes gateway migrate --multiplex`](#migrating-from-per-profile-gateways) and
+[`moor gateway migrate --multiplex`](#migrating-from-per-profile-gateways) and
 multiplexes only when the fold would have been safe — two
 or more profiles, no secondary still running its own gateway (live process or
 installed service, or under s6 a per-profile slot that is actually *up*), no
@@ -111,8 +111,8 @@ writes `gateway.multiplex_profiles: true` into the default profile's
 `config.yaml` (comments preserved) so the file says what the runtime does.
 Otherwise it comes up serving the default profile only and says so **loudly** on
 a host with other profiles: a boxed warning at gateway start naming the profiles
-that are not served, the blocker, and the fix; the same box in the `hermes
-update` summary and `hermes gateway status`; a banner in the dashboard
+that are not served, the blocker, and the fix; the same box in the `moor
+update` summary and `moor gateway status`; a banner in the dashboard
 (`/api/status` carries `multiplex_standalone_reason`). A single-profile install
 is not warned — there is nothing to serve. Nothing is written on a refusal.
 
@@ -125,7 +125,7 @@ profile that opts out with `gateway.standalone: true`:
   it is written for you. An unset key resolves on and is made explicit in the
   default profile's `config.yaml`. `false` is **retired**: the gateway rewrites
   it to `true` in place and prints a one-time boxed notice at that start and in
-  the next `hermes update` summary — never a silent flip. A per-profile gateway
+  the next `moor update` summary — never a silent flip. A per-profile gateway
   is `gateway.standalone: true` in that profile's own config (a temporary shim,
   not a supported topology) or `--force` for the boundary cases below.
 - `GATEWAY_MULTIPLEX_PROFILES` in the process environment overrides the
@@ -139,7 +139,7 @@ profile that opts out with `gateway.standalone: true`:
   default profile it is ignored with a warning — the default profile is the
   host gateway. There is no environment variable for this key.
 
-Other processes (`hermes -p <name> gateway start`, the dashboard, `hermes gateway
+Other processes (`moor -p <name> gateway start`, the dashboard, `moor gateway
 migrate`) never guess how an unset flag was settled: they read the running
 default gateway's `served_profiles` record, and fall back to the explicit flag
 only when no gateway runs.
@@ -157,7 +157,7 @@ profile's `gateway install` / `gateway start` refuses without `--force` (see
 still needs its own gateway while a multiplexing gap is open can set the
 temporary `gateway.standalone: true` in its own `config.yaml`; where a real
 boundary blocks the fold — a fleet split across
-UNIX users, or a `HERMES_HOME` outside `<default home>/profiles/` — every
+UNIX users, or a `MOOR_HOME` outside `<default home>/profiles/` — every
 profile keeps `--force` as its path.
 
 ### Pinning the flag
@@ -194,9 +194,9 @@ on a parked profile to bring it back online.
 For a named profile served by the host multiplexer:
 
 ```bash
-hermes -p coder gateway stop     # park coder; other profiles keep running
-hermes -p coder gateway start    # unpark coder and serve it again
-hermes -p coder gateway restart  # reconnect coder with its current configuration
+moor -p coder gateway stop     # park coder; other profiles keep running
+moor -p coder gateway start    # unpark coder and serve it again
+moor -p coder gateway restart  # reconnect coder with its current configuration
 ```
 
 `stop` writes `gateway.parked` in the profile home before asking the host to stop
@@ -216,8 +216,8 @@ The host also rescans every 30 seconds: adding the marker by hand unserves the
 profile; removing it by hand makes it eligible again. If the control socket
 does not confirm the request, the CLI says so and the next rescan applies the
 marker state. Adapter teardown or connection can take additional time.
-`hermes -p coder gateway status` reports
-`parked (hermes -p coder gateway start)` while the marker exists.
+`moor -p coder gateway status` reports
+`parked (moor -p coder gateway start)` while the marker exists.
 
 The launch profile cannot be unserved. The default profile's marker is ignored
 with a warning; its lifecycle verbs and the `--all` variants retain their
@@ -226,7 +226,7 @@ process lifecycle.
 
 The dashboard and Desktop **Stop** / **Start** buttons for a served profile do the
 same thing: Stop parks it (`/api/gateway/stop?profile=coder` spawns
-`hermes -p coder gateway stop`), Start unparks it while a host gateway is live,
+`moor -p coder gateway stop`), Start unparks it while a host gateway is live,
 and `/api/status` lists `parked_profiles`. Start on a named profile that is
 *not* parked still answers `409` — it would need a gateway of its own.
 
@@ -251,8 +251,8 @@ gap the [temporary shim](#temporary-gatewaystandalone-true) was kept open for.
 
 By default, one host gateway serves every profile, and a named profile does
 not get a gateway of its own. Without the opt-out below,
-`hermes -p coder gateway install` (or `start`, `run`, and
-the service step of `hermes -p coder setup`) refuses with exit 78 whether or not
+`moor -p coder gateway install` (or `start`, `run`, and
+the service step of `moor -p coder setup`) refuses with exit 78 whether or not
 a host gateway is running right now:
 
 ```
@@ -264,25 +264,25 @@ a host gateway is running right now:
 
   Install or start the host gateway from the default profile; it serves this one too:
 
-    hermes gateway install
+    moor gateway install
 
   Or fold an existing per-profile fleet onto one host gateway:
 
-    hermes gateway migrate --multiplex
+    moor gateway migrate --multiplex
 
   A separate per-profile gateway (for a fleet split across UNIX users or a
-  HERMES_HOME outside profiles/) needs --force:  hermes -p coder gateway install --force
+  MOOR_HOME outside profiles/) needs --force:  moor -p coder gateway install --force
 
   Temporary compatibility path while multiplexing gaps are closed: set
   gateway.standalone: true in profiles/coder/config.yaml,
   then wait for the host gateway to rescan (<=30s) or send its rescan-profiles control verb.
   (gateway.standalone is a temporary compatibility shim while multiplexing gaps are fixed;
-  it will be removed once they are — plan to fold this profile with `hermes gateway migrate --multiplex`.)
+  it will be removed once they are — plan to fold this profile with `moor gateway migrate --multiplex`.)
 ```
 
 When the host gateway is already running and serves the profile, the first
 line reads `The host gateway already serves profile 'coder'.` with the owner's
-PID and served set, and the pointer is `hermes -p default gateway restart`.
+PID and served set, and the pointer is `moor -p default gateway restart`.
 The dashboard's **Start** button for a named profile returns the same refusal.
 
 ### Temporary: `gateway.standalone: true`
@@ -312,7 +312,7 @@ gateway:
 
 The host gateway then does not serve the profile, and the boot log
 records `profile 'coder' is standalone (gateway.standalone: true); not served
-by this gateway`. `hermes -p coder gateway install|start|run` works without
+by this gateway`. `moor -p coder gateway install|start|run` works without
 `--force`. If the running host still lists the profile in its served set,
 the command refuses until it rescans: wait for the next rescan (at most 30
 seconds under normal operation), or send the `rescan-profiles` control verb
@@ -325,22 +325,22 @@ rescan.
 
 A standalone profile's adapters, cron, webhook ingress and Kanban
 notifications run only while its own gateway runs, not under the host
-multiplexer or `hermes serve`. Point webhook clients at the standalone
+multiplexer or `moor serve`. Point webhook clients at the standalone
 gateway's own listener; the host's `/p/<profile>/` ingress no longer serves
 it. The cron destination picker still lists standalone profiles as
 `bot-chat:<name>` targets, but the host cannot deliver to those targets.
 
-`hermes -p coder gateway status` prints `standalone by config
+`moor -p coder gateway status` prints `standalone by config
 (gateway.standalone: true)` before the profile's own gateway state, and
-`hermes gateway status` (default) lists it as `standalone by config: coder`
-after the served set. `hermes gateway migrate --multiplex` leaves the profile
+`moor gateway status` (default) lists it as `standalone by config: coder`
+after the served set. `moor gateway migrate --multiplex` leaves the profile
 alone and prints it as `Standalone by config (gateway.standalone: true), left
 alone`. The WhatsApp bridge and relay run in the profile's own gateway, as in
 any standalone gateway.
 
 `--force` is not the path for this shim; it remains the escape for the two
 boundary cases the refusal names (a fleet split across UNIX users, a
-`HERMES_HOME` outside `profiles/`): it installs a real per-profile service, and
+`MOOR_HOME` outside `profiles/`): it installs a real per-profile service, and
 that service (its `ExecStart` carries no `--force`) keeps starting normally
 afterwards.
 
@@ -356,7 +356,7 @@ With a multiplexer running, a named profile's `gateway run` attaches to it;
 `gateway install` refuses to create another process (exit code 78). The CLI
 refuses before touching a service manager, preventing a permanently failed
 systemd unit or a launchd respawn loop. Use the per-profile `stop`, `start`, and
-`restart` commands above to manage a satellite inside the host. `hermes gateway
+`restart` commands above to manage a satellite inside the host. `moor gateway
 stop` on the default profile still takes every served profile offline.
 The dashboard and Desktop app follow the CLI: for a served profile the "Stop" action
 parks it and "Start" unparks it (see above); "Start" on an unparked named profile
@@ -563,11 +563,11 @@ parent conversation.
 
 #### 5. One PID/lock and one status surface
 
-There is a single process-level PID and lock (the multiplexer, under the default home). `hermes status` on the default profile reports the multiplexer and lists the profiles it serves (`Serves: coder, research`). `hermes -p coder status` and `hermes -p coder gateway status` report "running via the default-profile multiplexer" instead of "stopped". The dashboard's `/api/status?profile=coder` / Channels page report the multiplexer as coder's running gateway, with coder's own adapters as its platforms. The single `gateway_state.json` lives under the default home: secondary adapters appear there as `<profile>:<platform>` entries beside `served_profiles`; no per-profile gateway status file is written.
+There is a single process-level PID and lock (the multiplexer, under the default home). `moor status` on the default profile reports the multiplexer and lists the profiles it serves (`Serves: coder, research`). `moor -p coder status` and `moor -p coder gateway status` report "running via the default-profile multiplexer" instead of "stopped". The dashboard's `/api/status?profile=coder` / Channels page report the multiplexer as coder's running gateway, with coder's own adapters as its platforms. The single `gateway_state.json` lives under the default home: secondary adapters appear there as `<profile>:<platform>` entries beside `served_profiles`; no per-profile gateway status file is written.
 
-`hermes -p coder cron status` names the single host gateway and the profiles it serves — `Scheduler host: the host gateway (PID 4211) serving profiles default, coder` — then checks coder's own ticker heartbeat and last successful tick. A missing or stale heartbeat produces a warning rather than an unconditional running verdict. `cron list` and `cron create` also warn when a served profile has no fresh heartbeat. `cron status` adds tick-failure details that those lightweight checks do not read.
+`moor -p coder cron status` names the single host gateway and the profiles it serves — `Scheduler host: the host gateway (PID 4211) serving profiles default, coder` — then checks coder's own ticker heartbeat and last successful tick. A missing or stale heartbeat produces a warning rather than an unconditional running verdict. `cron list` and `cron create` also warn when a served profile has no fresh heartbeat. `cron status` adds tick-failure details that those lightweight checks do not read.
 
-When no gateway owns the host role, `cron status` tells you to start the **one** host gateway (`hermes --profile default gateway install` / `gateway run`) and to make sure it serves this profile. Installing a per-profile service is shown only under `LEGACY (pre-multiplex topology, not recommended)`: it would start a second gateway process on the host. `hermes doctor` follows the same rule — under s6 it reports `Host gateway: the host gateway (PID 4211) serving profiles default, coder` instead of a per-profile slot count, flags any still-supervised per-profile slot as LEGACY, and checks the host systemd unit's linger even when you run doctor from a served profile. The `state.db` holder lines name the shared host process too, so "3 process(es) holding the DB open" says which gateway and which profiles stopping it would affect.
+When no gateway owns the host role, `cron status` tells you to start the **one** host gateway (`moor --profile default gateway install` / `gateway run`) and to make sure it serves this profile. Installing a per-profile service is shown only under `LEGACY (pre-multiplex topology, not recommended)`: it would start a second gateway process on the host. `moor doctor` follows the same rule — under s6 it reports `Host gateway: the host gateway (PID 4211) serving profiles default, coder` instead of a per-profile slot count, flags any still-supervised per-profile slot as LEGACY, and checks the host systemd unit's linger even when you run doctor from a served profile. The `state.db` holder lines name the shared host process too, so "3 process(es) holding the DB open" says which gateway and which profiles stopping it would affect.
 
 #### What does **not** change
 
@@ -674,17 +674,17 @@ profile and never shares with the default or any sibling:
 | Sandbox credential-file mounts (`terminal.credential_files`), `security.redact_secrets`, `browser.*` engine/headed flags, `lsp.*`, auxiliary-provider health marks, `logs/mcp-stderr.log` | The profile's own `config.yaml` / `.env` | Documented default — never the launch profile's cached value |
 | Cloud-SDK credential clients (Bedrock boto3 clients + model discovery, Azure Entra credential), credential-fetched catalogs (DeepInfra, Copilot context limits, Moor reasoning caps, Ramp Router efforts, xAI / OpenRouter image models, custom-endpoint `/models`), Camofox VNC address, computer-use aux-vision routing, skill-sync push, remote-backend probe text, learned image token costs, `display.skin`, guest-mint back-off, banner skills, Yuanbao "active" adapter, Langfuse client | The profile's own `.env` / `config.yaml` / `<home>/cache` | Documented default — never the launch profile's cached value or its credentials |
 | Session-search knobs (`sessions.cjk_fts`, `sessions.search_slow_ms`) | The profile's `config.yaml` | Documented default — never the default profile's bridged value |
-| RoomLink capability catalog and the signed execution policy it advertises to a remote Bot (`approvals.mode`, `agent.max_turns`, `platform_toolsets.api_server`) | The served profile named by the request (`/p/<profile>/v1/room-members/...`, the RPC `profile` param); `target_profile` is **required** on every catalog — there is no `HERMES_PROFILE` fallback | Invitation/capabilities fail with the offending `target_profile` named; a profile that does not exist is refused, never resolved from the launch profile's config |
+| RoomLink capability catalog and the signed execution policy it advertises to a remote Bot (`approvals.mode`, `agent.max_turns`, `platform_toolsets.api_server`) | The served profile named by the request (`/p/<profile>/v1/room-members/...`, the RPC `profile` param); `target_profile` is **required** on every catalog — there is no `MOOR_PROFILE` fallback | Invitation/capabilities fail with the offending `target_profile` named; a profile that does not exist is refused, never resolved from the launch profile's config |
 | Platform proxies (`TELEGRAM_PROXY`, `DISCORD_PROXY`, `HTTPS_PROXY`, …) | The profile's own `.env` | Direct connection — never the default profile's proxy |
 | MCP discovery in the Desktop/dashboard backend | Once per served profile home | A profile selected after another has already built an agent still discovers its own `mcp_servers` |
 | Settings changed from a Desktop / TUI session (`/busy`, `/verbose`, `/approval`, `/cwd`, theme and display toggles) | The `config.yaml` of the profile that owns the session, even when the RPC carries only the session id | The session's own profile is written; the launch profile's `config.yaml` and its `TERMINAL_CWD` are never touched |
 | MCP connections in the Desktop/dashboard backend and the per-profile cron ticker | Keyed per served profile even with `gateway.multiplex_profiles` off — same rule as the multiplexer | A same-named `mcp_servers` entry with other credentials is its own connection; a served profile never calls a server as another profile |
 | Dashboard actions (`moor -p <name> …` spawned by the Desktop/dashboard) | A scrubbed child env pinned to that profile's `MOOR_HOME` | The child loads its own `.env`; the dashboard profile's tokens and ports are not inherited |
 | Every child that acts for a served profile (slash worker, Bot Chat delivery, A2A forward, `key_cmd` helper, browser driver) | That profile's own `.env` + secret sources over a credential-scrubbed base — with or without `gateway.multiplex_profiles` (the Desktop/dashboard `?profile=` route counts) | Absent from the child — a key that reached the launch process only through systemd / Compose / the shell is never inherited by another profile's child |
-| Authorization gates in a child spawned for another profile (`*_ALLOWED_USERS` / `*_ALLOWED_CHANNELS` / `*_IGNORED_CHANNELS` / `*_ALLOW_ALL_USERS` / `*_ALLOW_BOTS`, `GATEWAY_ALLOW*`) — dashboard `hermes -p <name>` actions, kanban workers, Bot Chat delivery, the post-update per-profile `gateway restart` | The child's own `.env` / `config.yaml`, loaded by the child itself | Closed (the adapter's documented default) — a gate exported into the spawning process by a unit file or the shell is dropped before the child starts, so profile B never enforces profile A's channel or user list; a same-profile child keeps it |
-| Routed-profile detection in an embedding host that mirrors the served profile into the live `HERMES_HOME` env var for legacy readers (Hermes WebUI) | The launch home the host pinned with `hermes_constants.pin_process_hermes_home()`; MCP connection keys, the launch-env strip for a served profile's children, the bridged allow-all seed and the `terminal.*` env-bridge guard all compare against it | Without a pin the live env var is the launch home, exactly as before — a host that never mutates `HERMES_HOME` needs nothing |
-| The launch (default) profile's own credentials in a `hermes serve` / dashboard process that also serves another profile | Its `.env` + secret sources over the process env **frozen the moment the first other profile is served**; not re-read afterwards | A credential rotated only in the process env (`systemctl set-environment`, a refreshed `op run` wrapper that did not re-exec) is not picked up until the process restarts — put rotating keys in `.env` or a secret source, or restart after rotating |
-| Cron `.env` tuning (`HERMES_CRON_TIMEOUT`, `HERMES_MODEL` fallback, `HERMES_CRON_MAX_PARALLEL`, prefill file), worker / Bot Chat child env | The profile's own `.env`; children never inherit the default profile's `.env` settings or bridged `TERMINAL_*` policy | Cron defaults / model refusal, exactly as a standalone `hermes -p <name> gateway run` |
+| Authorization gates in a child spawned for another profile (`*_ALLOWED_USERS` / `*_ALLOWED_CHANNELS` / `*_IGNORED_CHANNELS` / `*_ALLOW_ALL_USERS` / `*_ALLOW_BOTS`, `GATEWAY_ALLOW*`) — dashboard `moor -p <name>` actions, kanban workers, Bot Chat delivery, the post-update per-profile `gateway restart` | The child's own `.env` / `config.yaml`, loaded by the child itself | Closed (the adapter's documented default) — a gate exported into the spawning process by a unit file or the shell is dropped before the child starts, so profile B never enforces profile A's channel or user list; a same-profile child keeps it |
+| Routed-profile detection in an embedding host that mirrors the served profile into the live `MOOR_HOME` env var for legacy readers (Moor WebUI) | The launch home the host pinned with `moor_constants.pin_process_moor_home()`; MCP connection keys, the launch-env strip for a served profile's children, the bridged allow-all seed and the `terminal.*` env-bridge guard all compare against it | Without a pin the live env var is the launch home, exactly as before — a host that never mutates `MOOR_HOME` needs nothing |
+| The launch (default) profile's own credentials in a `moor serve` / dashboard process that also serves another profile | Its `.env` + secret sources over the process env **frozen the moment the first other profile is served**; not re-read afterwards | A credential rotated only in the process env (`systemctl set-environment`, a refreshed `op run` wrapper that did not re-exec) is not picked up until the process restarts — put rotating keys in `.env` or a secret source, or restart after rotating |
+| Cron `.env` tuning (`MOOR_CRON_TIMEOUT`, `MOOR_MODEL` fallback, `MOOR_CRON_MAX_PARALLEL`, prefill file), worker / Bot Chat child env | The profile's own `.env`; children never inherit the default profile's `.env` settings or bridged `TERMINAL_*` policy | Cron defaults / model refusal, exactly as a standalone `moor -p <name> gateway run` |
 | Kanban workers and notifications for a profile's tasks | The assignee's `.env` + `config.yaml` (toolset pin, terminal backend, media policy, display language) | — |
 | `/loop` ticks, `background_process_notifications` gate, `notice_delivery`, background-process checkpoint recovery | The owning profile's `state.db` / `config.yaml` / `processes.json` | — |
 
@@ -702,7 +702,7 @@ runs its own gateway and is not enumerated by the host (see
 (The former `gateway.multiplex_profile_allowlist` key is retired; a config
 migration removes it from `config.yaml`, and a profile you do not want served
 but that has not opted out is archived or deleted instead —
-`hermes profile delete <name>`, or move the
+`moor profile delete <name>`, or move the
 directory out of `profiles/`.) Deleted profiles leave a tombstone and are never
 enumerated; a profile whose directory is gone is never recreated by a served
 turn, the cron ticker or log routing.
@@ -1086,30 +1086,30 @@ grep -H 'TELEGRAM_BOT_TOKEN\|DISCORD_BOT_TOKEN' \
 If your profiles each run their own gateway today (one systemd unit or launchd
 agent per profile, from a release before multiplex-only), the default gateway's
 boot preflight keeps it standalone until they are folded (the unset default
-never double-binds a running fleet). `hermes update` folds them for you unless a
+never double-binds a running fleet). `moor update` folds them for you unless a
 real boundary blocks it (below); the same fold is one command, and re-running it
 on a half-migrated host (flag on, a unit left behind, a crash between the two)
 finishes the job instead of reporting "already multiplexed":
 
 ```bash
-hermes gateway migrate --multiplex --dry-run   # print the plan and any blockers; changes nothing
-hermes gateway migrate --multiplex             # apply (asks for confirmation on a TTY; -y skips)
+moor gateway migrate --multiplex --dry-run   # print the plan and any blockers; changes nothing
+moor gateway migrate --multiplex             # apply (asks for confirmation on a TTY; -y skips)
 ```
 
 There is no `--standalone` reverse command: a per-profile fleet is not a
 supported target. A blocked fleet keeps running as it is, and each profile
-keeps `hermes -p <name> gateway install --force` as its path — or opts out of
+keeps `moor -p <name> gateway install --force` as its path — or opts out of
 the host gateway with `gateway.standalone: true` (see
 [No new per-profile gateways](#no-new-per-profile-gateways)), which
-`hermes gateway migrate --multiplex` respects.
+`moor gateway migrate --multiplex` respects.
 
-### Docker / Hermes Cloud (s6-supervised container)
+### Docker / Moor Cloud (s6-supervised container)
 
 Inside the official image every profile has an s6 slot
 (`/run/service/gateway-<profile>`). The container's boot registers every *named*
 slot down and folds its autostart intent into the root slot, so a fresh boot
 already multiplexes. An **in-place** update no longer needs a container restart
-to converge either: `hermes gateway migrate --multiplex` (and the hook `hermes
+to converge either: `moor gateway migrate --multiplex` (and the hook `moor
 update` runs) parks any named slot that is still up (`s6-svc -d` plus a `down`
 file so a supervisor restart does not revive it), folds its intent into the root
 slot through the same rule the boot uses, and restarts the root slot. A
@@ -1117,7 +1117,7 @@ registered-down slot is never a blocker — only a slot that is actually up is.
 The one thing the command still cannot do from inside is create a root slot the
 boot never registered; that case names itself and asks for a container restart.
 
-### What `hermes update` does
+### What `moor update` does
 
 After a successful update, when the install has two or more profiles, at least
 one secondary profile runs its own gateway (a live process or an installed
@@ -1148,8 +1148,8 @@ A standalone secondary behind any of these boundaries stops the automatic path:
 | different UNIX user | a system unit with its own `User=`, or a live gateway owned by another uid; a system unit whose `User=` this host cannot resolve — on the secondary **or** on the default — counts as unknown, never as "same user" |
 | `MOOR_HOME` outside `<default home>/profiles/` | a unit pinning `MOOR_HOME=/opt/moor/profiles/emma` |
 
-In that case `hermes update` prints the boundary it found plus
-`hermes gateway migrate --multiplex`, and changes nothing — no unit is removed
+In that case `moor update` prints the boundary it found plus
+`moor gateway migrate --multiplex`, and changes nothing — no unit is removed
 and the per-profile gateways keep running (`--force` remains their path where
 a boundary like these blocks the fold; a profile free of them opts out with
 `gateway.standalone: true`). Collapsing such a fleet replaces a
@@ -1207,7 +1207,7 @@ Older clones that still carry them are flagged by `moor profile list`.
 | Blocker | Why | Fix |
 |---|---|---|
 | Two profiles configure the same platform credential (e.g. the same `TELEGRAM_BOT_TOKEN`) | Under one process a bot token can only be polled once; the multiplexer would park the duplicate and that profile's bot would go silent | Remove the token from the second profile, or keep it in `default` and route that profile's chats with [`profile_routes`](#routing-shared-bot-chats-to-profiles-profile_routes) |
-| A secondary profile enables a port-binding platform that has **no** `/p/<profile>/` ingress on the default listener | The multiplexer skips that whole profile (see [rule 2](#2-http-inbound-platforms-are-reached-via-a-pprofile-url-prefix)) | Disable the platform in that profile (`platforms.<name>.enabled: false`), or run the profile standalone: set `gateway.standalone: true` in its own `config.yaml` and wait for the host to rescan (at most 30 seconds), or send its `rescan-profiles` control verb. Use `hermes -p <name> gateway install --force` only where a boundary blocks the fold. |
+| A secondary profile enables a port-binding platform that has **no** `/p/<profile>/` ingress on the default listener | The multiplexer skips that whole profile (see [rule 2](#2-http-inbound-platforms-are-reached-via-a-pprofile-url-prefix)) | Disable the platform in that profile (`platforms.<name>.enabled: false`), or run the profile standalone: set `gateway.standalone: true` in its own `config.yaml` and wait for the host to rescan (at most 30 seconds), or send its `rescan-profiles` control verb. Use `moor -p <name> gateway install --force` only where a boundary blocks the fold. |
 
 The credential check reuses the gateway's own conflict detection, so its verdict
 matches what the multiplexer does at startup. Which port-binding platforms have
@@ -1274,7 +1274,7 @@ Running gateways are restarted by the update itself; on an install that still
 runs one gateway per profile, the update then runs the
 [migration to a single multiplexed gateway](#migrating-from-per-profile-gateways)
 — automatically when nothing blocks it, otherwise as a warning naming the
-boundary (different UNIX user, `HERMES_HOME` outside `profiles/`) and the
+boundary (different UNIX user, `MOOR_HOME` outside `profiles/`) and the
 one-liner to run yourself.
 
 User-modified skills are never overwritten.

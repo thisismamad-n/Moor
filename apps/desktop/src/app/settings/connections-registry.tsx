@@ -40,7 +40,7 @@ interface EditorState {
   label: string
   host: string
   keyPath: string
-  remoteHermesPath: string
+  remoteMoorPath: string
   // ssh remote profile, hydrated on edit so the duplicate key matches the
   // main-process one (user@host:port + profile); the editor doesn't expose it.
   remoteProfile: string
@@ -64,7 +64,7 @@ function editorFromConnection(conn: DesktopRegistryConnection): EditorState {
     // would silently resurrect the old values.
     host: conn.host ? `${conn.user ? `${conn.user}@` : ''}${conn.host}${conn.port ? `:${conn.port}` : ''}` : '',
     keyPath: conn.keyPath || '',
-    remoteHermesPath: conn.remoteHermesPath || '',
+    remoteMoorPath: conn.remoteMoorPath || '',
     remoteProfile: conn.remoteProfile || '',
     headers: (conn.headerNames || []).map(name => ({ name, stored: true, value: '' }))
   }
@@ -77,7 +77,7 @@ function emptyEditor(kind: DesktopConnectionKind): EditorState {
     label: '',
     host: '',
     keyPath: '',
-    remoteHermesPath: '',
+    remoteMoorPath: '',
     remoteProfile: '',
     headers: []
   }
@@ -350,7 +350,7 @@ export function ConnectionsRegistrySection() {
           // of truth — never send separate user/port (see editorFromConnection).
           payload.host = editor.host
           payload.keyPath = editor.keyPath || undefined
-          payload.remoteHermesPath = editor.remoteHermesPath.trim()
+          payload.remoteMoorPath = editor.remoteMoorPath.trim()
         }
 
         const result = await bridge.save(payload)
@@ -823,13 +823,13 @@ export function ConnectionsRegistrySection() {
               <ListRow
                 action={
                   <Input
-                    onChange={e => setEditor({ ...editor, remoteHermesPath: e.target.value })}
-                    placeholder={t.settings.gateway.sshHermesPathPlaceholder}
-                    value={editor.remoteHermesPath}
+                    onChange={e => setEditor({ ...editor, remoteMoorPath: e.target.value })}
+                    placeholder={t.settings.gateway.sshMoorPathPlaceholder}
+                    value={editor.remoteMoorPath}
                   />
                 }
-                description={t.settings.gateway.sshHermesPathDesc}
-                title={t.settings.gateway.sshHermesPathTitle}
+                description={t.settings.gateway.sshMoorPathDesc}
+                title={t.settings.gateway.sshMoorPathTitle}
               />
             </>
           )}

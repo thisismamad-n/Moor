@@ -16,7 +16,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from hermes_time import safe_strftime
+from moor_time import safe_strftime
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def moor_logged_in() -> bool:
         return False
 
 
-def fetch_nous_account(timeout: float):
+def fetch_moor_account(timeout: float):
     """Wall-clock-bounded fresh portal account fetch. Raises on failure/timeout.
 
     Shares the one bounded implementation so a stalled portal releases the

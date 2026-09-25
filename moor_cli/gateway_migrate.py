@@ -1,7 +1,7 @@
-"""``hermes gateway migrate --multiplex``: converge a per-profile-gateway install onto the ONE
+"""``moor gateway migrate --multiplex``: converge a per-profile-gateway install onto the ONE
 host gateway, with a table-driven preflight.
 
-Multiplex-only (Teknium ruling): exactly one ``hermes gateway run`` per host, serving every
+Multiplex-only (Teknium ruling): exactly one ``moor gateway run`` per host, serving every
 profile. This command is the supported convergence path, and it is defined by TOPOLOGY, not by a
 config flag — a host is converged when no secondary profile owns a gateway process or a supervisor
 unit any more. That makes it re-runnable: a half-migrated host (flag flipped, a unit left behind, a
@@ -95,7 +95,7 @@ def _service_label(service: tuple[str, bool]) -> str:
 
 
 def _remove_verb(service: tuple[str, bool]) -> str:
-    """An s6 slot is parked down (it stays registered as the `hermes -p X gateway start` target), every
+    """An s6 slot is parked down (it stays registered as the `moor -p X gateway start` target), every
     other unit is uninstalled."""
     return "park" if service[0] == "s6" else "uninstall"
 
@@ -152,7 +152,7 @@ class MigrationPlan:
 
     @property
     def expected_served_names(self) -> set[str]:
-        from hermes_cli.profiles import profile_is_parked
+        from moor_cli.profiles import profile_is_parked
         return {p.name for p in self.profiles if p.is_default or not profile_is_parked(p.home)}
 
     @property
@@ -228,7 +228,7 @@ def _default_home() -> Path:
 
 
 def _profile_homes() -> list[tuple[str, Path]]:
-    from hermes_cli.profiles import profiles_to_serve
+    from moor_cli.profiles import profiles_to_serve
     return list(profiles_to_serve(multiplex=True, include_parked=True))
 
 
@@ -261,7 +261,7 @@ def _own_gateway_pid(home: Path, owner) -> Optional[int]:
     Ownership is what this command may stop, and the host multiplexer is not owned by the profiles
     it serves: it is one process, launched from one home. Deriving ownership from
     :func:`_live_gateway_pid` made every secondary on a CONVERGED host report the host gateway's
-    PID, so the plan called the host half-migrated and each `hermes update` SIGTERMed the only
+    PID, so the plan called the host half-migrated and each `moor update` SIGTERMed the only
     gateway it had. The host process counts only for the home it was actually launched from; every
     other profile it serves owns nothing.
     """
@@ -269,8 +269,8 @@ def _own_gateway_pid(home: Path, owner) -> Optional[int]:
     if pid is None or owner is None or pid != owner.pid:
         return pid
     with contextlib.suppress(Exception):
-        from gateway.status import _same_hermes_home
-        return pid if _same_hermes_home(Path(owner.home), Path(home)) else None
+        from gateway.status import _same_moor_home
+        return pid if _same_moor_home(Path(owner.home), Path(home)) else None
     return None
 
 
@@ -285,12 +285,12 @@ def _installed_services(home: Path) -> list[tuple[str, bool]]:
     Under s6 the footprint is the SLOT: the root slot always (it is what a restart goes through),
     a named profile's slot only while it is UP — a registered-down slot is what the container's
     boot leaves behind for every named profile and is not a gateway."""
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     found: list[tuple[str, bool]] = []
     if gw._running_under_s6():
-        from hermes_cli.gateway_multiplex_s6 import named_slot_name, slot_is_up
-        from hermes_cli.service_manager import S6ServiceManager
-        from hermes_constants import profile_name_for_home
+        from moor_cli.gateway_multiplex_s6 import named_slot_name, slot_is_up
+        from moor_cli.service_manager import S6ServiceManager
+        from moor_constants import profile_name_for_home
         name = profile_name_for_home(home) or "default"
         slot_dir = S6ServiceManager().scandir / named_slot_name(name)
         if slot_dir.is_dir() and (name == "default" or slot_is_up(name)):
@@ -307,14 +307,14 @@ def _installed_services(home: Path) -> list[tuple[str, bool]]:
 
 
 def _windows_task_installed() -> bool:
-    """Is a per-profile Windows gateway installed for the ACTIVE ``HERMES_HOME``?
+    """Is a per-profile Windows gateway installed for the ACTIVE ``MOOR_HOME``?
 
     ``get_task_name()`` is home-suffixed, so this answers per profile exactly the way the systemd
-    unit path does. Either half counts: ``hermes gateway install`` falls back to a Startup-folder
+    unit path does. Either half counts: ``moor gateway install`` falls back to a Startup-folder
     entry when it cannot register a scheduled task, and a migration that removed only the task
     would leave the fallback launching a second gateway at the next logon.
     """
-    from hermes_cli import gateway_windows as gww
+    from moor_cli import gateway_windows as gww
     with contextlib.suppress(Exception):
         return bool(gww.is_task_registered() or gww.is_startup_entry_installed())
     return False
@@ -333,7 +333,7 @@ def _service_op(kind: str, system: bool, verb: str, home: Path, *, run_as_user: 
     """``stop`` / ``uninstall`` / ``start`` / ``restart`` / ``install`` on ``home``'s service."""
     if kind == "s6":
         return _s6_slot_op(verb, home)
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     with _home_env(home):
         if verb == "install":
             if kind == "launchd":
@@ -341,7 +341,7 @@ def _service_op(kind: str, system: bool, verb: str, home: Path, *, run_as_user: 
             elif kind == "windows":
                 # Non-interactive: the migration already asked; prompting here would hang a
                 # supervised/`--yes` run on a console that has no operator.
-                from hermes_cli import gateway_windows as gww
+                from moor_cli import gateway_windows as gww
                 gww.install(start_now=True, start_on_login=True)
             else:
                 gw.systemd_install(system=system, run_as_user=run_as_user, non_interactive=True)
@@ -356,10 +356,10 @@ def _stop_gateway_process(home: Path) -> None:
 
 def _s6_slot_op(verb: str, home: Path) -> None:
     """The s6 leg of :func:`_service_op`. A named profile's slot is never uninstalled: it stays
-    registered DOWN (``down`` file) as the target of a later ``hermes -p X gateway start``, exactly
+    registered DOWN (``down`` file) as the target of a later ``moor -p X gateway start``, exactly
     the shape the container's boot produces. The root slot is (re)started so it re-reads its config."""
-    from hermes_cli.gateway_multiplex_s6 import bring_root_slot_up, park_named_slot
-    from hermes_constants import profile_name_for_home
+    from moor_cli.gateway_multiplex_s6 import bring_root_slot_up, park_named_slot
+    from moor_constants import profile_name_for_home
     name = profile_name_for_home(home) or "default"
     if name == "default":
         if verb in ("start", "restart"):
@@ -379,7 +379,7 @@ def _read_multiplex_flag(default_home: Path) -> bool:
     """The operator's EXPLICIT opt-in only. The unset default (on) is settled by the default gateway at
     boot and refused while a secondary runs its own gateway — exactly the fleet this command folds —
     so the plan reads it as "not yet multiplexed" and the migration proceeds."""
-    from hermes_cli.gateway_multiplex_mode import explicit_multiplex_flag
+    from moor_cli.gateway_multiplex_mode import explicit_multiplex_flag
     return explicit_multiplex_flag(default_home) is True
 
 
@@ -446,14 +446,14 @@ def _credential_claims(config) -> dict[tuple, str]:
 def _credential_key_names(platform_value: str) -> str:
     """Env key NAMES (never values) that make ``platform_value`` connect as a bot, e.g.
     ``TELEGRAM_BOT_TOKEN``; the platform id when no key is registered (config.yaml-only token)."""
-    from hermes_cli.profile_channels import credential_env_keys
+    from moor_cli.profile_channels import credential_env_keys
     names = sorted(key for key, pid in credential_env_keys().items() if pid == platform_value)
     return "/".join(names) or f"the {platform_value} token"
 
 
 def duplicate_credential_lines(configs: list[tuple[str, object]]) -> list[str]:
     """One finding per platform credential two profiles both hold, with the remedy. The SINGLE
-    source for the migrate preflight, ``hermes doctor`` and ``hermes gateway status``, so all three
+    source for the migrate preflight, ``moor doctor`` and ``moor gateway status``, so all three
     name the same duplicates the same way: profile names + key names only, never a value or hash."""
     owners: dict[tuple, str] = {}
     lines: list[str] = []
@@ -587,7 +587,7 @@ def _load_profile_configs(plan: MigrationPlan) -> dict[str, object]:
 
 def build_migration_plan() -> MigrationPlan:
     """Enumerate profiles + their OWN gateway footprint, then run every preflight check."""
-    from hermes_cli.gateway_multiplex_served import recorded_served_profiles
+    from moor_cli.gateway_multiplex_served import recorded_served_profiles
     default_home = _default_home()
     # Probed ONCE: every profile's ownership verdict is relative to the same host process.
     owner = _host_gateway_owner()
@@ -604,7 +604,7 @@ def build_migration_plan() -> MigrationPlan:
         live_served=recorded_served_profiles(default_home),
         manifest=_read_manifest(default_home),
     )
-    from hermes_cli.profiles import profiles_to_serve
+    from moor_cli.profiles import profiles_to_serve
     foldable = {name for name, _home in _profile_homes()}
     plan.standalone_by_config = tuple(
         name for name, _home in profiles_to_serve(True, include_standalone=True)
@@ -804,7 +804,7 @@ def _manifest_not_yet_served(manifest: Optional[dict], live_served: Optional[lis
     Profiles created after the migration are not in the manifest, so they cannot flag it as interrupted."""
     if manifest is None:
         return False
-    from hermes_cli.profiles import profile_is_parked
+    from moor_cli.profiles import profile_is_parked
     recs = [r for r in (manifest.get("default"), *(_manifest_secondaries(manifest) or [])) if isinstance(r, dict)]
     migrated = {str(r.get("profile") or "default") for r in recs
                 if not r.get("home") or not profile_is_parked(Path(r["home"]))} | {"default"}
@@ -1022,7 +1022,7 @@ def apply_migration(plan: MigrationPlan, *, served_wait: float = _SERVED_WAIT_SE
         return True
     missing = sorted(expected - set(served or []))
     _print(["", f"⚠ Migration applied, but the default gateway has not confirmed serving: {', '.join(missing)}",
-            "  Check `hermes gateway status` and the gateway log; the flag and manifest are in place.",
+            "  Check `moor gateway status` and the gateway log; the flag and manifest are in place.",
             f"  Re-run {MIGRATE_COMMAND} once it is healthy — it resumes from the manifest."])
     return False
 
@@ -1063,7 +1063,7 @@ def rollback_migration(default_home: Optional[Path] = None) -> bool:
     or the retired ``false``; both resolve to multiplex at boot once nothing blocks it).
 
     Returns True only when a gateway is VERIFIABLY live again; the manifest is kept otherwise so
-    the next ``hermes gateway migrate --multiplex`` resumes.
+    the next ``moor gateway migrate --multiplex`` resumes.
     """
     default_home = default_home or _default_home()
     manifest = _read_manifest(default_home)
@@ -1127,7 +1127,7 @@ def rollback_migration(default_home: Optional[Path] = None) -> bool:
     live = _wait_for_live_gateway(default_home, _COMPENSATOR_WAIT_SECONDS)
     if live is None:
         print(f"  ✗ default: no gateway confirmed serving this host within {_COMPENSATOR_WAIT_SECONDS:.0f}s "
-              f"(check `hermes gateway status` and the gateway log)")
+              f"(check `moor gateway status` and the gateway log)")
         print(incomplete)
         return False
     _manifest_path(default_home).unlink(missing_ok=True)
@@ -1149,14 +1149,14 @@ def _host_supports_migration() -> Optional[str]:
     Windows IS handled (per-profile Scheduled Tasks and the Startup-folder fallback are removed
     like any other unit). s6 IS handled too, in-process: a named profile's slot that is UP is
     parked (``s6-svc -d`` + ``down`` file) and its autostart intent folded into the root slot the
-    same way the container's boot does it (``hermes_cli.gateway_multiplex_s6``). What cannot be
+    same way the container's boot does it (``moor_cli.gateway_multiplex_s6``). What cannot be
     done from here is register a slot the boot never created — that is the one refusal left.
     """
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     if not gw._running_under_s6():
         return None
-    from hermes_cli.gateway_multiplex_s6 import named_slot_name
-    from hermes_cli.service_manager import S6ServiceManager
+    from moor_cli.gateway_multiplex_s6 import named_slot_name
+    from moor_cli.service_manager import S6ServiceManager
     scandir = S6ServiceManager().scandir
     if not (scandir / named_slot_name("default")).is_dir():
         return (f"s6-supervised container without a root gateway slot ({scandir / named_slot_name('default')}); "
@@ -1165,7 +1165,7 @@ def _host_supports_migration() -> Optional[str]:
 
 
 def cmd_migrate(args) -> None:
-    """``hermes gateway migrate [--multiplex] [--dry-run] [--yes]``."""
+    """``moor gateway migrate [--multiplex] [--dry-run] [--yes]``."""
     reason = _host_supports_migration()
     if reason:
         print(f"✗ {reason}")

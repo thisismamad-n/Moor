@@ -97,11 +97,11 @@ _handle_lock = threading.Lock()
 _handle: Optional["StartupWatchdogHandle"] = None
 
 
-def _process_hermes_home() -> Path:
+def _process_moor_home() -> Path:
     """Use the stdlib-only process resolver before application startup."""
-    from hermes_constants import get_process_hermes_home
+    from moor_constants import get_process_moor_home
 
-    return get_process_hermes_home()
+    return get_process_moor_home()
 
 
 def get_startup_watchdog_dump_path(home: Optional[Path] = None) -> Path:

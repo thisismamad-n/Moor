@@ -244,7 +244,7 @@ export async function openNewWindow(route?: { connectionId: null | string; profi
     return
   }
 
-  await runWindowOpen(() => window.hermesDesktop.openWindow(route), 'Could not open a new window')
+  await runWindowOpen(() => window.moorDesktop.openWindow(route), 'Could not open a new window')
 }
 
 /** Pop the in-app Browser into its own OS window. Returns whether the

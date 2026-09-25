@@ -1,4 +1,4 @@
-"""A memory provider installed under ``$HERMES_HOME/plugins/`` (catalog install) keeps the
+"""A memory provider installed under ``$MOOR_HOME/plugins/`` (catalog install) keeps the
 Desktop surfaces a bundled copy has: host-block config storage and the OAuth connect routes
 resolve the provider's own ``client`` / ``oauth_flow`` modules through ``find_provider_dir``,
 not a hard-coded ``plugins.memory.<name>`` import that only the bundled copy satisfies."""
@@ -15,10 +15,10 @@ import json, os
 from pathlib import Path
 
 def resolve_active_host():
-    return "hermes"
+    return "moor"
 
 def resolve_config_path():
-    return Path(os.environ["HERMES_HOME"]) / "honcho.json"
+    return Path(os.environ["MOOR_HOME"]) / "honcho.json"
 
 def _host_block(cfg, host):
     return (cfg.get("hosts") or {}).get(host) or {}
@@ -45,21 +45,21 @@ CONFIG_SCHEMA = ProviderConfigSchema(
 
 
 @pytest.fixture
-def user_dir_honcho(monkeypatch, tmp_path, _isolate_hermes_home):
+def user_dir_honcho(monkeypatch, tmp_path, _isolate_moor_home):
     """A user-dir ``honcho`` with the bundled copy gone: empty bundled root and the bundled
     module path blocked, the way a post-removal core + a catalog install look."""
     import plugins.memory as memory_pkg
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    plugin_dir = get_hermes_home() / "plugins" / "honcho"
+    plugin_dir = get_moor_home() / "plugins" / "honcho"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "__init__.py").write_text(
         '"""fake provider: register_memory_provider"""\nfrom .client import resolve_active_host\n', encoding="utf-8"
     )
     for stem, source in (("client", _CLIENT), ("oauth_flow", _OAUTH_FLOW), ("config_schema", _CONFIG_SCHEMA)):
         (plugin_dir / f"{stem}.py").write_text(textwrap.dedent(source), encoding="utf-8")
-    (get_hermes_home() / "honcho.json").write_text(
-        json.dumps({"hosts": {"hermes": {"workspace": "from-user-dir"}}}), encoding="utf-8"
+    (get_moor_home() / "honcho.json").write_text(
+        json.dumps({"hosts": {"moor": {"workspace": "from-user-dir"}}}), encoding="utf-8"
     )
 
     monkeypatch.setattr(memory_pkg, "_MEMORY_PLUGINS_DIR", tmp_path / "no-bundled")
@@ -71,7 +71,7 @@ def user_dir_honcho(monkeypatch, tmp_path, _isolate_hermes_home):
 def test_user_dir_host_block_provider_serves_its_declared_config(user_dir_honcho):
     from starlette.testclient import TestClient
 
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
 
     client = TestClient(app, headers={_SESSION_HEADER_NAME: _SESSION_TOKEN})
     resp = client.get("/api/memory/providers/honcho/config", params={"surface": "declared"})
@@ -82,7 +82,7 @@ def test_user_dir_host_block_provider_serves_its_declared_config(user_dir_honcho
 
 
 def test_user_dir_provider_oauth_flow_resolves_from_its_directory(user_dir_honcho):
-    from hermes_cli.memory_oauth import _resolve_flow
+    from moor_cli.memory_oauth import _resolve_flow
 
     flow = _resolve_flow("honcho")
 
@@ -93,15 +93,15 @@ def test_user_dir_provider_oauth_flow_resolves_from_its_directory(user_dir_honch
 def test_oauth_routes_load_the_provider_from_the_requested_profile(tmp_path, monkeypatch):
     """A desktop serving two homes must not import the launch home's OAuth flow for both."""
     import plugins.memory as memory_pkg
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
     from starlette.testclient import TestClient
 
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".moor"
     work_home = default_home / "profiles" / "work"
     work_home.mkdir(parents=True)
     (work_home / "profile.yaml").write_text("name: work\n", encoding="utf-8")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("MOOR_HOME", str(default_home))
     monkeypatch.setattr(memory_pkg, "_MEMORY_PLUGINS_DIR", tmp_path / "no-bundled")
 
     for home, label in ((default_home, "default"), (work_home, "work")):

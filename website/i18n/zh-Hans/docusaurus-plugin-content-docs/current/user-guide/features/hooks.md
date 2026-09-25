@@ -10,10 +10,10 @@ Moor 有四套 hook 系统，可在关键生命周期节点运行自定义代码
 
 | 系统 | 注册方式 | 运行环境 | 使用场景 |
 |------|---------|---------|---------|
-| **[Gateway hooks](#gateway-event-hooks)** | `~/.hermes/hooks/` 下的 `HOOK.yaml` + `handler.py` | 仅 Gateway | 日志、告警、webhook |
+| **[Gateway hooks](#gateway-event-hooks)** | `~/.moor/hooks/` 下的 `HOOK.yaml` + `handler.py` | 仅 Gateway | 日志、告警、webhook |
 | **[Plugin hooks](#plugin-hooks)** | [插件](./plugins.md)中的 `ctx.register_hook()` | CLI + Gateway | 工具拦截、指标采集、护栏 |
-| **[Shell hooks](#shell-hooks)** | `~/.hermes/config.yaml` 中 `hooks:` 块指向的 shell 脚本 | CLI + Gateway | 用于阻断、自动格式化、上下文注入的即插即用脚本 |
-| **[Outbound webhooks](#outbound-webhooks)** | `~/.hermes/config.yaml` 中的 `hooks.outbound:` 列表 | CLI + Gateway | 将签名后的生命周期事件推送到外部 HTTP endpoint |
+| **[Shell hooks](#shell-hooks)** | `~/.moor/config.yaml` 中 `hooks:` 块指向的 shell 脚本 | CLI + Gateway | 用于阻断、自动格式化、上下文注入的即插即用脚本 |
+| **[Outbound webhooks](#outbound-webhooks)** | `~/.moor/config.yaml` 中的 `hooks.outbound:` 列表 | CLI + Gateway | 将签名后的生命周期事件推送到外部 HTTP endpoint |
 
 Hook 回调错误会被隔离并记录，不会导致 agent 崩溃。但 hook 并非全是被动观察者：指令/控制类 hook 可改变流程，transform 可替换内容，shell `pre_tool_call` 还能阻断或在失败时关闭执行。
 

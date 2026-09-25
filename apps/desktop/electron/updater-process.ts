@@ -20,19 +20,19 @@ export function resolveVenvDir(updateRoot: string): string {
   return path.join(updateRoot, 'venv')
 }
 
-import { platformDefaultHermesHome } from './data-paths'
+import { platformDefaultMoorHome } from './data-paths'
 import { hiddenWindowsChildOptions } from './windows-child-options'
 
 /** Exact installation identity; PATH may refer to another checkout. */
 export function resolveInstallationLauncher(
   updateRoot: string,
   isWindows: boolean = process.platform === 'win32',
-  hermesHome: string = process.env.HERMES_HOME ?? ''
+  moorHome: string = process.env.MOOR_HOME ?? ''
 ): string | null {
-  const names: string[] = isWindows ? ['hermes.exe', 'hermes.cmd'] : ['hermes']
+  const names: string[] = isWindows ? ['moor.exe', 'moor.cmd'] : ['moor']
 
   for (const name of names) {
-    const candidate: string = path.join(updateRoot, '.hermes', 'bin', name)
+    const candidate: string = path.join(updateRoot, '.moor', 'bin', name)
 
     if (stagedFileExists(candidate)) {
       return candidate
@@ -41,16 +41,16 @@ export function resolveInstallationLauncher(
 
   // Earlier PM installers published only to user-bin. Trust that historical
   // launcher only after its existing version surface proves exact source identity.
-  if (stagedFileExists(path.join(updateRoot, 'hermes_cli', '_launchers.py'))) {
-    const defaultHome: string = platformDefaultHermesHome(os.homedir(), process.env, isWindows ? 'win32' : 'linux')
+  if (stagedFileExists(path.join(updateRoot, 'moor_cli', '_launchers.py'))) {
+    const defaultHome: string = platformDefaultMoorHome(os.homedir(), process.env, isWindows ? 'win32' : 'linux')
 
     const dirs: string[] = isWindows
       ? [
-          path.join(hermesHome || defaultHome, 'bin'),
+          path.join(moorHome || defaultHome, 'bin'),
           path.join(defaultHome, 'bin'),
           path.join(path.dirname(updateRoot), 'bin')
         ]
-      : [path.join(os.homedir(), '.local', 'bin'), path.join(hermesHome || defaultHome, 'bin')]
+      : [path.join(os.homedir(), '.local', 'bin'), path.join(moorHome || defaultHome, 'bin')]
 
     for (const dir of new Set(dirs)) {
       for (const name of names) {
@@ -100,7 +100,7 @@ export function launcherTargetsInstallation(launcher: string, root: string): boo
       timeout: 15000,
       windowsHide: true,
       windowsVerbatimArguments: viaCmd,
-      env: { ...process.env, HERMES_INSTALL_ROOT: root }
+      env: { ...process.env, MOOR_INSTALL_ROOT: root }
     })
 
     if (probe.error || probe.status !== 0) {
@@ -116,8 +116,8 @@ export function launcherTargetsInstallation(launcher: string, root: string): boo
 }
 
 /** File prerequisites only: dependency recovery remains reachable through update. */
-export function windowsUpdatePrerequisiteError(updateRoot: string, hermesHome?: string): string | null {
-  if (!resolveInstallationLauncher(updateRoot, true, hermesHome)) {
+export function windowsUpdatePrerequisiteError(updateRoot: string, moorHome?: string): string | null {
+  if (!resolveInstallationLauncher(updateRoot, true, moorHome)) {
     return `Update aborted: the installation launcher under ${updateRoot} is missing. Repair this installation before retrying.`
   }
 

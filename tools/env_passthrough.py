@@ -44,7 +44,7 @@ def _is_moor_provider_credential(name: str) -> bool:
     registerable. Fails closed when the blocklist cannot be imported."""
     try:
         from tools.environments.local_env_policy import (
-            _is_hermes_internal_secret, _is_provider_env_blocklisted)
+            _is_moor_internal_secret, _is_provider_env_blocklisted)
     except Exception as e:
         logger.warning(
             "env passthrough: provider credential blocklist import failed; "
@@ -53,7 +53,7 @@ def _is_moor_provider_credential(name: str) -> bool:
     # Case-folded membership too: the remote-exec env builder resolves each
     # registered name via os.getenv(), which is case-insensitive on Windows, so
     # ``openai_api_key`` would tunnel the real OPENAI_API_KEY into children.
-    return _is_hermes_internal_secret(name) or _is_provider_env_blocklisted(name)
+    return _is_moor_internal_secret(name) or _is_provider_env_blocklisted(name)
 
 
 def register_env_passthrough(var_names: Iterable[str]) -> None:
@@ -147,7 +147,7 @@ def resolve_passthrough_value(name: str, fallback: str | None = None) -> str | N
 def scoped_passthrough_additions(present: Iterable[str]) -> dict[str, str]:
     """Declared passthrough names the bound profile secret scope supplies but the env being
     filtered (*present*) lacks. A routed profile's ``.env`` and hydrated sources never enter
-    ``os.environ`` (``load_hermes_dotenv`` skips the process-global load for a routed home), so a
+    ``os.environ`` (``load_moor_dotenv`` skips the process-global load for a routed home), so a
     name-by-name filter over the process env can only forward a declared name the LAUNCH profile
     also happens to define — the served profile's own value has no way in (#114209). Reads the
     bound scope alone: never ``os.environ``, never another profile. Empty without a scope, so

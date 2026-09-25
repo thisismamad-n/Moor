@@ -62,8 +62,8 @@ def registered(monkeypatch):
     Mirrors the import-time synthesis ``moor_cli.auth`` performs for plugin ``api_key``
     profiles, which is what routes them into ``_resolve_api_key_branch`` in the first place.
     """
-    import hermes_cli.auth as _auth
-    from hermes_cli.auth_plugin_providers import register_plugin_provider
+    import moor_cli.auth as _auth
+    from moor_cli.auth_plugin_providers import register_plugin_provider
     from agent import secret_scope as _secret_scope
 
     _providers._discover_providers()

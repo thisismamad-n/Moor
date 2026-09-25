@@ -22,8 +22,8 @@ import pytest
 from moor_cli import (
     anon_auth,
     auth_commands,
-    nous_account,
-    nous_auth_keepalive,
+    moor_account,
+    moor_auth_keepalive,
     portal_cli,
     status_auth,
 )

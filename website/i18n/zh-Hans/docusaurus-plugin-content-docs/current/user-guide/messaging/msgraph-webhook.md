@@ -134,4 +134,4 @@ MSGRAPH_WEBHOOK_ALLOWED_SOURCE_CIDRS="52.96.0.0/14,52.104.0.0/14"
 
 - [注册 Microsoft Graph 应用程序](../../guides/microsoft-graph-app-registration.md) — Azure 应用注册前提条件
 - [环境变量 → Microsoft Graph](../../reference/environment-variables.md#microsoft-graph-teams-meetings) — 完整环境变量列表
-- [Microsoft Teams 机器人设置](./teams.md) — 允许用户在 Teams 中与 Hermes 聊天的另一平台
+- [Microsoft Teams 机器人设置](./teams.md) — 允许用户在 Teams 中与 Moor 聊天的另一平台

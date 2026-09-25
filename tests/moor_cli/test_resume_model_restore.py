@@ -91,7 +91,7 @@ def test_restore_llamacpp_session_follows_live_managed_endpoint(monkeypatch):
         "api_mode": "chat_completions",
     }
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda **_kw: live)
     stub = _make_stub()
     stub._restore_session_model(_row(
@@ -109,11 +109,11 @@ def test_restore_llamacpp_session_follows_live_managed_endpoint(monkeypatch):
 
 
 def test_restore_llamacpp_session_keeps_launch_base_url_for_same_provider(monkeypatch):
-    """`hermes --provider llamacpp --base-url X --resume` is user intent for the SAME provider the
+    """`moor --provider llamacpp --base-url X --resume` is user intent for the SAME provider the
     session ran on; the live-endpoint re-resolution must not re-point it at the local supervisor."""
     calls = []
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: calls.append(kw) or {"base_url": "http://127.0.0.1:18434/v1"})
     user_url = "http://gpu-box:8080/v1"
     stub = _make_stub(provider="llamacpp", requested_provider="llamacpp", base_url=user_url,
@@ -307,7 +307,7 @@ def test_restore_session_model_rederives_per_model_wire_for_opencode_rows(monkey
     """A row persisted while an opencode-go session ran an anthropic_messages model (MiniMax) must not
     pin that wire onto a chat_completions model on resume — api_mode and the relay URL follow the
     stored model, and a fixed-wire provider's row is still honored verbatim (#96066)."""
-    import hermes_cli.runtime_provider as rp
+    import moor_cli.runtime_provider as rp
     monkeypatch.setattr(rp, "resolve_runtime_provider", lambda **kw: {"api_key": "go-key"})
     stub = _make_stub(provider="opencode-go", requested_provider="opencode-go",
                       base_url="https://opencode.ai/zen/go/v1", api_mode="chat_completions")

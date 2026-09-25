@@ -375,12 +375,12 @@ describe('useGatewayRequest', () => {
         })
       }
 
-      Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: desktop })
+      Object.defineProperty(window, 'moorDesktop', { configurable: true, value: desktop })
 
       const primary = makePrimaryGateway()
       primary.request.mockRejectedValueOnce(new Error('connection closed')).mockResolvedValueOnce({ recovered: true })
-      setPrimaryGateway(primary as unknown as HermesGateway, connection.profile)
-      $gateway.set(primary as unknown as HermesGateway)
+      setPrimaryGateway(primary as unknown as MoorGateway, connection.profile)
+      $gateway.set(primary as unknown as MoorGateway)
       $activeGatewayProfile.set(connection.profile)
       $gatewayState.set('closed')
 

@@ -72,7 +72,7 @@ class TestMarkRunningJobsInterrupted:
 
         sched._running_job_ids.update(
             {sched._inflight_key("job-1"), sched._inflight_key("job-2")})
-        profile_home = sched._get_hermes_home().resolve()
+        profile_home = sched._get_moor_home().resolve()
         sched._running_fire_owners.update(
             {
                 sched._inflight_key("job-1"): {object(): ("owner-1", profile_home)},
@@ -111,7 +111,7 @@ class TestMarkRunningJobsInterrupted:
 
         sched._running_job_ids.update(
             {sched._inflight_key("job-1"), sched._inflight_key("job-2")})
-        profile_home = sched._get_hermes_home().resolve()
+        profile_home = sched._get_moor_home().resolve()
         sched._running_fire_owners.update(
             {
                 sched._inflight_key("job-1"): {object(): ("owner-1", profile_home)},
@@ -172,7 +172,7 @@ class TestRunningFireOwnerRegistry:
 
         def _observe_registry(current_job, run):
             assert list(sched._running_fire_owners[sched._inflight_key(current_job["id"])].values()) == [
-                ("owner-1", sched._get_hermes_home().resolve())
+                ("owner-1", sched._get_moor_home().resolve())
             ]
             return True
 

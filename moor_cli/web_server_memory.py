@@ -31,7 +31,7 @@ def _load_memory_provider(name: str):
 
 def _memory_provider_manifest(name: str) -> Dict[str, Any]:
     try:
-        from hermes_cli.memory_setup import memory_provider_dependency_inputs
+        from moor_cli.memory_setup import memory_provider_dependency_inputs
 
         manifest, _inputs = memory_provider_dependency_inputs(name)
         return manifest
@@ -47,7 +47,7 @@ def _string_list(value: Any) -> List[str]:
 
 
 def _memory_provider_setup_manifest(name: str) -> tuple[dict, dict]:
-    from hermes_cli.memory_setup import memory_provider_dependency_inputs
+    from moor_cli.memory_setup import memory_provider_dependency_inputs
 
     manifest, inputs = memory_provider_dependency_inputs(name)
     external_dependencies: List[Dict[str, str]] = []

@@ -5,7 +5,7 @@ import { NO_PROJECT_ID, type SidebarProjectTree } from '@/app/chat/sidebar/proje
 import { $sidebarAgentsGrouped, setSidebarAgentsGrouped } from '@/store/layout'
 import { $activeGatewayProfile, $profileScope, ALL_PROFILES, setShowAllProfiles } from '@/store/profile'
 import { $currentCwd, $selectedStoredSessionId, $sessions, applyConfiguredDefaultProjectDir } from '@/store/session'
-import type { ProjectInfo } from '@/types/hermes'
+import type { ProjectInfo } from '@/types/moor'
 
 import { $projectScope, ALL_PROJECTS, exitProjectScope } from './project-scope'
 import {

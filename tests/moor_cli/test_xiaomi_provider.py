@@ -2,7 +2,7 @@
 
 import pytest
 
-from hermes_cli.auth import (
+from moor_cli.auth import (
     resolve_provider,
     resolve_api_key_provider_credentials,
 )

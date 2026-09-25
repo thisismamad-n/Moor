@@ -13,17 +13,17 @@ import pytest
 from gateway.config import GatewayConfig, Platform
 from gateway.session import SessionSource, SessionStore
 
-OVERRIDE = {"model": "nous/hermes-4", "provider": "nous"}
+OVERRIDE = {"model": "moor/hermes-4", "provider": "moor"}
 
 
 @pytest.fixture
 def store(tmp_path, monkeypatch):
-    import hermes_state
+    import moor_state
 
     def _raise():
         raise RuntimeError("SQLite disabled in test")
 
-    monkeypatch.setattr(hermes_state, "SessionDB", _raise)
+    monkeypatch.setattr(moor_state, "SessionDB", _raise)
     with patch("gateway.session.SessionStore._ensure_loaded"):
         s = SessionStore(sessions_dir=tmp_path / "sessions", config=GatewayConfig())
     s._loaded = True

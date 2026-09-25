@@ -1,6 +1,6 @@
 """Plugin provenance: the 2x2 reconciliation of install metadata.
 
-Row-presence says "hermes installed this" (the .install-metadata.json
+Row-presence says "moor installed this" (the .install-metadata.json
 sidecar); ``.git``-presence cross-checks it. The reconciliation IS the
 disambiguation — ``source`` alone does not distinguish a git install
 from a manual copy (settled 2026-09-03, plugin-auto-update plan):
@@ -12,7 +12,7 @@ from a manual copy (settled 2026-09-03, plugin-auto-update plan):
 
 Pure functions over (plugins_dir, sidecar rows) — no globals, no
 network, fully testable. The sidecar remains the single authority for
-what *hermes* installed; this module only reads it.
+what *moor* installed; this module only reads it.
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ def _git_origin_url(plugin_dir: Path) -> Optional[str]:
     installs where git refuses)."""
     # fast path: real git repo. Same resolver as install/update: PATH may be minimal
     # (gateway service, Windows without Git on PATH); no git → straight to the config parse.
-    from hermes_cli.plugins_cmd import _resolve_git_executable
+    from moor_cli.plugins_cmd import _resolve_git_executable
 
     git = _resolve_git_executable()
     if git is not None:

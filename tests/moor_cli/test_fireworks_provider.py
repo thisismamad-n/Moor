@@ -21,8 +21,8 @@ if "dotenv" not in sys.modules:
     fake_dotenv.load_dotenv = lambda *args, **kwargs: None
     sys.modules["dotenv"] = fake_dotenv
 
-from hermes_cli.auth import resolve_api_key_provider_credentials
-from hermes_cli.models import normalize_provider
+from moor_cli.auth import resolve_api_key_provider_credentials
+from moor_cli.models import normalize_provider
 
 
 @pytest.fixture(autouse=True)

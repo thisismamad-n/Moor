@@ -1,8 +1,8 @@
 """Pre-import startup fast paths — THE canonical lightweight helpers.
 
-This module is imported by ``hermes_cli/main.py`` BEFORE its heavy import
+This module is imported by ``moor_cli/main.py`` BEFORE its heavy import
 wall (config, argparse tree, logging, providers). Everything here must stay
-**stdlib-only and cheap** (os/sys file probes; no yaml, no hermes_cli.config,
+**stdlib-only and cheap** (os/sys file probes; no yaml, no moor_cli.config,
 no argparse). A guard test (``test_startup_fast_import_weight``) subprocess-
 imports this module and fails if any heavy module sneaks into sys.modules.
 
@@ -16,7 +16,7 @@ noticed. One implementation, imported by both the fast path and the module
 constants, makes that drift structurally impossible; the parity guard test
 would have caught eb4040242 the day it landed.
 
-``hermes_cli/config.py``'s ``get_container_exec_info()`` reads the same
+``moor_cli/config.py``'s ``get_container_exec_info()`` reads the same
 ``.container-mode`` file; keep the file-format assumptions here and there in
 sync (this module deliberately only PROBES existence/typos cheaply and errs
 toward the slow path, which then does the authoritative parse).
@@ -28,7 +28,7 @@ import os
 import sys
 
 __all__ = [
-    "project_root_str", "normalize_hermes_home_env",
+    "project_root_str", "normalize_moor_home_env",
     "ensure_project_root_on_path",
     "is_global_fast_version_argv",
     "is_container_startup_environment",
@@ -56,23 +56,23 @@ def project_root_str() -> str:
     return os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
-def normalize_hermes_home_env() -> None:
-    """Expand ``~``/``$VAR`` in ``HERMES_HOME`` once, at process entry, and write it back.
+def normalize_moor_home_env() -> None:
+    """Expand ``~``/``$VAR`` in ``MOOR_HOME`` once, at process entry, and write it back.
 
     fish does not expand ``~`` inside ``VAR=~/...`` and every shell passes a quoted value
-    through verbatim, so a literal tilde reaches the process. ``Path("~/.hermes")`` is
-    *relative*: the many raw ``os.environ["HERMES_HOME"]`` readers (this fast path, the
+    through verbatim, so a literal tilde reaches the process. ``Path("~/.moor")`` is
+    *relative*: the many raw ``os.environ["MOOR_HOME"]`` readers (this fast path, the
     active_profile probe, profile re-home, the dotenv loader) would each resolve it against
-    cwd and scaffold a full home under ``<cwd>/~/.hermes``. One expansion here gives every
-    reader the same absolute spelling; ``hermes_constants`` expands as well for non-CLI
+    cwd and scaffold a full home under ``<cwd>/~/.moor``. One expansion here gives every
+    reader the same absolute spelling; ``moor_constants`` expands as well for non-CLI
     entry points. A relative value that is not tilde/variable-shaped is left alone.
     """
-    raw = os.environ.get("HERMES_HOME", "")
+    raw = os.environ.get("MOOR_HOME", "")
     if not raw.strip():
         return
     expanded = os.path.expanduser(os.path.expandvars(raw.strip()))
     if expanded != raw:
-        os.environ["HERMES_HOME"] = expanded
+        os.environ["MOOR_HOME"] = expanded
 
 
 def _realpath_or_self(path: str) -> str:
@@ -107,7 +107,7 @@ def is_desktop_ssh_backend_argv(argv: list[str]) -> bool:
 
     That child has a fixed identity: Desktop names the remote profile explicitly (or none for
     the root home) and hands its session token through a 0600 FILE, never the
-    ``HERMES_DASHBOARD_SESSION_TOKEN`` env var the local pool spawn uses. Every reader of
+    ``MOOR_DASHBOARD_SESSION_TOKEN`` env var the local pool spawn uses. Every reader of
     "is this process Desktop's backend" needs both shapes; this is the argv half.
     """
     return "--ssh-session-token-file" in argv
@@ -196,10 +196,10 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
 
         print(format_banner_version_label())
     except Exception:
-        from hermes_cli import __release_date__
-        from hermes_cli.version_info import get_version_info
+        from moor_cli import __release_date__
+        from moor_cli.version_info import get_version_info
 
-        print(f"Hermes Agent v{get_version_info().derived_version} ({__release_date__})")
+        print(f"Moor Agent v{get_version_info().derived_version} ({__release_date__})")
     print(f"Install directory: {project_root_str()}")
     # Authoritative resolver first (code-scoped stamp → managed → nix → git → pip; also self-heals
     # poisoned shared-home 'docker' stamps); cheap stdlib stamp probe only if it fails.
@@ -221,8 +221,8 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
     # Synchronous update status — bounded by check_for_updates' own subprocess/network timeouts
     # and its 6-hour cache; any failure prints nothing.
     try:
-        from hermes_cli.source_check import UPDATE_AVAILABLE_NO_COUNT, check_for_updates
-        from hermes_cli.config import recommended_update_command
+        from moor_cli.source_check import UPDATE_AVAILABLE_NO_COUNT, check_for_updates
+        from moor_cli.config import recommended_update_command
 
         behind = check_for_updates(passive=True).get("behind")
         if behind == UPDATE_AVAILABLE_NO_COUNT:

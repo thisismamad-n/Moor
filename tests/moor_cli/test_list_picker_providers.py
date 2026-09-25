@@ -16,10 +16,10 @@ network or auth state is required.
 """
 
 import pytest
-from hermes_cli import model_switch
-import hermes_cli.models as models_mod
-import hermes_cli.model_switch_providers as hermes_cli_model_switch_providers
-from hermes_cli import model_switch_providers
+from moor_cli import model_switch
+import moor_cli.models as models_mod
+import moor_cli.model_switch_providers as moor_cli_model_switch_providers
+from moor_cli import model_switch_providers
 
 
 @pytest.fixture(autouse=True)
@@ -247,7 +247,7 @@ def test_non_blocking_listing_opens_no_socket(monkeypatch, tmp_path):
     """#74003: ``non_blocking_catalogs=True`` must not run a single live catalog probe in the calling
     thread — not the per-provider ``/models`` prefetch and not OpenRouter's curated-catalog GET —
     even with several credentialed providers and an empty on-disk cache."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(models_mod, "_openrouter_catalog_cache", None)
     for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "DEEPSEEK_API_KEY", "GROQ_API_KEY",
                 "MISTRAL_API_KEY", "XAI_API_KEY", "OPENROUTER_API_KEY"):

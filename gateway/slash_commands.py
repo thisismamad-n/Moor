@@ -95,7 +95,7 @@ def _nested_dict(root: dict, *keys: str) -> dict:
 def _write_raw_config_leaf(config_path: Path, keys: tuple, value) -> None:
     """Set one leaf through a strict raw round-trip. The behavioral read is fail-open (``{}``) and
     expanded, so writing it back wipes the file after a read error and persists ``${VAR}`` values."""
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
     raw = read_user_config_raw(config_path)
     *parents, leaf = keys
     _nested_dict(raw, *parents)[leaf] = value
@@ -1278,15 +1278,15 @@ class GatewaySlashCommandsMixin(
             except Exception:
                 return t("gateway.update.platform_not_messaging")
         if is_managed():
-            return f"✗ {format_managed_message('update Hermes Agent')}"
+            return f"✗ {format_managed_message('update Moor Agent')}"
 
         project_root = Path(__file__).parent.parent.resolve()
 
         # Not a git-managed install (docker/nix/desktop-app/source): refuse
         # with the steward's own update mechanism instead of git-pulling a
-        # tree `hermes update` does not own.
+        # tree `moor update` does not own.
         try:
-            from hermes_cli.config import (
+            from moor_cli.config import (
                 detect_install_method,
                 recommended_update_command_for_method,
             )
@@ -1294,7 +1294,7 @@ class GatewaySlashCommandsMixin(
             method = detect_install_method(project_root)
             if method not in {"git", "unknown"}:
                 return (
-                    f"✗ `hermes update` does not apply to this install ({method}).\n"
+                    f"✗ `moor update` does not apply to this install ({method}).\n"
                     f"Update with: {recommended_update_command_for_method(method)}"
                 )
         except Exception:

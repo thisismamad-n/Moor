@@ -129,7 +129,7 @@ a default, not a requirement. You can enter the server root (for example
 both and saves the variant that actually served `/models`, so chat
 requests go to the same prefix the model list came from. For manual setups (Ollama, MLX, custom
 builds, headless CLI machines), see
-[Run Hermes Locally with Ollama](../guides/local-ollama-setup.md) and
+[Run Moor Locally with Ollama](../guides/local-ollama-setup.md) and
 [Run Local LLMs on Mac](../guides/local-llm-on-mac.md).
 
 ## Configuration

@@ -12,18 +12,18 @@ Moor isn't just a CLI tool. You can import `AIAgent` directly and use it program
 
 ## Installation
 
-Clone Hermes and prepare its source environment through PM. The Bash recipe is:
+Clone Moor and prepare its source environment through PM. The Bash recipe is:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
-cd hermes-agent
+git clone https://github.com/thisismamad-n/Moor.git
+cd moor-agent
 source ./activate
 ```
 
 Run your application with `python your_app.py` from that activated checkout.
 For PowerShell preparation or an independent interpreter, see the
 [PM developer workflow](../reference/package-management.md#developer-workflow).
-Hermes does not publish a supported wheel or source distribution for `requirements.txt` installs.
+Moor does not publish a supported wheel or source distribution for `requirements.txt` installs.
 
 :::tip
 The same environment variables used by the CLI are required when using Moor as a library. At minimum, set `OPENROUTER_API_KEY` (or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` if using direct provider access).

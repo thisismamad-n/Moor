@@ -35,7 +35,7 @@ export const en: Translations = {
   ownerMissing: 'Reopen this conversation to manage its connections.',
   search: 'Find an app',
   empty: 'No matching apps',
-  disclaimer: 'Connecting is optional. Only authorize the apps you want Hermes to use.',
+  disclaimer: 'Connecting is optional. Only authorize the apps you want Moor to use.',
   execution: 'Connector tools',
   setup: server => `Set up ${server}`,
   openInBrowser: 'Open in browser',
@@ -74,7 +74,7 @@ export const en: Translations = {
       kindCatalog: 'MCP · Catalog',
       kindCustom: 'MCP · Custom',
       kindPlugin: (plugin: string) => `MCP · Plugin ${plugin}`,
-      inCatalog: 'In the Hermes catalog',
+      inCatalog: 'In the Moor catalog',
       hostedTwin: 'Managed version available',
       alsoLocal: 'Also runs on this device',
       open: (name: string) => `Open ${name}`,
@@ -124,7 +124,7 @@ export const en: Translations = {
       loading: 'Reading the catalog and the servers on this computer',
       emptyTitle: 'No apps here yet. Add a server on this computer to get started.',
       noMatchTitle: 'No matching apps',
-      noMatchBody: 'Nothing here matches. Point Hermes at your own MCP server to add it.',
+      noMatchBody: 'Nothing here matches. Point Moor at your own MCP server to add it.',
       clearSearch: 'Clear the search',
       hostedFailedTitle: 'Could not reach the hosted apps.',
       hostedFailedBody: 'The servers on this computer are unaffected and still running. Nothing was turned off.',
@@ -133,14 +133,14 @@ export const en: Translations = {
       showAllMatches: 'Show all matches',
       segmentNoMatch: (segment: string) => `No match in ${segment}, so every match is shown.`,
       freeTierNote: 'Connections stay on this computer until you sign in.',
-      signInLine: 'Sign in to Nous to use managed apps.',
+      signInLine: 'Sign in to Moor to use managed apps.',
       signIn: 'Sign in',
       managedUnavailable: 'Managed apps are not available for this account yet.',
       writeFailed: 'That change was not saved.',
       refreshFailed: 'The tool list was not refreshed.',
-      disconnectNoAccount: 'Hermes has no account to disconnect here. Refresh the page and try again.',
+      disconnectNoAccount: 'Moor has no account to disconnect here. Refresh the page and try again.',
       disconnectRefused:
-        'Nous could not remove this sign-in right now. Turn the app off with the switch instead, or try again later.'
+        'Moor could not remove this sign-in right now. Turn the app off with the switch instead, or try again later.'
     },
 
     add: {
@@ -180,24 +180,24 @@ export const en: Translations = {
     dialog: {
       disconnect: 'Disconnect',
       disconnectTitle: (name: string) => `Disconnect ${name}?`,
-      disconnectBody: 'Hermes stops acting as this account. You can connect again at any time.',
+      disconnectBody: 'Moor stops acting as this account. You can connect again at any time.',
       menuRefreshTools: 'Refresh tools',
       moreActions: 'More actions',
       removeServerTitle: (name: string) => `Remove ${name}?`,
       removeServerBody: 'The entry leaves mcp.json on this computer. Nothing else is deleted.',
-      appSwitch: (name: string) => `Hermes can use ${name}`,
+      appSwitch: (name: string) => `Moor can use ${name}`,
       waysTitle: (name: string) => `Where ${name} runs`,
       wayNotConnected: (name: string) => `Not connected yet. Sign in to ${name} in your browser.`,
       wayHosted: 'Managed',
-      bothOn: (name: string) => `Both are on, so Hermes sees every ${name} tool twice.`,
+      bothOn: (name: string) => `Both are on, so Moor sees every ${name} tool twice.`,
       turnOffLocal: 'Turn off the local server',
       providedByPlugin: (plugin: string) => `Provided by plugin ${plugin}`,
       openPlugins: 'Open the Plugins tab',
       // Verbatim, by decision of the design of record.
-      nousLine: 'Nous apps follow your account, not the profile.',
+      nousLine: 'Moor apps follow your account, not the profile.',
       rulesReadOnly: 'Rules cannot be changed right now.',
       rulesAppOff: (name: string) => `Turn ${name} on to change its tools.`,
-      rulesSignIn: 'Sign in to change what Hermes may do here.',
+      rulesSignIn: 'Sign in to change what Moor may do here.',
       orgNote: (count: number) => `Your organisation turned ${count} tools off.`,
       orgLink: 'Open the connectors admin',
       connectEnded: 'The sign-in did not finish.',
@@ -211,8 +211,8 @@ export const en: Translations = {
     tools: {
       title: 'Tools',
       notInstalledBody: 'Install it on this device to see the tools it brings.',
-      summaryTitle: (name: string) => `What Hermes may do with ${name}`,
-      summaryPreviewTitle: (name: string) => `What Hermes could do with ${name} once you connect`,
+      summaryTitle: (name: string) => `What Moor may do with ${name}`,
+      summaryPreviewTitle: (name: string) => `What Moor could do with ${name} once you connect`,
       summaryCount: (count: number) => `${count} tool${count === 1 ? '' : 's'}`,
       summaryAllTools: 'All tools',
       summaryOther: 'Other',
@@ -245,11 +245,11 @@ export const en: Translations = {
       needsAuthBody: 'The sign-in stays on this computer. Nothing leaves it.',
       retry: 'Retry',
       goneTitle: (name: string) => `${name} left the catalog.`,
-      goneBody: 'Hermes cannot call it any more. The row stays until you remove it, so nothing vanishes.',
+      goneBody: 'Moor cannot call it any more. The row stays until you remove it, so nothing vanishes.',
       remove: 'Remove',
       offTitle: (name: string) => `${name} is off.`,
       offBody: 'Turn it on with the switch above to read the tools it brings.',
-      signedOutTitle: 'Sign in to Nous to read the tool list.',
+      signedOutTitle: 'Sign in to Moor to read the tool list.',
       signedOutBody: 'Your servers on this computer are unaffected.',
       conflictTitle: 'Someone changed this rule while you were editing.',
       // Two sentences at most, and the second says the work is still here.
@@ -399,9 +399,9 @@ export const en: Translations = {
     errors: {
       backgroundExited:
         'The service that runs your chats closed unexpectedly. Restart it to keep going — your chats and settings are safe.',
-      backgroundExitedDuringStartup: 'Hermes stopped right after it started.',
-      backendStopped: 'Hermes stopped working in the background',
-      restartHermes: 'Restart Hermes',
+      backgroundExitedDuringStartup: 'Moor stopped right after it started.',
+      backendStopped: 'Moor stopped working in the background',
+      restartMoor: 'Restart Moor',
       openLogs: 'Open logs',
       desktopBootFailed: "Moor couldn't start",
       gatewayConnectionLost: 'Moor lost its connection',
@@ -468,7 +468,7 @@ export const en: Translations = {
 
   notifications: {
     sharedProfileWarning:
-      'Another Hermes installation is using this profile. Both installations share its settings and data, so changes can conflict. You can continue, or close the other installation before making changes.',
+      'Another Moor installation is using this profile. Both installations share its settings and data, so changes can conflict. You can continue, or close the other installation before making changes.',
     region: 'Notifications',
     hide: 'Hide',
     show: 'Show',
@@ -487,7 +487,7 @@ export const en: Translations = {
     updateReadyTitle: 'Update ready',
     updateReadyMessage: count => `${count} new change${count === 1 ? '' : 's'} available.`,
     updateReadyMessageUnknown: 'A new update is available.',
-    updateReadyMessageAppInstaller: 'A new version of Hermes is ready. Update now and Windows will finish it for you.',
+    updateReadyMessageAppInstaller: 'A new version of Moor is ready. Update now and Windows will finish it for you.',
     seeWhatsNew: "See what's new",
     mcp: {
       needsAuthTitle: 'MCP server needs re-authentication',
@@ -506,16 +506,16 @@ export const en: Translations = {
       diskFull: 'Disk full — free some space, then try again.',
       storageFailure: "Moor couldn't save to its data folder. Open Maintenance to check and repair it.",
       gatewayAuthFailed:
-        'This Hermes no longer accepts your saved sign-in. Open Gateways and sign in again (or paste a new access token), then retry.',
+        'This Moor no longer accepts your saved sign-in. Open Gateways and sign in again (or paste a new access token), then retry.',
       methodNotAllowed:
-        "Hermes' background service is out of step with the app, probably after an update. Restart it to fix this.",
+        "Moor' background service is out of step with the app, probably after an update. Restart it to fix this.",
       microphonePermission: 'Microphone permission was denied.',
       openaiRejectedApiKey: "OpenAI didn't accept your API key. Update it in Settings → Keys, then try again.",
       openaiTtsNeedsKey: 'Voice needs an OpenAI key. Add one in Settings → Keys.',
       codeSkewRestartRequired:
-        'Hermes was updated but is still running the old version. Restart it to finish the update.',
+        'Moor was updated but is still running the old version. Restart it to finish the update.',
       rpcOutOfSync: 'The app and the backend are on different versions. Update both.',
-      restartHermesFailed: "Couldn't restart Hermes"
+      restartMoorFailed: "Couldn't restart Moor"
     },
     actions: {
       restartMoor: 'Restart Moor',
@@ -556,8 +556,8 @@ export const en: Translations = {
       rejectAction: 'Reject',
       inputTitle: 'Input needed',
       inputTitleNamed: session => `Input needed — ${session}`,
-      inputBody: 'Hermes is waiting for your response.',
-      turnDoneTitle: 'Hermes finished',
+      inputBody: 'Moor is waiting for your response.',
+      turnDoneTitle: 'Moor finished',
       turnDoneBody: '',
       turnErrorTitle: 'Turn failed',
       backgroundDoneTitle: 'Background task finished',
@@ -900,7 +900,7 @@ export const en: Translations = {
         desktopSuccess: name => `Desktop plugin ${name} installed`,
         agentFailed: 'Agent plugin install failed',
         installUncertain:
-          'Hermes stopped waiting for the install result, but the plugin may still be installing. Close this dialog and use Rescan in Plugins before trying Install again.',
+          'Moor stopped waiting for the install result, but the plugin may still be installing. Close this dialog and use Rescan in Plugins before trying Install again.',
         desktopFailed: 'Desktop plugin install failed',
         missingEnv: (name, vars) =>
           `${name} is installed but needs a key before it can work: ${vars}. Add it now, or the plugin's tools will fail.`
@@ -1170,7 +1170,7 @@ export const en: Translations = {
         intro:
           'Adopt an animated petdex mascot that floats over the app and reacts to what Moor is doing — running while tools execute, celebrating on success, sulking on errors.',
         restartHint:
-          'Pets need a quick restart — the running app started before this feature was added. Quit and reopen Hermes, then come back here.',
+          'Pets need a quick restart — the running app started before this feature was added. Quit and reopen Moor, then come back here.',
         scaleTitle: 'Size',
         scaleDesc: 'Resize the floating mascot. Applies everywhere instantly.',
         roamTitle: 'Roam',
@@ -1208,7 +1208,7 @@ export const en: Translations = {
     uninstallSection: {
       dangerZone: 'Danger zone',
       checkingInstalled: 'Checking what’s installed…',
-      uninstallHermes: 'Uninstall Hermes',
+      uninstallMoor: 'Uninstall Moor',
       chooseHowMuch:
         'Choose how much to remove. The app closes to finish the job; reopen the installer any time to come back.',
       confirmUninstall: 'Confirm uninstall',
@@ -1220,19 +1220,19 @@ export const en: Translations = {
       options: {
         gui: {
           title: 'Uninstall Chat GUI only',
-          description: 'Remove this desktop app. The Hermes agent, your config, and chats all stay.',
+          description: 'Remove this desktop app. The Moor agent, your config, and chats all stay.',
           consequence: 'the desktop Chat GUI (this app and its data)'
         },
         lite: {
           title: 'Uninstall GUI + agent, keep my data',
           description:
-            'Remove the app and the Hermes agent, but keep config, chats, and secrets for a future reinstall.',
-          consequence: 'the Chat GUI and the Hermes agent (config, chats, and secrets are kept)'
+            'Remove the app and the Moor agent, but keep config, chats, and secrets for a future reinstall.',
+          consequence: 'the Chat GUI and the Moor agent (config, chats, and secrets are kept)'
         },
         full: {
           title: 'Uninstall everything',
           description: 'Remove the app, the agent, and all user data — config, chats, scheduled jobs, secrets, logs.',
-          consequence: 'EVERYTHING — the Chat GUI, the Hermes agent, and all of your config, chats, secrets, and logs'
+          consequence: 'EVERYTHING — the Chat GUI, the Moor agent, and all of your config, chats, secrets, and logs'
         }
       }
     },
@@ -1294,7 +1294,7 @@ export const en: Translations = {
     config: {
       minimizeToTrayTitle: 'Minimize to tray',
       minimizeToTrayDesc:
-        'Minimize windows or close the main window to hide them in the system tray (menu bar on macOS) and keep Hermes running. Use Quit Hermes from the tray menu or Cmd+Q to exit. Off by default; applies only to this device.',
+        'Minimize windows or close the main window to hide them in the system tray (menu bar on macOS) and keep Moor running. Use Quit Moor from the tray menu or Cmd+Q to exit. Off by default; applies only to this device.',
       minimizeToTrayUnavailable:
         'The system tray is unavailable. Windows will minimize and close normally. Turn this off and on to retry.',
       none: 'None',
@@ -1336,27 +1336,27 @@ export const en: Translations = {
       description:
         'Tap and release ⌘ + Option on Mac, or Ctrl + Alt on Windows/Linux, to bring the HUD forward from any app. Off by default; applies only to this device.',
       permission:
-        'Allow Hermes in System Settings → Privacy & Security → Input Monitoring, then retry. This gesture does not record keystrokes or capture your screen.',
+        'Allow Moor in System Settings → Privacy & Security → Input Monitoring, then retry. This gesture does not record keystrokes or capture your screen.',
       unavailable:
-        'The HUD gesture helper could not start or stopped unexpectedly. Retry, or restart Hermes. The existing HUD shortcut still works inside Hermes.',
+        'The HUD gesture helper could not start or stopped unexpectedly. Retry, or restart Moor. The existing HUD shortcut still works inside Moor.',
       missingHelper:
-        'This Hermes installation is missing the HUD gesture helper. Update or reinstall Hermes, then retry.',
+        'This Moor installation is missing the HUD gesture helper. Update or reinstall Moor, then retry.',
       unsupportedSession:
         'This desktop session does not support global modifier taps. Linux requires X11; Wayland is not supported.'
     },
     screenshot: {
       enabledTitle: 'Screenshot shortcut',
       enabledDesc:
-        'Press both Command keys together from any app to capture its frontmost window and attach it to your current Hermes draft. Never sends automatically. Off by default; applies only to this Mac. Window contents may be sensitive — review the attachment before sending.',
+        'Press both Command keys together from any app to capture its frontmost window and attach it to your current Moor draft. Never sends automatically. Off by default; applies only to this Mac. Window contents may be sensitive — review the attachment before sending.',
       statusTitle: 'Screenshot shortcut status',
       checking: 'Checking screenshot shortcut…',
       disabled: 'Screenshot shortcut is off.',
       starting: 'Starting the shortcut listener. It is not ready yet.',
       ready: 'Shortcut is ready. Screenshots attach to your current draft without sending.',
       inputPermission:
-        'Input Monitoring permission lets Hermes detect both Command keys while another app is active. Allow Hermes in System Settings → Privacy & Security → Input Monitoring, then return here and retry.',
+        'Input Monitoring permission lets Moor detect both Command keys while another app is active. Allow Moor in System Settings → Privacy & Security → Input Monitoring, then return here and retry.',
       screenPermission:
-        'Screen Recording permission lets Hermes capture the frontmost app window when you use this shortcut. Allow Hermes in System Settings → Privacy & Security → Screen Recording, then return here and retry. Restart Hermes if macOS asks.',
+        'Screen Recording permission lets Moor capture the frontmost app window when you use this shortcut. Allow Moor in System Settings → Privacy & Security → Screen Recording, then return here and retry. Restart Moor if macOS asks.',
       openSettings: 'Open System Settings',
       retry: 'Retry',
       unavailable: 'The screenshot shortcut is unavailable. Retry, or turn it off.',
@@ -1482,7 +1482,7 @@ export const en: Translations = {
       loading: 'Loading gateway settings...',
       unavailableTitle: 'Gateway settings unavailable',
       unavailableDesc:
-        'Connection settings can only be changed from the Hermes Desktop app on the computer running it.',
+        'Connection settings can only be changed from the Moor Desktop app on the computer running it.',
       title: 'Gateway Connection',
       envOverride: 'env override',
       intro:
@@ -1536,7 +1536,7 @@ export const en: Translations = {
       remoteUrlDesc: 'Base URL for the remote dashboard backend. Path prefixes are supported, for example /moor.',
       probing: 'Checking how this gateway authenticates…',
       probeError:
-        "Hermes can't reach that address. Check the URL and that the other computer is running Hermes — sign-in options appear once it answers.",
+        "Moor can't reach that address. Check the URL and that the other computer is running Moor — sign-in options appear once it answers.",
       signedIn: 'Signed in',
       signIn: 'Sign in',
       signOut: 'Sign out',
@@ -1885,13 +1885,13 @@ export const en: Translations = {
       usageLabel: label => `${label} usage`,
       freeTier: {
         signIn: 'Sign in',
-        title: "You're on the Nous free tier",
-        message: 'Sign in with a Nous account to unlock more models and tools.',
+        title: "You're on the Moor free tier",
+        message: 'Sign in with a Moor account to unlock more models and tools.',
         caption:
-          'Runs on nous/welcome with connectors included. Signing in keeps your connectors and adds the tools that need an account and every other model.',
-        name: 'Nous · free tier',
+          'Runs on moor/welcome with connectors included. Signing in keeps your connectors and adds the tools that need an account and every other model.',
+        name: 'Moor · free tier',
         footnote:
-          'The free tier has no balance and nothing to pay. Payment and usage appear when you sign in with a Nous account.',
+          'The free tier has no balance and nothing to pay. Payment and usage appear when you sign in with a Moor account.',
         plan: 'Free tier',
         model: 'Model',
         connectors: 'Connectors',
@@ -1999,8 +1999,8 @@ export const en: Translations = {
       state: {
         notice: {
           loggedOut: {
-            title: 'Connect your Nous account',
-            message: 'Sign in with your Nous account to see your balance, plan and usage here.',
+            title: 'Connect your Moor account',
+            message: 'Sign in with your Moor account to see your balance, plan and usage here.',
             action: 'Sign in'
           },
           openPortal: 'Open portal ↗',
@@ -2093,7 +2093,7 @@ export const en: Translations = {
         cliBillingDisabled: {
           title: 'Remote spending is off',
           message:
-            "Remote spending is off for this account — a billing admin can turn it on from the portal's Hermes Agent page."
+            "Remote spending is off for this account — a billing admin can turn it on from the portal's Moor Agent page."
         },
         roleRequired: {
           title: 'Admin role required',
@@ -2240,10 +2240,10 @@ export const en: Translations = {
       activeBackend: 'Active',
       activeBackendHint: 'This is your active backend',
       useBackend: 'Use this backend',
-      nousIncluded: 'Included with a Nous subscription — sign in with your Nous account to activate.',
-      nousAuthNeededTitle: 'Sign in with your Nous account',
+      nousIncluded: 'Included with a Moor subscription — sign in with your Moor account to activate.',
+      nousAuthNeededTitle: 'Sign in with your Moor account',
       nousAuthNeededMessage: provider =>
-        `${provider} is saved but will only work once you sign in with your Nous account.`,
+        `${provider} is saved but will only work once you sign in with your Moor account.`,
       nousAuthSignIn: 'Sign in',
       nousAuthDoneTitle: 'Moor account connected',
       nousAuthDoneMessage: 'Your subscription backends are now active.',
@@ -2463,9 +2463,9 @@ export const en: Translations = {
       deepLinkErrorTitle: 'Plugin install link rejected',
       deepLinkCatalogInvalidName: 'The link\u2019s catalog name is missing or invalid.',
       deepLinkCatalogUnknown: (name: string) =>
-        `\u201C${name}\u201D is not in the Hermes plugin catalog. Nothing was installed.`,
+        `\u201C${name}\u201D is not in the Moor plugin catalog. Nothing was installed.`,
       deepLinkCatalogUnavailable:
-        'Could not load the Hermes plugin catalog. Check your connection and open the link again.',
+        'Could not load the Moor plugin catalog. Check your connection and open the link again.',
       settingsToggle: (name: string) => `Settings: ${name}`,
       settingsForm: {
         save: 'Save settings',
@@ -2698,7 +2698,7 @@ export const en: Translations = {
     },
     nav: {
       newChat: { title: 'New session', detail: 'Start a fresh session' },
-      settings: { title: 'Settings', detail: 'Configure Hermes desktop' },
+      settings: { title: 'Settings', detail: 'Configure Moor desktop' },
       capabilities: { title: 'Capabilities', detail: 'Skills, tools, MCP servers, and plugins' },
       messaging: { title: 'Messaging', detail: 'Set up Telegram, Slack, Discord, and more' },
       artifacts: { title: 'Artifacts', detail: 'Browse generated outputs' }
@@ -3088,14 +3088,14 @@ export const en: Translations = {
       onGateway: (name, gateway) => `${name} · ${gateway}`,
       switchTo: (name, gateway) => `Switch to ${name} on ${gateway}`,
       deleteOn: gateway => ` on ${gateway}`,
-      localDevice: 'This device (local backend — installs Hermes if missing, otherwise opens a fresh session)',
+      localDevice: 'This device (local backend — installs Moor if missing, otherwise opens a fresh session)',
       switchDeviceTitle: 'Switch to This device?',
       switchDeviceDesc:
         'This opens a fresh session on this computer. The conversation you are in stays on the other gateway.',
       switchDeviceConfirm: 'Switch',
       installDeviceTitle: 'Switch to This device?',
       installDeviceDesc:
-        'This will install Hermes locally, then open a fresh session on this computer. Nothing is installed until you confirm.',
+        'This will install Moor locally, then open a fresh session on this computer. Nothing is installed until you confirm.',
       installDeviceConfirm: 'Install locally',
       connectExistingInstead: 'Connect to existing instead'
     },
@@ -3144,7 +3144,7 @@ export const en: Translations = {
     setAsDefault: 'Set as default',
     defaultProfile: 'Default profile',
     defaultSet: name => `${name} is now the default`,
-    defaultDescription: 'Used when Hermes opens and for new chats. Existing sessions stay in their profiles.',
+    defaultDescription: 'Used when Moor opens and for new chats. Existing sessions stay in their profiles.',
     failedSetDefault: 'Could not set the default profile',
     setColor: color => `Set color ${color}`,
     autoColor: 'Auto',
@@ -3214,7 +3214,7 @@ export const en: Translations = {
   },
 
   modelAssignment: {
-    saveFailed: 'Hermes did not save that model change.',
+    saveFailed: 'Moor did not save that model change.',
     confirmTitle: 'Model Selection Warning',
     confirmDetail: 'Confirm only if you accept this trade-off.',
     confirmAction: 'Confirm',
@@ -3494,8 +3494,8 @@ export const en: Translations = {
     storageCorrupt: {
       title: 'Session database is damaged',
       body: (profiles: string) =>
-        `Hermes can't read all of the session history for ${profiles}. Chats missing from this list were not deleted; the file they are stored in is damaged.`,
-      action: 'Quit Hermes on this profile, then inspect the file without changing it, or restore a snapshot:',
+        `Moor can't read all of the session history for ${profiles}. Chats missing from this list were not deleted; the file they are stored in is damaged.`,
+      action: 'Quit Moor on this profile, then inspect the file without changing it, or restore a snapshot:',
       guide: 'Recovery guide'
     },
     noFilterMatches: 'No sessions match these filters',
@@ -3713,7 +3713,7 @@ export const en: Translations = {
       '/resume': 'Resume a saved session',
       '/details': 'control transcript detail level',
       '/copy': 'copy selection or last assistant message',
-      '/quit': 'exit hermes',
+      '/quit': 'exit moor',
       '/start': 'Acknowledge platform start pings without a reply',
       '/new': 'Start a new desktop chat',
       '/topic': 'Enable or inspect Telegram DM topic sessions',
@@ -3737,12 +3737,12 @@ export const en: Translations = {
       '/journey': 'Open the memory graph — skills + memories over time',
       '/queue': 'Queue a prompt for the next turn, or list/edit/rm/move/clear queued prompts',
       '/steer': 'Inject a message after the next tool call without interrupting',
-      '/goal': 'Set a standing goal Hermes works on across turns until achieved',
+      '/goal': 'Set a standing goal Moor works on across turns until achieved',
       '/heartbeat': 'Set a recurring prompt that re-enters this session when idle',
       '/refine': 'Review this conversation now and save lessons to memory/skills',
       '/review': 'Spawn an independent subagent to review the work just discussed (PR, code, docs)',
       '/loop': 'Re-run a prompt on a recurring interval in this session',
-      '/plan': 'Write a markdown implementation plan to .hermes/plans/ without executing anything',
+      '/plan': 'Write a markdown implementation plan to .moor/plans/ without executing anything',
       '/moa': 'Run one prompt through the default Mixture of Agents preset, then restore your model',
       '/subgoal': 'Add or manage extra criteria on the active goal',
       '/status': 'Show current session status',
@@ -3750,7 +3750,7 @@ export const en: Translations = {
       '/context':
         'Show detailed context window view with usage gauge, category breakdown, compression stats, and throughput',
       '/whoami': 'Show your slash command access (admin / user)',
-      '/profile': 'Switch the active Hermes profile',
+      '/profile': 'Switch the active Moor profile',
       '/codex-runtime': 'Toggle codex app-server runtime for OpenAI/Codex models',
       '/personality': 'Set a predefined personality',
       '/battery': 'Toggle a color-coded battery indicator in the status bar',
@@ -3774,10 +3774,10 @@ export const en: Translations = {
       '/browser': 'Manage browser CDP connection [connect|disconnect|status] (local gateway only)',
       '/palette': 'Open the fuzzy command palette (also Ctrl+P)',
       '/usage': 'Show token usage and rate limits; `reset` redeems a banked Codex limit reset',
-      '/subscription': 'View your Nous plan and change it in the browser',
-      '/topup': 'Show your Nous balance and manage billing on the portal',
+      '/subscription': 'View your Moor plan and change it in the browser',
+      '/topup': 'Show your Moor balance and manage billing on the portal',
       '/platform': 'Pause, resume, or list a failing gateway platform',
-      '/version': 'Show Hermes Agent version',
+      '/version': 'Show Moor Agent version',
       '/debug': 'Upload debug report (system info + logs) and get shareable links',
       '/model': 'Switch the model for this session'
     },
@@ -4050,14 +4050,14 @@ export const en: Translations = {
   },
 
   updates: {
-    discontinuedTitle: 'This build of Hermes is no longer supported',
+    discontinuedTitle: 'This build of Moor is no longer supported',
     discontinuedBody:
-      'This build of Hermes is no longer supported and may break — uninstall it. Your data stays on disk.',
+      'This build of Moor is no longer supported and may break — uninstall it. Your data stays on disk.',
     channels: { stable: 'Stable', canary: 'Canary' },
     bundleSwapPending: 'Restart to finish the update',
     bundleSwapPendingDesc:
-      'The updated app is already installed — Hermes only needs to restart to load it. Chats and settings are untouched.',
-    bundleSwapPendingAction: 'Restart Hermes',
+      'The updated app is already installed — Moor only needs to restart to load it. Chats and settings are untouched.',
+    bundleSwapPendingAction: 'Restart Moor',
     stages: {
       idle: 'Getting ready…',
       prepare: 'Getting ready…',
@@ -4078,8 +4078,8 @@ export const en: Translations = {
     notAvailableTitle: 'Update not available',
     unsupportedMessage: 'This version of Moor can’t update itself from inside the app.',
     connectionRetry:
-      "Hermes couldn't reach the update server. Check your internet connection and try again. If you use a remote Hermes, make sure it is online.",
-    gitUnusable: 'Hermes could not run Git on this computer, so it could not check for updates.',
+      "Moor couldn't reach the update server. Check your internet connection and try again. If you use a remote Moor, make sure it is online.",
+    gitUnusable: 'Moor could not run Git on this computer, so it could not check for updates.',
     connectionSettings: 'Connection settings',
     openDownloadPage: 'Open download page',
     latestBody: 'You’re running the latest version.',
@@ -4091,7 +4091,7 @@ export const en: Translations = {
     availableBodyBackend: 'A newer version of the connected Moor backend is ready to install.',
     availableBodyNoChangelog: 'A newer version is ready. Release notes aren’t available for this install type.',
     availableBodyAppInstaller:
-      'A new version of Hermes is ready. Hermes will close, Windows will finish the update, and Hermes will reopen on its own.',
+      'A new version of Moor is ready. Moor will close, Windows will finish the update, and Moor will reopen on its own.',
     updateNow: 'Update now',
     maybeLater: 'Maybe later',
     moreChanges: count => `+ ${count} more change${count === 1 ? '' : 's'} included.`,
@@ -4107,14 +4107,14 @@ export const en: Translations = {
     applyingBody:
       'The Moor updater takes over in its own window and reopens Moor automatically when it’s done. Please don’t reopen Moor yourself while it’s updating.',
     applyingBodyBackend:
-      'The remote backend is applying the update and will restart. Hermes reconnects automatically when it’s back.',
-    applyingClose: 'This window will close while the update runs, then Hermes reopens on its own.',
+      'The remote backend is applying the update and will restart. Moor reconnects automatically when it’s back.',
+    applyingClose: 'This window will close while the update runs, then Moor reopens on its own.',
     applyingBodyAppInstaller:
-      'Hermes will close and Windows will finish the update. Hermes will reopen when it’s done — you don’t need to do anything.',
-    applyingCloseAppInstaller: 'This window will close, Windows finishes the update, and Hermes reopens on its own.',
+      'Moor will close and Windows will finish the update. Moor will reopen when it’s done — you don’t need to do anything.',
+    applyingCloseAppInstaller: 'This window will close, Windows finishes the update, and Moor reopens on its own.',
     checkUnknownTitleAppInstaller: 'Couldn’t check for updates',
     checkUnknownBodyAppInstaller:
-      'Windows couldn’t check for updates right now. Updates also install automatically when you restart Hermes.',
+      'Windows couldn’t check for updates right now. Updates also install automatically when you restart Moor.',
     errorTitle: 'Update didn’t finish',
     errorBody: 'No worries — nothing was lost. You can try again now.',
     blockerTitle: 'Close local previews to update Moor?',
@@ -4156,7 +4156,7 @@ export const en: Translations = {
       noReturn: 'Backend didn’t come back online. The update may not have completed — check the backend host.'
     },
     // Update-status overlay + version-details (mechanism-aware update UI).
-    appName: 'Hermes',
+    appName: 'Moor',
     version: (value: string) => `Version ${value}`,
     versionUnavailable: 'Version unavailable',
     checkNow: 'Check now',
@@ -4178,7 +4178,7 @@ export const en: Translations = {
     justNowSuffix: ' · just now',
     bundleOutOfSync: 'App build out of date',
     bundleOutOfSyncDesc:
-      'The Hermes runtime was updated, but the desktop app itself is still an older build. Update it to pick up the latest fixes.',
+      'The Moor runtime was updated, but the desktop app itself is still an older build. Update it to pick up the latest fixes.',
     bundleOutOfSyncAction: 'Get the installer',
     checkingShort: 'Checking…',
     releaseAvailable: tag => `Version ${tag} is available.`,
@@ -4192,9 +4192,9 @@ export const en: Translations = {
     versionDetailsDistributionDesktopMsix: 'Desktop app (MSIX)',
     versionDetailsDistributionDesktopInstaller: 'Desktop app (installer)',
     versionDetailsDistributionSourceInstaller: 'Source (install script)',
-    versionDetailsDistributionSourceInstallerDesktop: 'Source (install script) + hermes desktop',
+    versionDetailsDistributionSourceInstallerDesktop: 'Source (install script) + moor desktop',
     versionDetailsDistributionSource: 'Source',
-    versionDetailsDistributionSourceDesktop: 'Source + hermes desktop',
+    versionDetailsDistributionSourceDesktop: 'Source + moor desktop',
     versionDetailsDistributionStore: 'Microsoft Store',
     versionDetailsRuntime: 'Runtime',
     versionDetailsRuntimeEmbedded: 'Embedded runtime',
@@ -4235,25 +4235,25 @@ export const en: Translations = {
     retryAfterRun: 'I’ve run it -- retry',
     setupChoiceTitle: 'Set up Moor Desktop',
     setupChoiceDesc:
-      'Connect this app to a Hermes gateway you already run, or install Hermes locally on this computer.',
-    setupChoiceDescLocal: 'Install Hermes on this computer, or connect to a Hermes gateway you already run.',
-    connectExistingTitle: 'Connect to existing Hermes',
+      'Connect this app to a Moor gateway you already run, or install Moor locally on this computer.',
+    setupChoiceDescLocal: 'Install Moor on this computer, or connect to a Moor gateway you already run.',
+    connectExistingTitle: 'Connect to existing Moor',
     connectExistingShort: 'Connect existing',
     connectExistingDesc: 'Use a remote backend with a session token or browser sign-in. No local install will start.',
-    installLocalTitle: 'Install Hermes locally',
-    installLocalDesc: 'Download Hermes, create its Python environment, and run the backend on this computer.',
-    useLocalTitle: 'Use Hermes on this computer',
-    useLocalDesc: 'A Hermes runtime is already installed here — start it with one click. Nothing downloads.',
-    bundledLocalDesc: 'Use the Hermes runtime included with this app — the bundled backend is the local install.',
-    localStartUnavailable: 'Local installation could not start. Restart Hermes Desktop and try again.',
-    remoteSetupTitle: 'Connect to existing Hermes',
-    remoteSetupDesc: 'Enter your gateway URL. Hermes Desktop will detect whether it needs a token or browser sign-in.',
+    installLocalTitle: 'Install Moor locally',
+    installLocalDesc: 'Download Moor, create its Python environment, and run the backend on this computer.',
+    useLocalTitle: 'Use Moor on this computer',
+    useLocalDesc: 'A Moor runtime is already installed here — start it with one click. Nothing downloads.',
+    bundledLocalDesc: 'Use the Moor runtime included with this app — the bundled backend is the local install.',
+    localStartUnavailable: 'Local installation could not start. Restart Moor Desktop and try again.',
+    remoteSetupTitle: 'Connect to existing Moor',
+    remoteSetupDesc: 'Enter your gateway URL. Moor Desktop will detect whether it needs a token or browser sign-in.',
     remoteUrlTitle: 'Gateway URL',
     remoteUrlDesc: 'Use the base URL of the Moor gateway, including https:// when remote.',
     remoteUrlPlaceholder: 'https://gateway.example.com/moor',
     probing: 'Detecting gateway authentication...',
     probeError:
-      "Hermes can't reach that address. Check the URL and that the other computer is running Hermes — sign-in options appear once it answers.",
+      "Moor can't reach that address. Check the URL and that the other computer is running Moor — sign-in options appear once it answers.",
     probeErrorDetails: 'Details',
     identityProvider: 'your identity provider',
     authTitle: 'Authentication',
@@ -4421,7 +4421,7 @@ export const en: Translations = {
     timedOutHeading: 'That sign-in link has expired',
     timedOutBody: "Start again whenever you're ready. You're still on the free Moor service.",
     retiredBody:
-      "Your session ended before the sign-in finished. Hermes will start a new one; then sign in again whenever you're ready.",
+      "Your session ended before the sign-in finished. Moor will start a new one; then sign in again whenever you're ready.",
     errorBody: "Sign-in didn't finish. Try again whenever you're ready.",
     busyHeading: 'Almost there',
     busyBody: wait =>
@@ -4441,11 +4441,11 @@ export const en: Translations = {
         "Moor couldn't reach the Moor service. Check your internet connection, then tap Try again. Or connect another provider for now.",
       serverError: 'The Moor service had a hiccup. Tap Try again in a moment, or connect another provider for now.',
       powRequired:
-        "The Nous server asked for a proof of work, but that isn't implemented in your Agent yet. Sign in or create a free Nous account to continue.",
-      locked: "This session can't continue without signing in. Sign in or create a free Nous account to keep going.",
+        "The Moor server asked for a proof of work, but that isn't implemented in your Agent yet. Sign in or create a free Moor account to continue.",
+      locked: "This session can't continue without signing in. Sign in or create a free Moor account to keep going.",
       generic:
-        "Hermes couldn't set up free access without signing in. Signing in is free, or connect another provider.",
-      signInBelow: 'Signing in is free. Pick Nous below.',
+        "Moor couldn't set up free access without signing in. Signing in is free, or connect another provider.",
+      signInBelow: 'Signing in is free. Pick Moor below.',
       tryAgain: 'Try again',
       retrying: 'Trying again…'
     }
@@ -4544,7 +4544,7 @@ export const en: Translations = {
       updateInProgress: 'Update in progress',
       commitsBehind: (count, branch) => `${count} commit${count === 1 ? '' : 's'} behind ${branch}`,
       releaseAvailable: (tag: string) => `Version ${tag} is available.`,
-      desktopVersion: version => `Hermes Desktop v${version}`,
+      desktopVersion: version => `Moor Desktop v${version}`,
       backendVersion: version => `Backend v${version}`,
       clientLabel: version => `client v${version}`,
       connectionSsh: host => `SSH: ${host}`,
@@ -4797,11 +4797,11 @@ export const en: Translations = {
 
   interfaceMode: {
     title: 'Interface mode',
-    hint: 'Changes what is shown, not what Hermes can do.',
+    hint: 'Changes what is shown, not what Moor can do.',
     sessionNote: 'Set by Simple mode. A change here lasts for this session; switch to Advanced to make it yours.',
     simple: {
       label: 'Simple',
-      description: 'For talking to Hermes. Sidebar and chat; no terminal, file or diff panes.'
+      description: 'For talking to Moor. Sidebar and chat; no terminal, file or diff panes.'
     },
     advanced: {
       label: 'Advanced',
@@ -4920,15 +4920,15 @@ export const en: Translations = {
       errorLayerBodies: {
         auth: 'The AI service rejected your sign-in. Check the credentials for this provider, then send your message again.',
         billing: 'Your account has no credits left for this provider. Top up or switch provider, then send again.',
-        disk: 'Your disk is full, so Hermes could not save this conversation. Free some space, then retry.',
+        disk: 'Your disk is full, so Moor could not save this conversation. Free some space, then retry.',
         endpoint:
-          "Hermes can't reach your custom model server. Check that it is running, then send your message again.",
+          "Moor can't reach your custom model server. Check that it is running, then send your message again.",
         gateway:
-          'Hermes hit an internal problem starting this reply. Send your message again; if it keeps happening, send diagnostics.',
-        generic: 'Something went wrong while Hermes was replying. Retry, or copy the details if it keeps happening.',
+          'Moor hit an internal problem starting this reply. Send your message again; if it keeps happening, send diagnostics.',
+        generic: 'Something went wrong while Moor was replying. Retry, or copy the details if it keeps happening.',
         provider: 'The AI service could not complete this request. Retry in a moment or switch provider.',
         runtime:
-          'Hermes hit an internal problem starting this reply. Send your message again; if it keeps happening, send diagnostics.',
+          'Moor hit an internal problem starting this reply. Send your message again; if it keeps happening, send diagnostics.',
         streaming: 'The connection dropped before the reply finished. Retry to send it again.'
       },
       errorCodes: {
@@ -5309,7 +5309,7 @@ export const en: Translations = {
     sudoCommandUnavailable:
       'This agent did not provide the command. Cancel if you cannot verify it in the conversation.',
     sudoInstallDesc:
-      'Hermes needs your sudo password to install the Bot Screen packages (TigerVNC + Xfce) on the gateway host. It is sent only to that host.',
+      'Moor needs your sudo password to install the Bot Screen packages (TigerVNC + Xfce) on the gateway host. It is sent only to that host.',
     sudoPlaceholder: 'sudo password',
     secretTitle: 'Secret required',
     secretDesc: 'Moor needs a credential to continue.',
@@ -5433,7 +5433,7 @@ export const en: Translations = {
       systemNote: platform => `↻ Handed off to ${platform} — resume here anytime.`,
       failed: error => `Handoff failed: ${error}`,
       timedOut:
-        "Hermes couldn't reach your messaging connection. Start it from Settings → Messaging, then try the handoff again.",
+        "Moor couldn't reach your messaging connection. Start it from Settings → Messaging, then try the handoff again.",
       startMessaging: 'Start messaging'
     }
   },

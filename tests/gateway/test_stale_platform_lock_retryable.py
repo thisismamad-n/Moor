@@ -125,8 +125,8 @@ def test_lock_conflict_names_owning_profile(adapter):
     assert adapter._fatal_error_retryable is True
     assert adapter._fatal_error_code == "telegram-bot-token_lock"
 
-def test_lock_conflict_infers_profile_from_legacy_hermes_home(adapter):
-    """Locks written before the profile field existed still attribute via hermes_home."""
+def test_lock_conflict_infers_profile_from_legacy_moor_home(adapter):
+    """Locks written before the profile field existed still attribute via moor_home."""
     existing = {
         "pid": 559,
         "start_time": 123,

@@ -52,7 +52,7 @@ def _restore_agent_model_runtime(agent, snapshot: dict | None) -> None:
 
 
 def _profile_runtime_scope_tokens(profile_home, *, hydrate_secrets: bool = True) -> "_TurnScopes":
-    """Bind HERMES_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
+    """Bind MOOR_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
     return the reset tokens. The launch profile's SECRET scope is always bound — its ``.env`` over
     the launch env (live while single-profile, frozen at activation afterwards; never live
     ``os.environ`` once a secondary context may have written to it, #107422) — so the credential
@@ -73,13 +73,13 @@ def _profile_runtime_scope_tokens(profile_home, *, hydrate_secrets: bool = True)
             home = Path(profile_home)
             # External sources first: the requested profile may never have been served in this process.
             if hydrate_secrets:
-                from hermes_cli.env_loader import hydrate_profile_secret_sources
+                from moor_cli.env_loader import hydrate_profile_secret_sources
                 hydrate_profile_secret_sources(home)
             secrets = build_profile_secret_scope(home)
             overlay = None
-            scopes.home = set_hermes_home_override(str(home))
+            scopes.home = set_moor_home_override(str(home))
         else:
-            # The launch home IS get_hermes_home() (``_profile_home`` answers None for "already the
+            # The launch home IS get_moor_home() (``_profile_home`` answers None for "already the
             # launch profile"); single-profile, only its secrets need binding. Once multiplexing is
             # active the override is bound too: an unset override is the "unbound context" signal
             # plugin runtime bindings and per-home slots fail closed on (#118538).
@@ -93,7 +93,7 @@ def _profile_runtime_scope_tokens(profile_home, *, hydrate_secrets: bool = True)
             scopes.secret = set_secret_scope(secrets)
             if not is_multiplex_active():
                 return scopes
-            scopes.home = set_hermes_home_override(str(home))
+            scopes.home = set_moor_home_override(str(home))
             overlay = launch_terminal_env()
         if scopes.secret is None:
             scopes.secret = set_secret_scope(secrets, profile_home=str(home) if profile_home else None)
@@ -205,7 +205,7 @@ def _current_model_runtime(agent, explicit_provider: str) -> tuple:
     current_model = _resolve_model()
     if explicit_provider:
         return explicit_provider.strip(), current_model, "", ""
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from moor_cli.runtime_provider import resolve_runtime_provider
     runtime = resolve_runtime_provider(requested=None, target_model=current_model or None)
     # Keep a callable api_key (Azure Entra bearer) unchanged: ``str()`` would
     # yield "<function ...>" and poison switch_model validation.

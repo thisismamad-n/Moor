@@ -76,7 +76,7 @@ export function prepareNodeDependencies({ source, workspaces, env = process.env,
   ]
   // This receipt certifies dependency preparation, never compiled product freshness.
   // Keep it inside the cached tree so a clean npm ci also removes the receipt.
-  const receipt = join(source, 'node_modules/.hermes-node-deps')
+  const receipt = join(source, 'node_modules/.moor-node-deps')
   // Ordinary product builders consume the baseline receipt; preparation also
   // binds lifecycle outputs to its compiler/SDK identity. On a mismatch npm ci
   // removes arbitrary package lifecycle outputs, not just known node-pty paths.

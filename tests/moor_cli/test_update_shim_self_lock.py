@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from hermes_cli import main_install_repair
-from hermes_cli import main as cli_main
-from hermes_constants import venv_bin_dir
+from moor_cli import main_install_repair
+from moor_cli import main as cli_main
+from moor_constants import venv_bin_dir
 import pytest
 
 
@@ -27,8 +27,8 @@ def test_pending_rename_filter_drops_only_our_shim_pairs():
 
 
 def test_pending_rename_filter_keeps_a_shim_pair_with_a_foreign_target():
-    shims = [Path(r"C:\hermes\venv\Scripts\hermes.exe")]
-    entries = [r"\??\C:\hermes\venv\Scripts\hermes.exe", r"!\??\C:\somewhere\else.exe"]
+    shims = [Path(r"C:\moor\venv\Scripts\moor.exe")]
+    entries = [r"\??\C:\moor\venv\Scripts\moor.exe", r"!\??\C:\somewhere\else.exe"]
     assert main_install_repair._filter_pending_shim_renames(entries, shims) == (entries, 0)
 
 

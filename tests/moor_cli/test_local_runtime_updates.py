@@ -15,7 +15,7 @@ def runtime_env(tmp_path, monkeypatch):
     home = tmp_path / "home"
     store = home / "tools"
     lock_path = tmp_path / "lock.json"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(paths, "store_root", lambda: store)
     monkeypatch.setattr(paths, "lockfile_path", lambda: lock_path)
     lock = Lockfile(lock_path)
@@ -39,7 +39,7 @@ def record_engine(store, version, digest="b" * 64):
 
 
 def test_status_uses_pm_pin_and_ignores_legacy_tag(runtime_env, monkeypatch):
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.web_routers import local_models as lm
 
     store, lock = runtime_env
     section = {"enabled": True, "backend": "cpu", "tag": "b99999"}
@@ -58,7 +58,7 @@ def test_status_uses_pm_pin_and_ignores_legacy_tag(runtime_env, monkeypatch):
 
 
 def test_boot_uses_previous_pm_engine_without_installing(runtime_env, monkeypatch):
-    from hermes_cli.local_runtime import bootstrap, endpoint, supervisor
+    from moor_cli.local_runtime import bootstrap, endpoint, supervisor
 
     store, _ = runtime_env
     binary = record_engine(store, "10362")

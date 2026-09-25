@@ -253,8 +253,8 @@ class TestResolveMoorBinWindowsPyGuard:
         assert relaunch_mod.resolve_moor_bin() == str(pinned)
 
     @pytest.mark.platforms("windows")
-    def test_windows_py_argv0_with_no_hermes_on_path_returns_none(self, monkeypatch, tmp_path):
-        """Bulletproof fallback: if argv0 is .py on Windows AND hermes.exe
+    def test_windows_py_argv0_with_no_moor_on_path_returns_none(self, monkeypatch, tmp_path):
+        """Bulletproof fallback: if argv0 is .py on Windows AND moor.exe
         isn't on PATH, return None so the caller falls back to
         python -m moor_cli.main."""
         script = tmp_path / "main.py"

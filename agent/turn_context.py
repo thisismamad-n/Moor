@@ -1273,7 +1273,7 @@ def build_api_messages(
                 api_msg, model=_sanitize_model_for(agent, moa_config)
             )
         # 'reasoning_details' is kept here; the chat-completions transport drops it on the
-        # wire for every route that does not replay it (OpenRouter/Nous do).
+        # wire for every route that does not replay it (OpenRouter/Moor do).
         api_messages.append(api_msg)
 
     # Final system message = cached prompt + ephemeral additions (API-time only).

@@ -1,8 +1,8 @@
-"""Steps of ``hermes update --check``: debris cleanup, channel target, scoped fetch, verdict.
+"""Steps of ``moor update --check``: debris cleanup, channel target, scoped fetch, verdict.
 
 ``update_cmd._cmd_update_check`` (a frozen updater surface, see ``tests/compat``) orchestrates
 these. Facade helpers are read through ``_uc()`` at call time and origin helpers are imported
-per function, so test patches on ``hermes_cli.update_cmd`` and the origin modules stay effective.
+per function, so test patches on ``moor_cli.update_cmd`` and the origin modules stay effective.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ def _git(git_cmd: list[str], root: Path, args: list[str], **kwargs: Any) -> subp
 
 
 def _uc():
-    from hermes_cli import update_cmd
+    from moor_cli import update_cmd
 
     return update_cmd
 
@@ -32,7 +32,7 @@ def clear_git_debris(root: Path) -> None:
     fetch then fails with "File exists". Aborted fetches on flaky lines also strand
     ``tmp_pack_*`` debris: unchecked it reached 6 GB and corrupted the pack dir (#93732).
     """
-    from hermes_cli.gitlock import clear_stale_git_locks, clear_stale_tmp_packs
+    from moor_cli.gitlock import clear_stale_git_locks, clear_stale_tmp_packs
 
     for lock_path in clear_stale_git_locks(root):
         print(f"  (removed stale git lock: {lock_path})")
@@ -47,7 +47,7 @@ def channel_compare_branch(selected_channel: str, git_cmd: list[str], root: Path
     ``None`` means the verdict is printed (the channel pins a commit); exits 1 when the channel
     cannot be resolved.
     """
-    from hermes_cli.source_releases import resolve_source_target
+    from moor_cli.source_releases import resolve_source_target
 
     print(f"→ Update channel: {selected_channel}")
     try:
@@ -63,7 +63,7 @@ def channel_compare_branch(selected_channel: str, git_cmd: list[str], root: Path
         print(f"✓ Up to date with the latest release ({target.label}).")
     else:
         print(f"→ Selected release available: {target.label}")
-        print("  Run `hermes update` to install it.")
+        print("  Run `moor update` to install it.")
     return None
 
 
@@ -98,7 +98,7 @@ def repair_shallow_grafts(root: Path) -> None:
     Git never removes old grafts; unpruned, the file keeps growing and merge-base / the
     orphan-divergence heuristic stop working (#105951).
     """
-    from hermes_cli.gitlock import prune_stale_shallow_grafts, repair_broken_shallow_boundaries
+    from moor_cli.gitlock import prune_stale_shallow_grafts, repair_broken_shallow_boundaries
 
     repaired = repair_broken_shallow_boundaries(root)
     if repaired:
@@ -124,8 +124,8 @@ def report_shallow_verdict(git_cmd: list[str], root: Path, compare_branch: str) 
     if head_sha and target_sha and head_sha == target_sha:
         print("✓ Already up to date.")
         return
-    from hermes_cli.config import recommended_update_command
-    from hermes_cli.source_check import _github_compare_behind
+    from moor_cli.config import recommended_update_command
+    from moor_cli.source_check import _github_compare_behind
 
     counted = _github_compare_behind(head_sha, target_sha)
     if counted == 0:
@@ -148,6 +148,6 @@ def report_rev_list_verdict(git_cmd: list[str], root: Path, compare_branch: str)
         return
     commits_word = "commit" if behind == 1 else "commits"
     print(f"⚕ Update available: {behind} {commits_word} behind {compare_branch}.")
-    from hermes_cli.config import recommended_update_command
+    from moor_cli.config import recommended_update_command
 
     print(f"  Run '{recommended_update_command()}' to install.")

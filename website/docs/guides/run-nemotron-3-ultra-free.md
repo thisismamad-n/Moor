@@ -118,6 +118,6 @@ Already set up with another model?
 ## See also
 
 - **[Desktop App](../user-guide/desktop.md)** — The native one-click app (macOS, Windows, Linux)
-- **[Run Hermes Agent with Nous Portal](./run-hermes-with-nous-portal.md)** — Full Portal walkthrough: models, Tool Gateway, and verification
-- **[Nous Portal integration](../integrations/nous-portal.md)** — What's in the subscription
+- **[Run Moor Agent with Moor Portal](./run-moor-with-moor-portal.md)** — Full Portal walkthrough: models, Tool Gateway, and verification
+- **[Moor Portal integration](../integrations/moor-portal.md)** — What's in the subscription
 - **[Quickstart](../getting-started/quickstart.md)** — Install-to-chat in under 5 minutes

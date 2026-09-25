@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import venv_sync
+from moor_cli import venv_sync
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -31,7 +31,7 @@ def _run_bare(snippet: str) -> subprocess.CompletedProcess:
 def test_bare_import_and_passive_paths(tmp_path):
     result = _run_bare(f"""
         from pathlib import Path
-        from hermes_cli import venv_sync
+        from moor_cli import venv_sync
         assert 'pm' not in sys.modules
         root = Path({str(tmp_path)!r})
         assert venv_sync.sync(root, check=True)['state'] == 'failed'
@@ -147,7 +147,7 @@ class TestCliContract:
             [
                 sys.executable,
                 "-m",
-                "hermes_cli.venv_sync",
+                "moor_cli.venv_sync",
                 "--project-root",
                 str(root),
                 "--json",
@@ -165,7 +165,7 @@ class TestCliContract:
             [
                 sys.executable,
                 "-m",
-                "hermes_cli.venv_sync",
+                "moor_cli.venv_sync",
                 "--project-root",
                 str(tmp_path),  # empty dir: no pyproject, no stamp
                 "--json",

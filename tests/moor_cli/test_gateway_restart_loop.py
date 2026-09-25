@@ -25,7 +25,7 @@ class TestGatewayLifecyclePattern:
 
     @pytest.mark.parametrize("text", [
         # Branch E (#113667): the supervised gateway IS the interpreter image, so a killer aimed at
-        # `python*` carries no hermes/gateway token yet takes it down — on every platform.
+        # `python*` carries no moor/gateway token yet takes it down — on every platform.
         "taskkill /F /IM python.exe",
         "taskkill /F /IM python.exe 2>/dev/null | head -2; echo done",
         'taskkill /F /FI "IMAGENAME eq python.exe"',
@@ -38,18 +38,18 @@ class TestGatewayLifecyclePattern:
         "pkill python",
         "pkill -9 python3",
         "pkill -f python",
-        'pkill -f "python -m hermes_cli.main"',
-        "pkill -f hermes_cli",
+        'pkill -f "python -m moor_cli.main"',
+        "pkill -f moor_cli",
         "killall -9 python3.12",
         "sudo pkill -9 python3",
         "pgrep python | xargs kill -9",
         "kill $(pidof python3)",
-        # Windows spellings of the hermes-gateway forms (salvaged from #94379).
-        "hermes.exe gateway restart",
-        "hermes.cmd gateway stop",
-        r'"C:\Program Files\hermes.exe" gateway restart',
-        "taskkill /F /IM hermes-gateway.exe",
-        "Stop-Process -Name hermes-gateway -Force",
+        # Windows spellings of the moor-gateway forms (salvaged from #94379).
+        "moor.exe gateway restart",
+        "moor.cmd gateway stop",
+        r'"C:\Program Files\moor.exe" gateway restart',
+        "taskkill /F /IM moor-gateway.exe",
+        "Stop-Process -Name moor-gateway -Force",
     ])
     def test_interpreter_and_windows_kill_forms_are_blocked(self, text):
         assert _contains_gateway_lifecycle_command(text), f"Should match: {text!r}"
@@ -68,12 +68,12 @@ class TestGatewayLifecyclePattern:
         "pkill -u alice chrome",
         "pkill -t pts/1 vim",
         "pkill -f 'python mt_add_paused.py --go'",
-        # Unrelated scripts that merely contain "hermes" cannot match the gateway cmdline.
-        "pkill -f 'hermes-polis/run.sh'",
-        "pkill -f my_hermes_bot.py",
+        # Unrelated scripts that merely contain "moor" cannot match the gateway cmdline.
+        "pkill -f 'moor-polis/run.sh'",
+        "pkill -f my_moor_bot.py",
         "pgrep python",
-        "hermes.exe gateway start",
-        "my-hermes.exe gateway restart",
+        "moor.exe gateway start",
+        "my-moor.exe gateway restart",
         "python -m pytest tests/ -k kill",
         "skill python",
     ])
@@ -417,7 +417,7 @@ class TestCronCreateLifecycleBlock:
         monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         scripts_dir = tmp_path / ".moor" / "scripts"
         scripts_dir.mkdir(parents=True)
-        (scripts_dir / "restart.sh").write_text("#!/usr/bin/env bash\nhermes gateway restart\n", encoding="utf-8")
+        (scripts_dir / "restart.sh").write_text("#!/usr/bin/env bash\nmoor gateway restart\n", encoding="utf-8")
         args = Namespace(
             cron_command="create",
             schedule="1h",
@@ -568,7 +568,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         import tools.terminal_tool as tt
 
         script = tmp_path / "delayed-ops.sh"
-        script.write_text("#!/usr/bin/env bash\nsleep 45\nhermes gateway restart\n", encoding="utf-8")
+        script.write_text("#!/usr/bin/env bash\nsleep 45\nmoor gateway restart\n", encoding="utf-8")
         self._patch_env(monkeypatch, self._make_fake_env(), inside_gateway=True)
 
         result = json.loads(tt.terminal_tool(command=f"/bin/bash {script}"))
@@ -689,7 +689,7 @@ class TestTerminalToolGatewayLifecycleGuard:
 
         script = tmp_path / "wrapper.sh"
         script.write_text(
-            "#!/usr/bin/env bash\nlaunchctl submit -l ai.hermes.loop -- /bin/true\n"
+            "#!/usr/bin/env bash\nlaunchctl submit -l ai.moor.loop -- /bin/true\n"
         )
         self._patch_env(monkeypatch, self._make_fake_env(), inside_gateway=True)
 
@@ -702,7 +702,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         import tools.terminal_tool as tt
 
         script = tmp_path / "relative.sh"
-        script.write_text("#!/usr/bin/env bash\nhermes gateway restart\n", encoding="utf-8")
+        script.write_text("#!/usr/bin/env bash\nmoor gateway restart\n", encoding="utf-8")
 
         class _FakeEnv:
             env = {}
@@ -721,7 +721,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         import tools.terminal_tool as tt
 
         script = tmp_path / "delayed.sh"
-        script.write_text("#!/usr/bin/env bash\nhermes gateway stop\n", encoding="utf-8")
+        script.write_text("#!/usr/bin/env bash\nmoor gateway stop\n", encoding="utf-8")
         script.chmod(0o700)
         self._patch_env(monkeypatch, self._make_fake_env(), inside_gateway=True)
 
@@ -744,7 +744,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         import tools.terminal_tool as tt
 
         script = tmp_path / "options.sh"
-        script.write_text("#!/usr/bin/env bash\nhermes gateway restart\n", encoding="utf-8")
+        script.write_text("#!/usr/bin/env bash\nmoor gateway restart\n", encoding="utf-8")
         self._patch_env(monkeypatch, self._make_fake_env(), inside_gateway=True)
 
         result = json.loads(tt.terminal_tool(
@@ -757,7 +757,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         import tools.terminal_tool as tt
 
         script = tmp_path / "nested.sh"
-        script.write_text("#!/usr/bin/env bash\nlaunchctl submit -l ai.hermes.loop -- /bin/true\n", encoding="utf-8")
+        script.write_text("#!/usr/bin/env bash\nlaunchctl submit -l ai.moor.loop -- /bin/true\n", encoding="utf-8")
 
         class _FakeEnv:
             env = {}
@@ -777,7 +777,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         import tools.terminal_tool as tt
 
         inner = tmp_path / "inner.sh"
-        inner.write_text("#!/usr/bin/env bash\nhermes gateway restart\n", encoding="utf-8")
+        inner.write_text("#!/usr/bin/env bash\nmoor gateway restart\n", encoding="utf-8")
         outer = tmp_path / "outer.sh"
         outer.write_text("#!/usr/bin/env bash\n/bin/bash inner.sh\n", encoding="utf-8")
 
@@ -891,7 +891,7 @@ class TestLifecycleGuardModule:
             contains_gateway_lifecycle_command_or_referenced_script,
         )
         script = tmp_path / "padded.sh"
-        script.write_bytes(b"#!/usr/bin/env bash\n# pad\x00\nhermes gateway restart\n")
+        script.write_bytes(b"#!/usr/bin/env bash\n# pad\x00\nmoor gateway restart\n")
         assert (
             contains_gateway_lifecycle_command_or_referenced_script(f"bash {script}")
             is True
@@ -954,13 +954,13 @@ class TestLifecycleGuardModule:
     def test_prompt_with_command_raises(self):
         from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         with pytest.raises(GatewayLifecycleBlocked):
-            check_gateway_lifecycle("please run hermes gateway restart", None)
+            check_gateway_lifecycle("please run moor gateway restart", None)
 
 
     def test_script_with_command_raises(self, tmp_path, monkeypatch):
         from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         script = tmp_path / "restart.sh"
-        script.write_text("#!/usr/bin/env bash\nhermes gateway restart\n", encoding="utf-8")
+        script.write_text("#!/usr/bin/env bash\nmoor gateway restart\n", encoding="utf-8")
         with pytest.raises(GatewayLifecycleBlocked):
             check_gateway_lifecycle("clean prompt", str(script))
 
@@ -1074,7 +1074,7 @@ class TestLifecycleGuardModule:
         from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
         script = tmp_path / "wrapper.sh"
         script.write_text("#!/usr/bin/env bash\n./deploy.sh\n", encoding="utf-8")
-        (tmp_path / "deploy.sh").write_text("#!/usr/bin/env bash\nhermes gateway stop\n", encoding="utf-8")
+        (tmp_path / "deploy.sh").write_text("#!/usr/bin/env bash\nmoor gateway stop\n", encoding="utf-8")
         with pytest.raises(GatewayLifecycleBlocked):
             check_gateway_lifecycle("daily ops", str(script))
 
@@ -1687,7 +1687,7 @@ class TestTerminalToolGatewayLifecycleGuardRemote:
             def execute(self, command, **kwargs):
                 calls.append(command)
                 if "head -c" in command and "/remote/workspace/remote.sh" in command:
-                    return {"output": "#!/usr/bin/env bash\nhermes gateway restart\n", "returncode": 0}
+                    return {"output": "#!/usr/bin/env bash\nmoor gateway restart\n", "returncode": 0}
                 return {"output": "", "returncode": 0}
 
         fake_env = _RemoteEnv()
@@ -1706,7 +1706,7 @@ class TestTerminalToolGatewayLifecycleGuardRemote:
         still fails closed, but the error names that reason instead of claiming a lifecycle
         command the model then rewords and retries in a loop (#113944)."""
         import tools.terminal_tool as tt
-        from hermes_cli.sqlite_safe_read import connect_tracked
+        from moor_cli.sqlite_safe_read import connect_tracked
 
         db = tmp_path / "state.db"
         conn = connect_tracked(db)

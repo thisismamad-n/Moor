@@ -468,10 +468,10 @@ class TestFallbackExtraBodyReResolution:
 
 
 def _write_moa_home(tmp_path, monkeypatch):
-    """Real config.yaml with a MoA preset under a temp HERMES_HOME (genuine preset resolution)."""
-    import hermes_yaml as yaml
+    """Real config.yaml with a MoA preset under a temp MOOR_HOME (genuine preset resolution)."""
+    import moor_yaml as yaml
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir(exist_ok=True)
     (home / "config.yaml").write_text(yaml.safe_dump({
         "moa": {"default_preset": "default", "presets": {"default": {
@@ -480,7 +480,7 @@ def _write_moa_home(tmp_path, monkeypatch):
             "aggregator": {"provider": "xai", "model": "grok-4.6"},
         }}},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     return home
 
 

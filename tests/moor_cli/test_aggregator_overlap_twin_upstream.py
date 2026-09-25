@@ -2,7 +2,7 @@
 
 import pytest
 
-from hermes_cli import inventory
+from moor_cli import inventory
 
 
 def _builtin_openrouter_row(models: list) -> dict:

@@ -6,19 +6,19 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_cli.uninstall as uninstall
+import moor_cli.uninstall as uninstall
 
 
 @pytest.fixture
 def layout(tmp_path, monkeypatch):
     user = tmp_path / "user"
     user.mkdir()
-    home = user / "hermes-data"
+    home = user / "moor-data"
     source = home / "workspace" / "custom-source"
     store = home / "machine" / "tool-store"
     userdata = user / "desktop-data"
-    witnesses = [source / "hermes_cli" / "__init__.py", store / "python" / "python.exe",
-                 home / "installs" / "other-install" / "facts.json", home / "bin" / "hermes.cmd",
+    witnesses = [source / "moor_cli" / "__init__.py", store / "python" / "python.exe",
+                 home / "installs" / "other-install" / "facts.json", home / "bin" / "moor.cmd",
                  home / "profiles" / "sibling" / "config.yaml",
                  home / "cache" / "partials" / ".locks" / "other-profile-transfer"]
     for path in witnesses:
@@ -30,11 +30,11 @@ def layout(tmp_path, monkeypatch):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("{}" if path.suffix in {".yaml", ".json"} else "user data", encoding="utf-8")
     monkeypatch.setattr(Path, "home", lambda: user)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(store))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(store))
     monkeypatch.setattr(uninstall, "get_project_root", lambda: source)
-    monkeypatch.setattr(uninstall, "get_hermes_home", lambda: home)
-    monkeypatch.setattr("hermes_cli.gui_uninstall.desktop_userdata_dir", lambda: userdata)
+    monkeypatch.setattr(uninstall, "get_moor_home", lambda: home)
+    monkeypatch.setattr("moor_cli.gui_uninstall.desktop_userdata_dir", lambda: userdata)
     return home, witnesses, data
 
 
@@ -72,7 +72,7 @@ def test_data_only_reports_a_failed_removal(layout, monkeypatch, capsys):
         uninstall.run_data_uninstall(SimpleNamespace(yes=True, dry_run=False))
     assert failure.value.code != 0
     output = capsys.readouterr().out
-    assert "Hermes data removed" not in output
+    assert "Moor data removed" not in output
     assert str(home / "sessions") in output
     assert all(path.exists() for path in witnesses)
 
@@ -86,8 +86,8 @@ def test_named_home_does_not_erase_siblings_or_desktop_data(layout, monkeypatch)
     userdata = home.parent / "desktop-data"
     userdata.mkdir()
     (userdata / "preferences.json").write_text("keep", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(active))
-    monkeypatch.setattr(uninstall, "get_hermes_home", lambda: active)
+    monkeypatch.setenv("MOOR_HOME", str(active))
+    monkeypatch.setattr(uninstall, "get_moor_home", lambda: active)
     uninstall.run_data_uninstall(SimpleNamespace(yes=True))
     assert not config.exists()
     assert all(path.exists() for path in witnesses)
@@ -95,14 +95,14 @@ def test_named_home_does_not_erase_siblings_or_desktop_data(layout, monkeypatch)
 
 
 def test_directory_replaced_with_a_link_does_not_expand_removal(layout, tmp_path):
-    from hermes_cli.data_cleanup import plan_data_removal, remove_data
+    from moor_cli.data_cleanup import plan_data_removal, remove_data
 
     home, _, _ = layout
     original = home / "workspace"
     foreign = tmp_path / "foreign"
     foreign.mkdir()
     witness = foreign / "notes.txt"
-    witness.write_text("not Hermes data", encoding="utf-8")
+    witness.write_text("not Moor data", encoding="utf-8")
     probe = tmp_path / "symlink-probe"
     try:
         probe.symlink_to(foreign, target_is_directory=True)
@@ -114,12 +114,12 @@ def test_directory_replaced_with_a_link_does_not_expand_removal(layout, tmp_path
     original.symlink_to(foreign, target_is_directory=True)
     _, failures = remove_data(plan)
     assert failures
-    assert witness.read_text(encoding="utf-8") == "not Hermes data"
+    assert witness.read_text(encoding="utf-8") == "not Moor data"
 
 
 def test_data_only_preserves_the_containing_bundled_application(layout, monkeypatch):
     import json
-    from hermes_cli.bundled_app import PAYLOAD_DIR_NAME
+    from moor_cli.bundled_app import PAYLOAD_DIR_NAME
 
     home, _, data = layout
     app = home / "installed-app"
@@ -127,7 +127,7 @@ def test_data_only_preserves_the_containing_bundled_application(layout, monkeypa
     project = payload / "repo"
     project.mkdir(parents=True)
     (project / "install-stamp.json").write_text(json.dumps({"payload": "bundled"}), encoding="utf-8")
-    shell = app / "Hermes.exe"
+    shell = app / "Moor.exe"
     shell.write_bytes(b"retained app bytes")
     (payload / "venv").mkdir()
     manifest = payload / "manifest.json"
@@ -145,10 +145,10 @@ def test_data_only_works_from_a_self_contained_runtime_without_an_app(layout, mo
     import json
 
     home, _, data = layout
-    package = home.parent / "usr" / "lib" / "hermes-agent"
+    package = home.parent / "usr" / "lib" / "moor-agent"
     project = package / "app"
-    (project / "hermes_cli").mkdir(parents=True)
-    (project / "hermes_cli" / "__init__.py").write_text("", encoding="utf-8")
+    (project / "moor_cli").mkdir(parents=True)
+    (project / "moor_cli" / "__init__.py").write_text("", encoding="utf-8")
     (project / "install-stamp.json").write_text(json.dumps(
         {"payload": "runtime", "distribution": "apt-termux", "updateMechanism": "external"}), encoding="utf-8")
     (package / "venv").mkdir()

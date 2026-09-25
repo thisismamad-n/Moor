@@ -7,21 +7,21 @@ import pytest
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    from hermes_cli import profiles
-    root = tmp_path / '.hermes'
+    from moor_cli import profiles
+    root = tmp_path / '.moor'
     secondary = root / 'profiles' / 'worker'
     secondary.mkdir(parents=True)
     (secondary / 'config.yaml').write_text('model: {default: worker-model}\n')
     (root / 'config.yaml').write_text('gateway: {multiplex_profiles: true}\n')
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('MOOR_HOME', str(root))
     monkeypatch.setattr(profiles, 'get_active_profile_name', lambda: 'default')
     return root, secondary
 
 
 @pytest.mark.parametrize('include_parked', [False, True])
 def test_parked_is_not_served_but_remains_installed(homes, include_parked):
-    from hermes_cli import profiles
+    from moor_cli import profiles
     root, secondary = homes
     (secondary / 'gateway.parked').write_text('provisioned offline\n')
     if include_parked:
@@ -35,7 +35,7 @@ def test_parked_is_not_served_but_remains_installed(homes, include_parked):
 
 @pytest.mark.parametrize('multiplex', [False, True])
 def test_default_marker_is_ignored_with_one_warning(homes, caplog, multiplex):
-    from hermes_cli.profiles import profiles_to_serve
+    from moor_cli.profiles import profiles_to_serve
     root, _ = homes
     (root / 'gateway.parked').touch()
     for _ in range(2):
@@ -47,13 +47,13 @@ def test_default_marker_is_ignored_with_one_warning(homes, caplog, multiplex):
 
 @pytest.mark.parametrize('verb', ['stop', 'start', 'restart'])
 def test_cli_lifecycle_orders_marker_before_socket(homes, monkeypatch, capsys, verb):
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     from gateway import control_socket
     root, secondary = homes
     marker = secondary / 'gateway.parked'
     owner = SimpleNamespace(home=root, profile_label='default', profiles=('default', 'worker'),
                             describe=lambda: 'test host')
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('MOOR_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
     monkeypatch.setattr(gw, '_refuse_from_inside_gateway', lambda *a: None)
     monkeypatch.setattr(gw, 'find_gateway_pids', lambda **kw: [])
@@ -79,7 +79,7 @@ def test_cli_lifecycle_orders_marker_before_socket(homes, monkeypatch, capsys, v
     if verb == 'start':
         marker.touch()
     # Precedence: a standalone profile is never parked, even while a stale host record lists it.
-    from hermes_cli.gateway_profile_lifecycle import profile_lifecycle
+    from moor_cli.gateway_profile_lifecycle import profile_lifecycle
     (secondary / 'config.yaml').write_text('gateway: {standalone: true}\n')
     assert profile_lifecycle(verb, SimpleNamespace()) is False and calls == []
     assert marker.exists() is (verb == 'start')
@@ -93,16 +93,16 @@ def test_cli_lifecycle_orders_marker_before_socket(homes, monkeypatch, capsys, v
 
 
 def test_parked_status_and_topology_keep_roster(homes, monkeypatch, capsys):
-    from hermes_cli import gateway as gw, profiles
-    from hermes_cli.web_server_gateway import _collect_profile_gateway_topology
+    from moor_cli import gateway as gw, profiles
+    from moor_cli.web_server_gateway import _collect_profile_gateway_topology
     root, secondary = homes
     (secondary / 'gateway.parked').touch()
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('MOOR_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
     monkeypatch.setattr(profiles, 'get_active_profile_name', lambda: 'worker')
     monkeypatch.setattr(profiles, '_check_gateway_running', lambda home: False)
     gw._cmd_status(SimpleNamespace())
-    assert 'parked (hermes -p worker gateway start)' in capsys.readouterr().out
+    assert 'parked (moor -p worker gateway start)' in capsys.readouterr().out
     topology = _collect_profile_gateway_topology()
     assert topology['profiles'] == ['default', 'worker']
     assert topology['parked_profiles'] == ['worker']
@@ -110,8 +110,8 @@ def test_parked_status_and_topology_keep_roster(homes, monkeypatch, capsys):
 
 def test_parked_profile_keeps_implicit_host_multiplexed(homes, monkeypatch):
     from gateway.config import GatewayConfig
-    from hermes_cli import gateway_migrate
-    from hermes_cli.gateway_multiplex_mode import resolve_multiplex_mode
+    from moor_cli import gateway_migrate
+    from moor_cli.gateway_multiplex_mode import resolve_multiplex_mode
     _, secondary = homes
     (secondary / 'gateway.parked').touch()
     monkeypatch.setattr(gateway_migrate, '_host_supports_migration', lambda: None)
@@ -125,8 +125,8 @@ def test_dashboard_exposes_parked_profile_and_start_unparks_it(homes, monkeypatc
     from types import SimpleNamespace
     from fastapi.testclient import TestClient
     from gateway import host_attach
-    from hermes_cli import web_server, profiles
-    from hermes_cli.web_server_gateway import multiplexed_profile_refusal
+    from moor_cli import web_server, profiles
+    from moor_cli.web_server_gateway import multiplexed_profile_refusal
     root, secondary = homes
     (secondary / 'gateway.parked').touch()
     monkeypatch.setattr(profiles, '_check_gateway_running', lambda home: False)
@@ -144,12 +144,12 @@ def test_dashboard_exposes_parked_profile_and_start_unparks_it(homes, monkeypatc
 
 @pytest.mark.parametrize('host_running', [False, True])
 def test_start_unparks_without_host_rendezvous(homes, monkeypatch, capsys, host_running):
-    from hermes_cli import gateway as gw, gateway_multiplex_served as served
+    from moor_cli import gateway as gw, gateway_multiplex_served as served
     from gateway import control_socket
     root, secondary = homes
     marker = secondary / 'gateway.parked'
     marker.touch()
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('MOOR_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
     monkeypatch.setattr(gw, '_host_multiplexer_for_all_verb', lambda: None)
     monkeypatch.setattr(served, 'live_default_gateway_pid', lambda: 42 if host_running else None)
@@ -173,8 +173,8 @@ def test_start_unparks_without_host_rendezvous(homes, monkeypatch, capsys, host_
 
 
 def test_default_status_distinguishes_served_and_parked(homes, monkeypatch, capsys):
-    from hermes_cli import gateway as gw
-    from hermes_cli.gateway_profile_lifecycle import print_parked_status
+    from moor_cli import gateway as gw
+    from moor_cli.gateway_profile_lifecycle import print_parked_status
     root, secondary = homes
     (secondary / 'gateway.parked').touch()
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'default')

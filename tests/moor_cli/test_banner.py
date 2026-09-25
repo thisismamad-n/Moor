@@ -11,7 +11,7 @@ import tools.mcp_tool_discovery
 def test_banner_snapshot_accepts_bom_without_weakening_freshness(tmp_path, monkeypatch):
     import json
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(banner, "get_git_banner_state", lambda: None)
     monkeypatch.setattr(banner, "get_available_skills", lambda: {"notes": ["café"]})
     tools = [{"function": {"name": "read_file"}}]
@@ -86,7 +86,7 @@ def test_build_welcome_banner_does_not_center_pad_hero_art():
 
 
 def test_baked_banner_uses_live_identity(monkeypatch):
-    from hermes_cli import banner, version_info
+    from moor_cli import banner, version_info
 
     monkeypatch.setattr(version_info, "get_code_identity", lambda: {"short_sha": "a1b2c3d4"})
     assert banner._baked_banner_state() == {"upstream": "a1b2c3d4", "local": "a1b2c3d4", "ahead": 0}

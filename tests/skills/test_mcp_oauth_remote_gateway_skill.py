@@ -1,7 +1,7 @@
 """Tests for the mcp-oauth-remote-gateway optional skill.
 
 Covers the diagnose-oauth-mcp.py decision tree (TOKEN_OK / REFRESH_FIXED /
-SESSION_REVOKED / REFRESH_DEAD), the HERMES_HOME resolution fallback, the
+SESSION_REVOKED / REFRESH_DEAD), the MOOR_HOME resolution fallback, the
 and the atomic --write persistence path.
 No live network calls — urllib is mocked throughout.
 """

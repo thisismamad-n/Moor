@@ -15,7 +15,7 @@ export interface MachineProfile {
 }
 
 export function registerMachineProfile(): void {
-  ipcMain.handle('hermes:machine:profile', readMachineProfile)
+  ipcMain.handle('moor:machine:profile', readMachineProfile)
 }
 
 async function readMachineProfile(): Promise<MachineProfile> {

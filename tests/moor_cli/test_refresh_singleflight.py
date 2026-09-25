@@ -197,8 +197,8 @@ def test_cookie_gate_burst_with_stale_rt_rotates_once(gated_web_app):
     provider = _RotatingReuseDetectingProvider()
     provider.release.clear()
     register_provider(provider)
-    cookies = {"hermes_session_at": "expired-at", "hermes_session_rt": "stale-rt",
-               "hermes_session_provider": "stub"}
+    cookies = {"moor_session_at": "expired-at", "moor_session_rt": "stale-rt",
+               "moor_session_provider": "stub"}
     clients_ready = threading.Barrier(5)
 
     def call():

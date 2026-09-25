@@ -143,7 +143,7 @@ def test_allowlist_env_read_never_borrows_on_scope_failure(tmp_path, monkeypatch
     from agent import secret_scope as ss
     from gateway import pairing
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     monkeypatch.setenv("DISCORD_ALLOWED_USERS", "default-admin")
 
     was_active = ss.is_multiplex_active()
@@ -178,9 +178,9 @@ def test_allowlist_sync_does_not_persist_foreign_allowlist(tmp_path, monkeypatch
     from agent import secret_scope as ss
     from gateway import pairing
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     root.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setenv("DISCORD_ALLOWED_USERS", "default-admin")
 
     was_active = ss.is_multiplex_active()
@@ -210,11 +210,11 @@ def test_allowlist_scoped_miss_configures_nothing(tmp_path, monkeypatch):
     from gateway import pairing
     from gateway.run import _profile_runtime_scope
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     prof = root / "profiles" / "b"
     prof.mkdir(parents=True)
     (prof / ".env").write_text("OTHER_KEY=x\n")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setenv("DISCORD_ALLOWED_USERS", "default-admin")
 
     was_active = ss.is_multiplex_active()

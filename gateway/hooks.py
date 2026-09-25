@@ -16,7 +16,7 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.config import get_moor_home
 from moor_constants import moor_home_key

@@ -111,13 +111,13 @@ def _dotenv_value(env_var: str) -> str:
 
 
 def _env_source_suppressed(provider_id: str, env_var: str) -> bool:
-    """``hermes auth remove <provider>`` records ``env:<VAR>`` in ``suppressed_sources`` and promises
-    the variable is ignored until ``hermes auth add``; a value still living in a long-running
+    """``moor auth remove <provider>`` records ``env:<VAR>`` in ``suppressed_sources`` and promises
+    the variable is ignored until ``moor auth add``; a value still living in a long-running
     gateway's process environment (inherited across update restarts) must honor that too."""
     if not provider_id:
         return False
     try:
-        from hermes_cli.auth import is_source_suppressed
+        from moor_cli.auth import is_source_suppressed
         return is_source_suppressed(provider_id, f"env:{env_var}")
     except Exception:  # pragma: no cover — auth store unreadable: keep prior behavior
         return False

@@ -1,4 +1,4 @@
-"""``/api/status`` agrees with ``hermes gateway status`` on the two #113372 shapes:
+"""``/api/status`` agrees with ``moor gateway status`` on the two #113372 shapes:
 
 * PID alive but the heartbeat stamp is past the freshness TTL (loop/housekeeping wedged while
   ``gateway_state.json`` still says ``running``) -> ``gateway_heartbeat_stale_s`` is set.
@@ -23,7 +23,7 @@ def client(monkeypatch):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+    from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
     monkeypatch.setattr(_gw_status, "_pid_exists", lambda pid: False)
     monkeypatch.setattr(_gw_status, "_get_process_start_time", lambda pid: None)
@@ -59,7 +59,7 @@ def test_status_keeps_watchdog_degraded_verdict_and_reason_for_dead_pid(client, 
     assert data["gateway_exit_reason"] == "loop_liveness_watchdog"
     assert data["gateway_heartbeat_stale_s"] is None
 
-    # ``hermes gateway stop`` afterwards records the operator's intent: no longer a current failure.
+    # ``moor gateway stop`` afterwards records the operator's intent: no longer a current failure.
     record["desired_state"] = "stopped"
     data = client.get("/api/status").json()
     assert data["gateway_state"] == "stopped"

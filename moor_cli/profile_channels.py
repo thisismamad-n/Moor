@@ -330,7 +330,7 @@ def strip_channel_config(config_path: Path, index: Optional[ChannelKeyIndex] = N
     """Remove platform sections from a raw ``config.yaml`` in place. Returns the dotted paths removed."""
     if not config_path.is_file():
         return []
-    from hermes_cli.config import atomic_config_write, read_user_config_raw
+    from moor_cli.config import atomic_config_write, read_user_config_raw
     index = index or ChannelKeyIndex()
     raw = read_user_config_raw(config_path)
     paths = _channel_config_paths(raw, index.platforms)

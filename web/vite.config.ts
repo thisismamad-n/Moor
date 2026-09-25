@@ -32,9 +32,9 @@ const BACKEND = process.env.MOOR_DASHBOARD_URL ?? "http://127.0.0.1:9119";
 function moorDevToken(): Plugin {
   const TOKEN_RE = /window\.__MOOR_SESSION_TOKEN__\s*=\s*"([^"]+)"/;
   const EMBEDDED_RE =
-    /window\.__HERMES_DASHBOARD_EMBEDDED_CHAT__\s*=\s*(true|false)/;
+    /window\.__MOOR_DASHBOARD_EMBEDDED_CHAT__\s*=\s*(true|false)/;
   const INITIAL_PROFILE_RE =
-    /window\.__HERMES_INITIAL_PROFILE__\s*=\s*("(?:\\.|[^"\\])*")/;
+    /window\.__MOOR_INITIAL_PROFILE__\s*=\s*("(?:\\.|[^"\\])*")/;
 
   return {
     name: "moor:dev-session-token",
@@ -60,9 +60,9 @@ function moorDevToken(): Plugin {
             tag: "script",
             injectTo: "head",
             children:
-              `window.__HERMES_SESSION_TOKEN__="${match[1]}";` +
-              `window.__HERMES_DASHBOARD_EMBEDDED_CHAT__=${embeddedJs};` +
-              `window.__HERMES_INITIAL_PROFILE__=${initialProfileJs};`,
+              `window.__MOOR_SESSION_TOKEN__="${match[1]}";` +
+              `window.__MOOR_DASHBOARD_EMBEDDED_CHAT__=${embeddedJs};` +
+              `window.__MOOR_INITIAL_PROFILE__=${initialProfileJs};`,
           },
         ];
       } catch (err) {
@@ -86,7 +86,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(configDir, "./src"),
-      "@hermes/shared": path.resolve(configDir, "../apps/shared/src"),
+      "@moor/shared": path.resolve(configDir, "../apps/shared/src"),
     },
     // When @moor-research/ui is symlinked via `file:../../design-language`,
     // Node's module resolution would pick up shared deps from

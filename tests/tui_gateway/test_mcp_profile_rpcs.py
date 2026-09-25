@@ -51,7 +51,7 @@ def _result(resp):
 
 def _read_yaml(path: Path) -> dict:
     """Read a config.yaml directly for assertions (test-side, not the guarded loader)."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     if not path.is_file():
         return {}
@@ -349,7 +349,7 @@ def test_add_requires_transport(moor_root):
 
 def _catalog_http_entry(*, auth: str | None = None):
     """A real HTTP catalog entry. Assertions compare the saved block to this manifest."""
-    from hermes_cli.mcp_catalog import list_catalog
+    from moor_cli.mcp_catalog import list_catalog
 
     for entry in list_catalog():
         if entry.transport.type != "http" or not entry.transport.url:
@@ -365,7 +365,7 @@ def _saved_server(root: Path, profile: str, name: str) -> dict:
     return (_read_yaml(path).get("mcp_servers") or {}).get(name) or {}
 
 
-def test_add_catalog_id_in_profile_param_saves_manifest_in_that_profile(hermes_root):
+def test_add_catalog_id_in_profile_param_saves_manifest_in_that_profile(moor_root):
     """Desktop add-from-catalog sends {profile, name, preset} with a catalog id."""
     entry = _catalog_http_entry()
     result = _result(
@@ -377,43 +377,43 @@ def test_add_catalog_id_in_profile_param_saves_manifest_in_that_profile(hermes_r
 
     assert result["ok"] is True
     assert result["server"]["transport"] == "http"
-    saved = _saved_server(hermes_root, "work", entry.name)
+    saved = _saved_server(moor_root, "work", entry.name)
     assert saved["url"] == entry.transport.url
-    assert entry.name not in (_read_yaml(hermes_root / "config.yaml").get("mcp_servers") or {})
-    other = _read_yaml(hermes_root / "profiles" / "other" / "config.yaml").get("mcp_servers") or {}
+    assert entry.name not in (_read_yaml(moor_root / "config.yaml").get("mcp_servers") or {})
+    other = _read_yaml(moor_root / "profiles" / "other" / "config.yaml").get("mcp_servers") or {}
     assert entry.name not in other
 
 
-def test_oauth_catalog_add_follows_routed_profile_not_payload(hermes_root):
+def test_oauth_catalog_add_follows_routed_profile_not_payload(moor_root):
     """OAuth add sends {name, preset} only. requestGatewayForAgent carries the
     profile as routing metadata, so the write follows the bound scope."""
     from agent.secret_scope import is_multiplex_active, set_multiplex_active
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     entry = _catalog_http_entry(auth="oauth")
-    routed = hermes_root / "profiles" / "work"
+    routed = moor_root / "profiles" / "work"
     previous = is_multiplex_active()
     set_multiplex_active(False)
-    token = set_hermes_home_override(routed)
+    token = set_moor_home_override(routed)
     try:
         result = _result(
             _call("mcp.servers.add", {"name": entry.name, "preset": entry.name})
         )
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
         set_multiplex_active(previous)
 
     assert result["server"]["transport"] == "http"
     assert result["server"]["auth"] == "oauth"
-    saved = _saved_server(hermes_root, "work", entry.name)
+    saved = _saved_server(moor_root, "work", entry.name)
     assert saved["url"] == entry.transport.url
     assert saved["auth"] == "oauth"
     assert entry.auth.type == "oauth"
-    assert entry.name not in (_read_yaml(hermes_root / "config.yaml").get("mcp_servers") or {})
-    assert not _saved_server(hermes_root, "other", entry.name)
+    assert entry.name not in (_read_yaml(moor_root / "config.yaml").get("mcp_servers") or {})
+    assert not _saved_server(moor_root, "other", entry.name)
 
 
-def test_explicit_transport_wins_over_catalog_or_unknown_preset(hermes_root):
+def test_explicit_transport_wins_over_catalog_or_unknown_preset(moor_root):
     entry = _catalog_http_entry()
     catalog = _result(
         _call(
@@ -440,27 +440,27 @@ def test_explicit_transport_wins_over_catalog_or_unknown_preset(hermes_root):
 
     assert catalog["server"]["command"] == "explicit-bin"
     assert catalog["server"]["url"] != entry.transport.url
-    saved_catalog = _saved_server(hermes_root, "work", "kept-catalog")
+    saved_catalog = _saved_server(moor_root, "work", "kept-catalog")
     assert saved_catalog["command"] == "explicit-bin"
     assert saved_catalog.get("url") != entry.transport.url
     assert unknown["server"]["url"] == "https://override.example/mcp"
-    assert _saved_server(hermes_root, "work", "kept-unknown")["url"] == "https://override.example/mcp"
+    assert _saved_server(moor_root, "work", "kept-unknown")["url"] == "https://override.example/mcp"
 
 
-def test_unknown_preset_returns_4063_and_writes_nothing(hermes_root):
+def test_unknown_preset_returns_4063_and_writes_nothing(moor_root):
     resp = _call(
         "mcp.servers.add",
         {"profile": "work", "name": "unknown", "preset": "not-a-catalog-entry"},
     )
 
     assert resp["error"]["code"] == 4063
-    assert not _saved_server(hermes_root, "work", "unknown")
-    assert "unknown" not in (_read_yaml(hermes_root / "config.yaml").get("mcp_servers") or {})
+    assert not _saved_server(moor_root, "work", "unknown")
+    assert "unknown" not in (_read_yaml(moor_root / "config.yaml").get("mcp_servers") or {})
 
 
-def test_cli_preset_still_fills_transport_when_not_in_catalog(hermes_root):
-    import hermes_cli.mcp_config as mcp_config
-    from hermes_cli.mcp_catalog import get_entry
+def test_cli_preset_still_fills_transport_when_not_in_catalog(moor_root):
+    import moor_cli.mcp_config as mcp_config
+    from moor_cli.mcp_catalog import get_entry
 
     preset_name = next(
         name for name in mcp_config._MCP_PRESETS if get_entry(name) is None
@@ -473,14 +473,14 @@ def test_cli_preset_still_fills_transport_when_not_in_catalog(hermes_root):
         )
     )
 
-    saved = _saved_server(hermes_root, "work", "cli-preset")
+    saved = _saved_server(moor_root, "work", "cli-preset")
     assert result["server"]["command"] == expected["command"]
     assert saved["command"] == expected["command"]
     assert saved.get("args") == list(expected.get("args") or [])
 
 
-def test_default_profile_add_when_profile_omitted(hermes_root):
-    root = hermes_root
+def test_default_profile_add_when_profile_omitted(moor_root):
+    root = moor_root
     _result(
         _call(
             "mcp.servers.add",

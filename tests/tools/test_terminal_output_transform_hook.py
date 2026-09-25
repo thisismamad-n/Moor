@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import hermes_cli.plugins as plugins_mod
+import moor_cli.plugins as plugins_mod
 import tools.terminal_tool as terminal_tool_module
 from tools.environments.local import LocalEnvironment
 
@@ -173,7 +173,7 @@ def test_terminal_output_transform_does_not_change_approval_or_exit_code_meaning
 
 
 def test_terminal_output_transform_integration_with_real_plugin(monkeypatch, tmp_path):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     moor_home = Path(os.environ["MOOR_HOME"])
     plugins_dir = moor_home / "plugins"

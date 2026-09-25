@@ -35,9 +35,9 @@ from typing import Any, Dict, List, Tuple
 # Scenario D reads this file back; lives in the temp dir, never a hard-coded /tmp.
 FIXTURE_NOTES = Path(tempfile.gettempdir()) / "livetest" / "notes.txt"
 
-# Force-isolate the test environment BEFORE any hermes imports.
-ORIGINAL_HOME = os.environ.get("HERMES_HOME")
-ORIGINAL_AUTH = Path.home() / ".hermes" / "auth.json"
+# Force-isolate the test environment BEFORE any moor imports.
+ORIGINAL_HOME = os.environ.get("MOOR_HOME")
+ORIGINAL_AUTH = Path.home() / ".moor" / "auth.json"
 
 _THIS_DIR = Path(__file__).resolve().parent
 _WORKTREE_ROOT = _THIS_DIR.parents[1]
@@ -303,7 +303,7 @@ def setup_isolated_home(enabled: bool, listing: str = "off",
 
 def _yaml_dump(obj: Any) -> str:
     try:
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         return yaml.safe_dump(obj, sort_keys=False)
     except ImportError:
         return json.dumps(obj, indent=2)

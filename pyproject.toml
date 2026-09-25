@@ -3,17 +3,17 @@
 
 
 [project]
-name = "hermes-agent"
+name = "moor-agent"
 version = "0.0.0"
 description = "The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 readme = "README.md"
 # 3.14 is the newest python we know we have wheels for.
-# we *only* support 3.14, BUT we need to allow old hermes installs on <3.14
+# we *only* support 3.14, BUT we need to allow old moor installs on <3.14
 # to get thru their update step on old python.
 # Shortly after they do, we update to our latest python.
 # See tests/compat/README.md for the updater contract this keeps.
 requires-python = ">=3.11,<3.15"
-authors = [{ name = "Nous Research" }]
+authors = [{ name = "Moor inc." }]
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
@@ -27,7 +27,7 @@ dependencies = [
   # captured by `mistralai>=2.3.0,<3` rather than an exact pin, every
   # install in the hours before the quarantine would have pulled it.
   #
-  # After a pin change, run `hermes pm lock` so the transitive resolution
+  # After a pin change, run `moor pm lock` so the transitive resolution
   # stays consistent. Do not introduce ranges
   # without a written justification.
   #
@@ -147,7 +147,7 @@ dependencies = [
   # Python 3.14 requires pywinpty 3.x. Version 3.0.5 includes the native
   # binaries missing from 3.0.4 wheels on both Windows architectures.
   "pywinpty>=3.0.5,<4; sys_platform == 'win32' and python_version >= '3.14'",
-  # Desktop SSH's Windows remote runtime (hermes_cli/windows_ssh_runtime.py)
+  # Desktop SSH's Windows remote runtime (moor_cli/windows_ssh_runtime.py)
   # imports win32security/win32file/etc. directly — declare pywin32 rather than
   # relying on the concurrent-log-handler → portalocker transitive chain.
   "pywin32>=306,<312; sys_platform == 'win32' and python_version >= '3.14'",
@@ -175,8 +175,8 @@ dependencies = [
   # libs needed), so it's safe in the base install alongside Pillow.
   "pillow-heif>=1.4.0,<2; python_version >= '3.14'",
   # SVG rendering for the icon generator (scripts/generate_icons.py). Source
-  # builds render icons with the runtime interpreter (`hermes desktop`,
-  # `hermes update`), so a source install carries its renderer instead of
+  # builds render icons with the runtime interpreter (`moor desktop`,
+  # `moor update`), so a source install carries its renderer instead of
   # preparing a separate environment at launch. abi3 wheels for every
   # shipped platform, including Windows ARM64 and Android.
   "resvg-py==0.4.0; python_version >= '3.14'",
@@ -240,7 +240,7 @@ neutts = ["neutts[all]==1.4.1; python_version < '3.14'"]
 kittentts = [
   "kittentts @ https://github.com/KittenML/KittenTTS/releases/download/0.8.1/kittentts-0.8.1-py3-none-any.whl ; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')",
   # KittenTTS requires misaki[en]>=0.9.4, and PyPI's misaki 0.9.4 caps Python
-  # below 3.13. The NousResearch fork is the same 0.9.4 code with the cap
+  # below 3.13. The Moor inc. fork is the same 0.9.4 code with the cap
   # raised to <3.15. Declaring it here makes KittenTTS's transitive
   # requirement resolve to the fork. Drop this line when upstream misaki
   # publishes a release that allows 3.14.
@@ -520,16 +520,16 @@ all = [
   # [all], `uv sync --locked` on Windows tried to build it from sdist
   # and failed on `make`. Lazy-install routes that build to first use,
   # where the user is expected to have a toolchain available.
-  "hermes-agent[cron]",
-  "hermes-agent[pty]",
-  "hermes-agent[mcp]",
-  "hermes-agent[uvloop]",
-  "hermes-agent[homeassistant]",
-  "hermes-agent[sms]",
-  "hermes-agent[acp]",
-  "hermes-agent[google]",
-  "hermes-agent[web]",
-  "hermes-agent[youtube]",
+  "moor-agent[cron]",
+  "moor-agent[pty]",
+  "moor-agent[mcp]",
+  "moor-agent[uvloop]",
+  "moor-agent[homeassistant]",
+  "moor-agent[sms]",
+  "moor-agent[acp]",
+  "moor-agent[google]",
+  "moor-agent[web]",
+  "moor-agent[youtube]",
 ]
 
 [dependency-groups]
@@ -562,11 +562,11 @@ requires = ["setuptools==83.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-hermes = "hermes_cli.main:main"
-hermes-agent = "agent.legacy_cli:main"
-hermes-acp = "acp_adapter.entry:main"
+moor = "moor_cli.main:main"
+moor-agent = "agent.legacy_cli:main"
+moor-acp = "acp_adapter.entry:main"
 
-[tool.hermes]
+[tool.moor]
 # Extras that only an explicit selection installs (setup, sync_venv). Bundles
 # build with --all-extras and pass --no-extra for each of these, so their
 # closures never ship. KittenTTS pulls torch, transformers and spaCy through
@@ -581,7 +581,7 @@ opt-in-extras = ["kittentts"]
 # resolver needs them for --all-extras); this table is the readable
 # single-authority for WHICH extra is supported WHERE.
 
-[tool.hermes.extras-platforms]
+[tool.moor.extras-platforms]
 # mautrix[encryption] → python-olm: linux-only wheels, no win/darwin build.
 matrix = "sys_platform == 'linux'"
 # grpcio (via google-cloud-pubsub) has no win_arm64 wheel.
@@ -802,8 +802,8 @@ include = [
   "agent.*",
   "tools",
   "tools.*",
-  "hermes_cli",
-  "hermes_cli.*",
+  "moor_cli",
+  "moor_cli.*",
   "gateway",
   "gateway.*",
   "tui_gateway",
@@ -815,8 +815,8 @@ include = [
   "plugins.*",
   "providers",
   "providers.*",
-  "hermes_platform",
-  "hermes_platform.*",
+  "moor_platform",
+  "moor_platform.*",
   "pm",
   "pm.*",
   "tools",
@@ -824,7 +824,7 @@ include = [
 ]
 
 [tool.setuptools.package-data]
-hermes_cli = [
+moor_cli = [
   "observability/schemas/*.json",
   "data/*.json",
   "local_runtime/*.json",
@@ -852,10 +852,10 @@ testpaths = ["tests"]
 markers = [
   "integration: marks tests requiring external services (API keys, Modal, etc.)",
   "live: secrets-gated canaries against REAL LLM provider APIs (spends money; select with -m live)",
-  "real_concurrent_gate: opt out of the autouse stub that disables _detect_concurrent_hermes_instances",
+  "real_concurrent_gate: opt out of the autouse stub that disables _detect_concurrent_moor_instances",
   "real_agent_prewarm: opt out of the autouse stub that disables the tui_gateway deferred agent pre-warm timer",
   "real_retry_backoff: opt out of the tests/agent autouse stub that zeroes jittered_backoff",
-  "requires_wal: needs the runtime to actually enable SQLite WAL mode (skipped where Hermes falls back to journal_mode=DELETE)",
+  "requires_wal: needs the runtime to actually enable SQLite WAL mode (skipped where Moor falls back to journal_mode=DELETE)",
   "no_isolate: opt out of per-file subprocess isolation (tests share mutable module-level state)",
   "ssh: marks tests requiring a reachable SSH server (skipped in normal CI)",
   "platforms(*specs, arch=None, arch_negate=False): run only on hosts matching at least one spec — linux/macos/windows/posix/any, 'not X' negation, optional arch filter",

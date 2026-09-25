@@ -163,7 +163,7 @@ def test_minimax_start_route_honors_poller_mock_on_owning_module(tmp_path, monke
 
 
 def test_oauth_provider_status_uses_profile_query(tmp_path, monkeypatch):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     profile_home = _make_profile_home(tmp_path, monkeypatch)
     observed_homes = []
@@ -448,8 +448,8 @@ def test_codex_worker_final_save_is_atomic_with_cancel_delete(tmp_path, monkeypa
 
 
 
-def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(monkeypatch):
-    from hermes_cli import auth as auth_mod
+def test_moor_dashboard_poller_preserves_effective_scope_when_token_omits_scope(monkeypatch):
+    from moor_cli import auth as auth_mod
 
     session_id = "moor-effective-scope-test"
     _web_server_oauth._oauth_sessions[session_id] = {
@@ -592,7 +592,7 @@ def test_xai_dashboard_poller_seeds_single_entry_and_clears_suppression(tmp_path
     ``device_code`` suppression left by a prior ``moor auth remove
     xai-oauth``.
     """
-    from hermes_cli import auth as auth_mod
+    from moor_cli import auth as auth_mod
     from agent.credential_pool import load_pool
 
     monkeypatch.setenv("MOOR_HOME", str(tmp_path))

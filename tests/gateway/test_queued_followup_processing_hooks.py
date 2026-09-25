@@ -142,7 +142,7 @@ async def test_queue_terminal_presentation_belongs_to_last_turn(monkeypatch, tmp
     _TwoTurnAgent.calls = []
     _install_fake_agent(monkeypatch, tmp_path, _TwoTurnAgent)
     (tmp_path / "config.yaml").write_text("display: {suppress_warning_notifications: true}")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     adapter = HookRecordingAdapter()
     runner = _make_runner(adapter)
     adapter._pending_messages[SESSION_KEY] = MessageEvent(

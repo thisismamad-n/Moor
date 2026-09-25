@@ -56,8 +56,8 @@ describe("fetchJSON error contract", () => {
     const body = {
       detail: {
         error: "state_db_corrupt",
-        message: "state.db corrupt — run `hermes doctor` (then `hermes doctor --fix` or `hermes sessions repair`).",
-        path: "/home/u/.hermes/state.db",
+        message: "state.db corrupt — run `moor doctor` (then `moor doctor --fix` or `moor sessions repair`).",
+        path: "/home/u/.moor/state.db",
       },
     };
     vi.stubGlobal(

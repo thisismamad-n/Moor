@@ -6,8 +6,8 @@ Node ids (from ``agent.learning_graph``): skills â†’ the skill name; memories â†
 first; ``fingerprint`` = digest of the card's text, so the entry the user clicked is
 still nameable once the list has shifted). Ids from an older graph carry no
 fingerprint and resolve by position alone.
-Shared by CLI ``hermes journey``, the TUI ``/journey`` overlay and the desktop.
-Deleting a skill *archives* it (``hermes curator restore`` recovers it);
+Shared by CLI ``moor journey``, the TUI ``/journey`` overlay and the desktop.
+Deleting a skill *archives* it (``moor curator restore`` recovers it);
 deleting a memory rewrites its file under the memory tool's lock.
 """
 
@@ -56,11 +56,11 @@ def _locate_memory(node_id: str) -> tuple[Path, list[str], int]:
     fingerprinted id resolves by the entry's text; a legacy id by position (a profile
     card's local index is its global index minus the MEMORY.md card count). Read-only
     view: mutations resolve the id again INSIDE ``_mutate_memory``'s lock."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     from tools.memory_tool import MemoryStore
 
     source, gidx, fingerprint = _parse_memory_id(node_id)
-    path = get_hermes_home() / "memories" / _MEMORY_FILES[source]
+    path = get_moor_home() / "memories" / _MEMORY_FILES[source]
     if not path.exists():
         raise ValueError(f"{path.name} not found")
     chunks = MemoryStore._read_file(path)

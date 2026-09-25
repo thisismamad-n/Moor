@@ -60,7 +60,7 @@ _RECOVERY_ENV = "MOOR_UPDATE_RESTART_RECOVERY"
 _GATEWAY_MARKERS = ("_MOOR_GATEWAY", "MOOR_GATEWAY", "MOOR_GATEWAY_MODE")
 _PROFILE_RESTART_TIMEOUT = 90
 _VERIFY_TIMEOUT = 15
-from hermes_constants import PROFILE_ID_RE as _PROFILE_ID_RE
+from moor_constants import PROFILE_ID_RE as _PROFILE_ID_RE
 
 _SUPERVISOR_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
 _UNIT_RE = re.compile(r"^moor-serve(-[a-z0-9][a-z0-9_-]{0,63})?\.service$")
@@ -91,10 +91,10 @@ def _succeeded(result: Any) -> bool:
 
 
 def _launch_profile() -> str:
-    """Profile this recovery process was launched as: ``<root>/profiles/<name>`` in ``HERMES_HOME`` names it,
-    anything else is the default profile. Mirrors ``hermes_cli.profiles.profile_root_for_env_home`` without
+    """Profile this recovery process was launched as: ``<root>/profiles/<name>`` in ``MOOR_HOME`` names it,
+    anything else is the default profile. Mirrors ``moor_cli.profiles.profile_root_for_env_home`` without
     importing it — this module stays stdlib-only at import time."""
-    home = os.environ.get("HERMES_HOME", "").strip()
+    home = os.environ.get("MOOR_HOME", "").strip()
     if home:
         path = os.path.normpath(home)
         if os.path.basename(os.path.dirname(path)) == "profiles":
@@ -152,16 +152,16 @@ def _systemd_verified_active(profile: str, *, run: Callable[..., Any]) -> bool:
 def _host_state_dir() -> str:
     """The path ``gateway.host_rendezvous.host_state_dir()`` resolves, computed locally.
 
-    This module imports no Hermes code at runtime — importing the freshly pulled tree is exactly
+    This module imports no Moor code at runtime — importing the freshly pulled tree is exactly
     what aborted the phase that calls us — so the rule is duplicated here rather than shared.
     """
-    override = os.environ.get("HERMES_GATEWAY_LOCK_DIR")
+    override = os.environ.get("MOOR_GATEWAY_LOCK_DIR")
     if override:
         return override
     state_home = os.environ.get("XDG_STATE_HOME") or ""
     if not os.path.isabs(state_home):
         state_home = os.path.join(os.path.expanduser("~"), ".local", "state")
-    return os.path.join(state_home, "hermes", "gateway-locks")
+    return os.path.join(state_home, "moor", "gateway-locks")
 
 
 def _pid_is_live(pid: int) -> bool:

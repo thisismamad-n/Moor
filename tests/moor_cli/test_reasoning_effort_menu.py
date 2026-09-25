@@ -1,5 +1,5 @@
-from hermes_cli.main_provider_setup import _prompt_reasoning_effort_selection
-from hermes_cli.setup import _current_reasoning_effort
+from moor_cli.main_provider_setup import _prompt_reasoning_effort_selection
+from moor_cli.setup import _current_reasoning_effort
 
 
 def test_reasoning_menu_orders_minimal_before_low(monkeypatch):

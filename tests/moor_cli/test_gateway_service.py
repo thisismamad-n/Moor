@@ -346,7 +346,7 @@ class TestGeneratedSystemdUnits:
         """#14613: glibc reads LD_LIBRARY_PATH only at process start, so the unit file is the
         only place it can reach CUDA-backed tools; quotes/backslashes must survive systemd quoting."""
         # The absent-env branch falls back to the installed unit: keep the host's real one out.
-        monkeypatch.setattr(gateway_cli, "get_systemd_unit_path", lambda system=False: tmp_path / "hermes-gateway.service")
+        monkeypatch.setattr(gateway_cli, "get_systemd_unit_path", lambda system=False: tmp_path / "moor-gateway.service")
         monkeypatch.setenv("LD_LIBRARY_PATH", '/opt/cu"da/lib64:/opt/back\\slash/lib')
 
         unit = gateway_cli.generate_systemd_unit(system=False)
@@ -815,7 +815,7 @@ class TestLaunchdDomainDetection:
 class TestLaunchdUnsupportedFallbackPolicy:
     """A 5/125 launchctl exit must not brand a domain the host is demonstrably managing.
 
-    Regression for the recurrence where ``hermes gateway install --force`` over the LIVE job
+    Regression for the recurrence where ``moor gateway install --force`` over the LIVE job
     returned EIO (5) — launchctl's answer for an already-loaded label — which
     ``_launchd_degrade_or_raise`` read as "this macOS cannot manage launchd services". It wrote the
     permanent launchd-unsupported marker and started a detached gateway beside the supervised one,
@@ -838,7 +838,7 @@ class TestLaunchdUnsupportedFallbackPolicy:
         exc = subprocess.CalledProcessError(
             5, ["launchctl", "bootstrap"], stderr="Bootstrap failed: 5: Input/output error"
         )
-        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.hermes.gateway")
+        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.moor.gateway")
         monkeypatch.setattr(
             gateway_cli, "_launchctl_label_supervising_process", lambda label: True
         )
@@ -853,7 +853,7 @@ class TestLaunchdUnsupportedFallbackPolicy:
     def test_eio_without_a_supervised_process_still_falls_back(self, monkeypatch):
         """The detached fallback for a domain that really cannot manage the job is unchanged."""
         exc = subprocess.CalledProcessError(125, ["launchctl", "kickstart"])
-        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.hermes.gateway")
+        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.moor.gateway")
         monkeypatch.setattr(
             gateway_cli, "_launchctl_label_supervising_process", lambda label: False
         )
@@ -1284,8 +1284,8 @@ def _seed_pm_environment(tmp_path, monkeypatch, with_venv_fact=True):
     ``(project_root, environment_dir)``."""
     from pm.environments import install_state_dir
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))  # installs_root() under the test root
-    project_root = tmp_path / "payload" / "hermes-agent"
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))  # installs_root() under the test root
+    project_root = tmp_path / "payload" / "moor-agent"
     project_root.mkdir(parents=True)
     state = install_state_dir(project_root)
     environment = state / "environments" / "gen-1"
@@ -1309,7 +1309,7 @@ class TestServicePathDirsPmVenv:
         monkeypatch.setattr("sys.prefix", "/usr")
         monkeypatch.setattr("sys.base_prefix", "/usr")
         monkeypatch.delenv("VIRTUAL_ENV", raising=False)
-        monkeypatch.delenv("HERMES_RUNTIME_DIR", raising=False)
+        monkeypatch.delenv("MOOR_RUNTIME_DIR", raising=False)
 
         project_root, environment = _seed_pm_environment(tmp_path, monkeypatch)
         venv_bin = environment / "bin"
@@ -1321,7 +1321,7 @@ class TestServicePathDirsPmVenv:
         assert str(venv_bin) not in dirs
 
 
-def _seed_pm_node_facts(hermes_root):
+def _seed_pm_node_facts(moor_root):
     """Write a pm installed-state file recording node/npm store entries.
 
     _append_node_dir_for_service() resolves managed Node through pm's
@@ -1330,7 +1330,7 @@ def _seed_pm_node_facts(hermes_root):
     way a real `pm install` writes it — via the same Facts schema, read back
     through Facts.env_for().
     """
-    store_root = hermes_root / "tools"
+    store_root = moor_root / "tools"
     node_dir = store_root / "node-v22.0.0"
     npm_dir = store_root / "npm-9.0.0" / "bin"
     node_dir.mkdir(parents=True)
@@ -1362,7 +1362,7 @@ class TestSystemUnitMoorHome:
     def test_no_pm_node_facts_uses_only_ambient_fallback(
         self, monkeypatch, tmp_path
     ):
-        (tmp_path / ".hermes" / "tools").mkdir(parents=True)
+        (tmp_path / ".moor" / "tools").mkdir(parents=True)
         monkeypatch.setattr(
             gateway_cli.shutil, "which", lambda name: "/opt/external-node/bin/node"
         )
@@ -1378,15 +1378,15 @@ class TestSystemUnitMoorHome:
         """Recorded entries whose store dirs are gone contribute nothing."""
         import shutil as _shutil
 
-        hermes_root = tmp_path / ".hermes"
-        for entry in _seed_pm_node_facts(hermes_root):
+        moor_root = tmp_path / ".moor"
+        for entry in _seed_pm_node_facts(moor_root):
             _shutil.rmtree(entry)
         monkeypatch.setattr(
             gateway_cli.shutil, "which", lambda name: "/opt/external-node/bin/node"
         )
         entries: list[str] = []
 
-        gateway_cli._append_node_dir_for_service(entries, hermes_root)
+        gateway_cli._append_node_dir_for_service(entries, moor_root)
 
         assert entries == ["/opt/external-node/bin"]
 
@@ -1397,9 +1397,9 @@ class TestSystemUnitMoorHome:
         target_home = tmp_path / "home" / "alice"
         target_moor = target_home / ".moor"
         root_home = tmp_path / "root"
-        root_hermes = root_home / ".hermes"
-        managed_dirs = _seed_pm_node_facts(target_hermes)
-        root_hermes.mkdir(parents=True)
+        root_moor = root_home / ".moor"
+        managed_dirs = _seed_pm_node_facts(target_moor)
+        root_moor.mkdir(parents=True)
 
         monkeypatch.setattr(Path, "home", staticmethod(lambda: root_home))
         monkeypatch.setenv("MOOR_HOME", str(root_moor))
@@ -1456,7 +1456,7 @@ class TestSystemUnitMoorHome:
     def test_installed_unit_keeps_ld_library_path_when_the_shell_lacks_it(self, monkeypatch, tmp_path):
         """The unit is regenerated and compared on every start/restart/status; a later shell without
         the export (ssh, cron, sudo) must see the installed unit as current, not "repair" the line away."""
-        unit_path = tmp_path / "hermes-gateway.service"
+        unit_path = tmp_path / "moor-gateway.service"
         monkeypatch.setattr(gateway_cli, "get_systemd_unit_path", lambda system=False: unit_path)
         monkeypatch.setenv("LD_LIBRARY_PATH", "/opt/cuda/lib64:/opt/pct%dir/lib")
         unit_path.write_text(gateway_cli.generate_systemd_unit(system=False), encoding="utf-8")
@@ -1489,7 +1489,7 @@ class TestSystemUnitMoorHome:
         caller_home.mkdir()
         target_home.mkdir()
         monkeypatch.setattr(Path, "home", staticmethod(lambda: caller_home))
-        monkeypatch.setenv("HERMES_HOME", str(caller_home / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(caller_home / ".moor"))
         monkeypatch.setattr(
             gateway_cli, "_system_service_identity",
             lambda run_as_user=None: ("alice", "alice", str(target_home), 1001),
@@ -1501,8 +1501,8 @@ class TestSystemUnitMoorHome:
 
         unit = gateway_cli.generate_systemd_unit(system=True, run_as_user="alice")
 
-        assert f'HERMES_HOME={target_home / ".hermes"}' in unit
-        assert str(caller_home / ".hermes") not in unit
+        assert f'MOOR_HOME={target_home / ".moor"}' in unit
+        assert str(caller_home / ".moor") not in unit
 
     def test_user_unit_unaffected_by_change(self):
         # User-scope units should still use the calling user's MOOR_HOME
@@ -1731,7 +1731,7 @@ class TestProfileArg:
         command = shlex.split(next(line.split("=", 1)[1] for line in unit.splitlines()
                                    if line.startswith("ExecStart=")))
         assert command[-4:] == ["--profile", "mybot", "gateway", "run"]
-        assert f'HERMES_HOME={target_home / ".hermes" / "profiles" / "mybot"}' in unit
+        assert f'MOOR_HOME={target_home / ".moor" / "profiles" / "mybot"}' in unit
 
     def test_launchd_plist_wraps_gateway_stderr_with_timestamps(self, tmp_path, monkeypatch):
         profile_dir = tmp_path / ".moor" / "profiles" / "mybot"
@@ -1760,11 +1760,11 @@ class TestProfileArg:
 
     def test_launchd_osascript_wrapper_round_trips_shell_hostile_paths(self, tmp_path, monkeypatch):
         """A home with spaces, quotes and a backslash survives shlex + AppleScript + plist quoting."""
-        profile_dir = tmp_path / 'my "odd" dir \\ here' / ".hermes"
+        profile_dir = tmp_path / 'my "odd" dir \\ here' / ".moor"
         profile_dir.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
-        monkeypatch.setattr(gateway_cli, "get_hermes_home", lambda: profile_dir)
+        monkeypatch.setenv("MOOR_HOME", str(profile_dir))
+        monkeypatch.setattr(gateway_cli, "get_moor_home", lambda: profile_dir)
         monkeypatch.setattr(gateway_cli, "get_python_path", lambda: str(profile_dir / "bin dir" / "python"))
 
         program_args = plistlib.loads(gateway_cli.generate_launchd_plist().encode("utf-8"))["ProgramArguments"]
@@ -2401,9 +2401,9 @@ class TestServiceTakeoverGovernance:
         mapping 78→0 is the launchd twin: a clean stop stays down, exit 75 and
         crashes still relaunch.
         """
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".moor"
         home.mkdir()
-        monkeypatch.setattr(gateway_cli, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(gateway_cli, "get_moor_home", lambda: home)
         parsed = plistlib.loads(gateway_cli.generate_launchd_plist().encode("utf-8"))
         assert parsed["KeepAlive"] == {"SuccessfulExit": False}
         assert parsed["RunAtLoad"] is True

@@ -43,7 +43,7 @@ class TestResolveToken:
         monkeypatch.delenv("COPILOT_GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("GH_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
-        with patch("hermes_cli.copilot_auth._try_gh_cli_token", return_value="ghp_classic"):
+        with patch("moor_cli.copilot_auth._try_gh_cli_token", return_value="ghp_classic"):
             with pytest.raises(ValueError):
                 resolve_copilot_token()
 

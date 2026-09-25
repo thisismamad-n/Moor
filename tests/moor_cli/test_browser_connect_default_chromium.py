@@ -10,7 +10,7 @@ import pytest
 
 import posixpath
 
-import hermes_cli.browser_connect as bc
+import moor_cli.browser_connect as bc
 
 
 def _ls_dump(*entries: str) -> str:

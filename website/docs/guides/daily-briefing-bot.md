@@ -11,7 +11,7 @@ In this tutorial, you'll build a personal briefing bot that wakes up every morni
 By the end, you'll have a fully automated workflow combining **web search**, **cron scheduling**, **delegation**, and **messaging delivery** — no code required.
 
 :::tip
-This recipe hits web search, summarization, and optional TTS — all bundled in a Portal subscription. The fastest setup is `hermes setup --portal`. See [Nous Portal](../integrations/nous-portal.md).
+This recipe hits web search, summarization, and optional TTS — all bundled in a Portal subscription. The fastest setup is `moor setup --portal`. See [Moor Portal](../integrations/moor-portal.md).
 :::
 
 ## What We're Building
@@ -30,7 +30,7 @@ The whole thing runs hands-free. You just read your briefing with your morning c
 
 Before starting, make sure you have:
 
-- **Hermes Agent installed** — see the [Installation guide](../getting-started/installation.md)
+- **Moor Agent installed** — see the [Installation guide](../getting-started/installation.md)
 - **Gateway running** — the gateway daemon handles cron execution:
   ```bash
   moor gateway install   # Install as a user service
@@ -106,7 +106,7 @@ and open source LLMs. Summarize the top 3 stories in a concise briefing
 with links. Use a friendly, professional tone. Deliver to telegram.
 ```
 
-Hermes will create the cron job for you using the unified `cronjob_manage` tool.
+Moor will create the cron job for you using the unified `cronjob_manage` tool.
 
 ### Option B: CLI Slash Command
 

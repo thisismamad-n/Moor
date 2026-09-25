@@ -23,8 +23,8 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_cli.gateway_windows as gateway_windows
-import hermes_cli.main as hm
+import moor_cli.gateway_windows as gateway_windows
+import moor_cli.main as hm
 
 
 @pytest.fixture(autouse=True)
@@ -86,7 +86,7 @@ def test_resume_unregisters_its_own_atexit_fallback_before_running(monkeypatch):
     the identical error a second time at interpreter teardown (#115563)."""
     import atexit
 
-    from hermes_cli import update_cmd_windows
+    from moor_cli import update_cmd_windows
 
     calls = []
     monkeypatch.setattr(

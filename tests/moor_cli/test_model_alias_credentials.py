@@ -100,8 +100,8 @@ class TestNestedModelAliasesCredentials:
                 "aliases": {name: entry},
             },
         }
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda *a, **k: cfg)
-        monkeypatch.setattr("hermes_cli.runtime_provider.load_config", lambda *a, **k: cfg)
+        monkeypatch.setattr("moor_cli.config.load_config", lambda *a, **k: cfg)
+        monkeypatch.setattr("moor_cli.runtime_provider.load_config", lambda *a, **k: cfg)
         return cfg
 
     def test_nested_alias_keeps_key_env(self, monkeypatch):
@@ -115,7 +115,7 @@ class TestNestedModelAliasesCredentials:
                 "key_env": "QWEN27B_KEY",
             },
         )
-        from hermes_cli.model_switch import _load_direct_aliases
+        from moor_cli.model_switch import _load_direct_aliases
 
         alias = _load_direct_aliases()["qwen-local"]
         assert alias.key_env == "QWEN27B_KEY"
@@ -132,7 +132,7 @@ class TestNestedModelAliasesCredentials:
                 "api_key": "sk-literal",
             },
         )
-        from hermes_cli.model_switch import _load_direct_aliases
+        from moor_cli.model_switch import _load_direct_aliases
 
         assert _load_direct_aliases()["theta-nested"].api_key == "sk-literal"
 

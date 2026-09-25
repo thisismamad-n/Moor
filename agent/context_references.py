@@ -16,8 +16,8 @@ from pathlib import Path
 from typing import Awaitable, Callable
 
 from agent.model_metadata import CHARS_PER_TOKEN, estimate_tokens_rough
-from hermes_cli._subprocess_compat import IS_WINDOWS, harden_git_argv, noninteractive_git_env, windows_hide_flags
-from hermes_cli.sizefmt import format_bytes
+from moor_cli._subprocess_compat import IS_WINDOWS, harden_git_argv, noninteractive_git_env, windows_hide_flags
+from moor_cli.sizefmt import format_bytes
 
 # ── Plugin context-reference provider API ────────────────────────────────────
 
@@ -190,7 +190,7 @@ def preprocess_context_references(
     import concurrent.futures
     import contextvars
     # The side thread starts with an empty Context: without the caller's copy the served profile's
-    # HERMES_HOME override is lost and the credential-path guard checks the launch profile's .env.
+    # MOOR_HOME override is lost and the credential-path guard checks the launch profile's .env.
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
         return pool.submit(contextvars.copy_context().run, asyncio.run, coro).result()
 
@@ -447,7 +447,7 @@ def _is_under(path: Path, root: Path) -> bool:
     return True
 
 
-# Desktop persists a large plain-text paste as a `.txt` under this Hermes-managed
+# Desktop persists a large plain-text paste as a `.txt` under this moor-managed
 # directory (apps/desktop/electron/composer-paste.ts) and attaches it as `@file:`.
 # The chat's cwd is rarely an ancestor of it, so it is the one anchored root the
 # workspace guard admits besides `allowed_root` itself.
@@ -455,8 +455,8 @@ COMPOSER_PASTES_DIRNAME = "composer-pastes"
 
 
 def _composer_paste_roots() -> list[Path]:
-    from agent.file_safety import _hermes_dirs
-    return [hermes_dir / COMPOSER_PASTES_DIRNAME for hermes_dir in _hermes_dirs()]
+    from agent.file_safety import _moor_dirs
+    return [moor_dir / COMPOSER_PASTES_DIRNAME for moor_dir in _moor_dirs()]
 
 
 def _resolve_path(cwd: Path, target: str, *, allowed_root: Path | None = None) -> Path:

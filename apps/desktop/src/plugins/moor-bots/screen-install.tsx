@@ -1,6 +1,6 @@
 /**
  * Bot Screen install card — installs the TigerVNC + Xfce packages on the bot's
- * gateway host from inside Hermes Desktop.
+ * gateway host from inside Moor Desktop.
  *
  * `display.install` starts the distro package command on the host; sudo, when
  * needed, arrives as the same masked password card the terminal tool uses
@@ -9,8 +9,8 @@
  * a fresh status the caller uses to flip the pane to "Start screen".
  */
 
-import { Button, Codicon, GlyphSpinner, host } from '@hermes/plugin-sdk'
-import type { RpcEvent } from '@hermes/plugin-sdk'
+import { Button, Codicon, GlyphSpinner, host } from '@moor/plugin-sdk'
+import type { RpcEvent } from '@moor/plugin-sdk'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useBots } from './i18n'

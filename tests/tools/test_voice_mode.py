@@ -1524,7 +1524,7 @@ class TestWSLAudioEnvironmentGate:
         monkeypatch.setattr("tools.voice_mode._import_audio",
                             lambda: (MagicMock(), MagicMock()))
         with patch("tools.voice_mode.is_wsl", return_value=True), \
-             patch("hermes_constants.is_container", return_value=False):
+             patch("moor_constants.is_container", return_value=False):
             result = vm.detect_audio_environment()
 
         assert result["available"] is True

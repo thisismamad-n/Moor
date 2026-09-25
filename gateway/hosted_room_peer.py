@@ -249,9 +249,9 @@ def catalog_mapping(
     """Build a canonical catalog mapping with its digest for the SERVED ``target_profile``.
 
     The profile is the session's, never the process's: a multiplexed gateway advertises one
-    catalog per served profile, so there is no env (``HERMES_PROFILE``) fallback (#116900)."""
+    catalog per served profile, so there is no env (``MOOR_PROFILE``) fallback (#116900)."""
     # A Desktop-managed gateway exits with the app: the caller's flag is only an upper bound.
-    persistent_process = bool(persistent_process and os.getenv("HERMES_DESKTOP") != "1")
+    persistent_process = bool(persistent_process and os.getenv("MOOR_DESKTOP") != "1")
     profile = _identifier(target_profile, field="target_profile")
     checked_policy = RoomExecutionPolicy.from_mapping(
         execution_policy or execution_policy_mapping(target_profile=profile))

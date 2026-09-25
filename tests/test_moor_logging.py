@@ -1,4 +1,4 @@
-"""Tests for hermes_logging — centralized logging setup."""
+"""Tests for moor_logging — centralized logging setup."""
 import importlib.util
 import io
 import logging
@@ -34,7 +34,7 @@ def _reset_logging_state():
     moor_logging._logging_initialized = False
     # File handlers now live behind the async QueueListener, not on the root
     # logger; tear down any leaked from other tests in this process.
-    hermes_logging._reset_queued_handlers()
+    moor_logging._reset_queued_handlers()
     root = logging.getLogger()
     prev_root_level = root.level
     root.setLevel(logging.NOTSET)
@@ -68,19 +68,19 @@ def moor_home(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("mode,component", [("cli", None), ("gateway", "gateway.log"), ("gui", "gui.log")])
 @pytest.mark.parametrize("configured,explicit,minimum", [(None, None, logging.INFO), ("DEBUG", "WARNING", logging.WARNING), ("DEBUG", None, logging.DEBUG)])
-def test_repeated_setup_routes_records_once(hermes_home, mode, component, configured, explicit, minimum):
+def test_repeated_setup_routes_records_once(moor_home, mode, component, configured, explicit, minimum):
     if configured:
-        (hermes_home / "config.yaml").write_text(f"logging:\n  level: {configured}\n", encoding="utf-8")
+        (moor_home / "config.yaml").write_text(f"logging:\n  level: {configured}\n", encoding="utf-8")
     for _ in range(2):
-        assert hermes_logging.setup_logging(hermes_home=hermes_home, mode=mode, log_level=explicit) == hermes_home / "logs"
-    hermes_logging.set_session_context("routing-session")
+        assert moor_logging.setup_logging(moor_home=moor_home, mode=mode, log_level=explicit) == moor_home / "logs"
+    moor_logging.set_session_context("routing-session")
     sources = ["tools.terminal_tool", "agent.context_compressor", "gateway.run",
-               "plugins.platforms.telegram.adapter", "hermes_cli.web_server", "tui_gateway.ws"]
+               "plugins.platforms.telegram.adapter", "moor_cli.web_server", "tui_gateway.ws"]
     for index, source in enumerate(sources):
         for level in (logging.DEBUG, logging.INFO, logging.WARNING):
             logging.getLogger(source).log(level, "routing-witness-%s-%s", index, level)
-    hermes_logging.flush_log_queue()
-    outputs = {path.name: path.read_text(encoding="utf-8-sig") for path in (hermes_home / "logs").glob("*.log")}
+    moor_logging.flush_log_queue()
+    outputs = {path.name: path.read_text(encoding="utf-8-sig") for path in (moor_home / "logs").glob("*.log")}
     assert set(outputs) == {"agent.log", "errors.log"} | ({component} if component else set())
     for filename, content in outputs.items():
         for index, source in enumerate(sources):
@@ -97,7 +97,7 @@ def test_repeated_setup_routes_records_once(hermes_home, mode, component, config
 
 
 class TestSetupLogging:
-    def test_profile_routing_follows_context_home(self, hermes_home, tmp_path):
+    def test_profile_routing_follows_context_home(self, moor_home, tmp_path):
         """Desktop multiplex cron records are written to their owning profile."""
         from moor_constants import reset_moor_home_override, set_moor_home_override
 
@@ -119,7 +119,7 @@ class TestSetupLogging:
         assert "profile-routed cron record" in (
             profile_home / "logs" / "agent.log"
         ).read_text(encoding="utf-8-sig")
-        default_log = hermes_home / "logs" / "agent.log"
+        default_log = moor_home / "logs" / "agent.log"
         assert not default_log.exists() or "profile-routed cron record" not in default_log.read_text(encoding="utf-8-sig")
 
     @pytest.mark.parametrize("launch_redacts, routed_opt_out, routed_redacted", [
@@ -127,11 +127,11 @@ class TestSetupLogging:
         (True, "env", False),     # the routed profile opted out in its own .env
     ], ids=["launch-opt-out", "routed-env-opt-out"])
     def test_routed_records_follow_their_own_profiles_redaction_policy(
-            self, hermes_home, tmp_path, monkeypatch, launch_redacts, routed_opt_out, routed_redacted):
+            self, moor_home, tmp_path, monkeypatch, launch_redacts, routed_opt_out, routed_redacted):
         """The listener thread formats every record after its profile scope is gone, so a routed profile's own
         agent.log was redacted by the LAUNCH profile's policy: raw credentials if only the launch opted out."""
         from agent import redact
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         monkeypatch.setattr(redact, "_REDACT_ENABLED", launch_redacts)
         monkeypatch.setattr(redact, "_REDACT_ENABLED_BY_HOME", {})
@@ -140,59 +140,59 @@ class TestSetupLogging:
         if routed_opt_out == "config":
             (routed / "config.yaml").write_text("security:\n  redact_secrets: false\n", encoding="utf-8")
         elif routed_opt_out == "env":
-            (routed / ".env").write_text("HERMES_REDACT_SECRETS=false\n", encoding="utf-8")
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing([hermes_home, routed]) is True
+            (routed / ".env").write_text("MOOR_REDACT_SECRETS=false\n", encoding="utf-8")
+        moor_logging.setup_logging(moor_home=moor_home)
+        assert moor_logging.enable_profile_log_routing([moor_home, routed]) is True
         routed_secret = "sk-proj-ROUTEDPROFILE" + "b" * 24
         launch_secret = "sk-proj-LAUNCHPROFILE" + "a" * 24
 
         logger = logging.getLogger("gateway.redaction-routing-test")
-        token = set_hermes_home_override(routed)
+        token = set_moor_home_override(routed)
         try:
             logger.warning("provider rejected key %s", routed_secret)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
         logger.warning("launch key %s", launch_secret)
-        hermes_logging.flush_log_queue()
+        moor_logging.flush_log_queue()
 
         assert (routed_secret not in (routed / "logs" / "agent.log").read_text()) is routed_redacted
-        assert (launch_secret not in (hermes_home / "logs" / "agent.log").read_text()) is launch_redacts
+        assert (launch_secret not in (moor_home / "logs" / "agent.log").read_text()) is launch_redacts
 
-    def test_release_profile_log_handlers_closes_only_deleted_profile(self, hermes_home, tmp_path):
+    def test_release_profile_log_handlers_closes_only_deleted_profile(self, moor_home, tmp_path):
         """Profile deletion releases its routed log files without disturbing another profile."""
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         deleted_home = tmp_path / "profile-deleted"
         other_home = tmp_path / "profile-other"
         deleted_home.mkdir()
         other_home.mkdir()
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing(
-            [hermes_home, deleted_home, other_home]
+        moor_logging.setup_logging(moor_home=moor_home)
+        assert moor_logging.enable_profile_log_routing(
+            [moor_home, deleted_home, other_home]
         ) is True
 
         logger = logging.getLogger("agent.profile-delete-log-release")
-        token = set_hermes_home_override(deleted_home)
+        token = set_moor_home_override(deleted_home)
         try:
             logger.warning("deleted profile log handles")
         finally:
-            reset_hermes_home_override(token)
-        token = set_hermes_home_override(other_home)
+            reset_moor_home_override(token)
+        token = set_moor_home_override(other_home)
         try:
             logger.warning("other profile log handles")
         finally:
-            reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+            reset_moor_home_override(token)
+        moor_logging.flush_log_queue()
 
         routers = [
-            handler for handler in hermes_logging._queued_file_handlers
-            if isinstance(handler, hermes_logging._ProfileRoutingFileHandler)
+            handler for handler in moor_logging._queued_file_handlers
+            if isinstance(handler, moor_logging._ProfileRoutingFileHandler)
         ]
         assert len(routers) == 2  # agent.log and errors.log
         assert all(deleted_home.resolve() in handler._profile_handlers for handler in routers)
         assert all(other_home.resolve() in handler._profile_handlers for handler in routers)
 
-        assert hermes_logging.release_profile_log_handlers(deleted_home) == 2
+        assert moor_logging.release_profile_log_handlers(deleted_home) == 2
 
         assert all(deleted_home.resolve() not in handler._profile_handlers for handler in routers)
         assert all(deleted_home.resolve() not in handler._profile_homes for handler in routers)
@@ -283,9 +283,9 @@ class TestSetupLogging:
 
     def test_explicit_params_override_config(self, moor_home):
         """Explicit function params take precedence over config.yaml."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         config = {"logging": {"level": "DEBUG"}}
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump(config))
+        (moor_home / "config.yaml").write_text(yaml.safe_dump(config))
 
         moor_logging.setup_logging(moor_home=moor_home, log_level="WARNING")
 
@@ -430,9 +430,9 @@ class TestWindowsConcurrentLogLockTimeout:
                 captured_warnings.append(record)
 
         listener = _Capture()
-        logging.getLogger("hermes_logging").addHandler(listener)
+        logging.getLogger("moor_logging").addHandler(listener)
         monkeypatch = pytest.MonkeyPatch()
-        monkeypatch.setattr(hermes_logging, "_windows_lock_timeout_warned", False)
+        monkeypatch.setattr(moor_logging, "_windows_lock_timeout_warned", False)
         try:
             try:
                 raise RuntimeError("Cannot acquire lock after 20 attempts")
@@ -451,7 +451,7 @@ class TestWindowsConcurrentLogLockTimeout:
             assert "concurrent-log-handler" in captured_warnings[0].getMessage()
         finally:
             monkeypatch.undo()
-            logging.getLogger("hermes_logging").removeHandler(listener)
+            logging.getLogger("moor_logging").removeHandler(listener)
             logger.removeHandler(handler)
             handler.close()
 
@@ -462,11 +462,11 @@ class TestWindowsConcurrentLogLockTimeout:
         RuntimeError, so warn-once is what keeps errors.log from being spammed
         as badly as the stderr noise the suppression replaces."""
         monkeypatch = pytest.MonkeyPatch()
-        monkeypatch.setattr(hermes_logging, "_windows_lock_timeout_warned", False)
+        monkeypatch.setattr(moor_logging, "_windows_lock_timeout_warned", False)
         try:
-            with caplog.at_level(logging.WARNING, logger="hermes_logging"):
-                hermes_logging._warn_windows_lock_timeout_once()
-                hermes_logging._warn_windows_lock_timeout_once()
+            with caplog.at_level(logging.WARNING, logger="moor_logging"):
+                moor_logging._warn_windows_lock_timeout_once()
+                moor_logging._warn_windows_lock_timeout_once()
         finally:
             monkeypatch.undo()
         warnings = [r for r in caplog.records if r.levelno >= logging.WARNING]
@@ -477,7 +477,7 @@ class TestWindowsConcurrentLogLockTimeout:
     def fresh_logging(self):
         def load():
             spec = importlib.util.spec_from_file_location(
-                "_hermes_logging_import_test", hermes_logging.__file__,
+                "_moor_logging_import_test", moor_logging.__file__,
             )
             assert spec is not None and spec.loader is not None
             module = importlib.util.module_from_spec(spec)
@@ -555,10 +555,10 @@ class TestReadLoggingConfig:
         assert max_size is None
         assert backup is None
 
-    def test_reads_logging_section(self, hermes_home):
-        import hermes_yaml as yaml
+    def test_reads_logging_section(self, moor_home):
+        import moor_yaml as yaml
         config = {"logging": {"level": "DEBUG", "max_size_mb": 10, "backup_count": 5}}
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
+        (moor_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
 
         level, max_size, backup = moor_logging._read_logging_config()
         assert level == "DEBUG"
@@ -667,7 +667,7 @@ class TestExternalRotationRecovery:
         rotated = moor_home / "logs" / "gateway.log.1"
 
         logging.getLogger("gateway.run").info("line BEFORE rotation")
-        hermes_logging.flush_log_queue()
+        moor_logging.flush_log_queue()
         assert "BEFORE rotation" in gw_path.read_text(encoding="utf-8-sig")
 
         # External actor renames the file out from under us.
@@ -805,19 +805,19 @@ class TestLineBufferPipedStdout:
 
         tty = self._fake_stdout(isatty=True)
         monkeypatch.setattr(sys, "stdout", tty)
-        hermes_logging._line_buffer_piped_stdout()
+        moor_logging._line_buffer_piped_stdout()
         tty.reconfigure.assert_not_called()
 
         monkeypatch.setattr(sys, "stdout", None)
-        hermes_logging._line_buffer_piped_stdout()  # must not raise
+        moor_logging._line_buffer_piped_stdout()  # must not raise
         # A stream without reconfigure() (e.g. a print-redirect shim).
         monkeypatch.setattr(sys, "stdout", SimpleNamespace(isatty=lambda: False))
-        hermes_logging._line_buffer_piped_stdout()
+        moor_logging._line_buffer_piped_stdout()
 
     def test_setup_logging_applies_it_to_piped_stdout(self, tmp_path, monkeypatch):
         stream = self._fake_stdout(isatty=False)
         monkeypatch.setattr(sys, "stdout", stream)
-        hermes_logging.setup_logging(hermes_home=tmp_path, force=True)
+        moor_logging.setup_logging(moor_home=tmp_path, force=True)
         # setup_logging runs per AIAgent build: a second call must not re-flush/reconfigure.
-        hermes_logging.setup_logging(hermes_home=tmp_path, force=True)
+        moor_logging.setup_logging(moor_home=tmp_path, force=True)
         stream.reconfigure.assert_called_once_with(line_buffering=True)

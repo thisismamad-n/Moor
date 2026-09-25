@@ -37,20 +37,20 @@ def test_negative_retention_days_in_config_deletes_nothing(monkeypatch, tmp_path
     ``maybe_auto_prune_and_vacuum`` from this config loader; without validation it
     builds a future cutoff and deletes every ended session."""
     import cli
-    import hermes_cli.config
-    import hermes_constants
-    from hermes_state import SessionDB
+    import moor_cli.config
+    import moor_constants
+    from moor_state import SessionDB
 
     session_db = SessionDB(db_path=tmp_path / "state.db")
     try:
         session_db.create_session(session_id="ended", source="cli")
         session_db.end_session("ended", "done")
         monkeypatch.setattr(
-            hermes_cli.config,
+            moor_cli.config,
             "load_config",
             lambda: {"sessions": {"auto_prune": True, "retention_days": -1}},
         )
-        monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+        monkeypatch.setattr(moor_constants, "get_moor_home", lambda: tmp_path)
 
         cli._run_state_db_auto_maintenance(session_db)
 

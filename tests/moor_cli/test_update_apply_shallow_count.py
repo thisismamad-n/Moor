@@ -1,4 +1,4 @@
-"""Shallow-checkout guard on the ``hermes update`` apply path (#53479, mirroring #86257).
+"""Shallow-checkout guard on the ``moor update`` apply path (#53479, mirroring #86257).
 
 ``rev-list --count HEAD..origin/<branch>`` on a shallow install can enumerate
 the entire remote ancestry ("Found 9980 new commit(s)" on a depth-1 clone).
@@ -16,8 +16,8 @@ import subprocess
 
 import pytest
 
-import hermes_cli.main as cli_main
-from hermes_cli import source_check, update_cmd
+import moor_cli.main as cli_main
+from moor_cli import source_check, update_cmd
 
 
 def _git(cwd, *args):

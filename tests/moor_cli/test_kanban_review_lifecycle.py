@@ -504,8 +504,8 @@ def test_active_pr_guard_lifts_for_profile_handed_the_card_after_the_pr(
     The un-reassigned implementer stays guarded; a newer PR comment posted
     after the handoff (the closer's own run) guards again.
     """
-    import hermes_cli.config as cfgmod
-    import hermes_cli.profiles as profmod
+    import moor_cli.config as cfgmod
+    import moor_cli.profiles as profmod
 
     monkeypatch.setattr(profmod, "profile_exists", lambda name: True)
     monkeypatch.setattr(
@@ -545,8 +545,8 @@ def test_active_pr_guard_holds_through_same_profile_reassign_and_unassign(
     they counted as handoffs the implementer would be re-spawned against its own
     PR — the duplicate-work protection #111910 says must survive.
     """
-    import hermes_cli.config as cfgmod
-    import hermes_cli.profiles as profmod
+    import moor_cli.config as cfgmod
+    import moor_cli.profiles as profmod
 
     monkeypatch.setattr(profmod, "profile_exists", lambda name: True)
     monkeypatch.setattr(cfgmod, "load_config", lambda *a, **k: {})

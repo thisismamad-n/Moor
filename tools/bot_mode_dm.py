@@ -165,14 +165,14 @@ def ensure_message_agent_tool(agent: Any) -> bool:
 
 
 def _resolve_local_name(target: str, roster: list[str], root: Path | None = None) -> Optional[str]:
-    """Map a target to a local profile FOLDER id: 'hermes' → 'default'; an exact folder id
+    """Map a target to a local profile FOLDER id: 'moor' → 'default'; an exact folder id
     (case-insensitive); else — when ``root`` is given — a friendly name or its Desktop @-slug
     (profile.yaml ``display_name`` / Bot Mode title: 'Scribe', '@scribe', 'Dr. Foo' → 'foo').
     Ambiguous friendly names resolve to None so a DM never lands on the wrong bot (#100671)."""
     want = target.strip().lower()
     if not want:
         return None
-    if want == "hermes":
+    if want == "moor":
         return "default" if "default" in roster else None
     exact = next((name for name in roster if name.lower() == want), None)
     if exact is not None or root is None:
@@ -201,7 +201,7 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
     home = _agent_home(agent)
     try:
         from tools.bot_mode_probe import (
-            BOT_CHAT_TITLE, _display_name, _handle, _hermes_root, _peers, _profile_name as _self_profile_name,
+            BOT_CHAT_TITLE, _display_name, _handle, _moor_root, _peers, _profile_name as _self_profile_name,
             _roster, is_bot_mode_managed,
         )
         from tools.bot_relay import BOT_CHAT_TURN_ARGS, _moor_cli
@@ -262,9 +262,9 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
                                f"@{peer_profile or peer_name} on peer '{peer_name}'", stdin_file=True,
                                author=peer_author, **delivery)
 
-    # A connection-qualified target ('hermes@mini') names a relay row outright; it is the form the relay itself
+    # A connection-qualified target ('moor@mini') names a relay row outright; it is the form the relay itself
     # hands out for a colliding row, and stamps on replies. Resolved locally first, a local bot whose friendly
-    # name slugs to 'hermes-mini' captured it. An '@' name no connection answers to still resolves locally.
+    # name slugs to 'moor-mini' captured it. An '@' name no connection answers to still resolves locally.
     if "@" in raw_target.strip().lstrip("@"):
         relayed = _try_relay_delivery(root, raw_target, content, me, **delivery)
         if relayed is not None:

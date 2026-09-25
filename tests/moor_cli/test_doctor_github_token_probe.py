@@ -1,4 +1,4 @@
-"""``hermes doctor`` validates a configured GITHUB_TOKEN/GH_TOKEN against api.github.com (#115257).
+"""``moor doctor`` validates a configured GITHUB_TOKEN/GH_TOKEN against api.github.com (#115257).
 
 An expired PAT left in ``.env`` used to be reported as "GitHub token configured" while every
 git-auth clone failed with a Git-level message that never named the token. The doctor now sends
@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from hermes_cli import doctor_connectivity as dc
+from moor_cli import doctor_connectivity as dc
 
 # GitHub's documented 401 body for a bad/expired token (REST API "Authentication" docs).
 _BAD_CREDENTIALS = {"message": "Bad credentials", "documentation_url": "https://docs.github.com/rest"}
@@ -61,7 +61,7 @@ def _github_probe_row(monkeypatch, tmp_path, dotenv: str | None, *, name: str = 
     home.mkdir()
     if dotenv is not None:
         (home / ".env").write_text(dotenv, encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     monkeypatch.delenv("GH_TOKEN", raising=False)
     monkeypatch.setattr(dc, "_APIKEY_PROVIDERS_CACHE", [])

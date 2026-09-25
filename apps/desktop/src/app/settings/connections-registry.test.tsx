@@ -83,8 +83,8 @@ describe('ConnectionsRegistrySection', () => {
     save.mockRejectedValueOnce(new Error('plaintext consent required'))
     const applyConnectionConfig = vi.fn()
     const select = vi.fn()
-    Object.assign(window.hermesDesktop, { applyConnectionConfig })
-    Object.assign(window.hermesDesktop.connections, { select })
+    Object.assign(window.moorDesktop, { applyConnectionConfig })
+    Object.assign(window.moorDesktop.connections, { select })
     render(<ConnectionsRegistrySection />)
     fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
     const values = screen.getAllByPlaceholderText('Saved — leave blank to keep')
@@ -120,7 +120,7 @@ describe('ConnectionsRegistrySection', () => {
     const pendingLogin = deferred<{ connected: boolean }>()
     const oauthLoginConnectionConfig = vi.fn().mockReturnValue(pendingLogin.promise)
 
-    Object.assign(window.hermesDesktop, {
+    Object.assign(window.moorDesktop, {
       applyConnectionConfig,
       saveConnectionConfig,
       probeConnectionConfig,
@@ -194,22 +194,22 @@ describe('ConnectionsRegistrySection', () => {
 
   it('signs a hand-registered Cloud connection in and saves it as oauth (#89529)', async () => {
     const oauthLoginConnectionConfig = vi.fn().mockResolvedValue({ connected: true, ok: true })
-    Object.assign(window.hermesDesktop!, { oauthLoginConnectionConfig })
+    Object.assign(window.moorDesktop!, { oauthLoginConnectionConfig })
 
     render(<ConnectionsRegistrySection />)
 
     await screen.findByText('Homelab')
     fireEvent.click(screen.getByText('Add connection'))
-    fireEvent.click(screen.getByRole('button', { name: 'Hermes Cloud' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Moor Cloud' }))
     fireEvent.change(screen.getByPlaceholderText('Homelab'), { target: { value: 'Team cloud' } })
     fireEvent.change(screen.getByPlaceholderText('http://homelab.lan:9119'), {
-      target: { value: 'https://team.hermes.cloud' }
+      target: { value: 'https://team.moor.cloud' }
     })
 
     // Cloud never takes a pasted token: no token box, a sign-in button instead.
     expect(screen.queryByPlaceholderText('Paste session token')).toBeNull()
     fireEvent.click(await screen.findByRole('button', { name: /sign in/i }))
-    await waitFor(() => expect(oauthLoginConnectionConfig).toHaveBeenCalledWith('https://team.hermes.cloud'))
+    await waitFor(() => expect(oauthLoginConnectionConfig).toHaveBeenCalledWith('https://team.moor.cloud'))
 
     fireEvent.click(screen.getByText('Save connection').closest('button')!)
 
@@ -218,12 +218,12 @@ describe('ConnectionsRegistrySection', () => {
       authMode: 'oauth',
       kind: 'cloud',
       label: 'Team cloud',
-      url: 'https://team.hermes.cloud'
+      url: 'https://team.moor.cloud'
     })
     expect(save.mock.calls[0][0].token).toBeUndefined()
   })
 
-  it('saves a custom remote Hermes path for SSH connections', async () => {
+  it('saves a custom remote Moor path for SSH connections', async () => {
     render(<ConnectionsRegistrySection />)
 
     await waitFor(() => expect(screen.getByText('Homelab')).toBeTruthy())
@@ -232,7 +232,7 @@ describe('ConnectionsRegistrySection', () => {
     fireEvent.change(screen.getByPlaceholderText('Homelab'), { target: { value: 'Build host' } })
     fireEvent.change(screen.getByPlaceholderText('user@host:22'), { target: { value: 'dev@build.test:2222' } })
     fireEvent.change(screen.getByPlaceholderText('auto-detect'), {
-      target: { value: '/opt/hermes/bin/hermes' }
+      target: { value: '/opt/moor/bin/moor' }
     })
     fireEvent.click(screen.getByText('Save connection').closest('button')!)
 
@@ -241,11 +241,11 @@ describe('ConnectionsRegistrySection', () => {
       host: 'dev@build.test:2222',
       kind: 'ssh',
       label: 'Build host',
-      remoteHermesPath: '/opt/hermes/bin/hermes'
+      remoteMoorPath: '/opt/moor/bin/moor'
     })
   })
 
-  it('clears a saved remote Hermes path back to auto-detect', async () => {
+  it('clears a saved remote Moor path back to auto-detect', async () => {
     const sshRegistry: DesktopConnectionsRegistry = {
       ...registry,
       connections: [
@@ -255,7 +255,7 @@ describe('ConnectionsRegistrySection', () => {
           id: 'build-host',
           kind: 'ssh',
           label: 'Build host',
-          remoteHermesPath: '/opt/hermes/bin/hermes',
+          remoteMoorPath: '/opt/moor/bin/moor',
           tokenPreview: null,
           tokenSet: false,
           user: 'dev'
@@ -269,12 +269,12 @@ describe('ConnectionsRegistrySection', () => {
     await screen.findByText('Build host')
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     const pathInput = screen.getByPlaceholderText('auto-detect') as HTMLInputElement
-    expect(pathInput.value).toBe('/opt/hermes/bin/hermes')
+    expect(pathInput.value).toBe('/opt/moor/bin/moor')
     fireEvent.change(pathInput, { target: { value: '   ' } })
     fireEvent.click(screen.getByText('Save connection').closest('button')!)
 
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
-    expect(save.mock.calls[0][0]).toMatchObject({ id: 'build-host', remoteHermesPath: '' })
+    expect(save.mock.calls[0][0]).toMatchObject({ id: 'build-host', remoteMoorPath: '' })
   })
 
   it('disables Local on create while the managed entry exists', async () => {

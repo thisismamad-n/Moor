@@ -262,14 +262,14 @@ test('update-all deduplicates the same recovery scope and keeps primary preceden
 test.runIf(process.platform !== 'win32').each([0, 23])(
   'POSIX managed launcher executes the updater command and atomically publishes status %i',
   async (exitCode: number): Promise<void> => {
-    const home: string = await mkdtemp(path.join(os.tmpdir(), 'hermes managed launch '))
+    const home: string = await mkdtemp(path.join(os.tmpdir(), 'moor managed launch '))
     const shell: string = (await exec('command -v bash', { shell: 'bash' })).stdout.trim()
-    const launcher: string = path.join(home, 'hermes launcher')
+    const launcher: string = path.join(home, 'moor launcher')
 
     try {
       await writeFile(
         launcher,
-        `#!${shell}\nprintf '%s\\n' "$@" "$HERMES_HOME" "$HERMES_UPDATE_CORRELATION_ID" "$HERMES_UPDATE_ORIGIN_PROFILE" "$HERMES_UPDATE_ORIGIN_HOME" "$HERMES_UPDATE_OUTPUT_PATH"\nexit ${exitCode}\n`,
+        `#!${shell}\nprintf '%s\\n' "$@" "$MOOR_HOME" "$MOOR_UPDATE_CORRELATION_ID" "$MOOR_UPDATE_ORIGIN_PROFILE" "$MOOR_UPDATE_ORIGIN_HOME" "$MOOR_UPDATE_OUTPUT_PATH"\nexit ${exitCode}\n`,
         { encoding: 'utf8', mode: 0o700 }
       )
 
@@ -277,13 +277,13 @@ test.runIf(process.platform !== 'win32').each([0, 23])(
         {
           ssh: { exec: async (): Promise<string> => '' },
           platform: 'Linux',
-          hermesPath: launcher,
-          hermesHome: home
+          moorPath: launcher,
+          moorHome: home
         },
         CORRELATION
       )
 
-      const { stdout, stderr } = await exec(command, { shell, env: { ...process.env, HOME: home, HERMES_HOME: home } })
+      const { stdout, stderr } = await exec(command, { shell, env: { ...process.env, HOME: home, MOOR_HOME: home } })
       const statusPath: string = path.join(home, `.update_exit_code.${CORRELATION}`)
       const logPath: string = path.join(home, 'logs', `desktop-update-${CORRELATION}.log`)
       let status: string | undefined
@@ -367,7 +367,7 @@ test('remote observation rejects a receipt for another correlation', () => {
 test.runIf(process.platform !== 'win32')(
   'POSIX observer reads the exact correlation receipt and terminal marker from disk',
   async () => {
-    const home = await mkdtemp(path.join(os.tmpdir(), 'hermes-managed-update-'))
+    const home = await mkdtemp(path.join(os.tmpdir(), 'moor-managed-update-'))
 
     try {
       const receipts = path.join(home, 'logs', 'update_receipts')
@@ -389,8 +389,8 @@ test.runIf(process.platform !== 'win32')(
         {
           ssh: { exec: async () => '' },
           platform: 'Linux',
-          hermesPath: '/opt/hermes/hermes',
-          hermesHome: home
+          moorPath: '/opt/moor/moor',
+          moorHome: home
         },
         CORRELATION
       )
@@ -412,19 +412,19 @@ test.runIf(process.platform !== 'win32')(
 test.runIf(process.platform !== 'win32')(
   'managed observer unwraps a named profile home for the install-wide marker',
   async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'hermes-managed-profile-marker-'))
+    const root = await mkdtemp(path.join(os.tmpdir(), 'moor-managed-profile-marker-'))
     const profileHome = path.join(root, 'profiles', 'research')
 
     try {
       await mkdir(profileHome, { recursive: true })
-      await writeFile(path.join(root, '.hermes-update-in-progress'), `${process.pid}\n1\n`)
+      await writeFile(path.join(root, '.moor-update-in-progress'), `${process.pid}\n1\n`)
 
       const command = buildRemoteUpdateObservationCommand(
         {
           ssh: { exec: async () => '' },
           platform: 'Linux',
-          hermesPath: '/opt/hermes/hermes',
-          hermesHome: profileHome
+          moorPath: '/opt/moor/moor',
+          moorHome: profileHome
         },
         CORRELATION
       )

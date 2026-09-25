@@ -122,13 +122,13 @@ export type MiniNode = 1 | { dir: 'column' | 'row'; children: MiniNode[]; weight
 export const ELITE_LAYOUT_ID = 'terminal-deck'
 
 // Each pick is an arrangement AND an interface mode. First launch is the one
-// place a single question can answer both: someone here to talk to Hermes
+// place a single question can answer both: someone here to talk to Moor
 // should not have to find Simple mode afterwards, and a developer who asked
 // for the terminal deck wants the tooling on. Basic applies Simple's own
 // preset so its shelf shows the pick as active.
 export const LAYOUTS: Array<{ description: string; id: string; mode: InterfaceMode; name: string; tree: MiniNode }> = [
   {
-    description: 'For talking to Hermes.',
+    description: 'For talking to Moor.',
     id: 'sidebar-left',
     mode: 'simple',
     name: 'Basic',

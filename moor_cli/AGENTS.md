@@ -4,8 +4,8 @@ Applies on top of the root `AGENTS.md`. Long-form: `website/docs/developer-guide
 
 ## CLI architecture
 
-`cli.py` holds `HermesCLI` (REPL loop, config, slash dispatch); behaviour lives in mixins
-`hermes_cli/cli_commands_mixin.py`, `cli_stream_mixin.py`, `cli_status_bar_mixin.py`,
+`cli.py` holds `MoorCLI` (REPL loop, config, slash dispatch); behaviour lives in mixins
+`moor_cli/cli_commands_mixin.py`, `cli_stream_mixin.py`, `cli_status_bar_mixin.py`,
 `cli_billing_mixin.py`, `cli_tui_mixin.py` (widgets, keybindings, panels), `cli_tui_runtime_mixin.py`
 (run-loop phases: input dispatch, startup, signals, shutdown), `cli_init_mixin.py` (the `__init__`
 phases), ... Module-level helpers live in topical siblings that `cli.py` re-exports:
@@ -19,13 +19,13 @@ Moved bodies late-bind cli-level names via `from cli import ...` at call time, s
 handles input + autocomplete; `KawaiiSpinner` (`agent/display.py`) animates API calls and prints
 the `┊` activity feed. `load_cli_config()` in `cli.py` merges CLI defaults + user YAML.
 
-`hermes_cli/gateway.py` is the `hermes gateway` facade (process discovery, PM-aware systemd unit
+`moor_cli/gateway.py` is the `moor gateway` facade (process discovery, PM-aware systemd unit
 generation/refresh, command dispatch); topical siblings re-exported by the facade include
 `gateway_launchd.py` (macOS LaunchAgent backend), `gateway_setup_wizard.py`
-(`hermes gateway setup`: `_PLATFORMS` registry, status table, per-platform prompts, service offer),
+(`moor gateway setup`: `_PLATFORMS` registry, status table, per-platform prompts, service offer),
 `gateway_windows*.py`, `gateway_supervised_restart.py`, `gateway_migrate*.py`, `gateway_multiplex_*.py`,
 `gateway_enroll.py`, `gateway_command_errors.py`. Sibling bodies read facade names through `_gw()`
-(late binding on `hermes_cli.gateway`), so monkeypatch on the facade; mutable state such as
+(late binding on `moor_cli.gateway`), so monkeypatch on the facade; mutable state such as
 `_resolved_launchd_domain` stays a facade global.
 `process_command()` resolves the canonical name via `resolve_command()` then dispatches through
 `MoorCLI._SLASH_DISPATCH` (`canonical -> (method name, pass_arg)`), falling back to a
@@ -83,17 +83,17 @@ archive_after_days, backup.*`.
   `{"description", "prompt", "url", "password": True, "category": provider|tool|messaging|setting}`.
   Non-secret settings go in config.yaml; if internal code needs an env mirror, bridge it in code
   (`gateway_timeout`; `terminal.cwd` → `TERMINAL_CWD`). `MESSAGING_CWD` is removed and `TERMINAL_CWD`
-  in `.env` is deprecated — the loader warns; canonical is `terminal.cwd`. `hermes config
+  in `.env` is deprecated — the loader warns; canonical is `terminal.cwd`. `moor config
 set/get/unset <NAME>` route any bare name registered in `OPTIONAL_ENV_VARS` / `_EXTRA_ENV_KEYS`
   (or carrying a `setup_hidden_env` platform suffix) to `.env` via `config_env_routing.py` — the
   file the platform setup flows write — never to the top level of config.yaml.
 - **One writer.** Every write of a `config.yaml` (main or profile) goes through
-  `hermes_cli.config.atomic_config_write` (→ `utils.atomic_roundtrip_yaml_save`, ruamel
+  `moor_cli.config.atomic_config_write` (→ `utils.atomic_roundtrip_yaml_save`, ruamel
   round-trip merge): comments, key order, quoting and blank lines survive, absent keys are
   deleted, and the fail-closed unreadable-file guard runs first. `save_config`, `config set/unset`,
   migrations, plugin bookkeeping, gateway/TUI RPCs and auth resets all reach it; never call
   `atomic_yaml_write` / `yaml.dump` / `yaml.safe_dump` on a config path — `scripts/check_config_yaml_writers.py`
-  (CI lint) rejects it, and `tests/hermes_cli/test_config_yaml_comment_preservation.py` guards each
+  (CI lint) rejects it, and `tests/moor_cli/test_config_yaml_comment_preservation.py` guards each
   path (#92554). The commented example blocks are appended only when the file is created.
 - **Three loaders — know which you're in:** `load_cli_config()` (CLI, `cli.py`); `load_config()`
   (`moor tools/setup`, most subcommands, `moor_cli/config.py`, merges `DEFAULT_CONFIG`);
@@ -142,24 +142,24 @@ it guards. `plan → snapshot → apply → restart-per-kind → verify → repo
   (`_should_zip_fallback_on_update_error`, argv-classified; a dependency-install failure must never
   trigger a tree-clobbering re-download), REFUSES a dirty working tree (`-uall` + a pre-swap TOCTOU
   re-check — but classifies a `!!` line by whether the swap would destroy it: an ignored path under a
-  root entry the ZIP does not ship (`.bytecode-fingerprint`, `.hermes-bootstrap-complete`,
-  `hermes_agent.egg-info/`; tracked root entries stand in for the ZIP set before the download, the
+  root entry the ZIP does not ship (`.bytecode-fingerprint`, `.moor-bootstrap-complete`,
+  `moor_agent.egg-info/`; tracked root entries stand in for the ZIP set before the download, the
   re-check gets the real one), a nested `__pycache__`/`node_modules`, or a `_ZIP_PRESERVED_NESTED`
   output is admitted; other ignored files under shipped dirs still block), and grafts the live nested
   build outputs (`_ZIP_PRESERVED_NESTED`: `apps/desktop/{release,dist,node_modules,build}`,
-  `hermes_cli/web_dist`, `ui-tui/{dist,node_modules,packages/hermes-ink/dist}`, `web/node_modules`,
+  `moor_cli/web_dist`, `ui-tui/{dist,node_modules,packages/moor-ink/dist}`, `web/node_modules`,
   `scripts/whatsapp-bridge/node_modules`) into the staged swap by hardlink (the GitHub source ZIP has
   none of them; without the graft the swap deletes them). Post-swap, the Desktop
-  rebuild decision also trusts the build stamp under HERMES_HOME, so an install that already lost
+  rebuild decision also trusts the build stamp under MOOR_HOME, so an install that already lost
   its artifacts in an earlier update is rebuilt instead of "forgotten" (#90495).
 - **Restart-per-kind**: systemd and launchd restarts are FLEET-WIDE within the updating install (every
-  `hermes-gateway*` unit / `ai.hermes.gateway*` LaunchAgent whose home is the updating root or one of its
+  `moor-gateway*` unit / `ai.moor.gateway*` LaunchAgent whose home is the updating root or one of its
   `profiles/<name>`), drain-first (SIGUSR1), with per-unit/per-label failure isolation. Restarting only the
   invoking profile's service leaves siblings on stale `sys.modules` until they crash — the largest dupe-PR
   cluster in the repo's history came from that bug. The fleet is bounded by HOME, not by namespace:
-  `hermes_cli/update_fleet_scope.py` judges every unit/label/process by the home it actually runs on
-  (live environ, unit `Environment=`, plist `HERMES_HOME`), and a runtime of another `HERMES_HOME` on the
-  same account — a sibling install, the real `hermes-gateway.service` seen from a scratch home — is named and
+  `moor_cli/update_fleet_scope.py` judges every unit/label/process by the home it actually runs on
+  (live environ, unit `Environment=`, plist `MOOR_HOME`), and a runtime of another `MOOR_HOME` on the
+  same account — a sibling install, the real `moor-gateway.service` seen from a scratch home — is named and
   left alone, never restarted (#93349).
 - **Verify**: gateways stamp `code_sha`/`code_version` into `gateway_state.json` on every
   runtime-status write (`gateway/status.py`); the updater compares each live gateway against the
@@ -176,7 +176,7 @@ it guards. `plan → snapshot → apply → restart-per-kind → verify → repo
   See `website/docs/developer-guide/source-update-completion.md`. A begun-but-unwritten receipt is a bug.
 - **Nothing runs pulled code in the pre-pull interpreter.** This tree finishes updates through
   `update_completion.run_completion` / `_update_takeover.py`.
-  `hermes_cli/update_handoff.py` and `hermes_cli/update_serve_obligations.py` are the
+  `moor_cli/update_handoff.py` and `moor_cli/update_serve_obligations.py` are the
   FROZEN COMPAT SURFACE for releases that lazily import those module
   names from the NEW tree after the checkout swap.
   Keep their public names importable and behavior-preserving. They call into
@@ -207,7 +207,7 @@ and TUI all go through it). Clones are built in `profiles/.<name>.staging-<pid>`
 symlinked `.env`/`config.yaml` are materialized first so a clone never writes through to its source. Multiplex
 (`gateway.multiplex_profiles`) secret-scope rules: `gateway/AGENTS.md`. The served set is
 `profiles.py::profiles_to_serve(multiplex=True)` = default + every live dir under `profiles/` — live =
-carries an identity marker (`hermes_constants.named_profile_has_identity`: `config.yaml`/`.env`/`SOUL.md`/
+carries an identity marker (`moor_constants.named_profile_has_identity`: `config.yaml`/`.env`/`SOUL.md`/
 `profile.yaml`/`auth.json`/`state.db`) and is not tombstoned. A marker-less dir (cron/log side-effect
 shell, stray infrastructure dir) is never listed, served, ticked, `.env`-backfilled or resolvable via `-p`
 (#95188, #99392); `profile create` replaces it only when it is also tombstoned (a live marker-less dir may hold user
@@ -217,14 +217,14 @@ predicate. There is no allowlist (`gateway.multiplex_profile_allowlist` was reti
 Enumeration is a pure read: never `mkdir` a profile home from a served path (`SessionDB`, logging,
 cron all go through `mkdir_under_moor_home` / `_ensure_cron_dir`, which refuse a deleted or
 missing named profile, #94590). Process-global per-profile slots (MCP discovery in `mcp_startup.py`,
-tool registry overlays) key on `hermes_constants.hermes_home_key()`, never a single flag.
+tool registry overlays) key on `moor_constants.moor_home_key()`, never a single flag.
 `gateway.multiplex_profiles` defaults to **on**, but `GatewayConfig` keeps an unset flag `None` and
 `gateway_multiplex_mode.resolve_multiplex_mode` settles it once per boot (called from
 `load_gateway_config_for_runner`): default profile, >= 2 profiles, no standalone secondary gateway,
 no preflight blocker, migratable host → `True`; else `False` + a logged reason. Explicit values pass
 through. CLI/dashboard readers use `default_gateway_multiplexes` (live `served_profiles` record, then
 the explicit flag) — never the merged default, which would guess a verdict only the gateway makes.
-Migration from per-profile gateways: `hermes_cli/gateway_migrate.py` (`hermes gateway migrate
+Migration from per-profile gateways: `moor_cli/gateway_migrate.py` (`moor gateway migrate
 --multiplex`, the only mode — `--standalone` is deleted and a per-profile fleet is not a supported
 target; table-driven `_PREFLIGHT_CHECKS`; manifest `<default>/gateway_migration.json` = UNFINISHED,
 a re-run resumes from it; a named profile's `gateway install|start|run` refuse without `--force` via
@@ -248,7 +248,7 @@ never a dir-owner fallback), `gateway_launchd.py::generate_launchd_plist` (`gui/
 `~/Library/LaunchAgents` glob; the whole launchd backend — plist refresh, `launchctl` bootstrap/kickstart,
 `launchd_start/stop/restart/status`, detached-process degrade — lives in that sibling, with the domain cache
 `_resolved_launchd_domain` staying a facade global), Windows Scheduled Task and the Desktop-spawned backend all carry the
-profile's `HERMES_HOME` (and `HOME` for the service user) explicitly — a supervisor starts with an
+profile's `MOOR_HOME` (and `HOME` for the service user) explicitly — a supervisor starts with an
 empty environment, so the env override that makes `-p` work interactively does not exist there. A
 change to install/restart/status regenerates and diffs every kind; both user and system units are
 recorded when both exist. Process liveness is `(pid, start_time)` or the canonical matchers

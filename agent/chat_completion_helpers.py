@@ -611,17 +611,17 @@ def _configured_stale_base(agent) -> float:
 
 def _local_stream_stale_timeout_default() -> float:
     """Local-provider stale ceiling: ``agent.local_stream_stale_timeout`` (900s) or
-    HERMES_LOCAL_STREAM_STALE_TIMEOUT. Shared by the stream stale detector and the
+    MOOR_LOCAL_STREAM_STALE_TIMEOUT. Shared by the stream stale detector and the
     Responses first-event watchdog so both give a local server the same prefill grace."""
     local_default = 900.0
     with contextlib.suppress(Exception):
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         cfg = load_config_readonly()  # read-only consumer — no deepcopy
         agent_cfg = cfg.get("agent") if isinstance(cfg, dict) else None
         value = agent_cfg.get("local_stream_stale_timeout") if isinstance(agent_cfg, dict) else None
         if isinstance(value, (int, float)):
             local_default = float(value)
-    return env_float("HERMES_LOCAL_STREAM_STALE_TIMEOUT", local_default)
+    return env_float("MOOR_LOCAL_STREAM_STALE_TIMEOUT", local_default)
 
 
 def _scale_stale_timeout_for_context(base: float, est_tokens: int) -> float:
@@ -661,7 +661,7 @@ def _cloud_stale_timeout_for(agent, api_kwargs: dict) -> float:
     explicit = get_provider_stale_timeout(agent.provider, agent.model)
     if explicit is not None:
         return explicit
-    return _cloud_stale_timeout(env_float("HERMES_STREAM_STALE_TIMEOUT", 180.0), api_kwargs)
+    return _cloud_stale_timeout(env_float("MOOR_STREAM_STALE_TIMEOUT", 180.0), api_kwargs)
 
 
 def _bedrock_reasoning_stale_floor(model_id: object) -> "float | None":
@@ -794,8 +794,8 @@ def _managed_local_load_notice(agent, api_kwargs: dict) -> "Optional[str]":
         if not base:
             return None
         from urllib.parse import urlparse
-        from hermes_cli.local_runtime.load_progress import get_loading_progress, get_prefill_progress
-        from hermes_cli.local_runtime.supervisor import state_path
+        from moor_cli.local_runtime.load_progress import get_loading_progress, get_prefill_progress
+        from moor_cli.local_runtime.supervisor import state_path
         state = json.loads(state_path().read_text(encoding="utf-8-sig"))
         managed = urlparse(str(state.get("base_url", ""))).netloc.lower()
         if not managed or urlparse(base).netloc.lower() != managed:
@@ -1152,10 +1152,10 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
     event remains transport activity). Only the implicit official OpenAI Codex policy
     for large contexts defers arming until progress; small requests, compatible backends,
     and explicit overrides retain the legacy first-event semantics. Tunables:
-    HERMES_CODEX_TTFB_TIMEOUT_SECONDS,
-    HERMES_CODEX_EVENT_STALE_TIMEOUT_SECONDS (0 disables each),
-    HERMES_CODEX_TTFB_DISABLE_ABOVE_TOKENS / HERMES_CODEX_TTFB_STRICT,
-    HERMES_CODEX_TTFB_MAX_SECONDS (opt-in ceiling, default 0 = none), HERMES_CODEX_HARD_TIMEOUT_SECONDS.
+    MOOR_CODEX_TTFB_TIMEOUT_SECONDS,
+    MOOR_CODEX_EVENT_STALE_TIMEOUT_SECONDS (0 disables each),
+    MOOR_CODEX_TTFB_DISABLE_ABOVE_TOKENS / MOOR_CODEX_TTFB_STRICT,
+    MOOR_CODEX_TTFB_MAX_SECONDS (opt-in ceiling, default 0 = none), MOOR_CODEX_HARD_TIMEOUT_SECONDS.
     """
     # The effort floor on the STALE timeout lives inside _compute_non_stream_stale_timeout so the
     # run-budget cap still bounds it; here the floor only raises the TTFB/idle implicit defaults.
@@ -1188,8 +1188,8 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
     # No-event TTFB cutoff. Default 120s: the SDK's own read timeout is 600s,
     # and a tight 12s killed subscription-backed requests mid-prefill.
     ttfb_enabled = codex
-    ttfb_explicit = env_float("HERMES_CODEX_TTFB_TIMEOUT_SECONDS", -1.0) != -1.0
-    ttfb_timeout = env_float("HERMES_CODEX_TTFB_TIMEOUT_SECONDS", 120.0)
+    ttfb_explicit = env_float("MOOR_CODEX_TTFB_TIMEOUT_SECONDS", -1.0) != -1.0
+    ttfb_timeout = env_float("MOOR_CODEX_TTFB_TIMEOUT_SECONDS", 120.0)
     if ttfb_timeout <= 0:
         ttfb_enabled = False
     elif codex and not local:
@@ -1204,10 +1204,10 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
                 f"{est_tokens:,}", disable_above)
             ttfb_timeout = idle_default
         # Opt-in ceiling (0 = off): a 120s default here silently undid the scale-up above (#91621).
-        ttfb_cap = env_float("HERMES_CODEX_TTFB_MAX_SECONDS", 0.0)
+        ttfb_cap = env_float("MOOR_CODEX_TTFB_MAX_SECONDS", 0.0)
         if ttfb_cap > 0 and ttfb_timeout > ttfb_cap:
             logger.info("Capping codex-responses no-event TTFB timeout from %.0fs to %.0fs "
-                "(context=~%s tokens) per HERMES_CODEX_TTFB_MAX_SECONDS.", ttfb_timeout, ttfb_cap,
+                "(context=~%s tokens) per MOOR_CODEX_TTFB_MAX_SECONDS.", ttfb_timeout, ttfb_cap,
                 f"{est_tokens:,}")
             ttfb_timeout = ttfb_cap
     elif not ttfb_explicit and local:
@@ -1217,7 +1217,7 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
         local_ceiling = _local_stream_stale_timeout_default()
         if local_ceiling > ttfb_timeout:
             logger.info("Local provider detected (%s) — no-event TTFB watchdog raised from %.0fs to %.0fs "
-                "(agent.local_stream_stale_timeout); set HERMES_CODEX_TTFB_TIMEOUT_SECONDS for an explicit cutoff.",
+                "(agent.local_stream_stale_timeout); set MOOR_CODEX_TTFB_TIMEOUT_SECONDS for an explicit cutoff.",
                 base_url, ttfb_timeout, local_ceiling)
             ttfb_timeout = local_ceiling
     if ttfb_enabled and not ttfb_explicit:
@@ -1227,8 +1227,8 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
     # An operator-set idle timeout keeps first-event semantics; only the implicit
     # default defers arming until model progress. Sentinel: env_float returns the
     # default for unset AND unparseable values, so both count as implicit.
-    idle_explicit = env_float("HERMES_CODEX_EVENT_STALE_TIMEOUT_SECONDS", -1.0) != -1.0
-    idle_timeout = env_float("HERMES_CODEX_EVENT_STALE_TIMEOUT_SECONDS", idle_default)
+    idle_explicit = env_float("MOOR_CODEX_EVENT_STALE_TIMEOUT_SECONDS", -1.0) != -1.0
+    idle_timeout = env_float("MOOR_CODEX_EVENT_STALE_TIMEOUT_SECONDS", idle_default)
     progress_gated = codex and openai_codex_backend and codex_floor > 0 and not idle_explicit
     return _NonStreamWatchdogs(stale_timeout=stale_timeout, codex=codex, est_tokens=est_tokens,
         ttfb_enabled=ttfb_enabled, ttfb_timeout=ttfb_timeout, idle_enabled=codex and idle_timeout > 0,
@@ -1798,7 +1798,7 @@ def _fallback_api_mode_hint(fb: dict, fb_provider: str, fb_base_url_hint: Option
     rewrites a dual-surface /anthropic base to /v1, losing the Anthropic wire signal. An explicit
     ``api_mode`` always wins (even "chat_completions") and suppresses later re-detection;
     ``provider: anthropic`` without a base_url still resolves to anthropic_messages."""
-    from hermes_cli.runtime_provider import _get_named_custom_provider, _parse_api_mode
+    from moor_cli.runtime_provider import _get_named_custom_provider, _parse_api_mode
     # Entries accept the same ``api_mode`` / ``transport`` spellings as ``providers.<name>``.
     explicit = _parse_api_mode(fb.get("api_mode") or fb.get("transport"))
     if explicit:
@@ -1821,15 +1821,15 @@ def _fallback_api_mode_resolved(agent, fb_provider: str, fb_model: str, fb_base_
     landed on the chat_completions default (never called for an explicit api_mode)."""
     if fb_provider == "openai-codex":
         return "codex_responses"
-    from hermes_cli.models import opencode_model_api_mode
-    from hermes_cli.runtime_provider_custom import _opencode_family_for_custom
+    from moor_cli.models import opencode_model_api_mode
+    from moor_cli.runtime_provider_custom import _opencode_family_for_custom
     opencode_family = _opencode_family_for_custom(fb_provider, fb_base_url)
     if opencode_family is not None:
         # OpenCode Zen/Go/free serve Responses-only (muse-spark, gpt-*, grok-*), anthropic_messages
         # (minimax, qwen) and chat_completions models behind one provider; the primary /model path
         # already re-derives per model — the fallback wire must agree (#102148).
         return opencode_model_api_mode(opencode_family, fb_model)
-    if fb_provider in {"nous", "nous-portal", "nousresearch"}:
+    if fb_provider in {"moor", "moor-portal", "nousresearch"}:
         # Portal is dual-wire: anthropic/* must land on /v1/messages (the swap rebuilds the native client).
         from moor_cli.providers import moor_api_mode
         return moor_api_mode(fb_model)
@@ -1876,9 +1876,9 @@ def _log_fallback_activated(agent, reason, old_model, old_provider, fb_model, fb
     if reason != FailoverReason.billing:
         logger.info("Fallback activated: %s → %s (%s)", old_model, fb_model, fb_provider)
         return
-    from hermes_constants import get_hermes_home, profile_name_for_home
-    profile = profile_name_for_home(get_hermes_home()) or "default"
-    remedy = "hermes model" if profile == "default" else f"hermes -p {profile} model"
+    from moor_constants import get_moor_home, profile_name_for_home
+    profile = profile_name_for_home(get_moor_home()) or "default"
+    remedy = "moor model" if profile == "default" else f"moor -p {profile} model"
     logger.warning(
         "Profile %s: %s via %s refused for billing/credits — using fallback %s via %s. "
         "Top up credits, or run `%s` to pick a model this account can use.",
@@ -2078,13 +2078,13 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None, reset_a
                 fb_base_url, fb_api_mode = "moa://local", "chat_completions"
             else:
                 try:
-                    from hermes_cli.model_normalize import normalize_model_for_provider
+                    from moor_cli.model_normalize import normalize_model_for_provider
                     fb_model = normalize_model_for_provider(fb_model, fb_provider)
                 except Exception as _norm_err:
                     logger.warning("Could not normalize fallback model %r for provider %r: %s", fb_model, fb_provider, _norm_err)
 
                 fb_base_url = str(fb_client.base_url)
-                from hermes_cli.providers import is_actual_route
+                from moor_cli.providers import is_actual_route
                 if is_actual_route(fb_provider, fb_base_url):
                     fb_api_mode = "chat_completions"
                 elif not fb_api_mode_explicit and fb_api_mode == "chat_completions":

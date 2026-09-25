@@ -159,7 +159,7 @@ class _DownstreamExecutionError(Exception):
 
 
 def _run_execution_chain(kind: str, terminal_call: Callable[[Any], Any], **kwargs: Any) -> Any:
-    from hermes_cli.plugins import _delivery_manager
+    from moor_cli.plugins import _delivery_manager
 
     payload_key = "request" if "request" in kwargs else "args"
     manager = _delivery_manager()

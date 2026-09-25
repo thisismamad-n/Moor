@@ -7,8 +7,8 @@ Two additive capabilities, both designed so a failure inside them can never
 break an update (every public entry point is exception-swallowing):
 
 1. **Update receipt** — a machine-readable JSON record of what one
-   ``hermes update`` run discovered, did, skipped (and why), written to
-   ``<HERMES_HOME>/logs/update_receipts/``. Silent-failure classes this
+   ``moor update`` run discovered, did, skipped (and why), written to
+   ``<MOOR_HOME>/logs/update_receipts/``. Silent-failure classes this
    makes visible: #88848 (helper died after "success" printed), #74973
    (restart silently skipped), #85753 (restart phase never ran), #81193
    (desktop shows failure for a successful update).
@@ -21,7 +21,7 @@ break an update (every public entry point is exception-swallowing):
    become a loud, actionable report instead of a latent state.
 
 Deployment-kind awareness (docker/image-managed installs) rides on
-``hermes_cli.version_info.get_code_identity()``: a packaged build reports
+``moor_cli.version_info.get_code_identity()``: a packaged build reports
 its install-stamp provenance (``source="docker"``/``"nix"``/…) and the
 receipt records that the install is not in-place updatable.
 """
@@ -47,7 +47,7 @@ _RECEIPT_KEEP = 20  # keep the last N receipts per profile home
 COMMAND_BOUNDARY_STOP_REASON = "completed at command boundary"
 
 # Receipt state is per-CONTEXT, not a module global: a nested
-# ``hermes update`` receipt (or one in another thread) must never clobber
+# ``moor update`` receipt (or one in another thread) must never clobber
 # the outer one, and the boundary finalize must see exactly its own
 # process's receipt. Same pattern as pm.receipt's ContextVars — no
 # manager object.
@@ -85,7 +85,7 @@ def _utc_now_iso() -> str:
 def _code_identity(refresh: bool = False) -> dict[str, Any]:
     """Running-code identity, or ``{}`` when the probe fails."""
     with suppress(Exception):
-        from hermes_cli.version_info import get_code_identity
+        from moor_cli.version_info import get_code_identity
 
         return get_code_identity(refresh=refresh) or {}
     return {}
@@ -173,10 +173,10 @@ class UpdateReceipt:
 
 
 def _receipt_dir() -> Path:
-    # ``hermes_constants`` (stdlib-only), never ``hermes_cli.config``: the receipt must be
+    # ``moor_constants`` (stdlib-only), never ``moor_cli.config``: the receipt must be
     # writable from the refused/failed paths where config loading itself may be what broke
     # (#112465, #112558).
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     return get_moor_home() / "logs" / "update_receipts"
 
@@ -269,7 +269,7 @@ def finalize_update_receipt(outcome: str, fleet: list | None = None, stop_reason
         # Manual serve restart obligations outlive one receipt rotation: carry the previous
         # receipt's still-pending rows forward so the startup warning survives (see
         # update_serve_obligations).
-        from hermes_cli.update_serve_obligations import retain_receipt_manual_serves
+        from moor_cli.update_serve_obligations import retain_receipt_manual_serves
         pending = retain_receipt_manual_serves(read_latest_receipt() or {})
         if pending:
             receipt.data["pending_manual_serves"] = pending
@@ -304,7 +304,7 @@ def finalize_update_receipt(outcome: str, fleet: list | None = None, stop_reason
         # the same process+second — the correlation id makes the name unique
         # per update run. Atomic write for BOTH the stamped receipt and the
         # latest.json pointer (no torn readers).
-        from hermes_cli.runtime_state import _atomic_bytes
+        from moor_cli.runtime_state import _atomic_bytes
 
         path = directory / (
             f"update_{time.strftime('%Y%m%d_%H%M%S')}_{os.getpid()}_"
@@ -360,8 +360,8 @@ def settle_latest_receipt_fleet(fleet: list[dict[str, Any]], *, discharges) -> b
     """Record on ``latest.json`` that the fleet it still reports as owed now serves the checkout.
 
     A failed receipt whose plan rows cannot be matched to a live gateway (unknown identity,
-    pre-pull SHAs) keeps ``hermes update`` exiting 1 and every CLI start warning about mixed
-    modules, long after the operator's ``hermes gateway restart`` fixed the fleet (#117051). The
+    pre-pull SHAs) keeps ``moor update`` exiting 1 and every CLI start warning about mixed
+    modules, long after the operator's ``moor gateway restart`` fixed the fleet (#117051). The
     caller has just verified every live row is current at the checkout SHA; persisting that
     matrix as the receipt's post-restart ``fleet`` (and un-flagging ``gateway_restart``) is what
     lets the stale-runtime readers see the recovery. ``discharges(settled_receipt)`` decides on
@@ -441,7 +441,7 @@ _CODE_ROOT_MAX_DEPTH = 8
 
 
 def _code_root_for_path(raw: Any) -> Optional[Path]:
-    """Return the Hermes checkout containing an absolute process path."""
+    """Return the Moor checkout containing an absolute process path."""
     if not isinstance(raw, str) or not raw:
         return None
     with suppress(Exception):
@@ -449,7 +449,7 @@ def _code_root_for_path(raw: Any) -> Optional[Path]:
         if not candidate.is_absolute():
             return None
         for parent in [candidate, *candidate.parents][:_CODE_ROOT_MAX_DEPTH]:
-            if (parent / "hermes_cli" / "main.py").is_file():
+            if (parent / "moor_cli" / "main.py").is_file():
                 return parent.resolve()
     return None
 
@@ -646,7 +646,7 @@ _FLEET_ROW_UNKNOWN = "  ? {profile} (pid {pid}) — version unknown (gateway pre
 # so the copy does not claim one.
 _FLEET_ROW_IDENTITY_PENDING = (
     "  ? {profile} (pid {pid}) — new pid since the update, code identity not published yet"
-    " — re-check with `hermes gateway status`"
+    " — re-check with `moor gateway status`"
 )
 
 
@@ -683,7 +683,7 @@ def print_fleet_version_matrix(fleet: list[dict[str, Any]]) -> bool:
     if RESTART_PENDING_STATE in states:
         print()
         print("  ℹ A restart-pending gateway picks up the new code as soon as this update exits;")
-        print("    verify afterwards with `hermes gateway status`.")
+        print("    verify afterwards with `moor gateway status`.")
     stale_or_down = sum(1 for entry in fleet if entry.get("state") in ("stale", "down"))
     if stale_or_down:
         print()

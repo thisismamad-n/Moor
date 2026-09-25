@@ -12,7 +12,7 @@ Regression for the placeholder shapes; the pooled-key case covers the sibling re
 
 import pytest
 
-from hermes_cli.auth import has_usable_secret, AuthError
+from moor_cli.auth import has_usable_secret, AuthError
 
 
 @pytest.mark.parametrize("value, usable", [
@@ -45,13 +45,13 @@ def test_placeholder_keys_resolve_as_unconfigured(tmp_path, monkeypatch):
     placeholder (the sibling resolution path) behaves exactly like no credential at all."""
     import uuid
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    (tmp_path / "hermes").mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
+    (tmp_path / "moor").mkdir(parents=True, exist_ok=True)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.setenv("XAI_API_KEY", "your_key_here")
 
     from agent.credential_pool import AUTH_TYPE_API_KEY, SOURCE_MANUAL, PooledCredential, load_pool
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from moor_cli.runtime_provider import resolve_runtime_provider
 
     with pytest.raises(AuthError, match="No usable credentials found for provider 'xai'"):
         resolve_runtime_provider(requested="xai")

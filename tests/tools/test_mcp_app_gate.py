@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_platform import declaration
+from moor_platform import declaration
 
 
 @pytest.mark.parametrize("connection", ["live", "recycled", "lazy", "absent"])

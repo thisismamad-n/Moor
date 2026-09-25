@@ -16,10 +16,10 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state_dbfile
-import hermes_state_readpool
-import hermes_state_wal
-from hermes_state import (
+import moor_state_dbfile
+import moor_state_readpool
+import moor_state_wal
+from moor_state import (
     DeletedWalGenerationError, SessionDB, StateDbReplacedError, _close_time_checkpoint_configurable,
     classify_persistence_error, refuse_deleted_wal_generation,
 )
@@ -110,9 +110,9 @@ def test_second_sessiondb_open_refuses_through_symlinked_home(tmp_path, force_wa
     """Regression for #116450. End to end through the real open path: SessionDB stores the
     alias verbatim and calls the guard with it before connect, so the refusal must fire via the
     alias — /proc reports the kernel-resolved dentry while the caller holds only the symlink."""
-    real_home = tmp_path / "hermes-real"
+    real_home = tmp_path / "moor-real"
     real_home.mkdir()
-    link_home = tmp_path / "hermes-link"
+    link_home = tmp_path / "moor-link"
     link_home.symlink_to(real_home)
     alias_db = link_home / "state.db"
 

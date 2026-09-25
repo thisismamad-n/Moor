@@ -685,10 +685,10 @@ def _make_callback_handler() -> tuple[type, dict]:
                 status, body = 404, "<h2>Not Found</h2>"
             elif _result_taken(result):
                 # First terminal result (HTTP or paste) wins; a duplicate or refreshed callback never replaces it.
-                body = "<h2>Authorization already received</h2><p>You can close this tab and return to Hermes.</p>"
+                body = "<h2>Authorization already received</h2><p>You can close this tab and return to Moor.</p>"
             else:
                 result.update(auth_code=parsed["code"], state=parsed["state"], error=parsed["error"], iss=parsed["iss"])
-                body = ("<h2>Authorization Successful</h2><p>You can close this tab and return to Hermes.</p>" if parsed["code"]
+                body = ("<h2>Authorization Successful</h2><p>You can close this tab and return to Moor.</p>" if parsed["code"]
                         else f"<h2>Authorization Failed</h2><p>Error: {html.escape(parsed['error'] or 'unknown')}</p>")
             self.send_response(status)
             self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -1021,7 +1021,7 @@ def token_request_user_agent(cfg: dict) -> str | None:
 
 
 def login_connect_timeout(config: dict) -> float:
-    """Connect bound for an interactive OAuth login probe (CLI ``hermes mcp login``, dashboard and
+    """Connect bound for an interactive OAuth login probe (CLI ``moor mcp login``, dashboard and
     Desktop re-auth): the server's ``connect_timeout`` or its ``oauth.timeout`` callback window
     (default 300 s) plus 15 s headroom for the token exchange, whichever is longer. A fixed 315 s
     floor here made raising ``oauth.timeout`` alone a no-op — the probe timed out first (#116278)."""
@@ -1035,7 +1035,7 @@ def login_connect_timeout(config: dict) -> float:
                _seconds(oauth_cfg.get("timeout"), 300.0) + 15.0)
 
 
-def _configure_callback_port(cfg: dict, storage: "HermesTokenStorage | None" = None) -> int:
+def _configure_callback_port(cfg: dict, storage: "MoorTokenStorage | None" = None) -> int:
     """Resolve the callback port into ``cfg['_resolved_port']`` (0 = non-loopback URI). Precedence:
     dashboard flow / cached https redirect URI → CIMD pinned port (sets ``cfg['_cimd_url']``) →
     ``oauth.redirect_port`` → cached registration port → fresh ephemeral port (the only parked one).

@@ -15,12 +15,12 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
-from hermes_cli.web_deps import late
-from hermes_cli.web_routers._common import http_failure, scoped_to_thread
+from moor_cli.web_deps import late
+from moor_cli.web_routers._common import http_failure, scoped_to_thread
 
 router = APIRouter()
 
-_open_session_db_for_profile = late("_open_session_db_for_profile", "hermes_cli.web_server_sessions")
+_open_session_db_for_profile = late("_open_session_db_for_profile", "moor_cli.web_server_sessions")
 
 
 def resolve_chat_cwd(raw: Optional[str]) -> Optional[str]:
@@ -42,7 +42,7 @@ def _collect_workspaces(profile: Optional[str], scan: bool) -> dict:
     # The dashboard hosts the in-process gateway (``web_server`` imports ``tui_gateway.server``
     # at startup), so the sidebar's repo-discovery helpers are already bound there.
     import tui_gateway.server as gateway
-    from hermes_cli import projects_db as pdb
+    from moor_cli import projects_db as pdb
 
     db = _open_session_db_for_profile(profile, read_only=True)
     try:

@@ -30,7 +30,7 @@ import path from 'node:path'
 import type { InstallStamp } from './install-stamp'
 
 export interface UninstallSummaryDetails {
-  hermes_home: string
+  moor_home: string
   agent_installed: boolean
   gui_installed: boolean
   source_built_artifacts: string[]
@@ -75,14 +75,14 @@ export function registerDesktopUninstallIpc({
   const kind: InstallKind = resolveInstallKind(stamp ?? {})
   const codeRemovalAllowed: boolean = installKindAllowsCodeRemoval(kind)
 
-  ipcMain.handle('hermes:uninstall:summary', async (): Promise<DesktopUninstallSummary> => {
+  ipcMain.handle('moor:uninstall:summary', async (): Promise<DesktopUninstallSummary> => {
     const summary: UninstallSummaryDetails = codeRemovalAllowed ? await probeSummary() : fallbackSummary()
 
     // The local artifact owns this decision, not the Python summary.
     return { ...summary, code_removal_allowed: codeRemovalAllowed }
   })
   ipcMain.handle(
-    'hermes:uninstall:run',
+    'moor:uninstall:run',
     async (_event: unknown, payload?: unknown): Promise<DesktopUninstallResult> => {
       // Every cleanup mode can remove the bundle, including a hidden data request.
       if (!codeRemovalAllowed) {
@@ -114,7 +114,7 @@ const UNINSTALL_MODES: string[] = ['gui', 'lite', 'full', 'data']
 //   'bundled'  — a bundled or light artifact. The OS owns app removal.
 //   'external' — another package manager owns updates and removal.
 //   'standard' — everything else: the git-clone install the desktop
-//                installer bootstraps, or a `hermes desktop` source build.
+//                installer bootstraps, or a `moor desktop` source build.
 //                The classic script flow (venv python + rm the bundle) works.
 //
 // Only 'standard' installs may use the desktop cleanup script.
@@ -174,8 +174,8 @@ function allowedUninstallModes(kind: InstallKind): string[] {
 function nativeRemovalInstructions(kind, platform, appPath = null) {
   if (kind === 'nix') {
     return (
-      'This Hermes desktop app was installed by Nix. Uninstall it the same way you installed it: ' +
-      'remove hermes-agent from your flake or profile, then rebuild.'
+      'This Moor desktop app was installed by Nix. Uninstall it the same way you installed it: ' +
+      'remove moor-agent from your flake or profile, then rebuild.'
     )
   }
 
@@ -184,7 +184,7 @@ function nativeRemovalInstructions(kind, platform, appPath = null) {
   }
 
   if (platform === 'darwin') {
-    return 'Quit the app and drag Hermes.app from Applications to the Trash.'
+    return 'Quit the app and drag Moor.app from Applications to the Trash.'
   }
 
   if (appPath && /\.appimage$/i.test(String(appPath))) {
@@ -195,7 +195,7 @@ function nativeRemovalInstructions(kind, platform, appPath = null) {
     return `Delete the app directory at ${appPath}.`
   }
 
-  return 'Delete the Hermes AppImage (or app directory) from wherever you saved it.'
+  return 'Delete the Moor AppImage (or app directory) from wherever you saved it.'
 }
 
 /**

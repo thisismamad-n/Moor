@@ -96,7 +96,7 @@ def _spawn_worker(env: dict[str, str]) -> subprocess.Popen:
 
     # pm store PATH: the worker runs under the STORE python, whose third-party
     # imports (ddgs/primp) arrive via the launcher-composed PYTHONPATH. The
-    # sanitizer strips Hermes-owned entries (cross-version protection); this
+    # sanitizer strips moor-owned entries (cross-version protection); this
     # worker is the SAME interpreter, so merge the ambient PYTHONPATH back in.
     _ambient_pp = os.environ.get("PYTHONPATH")
     if _ambient_pp:

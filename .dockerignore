@@ -93,8 +93,8 @@ website/
 assets/
 !assets/
 assets/*
-!assets/nous-girl-black.svg
-!assets/nous-girl-white.svg
+!assets/moor-girl-black.svg
+!assets/moor-girl-white.svg
 !assets/backgrounds/
 !assets/backgrounds/**
 infographic/
@@ -111,7 +111,7 @@ packaging/
 # Design and planning documents
 plans/
 .plans/
-.hermes/
+.moor/
 
 # Repo-level dotfiles that are git-only or dev-tooling config
 .envrc

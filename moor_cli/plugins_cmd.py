@@ -1,4 +1,4 @@
-"""``hermes plugins`` CLI subcommand — install, update, remove, and list plugins.
+"""``moor plugins`` CLI subcommand — install, update, remove, and list plugins.
 
 Facade: shared primitives (errors, console/config helpers, manifest reading, discovery, enable/disable
 selection) and the dispatch table live here; each verb family lives in a ``plugins_cmd_<topic>.py``
@@ -14,41 +14,41 @@ import sys
 from pathlib import Path
 from typing import Any, NoReturn, Optional
 
-from hermes_constants import get_hermes_home
-from hermes_cli.config import cfg_get
-from hermes_cli.plugin_capabilities import _child_dict
+from moor_constants import get_moor_home
+from moor_cli.config import cfg_get
+from moor_cli.plugin_capabilities import _child_dict
 # Tests patch these two on the facade; the install/remove siblings read them through it.
-from hermes_cli.secret_prompt import masked_secret_prompt  # noqa: F401
+from moor_cli.secret_prompt import masked_secret_prompt  # noqa: F401
 from utils import rmtree_readonly  # noqa: F401
 
 # Topical siblings. The facade re-exports what other modules, tests and the old updater import from
-# ``hermes_cli.plugins_cmd``; sibling bodies read those names back through the facade at call time.
-from hermes_cli.plugins_cmd_capabilities import (  # noqa: F401
+# ``moor_cli.plugins_cmd``; sibling bodies read those names back through the facade at call time.
+from moor_cli.plugins_cmd_capabilities import (  # noqa: F401
     _declared_capabilities_for_key, _declared_capabilities_from_manifest, _resolve_tool_override_grant,
     _run_capability_consent, cmd_capabilities,
 )
-from hermes_cli.plugins_cmd_git import (  # noqa: F401
+from moor_cli.plugins_cmd_git import (  # noqa: F401
     _EXACT_COMMIT_RE, _canonical_source, _checkout_exact_revision, _clone_plugin_repo, _git_head_revision,
     _git_or_raise, _git_pull_plugin_dir, _git_resolve_commit, _normalize_exact_revision, _pin_annotation,
     _read_install_metadata, _run_plugin_git, _safe_git_error, _scrub_cloned_origin, _update_install_record,
     _write_install_metadata, pinned_revision,
 )
-from hermes_cli.plugins_cmd_install import (  # noqa: F401
+from moor_cli.plugins_cmd_install import (  # noqa: F401
     _check_manifest_version, _consent_python_deps, _display_after_install, _install_plugin_core,
     _install_plugin_python_deps, _prompt_plugin_env_vars, _python_dependency_summary,
     _read_manifest_for_install, cmd_install, dashboard_install_plugin,
 )
-from hermes_cli.plugins_cmd_listing import (  # noqa: F401
+from moor_cli.plugins_cmd_listing import (  # noqa: F401
     _filter_plugin_entries, cmd_compat, cmd_list, cmd_show,
 )
-from hermes_cli.plugins_cmd_remove import (  # noqa: F401
+from moor_cli.plugins_cmd_remove import (  # noqa: F401
     _remove_plugin_core, cmd_remove, dashboard_remove_user_plugin,
 )
-from hermes_cli.plugins_cmd_toggle import (  # noqa: F401
+from moor_cli.plugins_cmd_toggle import (  # noqa: F401
     _discover_context_engines, _persist_plugin_selection, _provider_categories, _run_composite_fallback,
     cmd_toggle,
 )
-from hermes_cli.plugins_cmd_update import (  # noqa: F401
+from moor_cli.plugins_cmd_update import (  # noqa: F401
     _clear_plugin_bytecode, cmd_adopt, cmd_check_updates, cmd_trust_update_url, cmd_update,
     dashboard_update_user_plugin,
 )
@@ -429,14 +429,14 @@ _get_enabled_set = functools.partial(_config_name_set, "plugins", "enabled")
 
 def _save_enabled_set(enabled: set) -> None:
     """Frozen old-updater import: never resurrect a raw plugin-selection write."""
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
 
     stop_for_relaunch()
 
 
 def _plugin_selection_version() -> str:
-    from hermes_cli.runtime_state import _digest
-    return _digest(get_hermes_home() / "config.yaml") or "missing"
+    from moor_cli.runtime_state import _digest
+    return _digest(get_moor_home() / "config.yaml") or "missing"
 
 
 def _admit_and_save_plugin_sets(
@@ -452,7 +452,7 @@ def _admit_and_save_plugin_sets(
     conflict raises its :class:`DependencyConflict` subclass naming *plugin*."""
     from rich.markup import escape
 
-    from hermes_cli.plugins_admission import AdmissionRefused, DependencyConflict, admit_plugin_set_change
+    from moor_cli.plugins_admission import AdmissionRefused, DependencyConflict, admit_plugin_set_change
 
     try:
         admit_plugin_set_change(
@@ -460,7 +460,7 @@ def _admit_and_save_plugin_sets(
             plugin=plugin,
         )
     except DependencyConflict as exc:
-        # `hermes pm install` cannot fix a conflict, so the retry hint below would mislead here.
+        # `moor pm install` cannot fix a conflict, so the retry hint below would mislead here.
         if console is not None:
             console.print(f"[red]✗[/red] {escape(str(exc))}")
             console.print("[dim]config.yaml and the active environment are unchanged.[/dim]")
@@ -470,7 +470,7 @@ def _admit_and_save_plugin_sets(
             console.print(f"[red]✗[/red] {action} refused: {exc}")
             console.print(
                 "[dim]config.yaml and the active environment are unchanged. "
-                "Run `hermes pm install` to resolve dependencies, then retry.[/dim]"
+                "Run `moor pm install` to resolve dependencies, then retry.[/dim]"
             )
         raise
 
@@ -532,7 +532,7 @@ def _forget_plugin_config(aliases: set) -> dict[str, Any]:
     decision, not inherit a stale enable or grant (#54336); a dangling ``memory.provider`` would make
     the next agent init re-clone the plugin from the catalog, silently undoing the uninstall.
     Returns ``{"cleared_memory_provider": True}`` when the selection was reset."""
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
     config = load_config()
     changed = False
     result: dict[str, Any] = {}
@@ -562,7 +562,7 @@ def _set_plugin_enabled(name: str, *, enable: bool, aliases=(), console=None) ->
     from pm.plugins_state import read_home_selection
 
     expected_config = _plugin_selection_version()
-    config = read_home_selection(get_hermes_home()) or {}
+    config = read_home_selection(get_moor_home()) or {}
     plugins = config.get("plugins") or {}
     enabled = set(plugins.get("enabled") or ())
     disabled = set(plugins.get("disabled") or ())
@@ -624,14 +624,14 @@ def cmd_enable(name: str, allow_tool_override: Optional[bool] = None) -> None:
     _refuse_legacy_relay(key)
     if source != "bundled":
         # Activating recalled code is the same act as installing it (`plugins/AGENTS.md`: kill list).
-        from hermes_cli import plugins_cmd_catalog as catalog
+        from moor_cli import plugins_cmd_catalog as catalog
         try:
             catalog.refuse_if_installed_removed(key, _user_installed_plugin_dir(key.rsplit("/", 1)[-1]))
         except PluginOperationError as exc:
             _fail(console, f"[red]Error:[/red] {exc}")
 
     if _activate_key(key, enable=True, console=console):
-        from hermes_cli.plugins_activation import activate_plugin_now, activation_hint
+        from moor_cli.plugins_activation import activate_plugin_now, activation_hint
         console.print(f"[green]✓[/green] Plugin [bold]{key}[/bold] enabled. Takes effect on next session.")
         console.print(f"[dim]{activation_hint(activate_plugin_now(key, in_process=False))}[/dim]")
     else:
@@ -840,13 +840,13 @@ def _toggle_plugin_toolset(name: str, *, enable: bool) -> None:
     toolset_key = _get_plugin_toolset_key(name)
     if not toolset_key:
         return
-    from hermes_cli.config import load_config, save_config
-    from hermes_cli.toolset_validation import parse_platform_toolsets_value
+    from moor_cli.config import load_config, save_config
+    from moor_cli.toolset_validation import parse_platform_toolsets_value
     config = load_config()
     platform_toolsets = _child_dict(config, "platform_toolsets")
     changed = False
     for platform, raw in list(platform_toolsets.items()):
-        # A list-literal string (older `hermes config set`) is the user's real selection; toggling
+        # A list-literal string (older `moor config set`) is the user's real selection; toggling
         # it re-saves the entry as a proper list so the string never persists.
         ts_list = parse_platform_toolsets_value(raw)
         if ts_list is not None and enable != (toolset_key in ts_list):
@@ -869,7 +869,7 @@ def dashboard_set_agent_plugin_enabled(name: str, *, enabled: bool) -> dict[str,
     key = _resolve_plugin_key(name)
     if key is None:
         return {"ok": False, "error": f"Plugin '{name}' is not installed or bundled."}
-    from hermes_cli.plugins_admission import AdmissionRefused
+    from moor_cli.plugins_admission import AdmissionRefused
 
     try:
         changed = _activate_key(key, enable=enabled)
@@ -886,7 +886,7 @@ def dashboard_set_agent_plugin_enabled(name: str, *, enabled: bool) -> dict[str,
     if changed and enabled:
         # Load it now, here and in the running gateway; ``activation`` tells the UI what is live vs
         # deferred, and ``restart_required`` only survives when no gateway answered (#87770).
-        from hermes_cli.plugins_activation import activate_plugin_now
+        from moor_cli.plugins_activation import activate_plugin_now
         return {"ok": True, "name": key, "unchanged": False, **activate_plugin_now(key)}
     # Disable is config-only: there is no un-wire primitive, so a running gateway keeps the plugin's
     # handlers until restart and every UI says so — #71595/#54941.

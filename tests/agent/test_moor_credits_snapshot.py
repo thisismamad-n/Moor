@@ -38,7 +38,7 @@ def test_healthy():
     assert snap is not None
     assert snap.available is True
     assert snap.plan == "Pro"
-    assert snap.provider == "nous"
+    assert snap.provider == "moor"
     blob = "\n".join(_all_lines(snap))
     assert "$18.00" in blob
     assert "$12.34" in blob
@@ -56,4 +56,4 @@ def test_logged_out():
             total_usable_credits=10.0,
         ),
     )
-    assert build_nous_credits_snapshot(info) is None
+    assert build_moor_credits_snapshot(info) is None

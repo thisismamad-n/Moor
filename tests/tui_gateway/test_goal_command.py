@@ -289,7 +289,7 @@ def test_slash_exec_routes_goal_to_command_dispatch(server, session):
 def test_iteration_limit_fallback_is_judged_and_can_continue(
     server, turn_env, monkeypatch
 ):
-    from hermes_cli.goals import GoalManager
+    from moor_cli.goals import GoalManager
 
     session_key = "goal-iteration-limit-fallback"
     mgr = GoalManager(session_key)

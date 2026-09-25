@@ -109,7 +109,7 @@ async def test_hook_fires_without_session_store_attribute(monkeypatch):
         return []
 
     # The inbound path awaits the hook, so the seam is the async entry point.
-    monkeypatch.setattr("hermes_cli.plugins.ainvoke_hook", _fake_hook)
+    monkeypatch.setattr("moor_cli.plugins.ainvoke_hook", _fake_hook)
 
     runner, adapter = _make_runner(Platform.WHATSAPP)
     del runner.session_store
@@ -142,7 +142,7 @@ async def test_async_hook_callback_is_awaited_on_the_gateway_loop(monkeypatch):
         await gate.wait()
         return [{"action": "skip", "reason": "gated"}]
 
-    monkeypatch.setattr("hermes_cli.plugins.ainvoke_hook", _hook)
+    monkeypatch.setattr("moor_cli.plugins.ainvoke_hook", _hook)
 
     async def _release():
         await asyncio.sleep(0)

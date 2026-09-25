@@ -382,8 +382,8 @@ class TestAzureFoundryResponsesAlias:
         from agent import auxiliary_client as _aux
 
         cfg = {"model": {"provider": "openrouter", "default": "x"}, "auxiliary": {"vision": dict(self._AUX_VISION)}}
-        monkeypatch.setattr("hermes_cli.config.load_config_readonly", lambda: cfg)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
+        monkeypatch.setattr("moor_cli.config.load_config_readonly", lambda: cfg)
+        monkeypatch.setattr("moor_cli.config.load_config", lambda: cfg)
         monkeypatch.setenv("AZURE_FOUNDRY_API_KEY", "k")
 
         provider, client, model = _aux.resolve_vision_provider_client()

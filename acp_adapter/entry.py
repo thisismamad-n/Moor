@@ -11,18 +11,18 @@ Usage::
 # IMPORTANT: moor_bootstrap must be the very first import — UTF-8 stdio
 # on Windows.  No-op on POSIX.  See moor_bootstrap.py for full rationale.
 try:
-    import hermes_bootstrap  # noqa: F401
+    import moor_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
-    # Partial ``hermes update`` (git-reset landed, ``uv pip install -e .`` did not).
-    if exc.name != "hermes_bootstrap":
+    # Partial ``moor update`` (git-reset landed, ``uv pip install -e .`` did not).
+    if exc.name != "moor_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 else:
     # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch cwd from shadowing Moor modules.
     moor_bootstrap.harden_import_path()
 
-# `hermes-acp` runs without hermes_cli.main: repair a `hermes update` killed mid-pull here, before
-# importing anything else from the checkout (a no-op under `hermes acp`, which already did).
-from hermes_cli import _early_recovery
+# `moor-acp` runs without moor_cli.main: repair a `moor update` killed mid-pull here, before
+# importing anything else from the checkout (a no-op under `moor acp`, which already did).
+from moor_cli import _early_recovery
 
 if _early_recovery.restore_interrupted_pull():
     _early_recovery.relaunch_after_restore()
@@ -105,7 +105,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _print_version() -> None:
-    from hermes_cli.version_info import get_version_info
+    from moor_cli.version_info import get_version_info
 
     print(get_version_info().derived_version)
 
@@ -184,7 +184,7 @@ def main(argv: list[str] | None = None) -> None:
 
     # One TLS authority: trust the OS store before any outbound call (bare
     # requests/urllib included) resolves a CA bundle — see agent/ssl_verify.py.
-    # This console script bypasses hermes_cli.main, which does the same.
+    # This console script bypasses moor_cli.main, which does the same.
     from agent.ssl_verify import install_truststore
 
     install_truststore()
@@ -193,7 +193,7 @@ def main(argv: list[str] | None = None) -> None:
     from .server import MoorACPAgent
 
     # Windows: import the configured memory provider (and numpy) on the main thread before
-    # the MCP-discovery and ACP stdin-reader threads start (hermes_cli's ~150 ms
+    # the MCP-discovery and ACP stdin-reader threads start (moor_cli's ~150 ms
     # plugin-discovery thread is the only one already running). A first-time
     # native-extension import (numpy via holographic / mnemosyne / hindsight) racing another
     # thread's import chain deadlocked in create_module and session/new never answered

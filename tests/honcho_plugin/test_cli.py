@@ -60,8 +60,8 @@ class TestCmdSetupLocalJwt:
         monkeypatch.setattr(honcho_cli, "_ensure_sdk_installed", lambda: True)
         # No gateway import, config.yaml write or real SDK connection attempt.
         monkeypatch.setattr(honcho_cli, "_gateway_platforms", lambda: [])
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"memory": {}}, raising=False)
-        monkeypatch.setattr("hermes_cli.config.save_config", lambda c: None, raising=False)
+        monkeypatch.setattr("moor_cli.config.load_config", lambda: {"memory": {}}, raising=False)
+        monkeypatch.setattr("moor_cli.config.save_config", lambda c: None, raising=False)
 
         def _offline(*a, **k):
             raise ConnectionError("offline in tests")
@@ -701,7 +701,7 @@ class TestCmdSetupDeviceFlow:
         cfg, calls, _ = self._run_setup(monkeypatch, tmp_path, answers=["cloud", "device"])
         assert len(calls) == 1
         assert calls[0]["apply_config"] is False
-        host = cfg["hosts"]["hermes"]
+        host = cfg["hosts"]["moor"]
         assert host["apiKey"] == "hch-at-x"
         assert host["oauth"]["refreshToken"] == "hch-rt-x"
         assert host["peerName"] == "lyra"
@@ -817,16 +817,16 @@ class TestEnabledRequiresACredential:
         assert block["aiPeer"] == "dreamer" and block["workspace"] == "moor"
 
     @pytest.mark.parametrize("cfg, env_key, profile, enabled", [
-        ({"hosts": {"hermes_dreamer": {"workspace": "hermes"}}}, "hch-v3-from-env", "dreamer", False),
+        ({"hosts": {"moor_dreamer": {"workspace": "moor"}}}, "hch-v3-from-env", "dreamer", False),
         (_OAUTH_DEFAULT, None, "dreamer", False),
-        ({"hosts": {"hermes_dreamer": {"enabled": True, "aiPeer": "dreamer", "workspace": "hermes"}}}, None, "dreamer",
+        ({"hosts": {"moor_dreamer": {"enabled": True, "aiPeer": "dreamer", "workspace": "moor"}}}, None, "dreamer",
          False),
         ({"hosts": {}}, None, "default", False),
         ({"apiKey": "hch-v3-root", **_KEYLESS_DEFAULT}, None, "dreamer", True),
     ], ids=["env key only", "empty block", "legacy enabled keyless block", "default profile", "root key"])
     def test_enable_writes_enabled_only_for_an_on_disk_credential(self, monkeypatch, tmp_path,
                                                                    cfg, env_key, profile, enabled):
-        host = "hermes" if profile == "default" else "hermes_dreamer"
+        host = "moor" if profile == "default" else "moor_dreamer"
         honcho_cli, written = self._env(monkeypatch, tmp_path, cfg, env_key=env_key, host=host, profile=profile)
         honcho_cli.cmd_enable(SimpleNamespace())
         assert written["cfg"]["hosts"][host]["enabled"] is True if enabled else written == {}

@@ -36,7 +36,7 @@ import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 
-import { platformDefaultHermesHome } from './data-paths'
+import { platformDefaultMoorHome } from './data-paths'
 
 const DEFAULT_CONNECT_TIMEOUT_MS = 15_000
 const DEFAULT_EXEC_TIMEOUT_MS = 20_000
@@ -197,7 +197,7 @@ function controlSocketPath(user, host, port, baseDir?, identity: any = {}) {
 
 function shortControlDir(): string {
   // no-tmp: ok — AF_UNIX's short path budget rules out a deep HOME/TMPDIR; the parent and child are checked before use.
-  return `/tmp/hermes-ssh-${process.getuid!()}`
+  return `/tmp/moor-ssh-${process.getuid!()}`
 }
 
 function defaultControlDir(): string {
@@ -205,7 +205,7 @@ function defaultControlDir(): string {
     return path.join(os.tmpdir(), 'moor-desktop-ssh')
   }
 
-  const homeDir = path.join(platformDefaultHermesHome(os.homedir()), 'desktop-ssh')
+  const homeDir = path.join(platformDefaultMoorHome(os.homedir()), 'desktop-ssh')
 
   // Include the filename and OpenSSH's temporary-listener suffix in the byte budget.
   return Buffer.byteLength(path.join(homeDir, '0123456789abcdef.sock.0123456789abcdef')) <= 104

@@ -32,7 +32,7 @@ class Engine:
 
 def runtimes_root() -> Path:
     """Machine-scoped presets and server state. Binaries belong to PM's store."""
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
 
     return get_default_moor_root() / "runtimes" / "llamacpp"
 
@@ -85,7 +85,7 @@ def resolve_backend(requested: str = "auto", *, gpu_vendor: str | None = None,
                     target: str | None = None) -> str:
     """Explicit choices are strict. Auto only falls back to compatible pinned builds."""
     if requested == "auto" and target is None and gpu_vendor is None:
-        from hermes_cli.local_runtime.bootstrap import _detect_gpu_vendor
+        from moor_cli.local_runtime.bootstrap import _detect_gpu_vendor
 
         gpu_vendor = _detect_gpu_vendor()
     target = target or pm.current_target()
@@ -102,7 +102,7 @@ def installed_engine(backend: str = "auto", *, allow_outdated: bool = True) -> E
     """Boot may retain a prior PM pin, but never installs or adopts unmanaged bytes."""
     vendor = None
     if backend == "auto":
-        from hermes_cli.local_runtime.bootstrap import _detect_gpu_vendor
+        from moor_cli.local_runtime.bootstrap import _detect_gpu_vendor
 
         vendor = _detect_gpu_vendor()
     for candidate in _candidates(backend, vendor, pm.current_target()):

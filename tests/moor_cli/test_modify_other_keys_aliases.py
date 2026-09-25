@@ -232,7 +232,7 @@ def test_modify_other_keys_super_printable_produces_char(seq, ch):
 def test_shift_symbol_data_normalized_in_buffer():
     """End-to-end: Vt100Parser with install_keypress_data_normalization
     must deliver the character in KeyPress.data, not the raw escape."""
-    from hermes_cli.pt_input_extras import install_keypress_data_normalization
+    from moor_cli.pt_input_extras import install_keypress_data_normalization
     install_keypress_data_normalization()
 
     out = []

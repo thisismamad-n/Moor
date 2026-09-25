@@ -21,7 +21,7 @@ function makeDeps(over: Partial<AppInstallerStrategyDeps> = {}): StrategyFixture
     run: async () => ({ code: 0, stdout: '{"available": true}' }),
     channel: 'stable',
     light: false,
-    feedBaseUrl: 'https://updates.example/hermes-desktop',
+    feedBaseUrl: 'https://updates.example/moor-desktop',
     installer: {
       prepare: async () => {
         calls.push('prepare')
@@ -70,7 +70,7 @@ describe('AppInstallerStrategy.apply', () => {
     const result = await new AppInstallerStrategy(deps).apply()
     expect(result.ok).toBe(true)
     expect(calls).toContain('quit')
-    expect(progress.some(message => message.includes('Reopen Hermes'))).toBe(true)
+    expect(progress.some(message => message.includes('Reopen Moor'))).toBe(true)
   })
 
   it('uses the package registered source when no feed override is configured', async () => {
@@ -196,7 +196,7 @@ it.each([
       light,
       installer: {
         prepare: async (url: string): Promise<string> => {
-          expect(url).toBe(`https://updates.example/hermes-desktop/${suffix}`)
+          expect(url).toBe(`https://updates.example/moor-desktop/${suffix}`)
 
           return 'update.appinstaller'
         },

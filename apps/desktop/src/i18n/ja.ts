@@ -170,7 +170,7 @@ export const ja = defineLocale({
 
   notifications: {
     sharedProfileWarning:
-      '別の Hermes インストールがこのプロファイルを使用しています。両方が設定とデータを共有しているため、変更が競合する可能性があります。このまま続けるか、変更する前にもう一方を終了してください。',
+      '別の Moor インストールがこのプロファイルを使用しています。両方が設定とデータを共有しているため、変更が競合する可能性があります。このまま続けるか、変更する前にもう一方を終了してください。',
     region: '通知',
     hide: '非表示',
     show: '表示',
@@ -240,8 +240,8 @@ export const ja = defineLocale({
       rejectAction: '拒否',
       inputTitle: '入力が必要です',
       inputTitleNamed: session => `入力が必要です — ${session}`,
-      inputBody: 'Hermes が応答を待っています。',
-      turnDoneTitle: 'Hermes が完了しました',
+      inputBody: 'Moor が応答を待っています。',
+      turnDoneTitle: 'Moor が完了しました',
       turnDoneBody: '',
       turnErrorTitle: 'ターンが失敗しました',
       backgroundDoneTitle: 'バックグラウンドタスクが完了しました',
@@ -318,7 +318,7 @@ export const ja = defineLocale({
     uninstallSection: {
       dangerZone: '危険ゾーン',
       checkingInstalled: 'インストール内容を確認中…',
-      uninstallHermes: 'Hermes をアンインストール',
+      uninstallMoor: 'Moor をアンインストール',
       chooseHowMuch:
         '削除する範囲を選択してください。完了するためにアプリが閉じます。インストーラーを開き直せばいつでも戻れます。',
       confirmUninstall: 'アンインストールの確認',
@@ -330,20 +330,20 @@ export const ja = defineLocale({
       options: {
         gui: {
           title: 'Chat GUI のみアンインストール',
-          description: 'このデスクトップアプリを削除します。Hermes エージェント、設定、チャットはすべて残ります。',
+          description: 'このデスクトップアプリを削除します。Moor エージェント、設定、チャットはすべて残ります。',
           consequence: 'デスクトップ Chat GUI（このアプリとそのデータ）'
         },
         lite: {
           title: 'GUI とエージェントをアンインストール、データは保持',
           description:
-            'アプリと Hermes エージェントを削除しますが、将来の再インストールに備えて設定・チャット・シークレットは保持します。',
-          consequence: 'Chat GUI と Hermes エージェント（設定・チャット・シークレットは保持）'
+            'アプリと Moor エージェントを削除しますが、将来の再インストールに備えて設定・チャット・シークレットは保持します。',
+          consequence: 'Chat GUI と Moor エージェント（設定・チャット・シークレットは保持）'
         },
         full: {
           title: 'すべてアンインストール',
           description:
             'アプリ、エージェント、すべてのユーザーデータ（設定、チャット、定期ジョブ、シークレット、ログ）を削除します。',
-          consequence: 'すべて——Chat GUI、Hermes エージェント、およびすべての設定・チャット・シークレット・ログ'
+          consequence: 'すべて——Chat GUI、Moor エージェント、およびすべての設定・チャット・シークレット・ログ'
         }
       }
     },
@@ -402,7 +402,7 @@ export const ja = defineLocale({
       openFolder: 'デスクトッププラグインフォルダーを開く',
       installModal: {
         installUncertain:
-          'Hermes はインストール結果の待機を終了しましたが、プラグインのインストールはまだ進行中の可能性があります。この画面を閉じ、再インストールする前にプラグイン一覧を再スキャンしてください。',
+          'Moor はインストール結果の待機を終了しましたが、プラグインのインストールはまだ進行中の可能性があります。この画面を閉じ、再インストールする前にプラグイン一覧を再スキャンしてください。',
         installFromGit: 'Git からインストール',
         reviewRepository: 'リポジトリを確認',
         repoPlaceholder: 'https://github.com/owner/repo',
@@ -983,7 +983,7 @@ export const ja = defineLocale({
     config: {
       minimizeToTrayTitle: 'トレイに最小化',
       minimizeToTrayDesc:
-        'ウィンドウの最小化やメインウィンドウを閉じる操作でシステムトレイ（macOS ではメニューバー）に隠し、Hermes を実行し続けます。終了するにはトレイメニューの「Hermes を終了」または Cmd+Q を使います。初期設定はオフで、このデバイスにのみ適用されます。',
+        'ウィンドウの最小化やメインウィンドウを閉じる操作でシステムトレイ（macOS ではメニューバー）に隠し、Moor を実行し続けます。終了するにはトレイメニューの「Moor を終了」または Cmd+Q を使います。初期設定はオフで、このデバイスにのみ適用されます。',
       minimizeToTrayUnavailable:
         'システムトレイを利用できないため、通常どおり最小化・終了します。再試行するには一度オフにしてからオンにしてください。',
       none: 'なし',
@@ -1012,27 +1012,27 @@ export const ja = defineLocale({
       description:
         'Mac では ⌘ + Option、Windows/Linux では Ctrl + Alt を押して離すと、どのアプリからでも HUD を前面に表示できます。初期設定はオフで、このデバイスにのみ適用されます。',
       permission:
-        'システム設定 → プライバシーとセキュリティ → 入力監視で Hermes を許可し、再試行してください。このジェスチャーはキー入力の記録や画面の撮影を行いません。',
+        'システム設定 → プライバシーとセキュリティ → 入力監視で Moor を許可し、再試行してください。このジェスチャーはキー入力の記録や画面の撮影を行いません。',
       unavailable:
-        'HUD ジェスチャーヘルパーを起動できなかったか、予期せず停止しました。再試行するか Hermes を再起動してください。Hermes 内の既存の HUD ショートカットは引き続き使用できます。',
+        'HUD ジェスチャーヘルパーを起動できなかったか、予期せず停止しました。再試行するか Moor を再起動してください。Moor 内の既存の HUD ショートカットは引き続き使用できます。',
       missingHelper:
-        'この Hermes には HUD ジェスチャーヘルパーが含まれていません。Hermes を更新または再インストールしてから再試行してください。',
+        'この Moor には HUD ジェスチャーヘルパーが含まれていません。Moor を更新または再インストールしてから再試行してください。',
       unsupportedSession:
         'このデスクトップセッションはグローバルな修飾キータップに対応していません。Linux では X11 が必要です。Wayland には対応していません。'
     },
     screenshot: {
       enabledTitle: 'スクリーンショットのショートカット',
       enabledDesc:
-        'どのアプリからでも左右の Command キーを同時に押すと、最前面のウインドウを撮影し、Hermes の現在の下書きに添付します。自動送信はしません。初期設定はオフで、この Mac にのみ適用されます。機密情報が写る可能性があるため、送信前に添付画像を確認してください。',
+        'どのアプリからでも左右の Command キーを同時に押すと、最前面のウインドウを撮影し、Moor の現在の下書きに添付します。自動送信はしません。初期設定はオフで、この Mac にのみ適用されます。機密情報が写る可能性があるため、送信前に添付画像を確認してください。',
       statusTitle: 'スクリーンショットのショートカットの状態',
       checking: 'スクリーンショットのショートカットを確認中…',
       disabled: 'スクリーンショットのショートカットはオフです。',
       starting: 'ショートカットの検出を開始しています。まだ使用できません。',
       ready: 'ショートカットを使用できます。撮影した画像は現在の下書きに添付され、送信はされません。',
       inputPermission:
-        '入力監視の許可により、他のアプリがアクティブな間も両方の Command キーを検出できます。システム設定 → プライバシーとセキュリティ → 入力監視で Hermes を許可し、ここに戻って再試行してください。',
+        '入力監視の許可により、他のアプリがアクティブな間も両方の Command キーを検出できます。システム設定 → プライバシーとセキュリティ → 入力監視で Moor を許可し、ここに戻って再試行してください。',
       screenPermission:
-        '画面収録の許可により、このショートカットを使ったときに最前面のアプリのウインドウを撮影できます。システム設定 → プライバシーとセキュリティ → 画面収録で Hermes を許可し、ここに戻って再試行してください。macOS に求められた場合は Hermes を再起動してください。',
+        '画面収録の許可により、このショートカットを使ったときに最前面のアプリのウインドウを撮影できます。システム設定 → プライバシーとセキュリティ → 画面収録で Moor を許可し、ここに戻って再試行してください。macOS に求められた場合は Moor を再起動してください。',
       openSettings: 'システム設定を開く',
       retry: '再試行',
       unavailable: 'スクリーンショットのショートカットは使用できません。再試行するか、オフにしてください。',
@@ -1783,7 +1783,7 @@ export const ja = defineLocale({
     },
     nav: {
       newChat: { title: '新しいセッション', detail: '新しいセッションを開始' },
-      settings: { title: '設定', detail: 'Hermes デスクトップを設定' },
+      settings: { title: '設定', detail: 'Moor デスクトップを設定' },
       capabilities: { title: 'スキルとツール', detail: 'スキル、ツールセット、プロバイダーを有効化' },
       messaging: { title: 'メッセージング', detail: 'Telegram、Slack、Discord などを設定' },
       artifacts: { title: 'アーティファクト', detail: '生成された出力を閲覧' }
@@ -2041,13 +2041,13 @@ export const ja = defineLocale({
     manageProfiles: 'プロファイルを管理…',
     fleet: {
       localDevice:
-        'このデバイス（ローカルバックエンド — Hermes が無ければインストールし、あれば新しいセッションを開きます）',
+        'このデバイス（ローカルバックエンド — Moor が無ければインストールし、あれば新しいセッションを開きます）',
       switchDeviceTitle: 'このデバイスに切り替えますか？',
       switchDeviceDesc: 'このコンピュータで新しいセッションを開きます。今の会話は別のゲートウェイに残ります。',
       switchDeviceConfirm: '切り替える',
       installDeviceTitle: 'このデバイスに切り替えますか？',
       installDeviceDesc:
-        'Hermes をローカルにインストールしてから、このコンピュータで新しいセッションを開きます。確認するまでインストールは始まりません。',
+        'Moor をローカルにインストールしてから、このコンピュータで新しいセッションを開きます。確認するまでインストールは始まりません。',
       installDeviceConfirm: 'ローカルにインストール',
       connectExistingInstead: '代わりに既存環境へ接続'
     },
@@ -2091,7 +2091,7 @@ export const ja = defineLocale({
     setAsDefault: 'デフォルトに設定',
     defaultProfile: 'デフォルトのプロファイル',
     defaultSet: name => `${name} をデフォルトに設定しました`,
-    defaultDescription: 'Hermes の起動時と新しいチャットに使用します。既存のセッションのプロファイルは変わりません。',
+    defaultDescription: 'Moor の起動時と新しいチャットに使用します。既存のセッションのプロファイルは変わりません。',
     failedSetDefault: 'デフォルトのプロファイルを設定できませんでした',
     setColor: color => `カラー ${color} に設定`,
     autoColor: '自動',
@@ -2159,7 +2159,7 @@ export const ja = defineLocale({
   },
 
   modelAssignment: {
-    saveFailed: 'Hermes はモデルの変更を保存しませんでした。',
+    saveFailed: 'Moor はモデルの変更を保存しませんでした。',
     confirmTitle: 'モデル選択の警告',
     confirmDetail: 'このトレードオフを受け入れる場合のみ確認してください。',
     confirmAction: '確認',
@@ -2629,7 +2629,7 @@ export const ja = defineLocale({
       '/resume': '以前のセッションを再開',
       '/details': 'トランスクリプトの詳細レベルを制御',
       '/copy': '選択または最後のアシスタントメッセージをコピー',
-      '/quit': 'hermes を終了',
+      '/quit': 'moor を終了',
       '/start': '返信せずにプラットフォームの開始要求を確認',
       '/new': '新しいデスクトップチャットを開始',
       '/topic': 'Telegram の個人チャットのトピックを有効化または確認',
@@ -2658,14 +2658,14 @@ export const ja = defineLocale({
       '/refine': 'この会話を見直し、学びをメモリやスキルに保存',
       '/review': '独立したサブエージェントに作業のレビューを依頼',
       '/loop': 'このセッションで一定間隔でプロンプトを繰り返す',
-      '/plan': '実行せずに .hermes/plans/ に Markdown の実装計画を作成',
+      '/plan': '実行せずに .moor/plans/ に Markdown の実装計画を作成',
       '/moa': 'Mixture of Agents のプリセットで実行し、元のモデルに戻す',
       '/subgoal': '進行中の目標の追加条件を管理',
       '/status': '現在のセッション状態を表示',
       '/egress': 'Docker の送信プロキシの状態を表示',
       '/context': 'コンテキスト使用量、内訳、圧縮統計、処理速度を表示',
       '/whoami': 'スラッシュコマンドのアクセス権を表示',
-      '/profile': 'アクティブな Hermes プロファイルを切り替え',
+      '/profile': 'アクティブな Moor プロファイルを切り替え',
       '/codex-runtime': 'OpenAI/Codex モデルの Codex app-server ランタイムを切り替え',
       '/personality': 'このセッションの人格を切り替え',
       '/battery': 'ステータスバーのバッテリー表示を切り替え',
@@ -2689,10 +2689,10 @@ export const ja = defineLocale({
       '/browser': 'ローカルブラウザー接続を管理',
       '/palette': 'コマンドパレットを開く',
       '/usage': 'このセッションのトークン使用量を表示',
-      '/subscription': 'Nous のプランを確認し、ブラウザーで変更',
-      '/topup': 'Nous の残高を表示し、請求を管理',
+      '/subscription': 'Moor のプランを確認し、ブラウザーで変更',
+      '/topup': 'Moor の残高を表示し、請求を管理',
       '/platform': '問題のあるゲートウェイプラットフォームを一時停止、再開、一覧表示',
-      '/version': 'Hermes Agent のバージョンを表示',
+      '/version': 'Moor Agent のバージョンを表示',
       '/debug': 'デバッグレポートを作成',
       '/model': 'このセッションのモデルを切り替え'
     },
@@ -2928,13 +2928,13 @@ export const ja = defineLocale({
   },
 
   updates: {
-    discontinuedTitle: 'このHermesビルドはサポートされていません',
-    discontinuedBody: 'このHermesビルドはサポートが終了し、動作しなくなる可能性があります。アンインストールしてください。データはディスクに残ります。',
+    discontinuedTitle: 'このMoorビルドはサポートされていません',
+    discontinuedBody: 'このMoorビルドはサポートが終了し、動作しなくなる可能性があります。アンインストールしてください。データはディスクに残ります。',
     channels: { stable: '安定版', canary: '先行版' },
     bundleSwapPending: '再起動して更新を完了',
     bundleSwapPendingDesc:
-      '更新されたアプリはすでにインストール済みです。Hermes を再起動するだけで新しいビルドが読み込まれます。チャットや設定はそのまま保持されます。',
-    bundleSwapPendingAction: 'Hermes を再起動',
+      '更新されたアプリはすでにインストール済みです。Moor を再起動するだけで新しいビルドが読み込まれます。チャットや設定はそのまま保持されます。',
+    bundleSwapPendingAction: 'Moor を再起動',
     stages: {
       idle: '準備中…',
       prepare: '準備中…',
@@ -3045,7 +3045,7 @@ export const ja = defineLocale({
     justNowSuffix: ' · たった今',
     bundleOutOfSync: 'アプリのビルドが古くなっています',
     bundleOutOfSyncDesc:
-      'Hermes ランタイムは更新されましたが、デスクトップアプリ自体は古いビルドのままです。アプリを更新するまで、新しいインターフェース機能(Bot Mode など)は表示されません。下の更新を実行してアプリを再ビルドしてください。それでもこの警告が消えない場合は、最新のデスクトップインストーラーから再インストールしてください。',
+      'Moor ランタイムは更新されましたが、デスクトップアプリ自体は古いビルドのままです。アプリを更新するまで、新しいインターフェース機能(Bot Mode など)は表示されません。下の更新を実行してアプリを再ビルドしてください。それでもこの警告が消えない場合は、最新のデスクトップインストーラーから再インストールしてください。',
     bundleOutOfSyncAction: 'インストーラーを入手',
     checkingShort: '確認中…'
   },
@@ -3527,13 +3527,13 @@ export const ja = defineLocale({
 
   interfaceMode: {
     title: 'インターフェースモード',
-    hint: '表示される内容が変わるだけで、Hermes にできることは変わりません。',
+    hint: '表示される内容が変わるだけで、Moor にできることは変わりません。',
     sessionNote:
       'シンプルモードで設定されています。ここでの変更はこのセッション中のみ有効です。自分の設定にするには詳細モードに切り替えてください。',
     simple: {
       label: 'シンプル',
       description:
-        'Hermes と話すための表示。サイドバーとチャットのみ。ターミナル、ファイル、差分のペインは表示しません。'
+        'Moor と話すための表示。サイドバーとチャットのみ。ターミナル、ファイル、差分のペインは表示しません。'
     },
     advanced: {
       label: '詳細',
@@ -3659,7 +3659,7 @@ export const ja = defineLocale({
       errorGenericProvider: 'AI サービス',
       errorLayerBodies: {
         generic:
-          'Hermes の返信中に問題が発生しました。再試行してください。問題が続く場合はエラー詳細をコピーしてください。',
+          'Moor の返信中に問題が発生しました。再試行してください。問題が続く場合はエラー詳細をコピーしてください。',
         provider:
           'AI サービスがリクエストを完了できませんでした。少し待って再試行するか、プロバイダーを切り替えてください。',
         endpoint:
@@ -3683,7 +3683,7 @@ export const ja = defineLocale({
         },
         invalid_response: {
           title: 'AI サービスが読み取れない応答を返しました',
-          body: provider => `${provider} は Hermes が読み取れない内容を返しました。しばらくしてから再試行してください。`
+          body: provider => `${provider} は Moor が読み取れない内容を返しました。しばらくしてから再試行してください。`
         },
         empty_response: {
           title: 'AI サービスが空の応答を返しました',
@@ -3714,7 +3714,7 @@ export const ja = defineLocale({
         ssl_cert_verification: {
           title: '安全な接続に失敗しました',
           body: provider =>
-            `Hermes は ${provider} との安全な接続を検証できませんでした。ネットワークやプロキシの設定を確認するか、プロバイダーを切り替えて再送してください。`
+            `Moor は ${provider} との安全な接続を検証できませんでした。ネットワークやプロキシの設定を確認するか、プロバイダーを切り替えて再送してください。`
         }
       },
       errorLayers: {

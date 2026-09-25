@@ -12,7 +12,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.personality import (
     BUILTIN_PERSONALITIES,

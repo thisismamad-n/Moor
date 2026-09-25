@@ -13,7 +13,7 @@ import tempfile
 
 import pytest
 
-from hermes_cli.cli_commands_mixin import CLICommandsMixin
+from moor_cli.cli_commands_mixin import CLICommandsMixin
 
 
 class _Stub(CLICommandsMixin):

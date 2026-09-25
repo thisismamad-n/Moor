@@ -332,7 +332,7 @@ def _cmd_export(db, args):
         from moor_cli.session_export_md import redact_session_data
         return redact_session_data(data)
 
-    from hermes_cli.session_export import SAVE_TRANSCRIPT_FORMATS
+    from moor_cli.session_export import SAVE_TRANSCRIPT_FORMATS
     # --only is a transcript view too (md/jsonl of what the user saw); md/qmd without --only go to _export_markdown.
     shown = args.format in SAVE_TRANSCRIPT_FORMATS or bool(getattr(args, "only", None))
 
@@ -986,12 +986,12 @@ def _cmd_stats(db, args):
 # -- dispatch -----------------------------------------------------------------
 
 def _cmd_repair_profiles(args):
-    from hermes_cli.sessions_cmd_repair_profiles import cmd_repair_profiles
+    from moor_cli.sessions_cmd_repair_profiles import cmd_repair_profiles
     return cmd_repair_profiles(args)
 
 
 def _cmd_set_journal_mode(args):
-    from hermes_cli.sessions_cmd_journal_mode import cmd_set_journal_mode
+    from moor_cli.sessions_cmd_journal_mode import cmd_set_journal_mode
     return cmd_set_journal_mode(args)
 
 
@@ -1049,7 +1049,7 @@ def cmd_sessions(args, sessions_parser=None):
             sessions_parser.print_help()
             return
         if action in _HELD_STORE_ACTIONS and not getattr(args, "dry_run", False) and not getattr(args, "force", False):
-            from hermes_state_holders import held_store_refusal
+            from moor_state_holders import held_store_refusal
             # Same resolver the SessionDB above opened, so the scan never depends on the db object.
             refusal = held_store_refusal(_default_db_path(), command=action)
             if refusal:

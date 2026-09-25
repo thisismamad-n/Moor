@@ -59,7 +59,7 @@ def fake_tool(monkeypatch):
 
 @pytest.fixture
 def whatsapp_bridge(monkeypatch):
-    """Route ``hermes send --to whatsapp:...`` through the real plugin standalone sender into a fake
+    """Route ``moor send --to whatsapp:...`` through the real plugin standalone sender into a fake
     bridge; returns the recorded ``(path, payload)`` posts and a mutable ``supports_mentions`` flag."""
     import asyncio
     from types import SimpleNamespace
@@ -67,7 +67,7 @@ def whatsapp_bridge(monkeypatch):
     import aiohttp
 
     from gateway.config import Platform
-    from hermes_cli.plugins import discover_plugins
+    from moor_cli.plugins import discover_plugins
 
     calls = []
     state = {"supports_mentions": True}
@@ -111,7 +111,7 @@ def whatsapp_bridge(monkeypatch):
         platforms={Platform.WHATSAPP: SimpleNamespace(enabled=True, token=None, extra={"bridge_port": 3000})},
         get_home_channel=lambda _platform: None,
     )
-    monkeypatch.setattr(send_cmd, "_load_hermes_env", lambda: None)
+    monkeypatch.setattr(send_cmd, "_load_moor_env", lambda: None)
     monkeypatch.setattr("gateway.config.load_gateway_config", lambda: config)
     monkeypatch.setattr("tools.interrupt.is_interrupted", lambda: False)
     monkeypatch.setattr("model_tools._run_async", lambda coro: asyncio.run(coro))
@@ -254,7 +254,7 @@ def test_list_json_includes_configured_platform(monkeypatch, capsys):
 # Env loader
 # ---------------------------------------------------------------------------
 
-def test_load_hermes_env_bridges_config_yaml_scalars(tmp_path, monkeypatch):
+def test_load_moor_env_bridges_config_yaml_scalars(tmp_path, monkeypatch):
     """Top-level config.yaml scalars should be bridged into os.environ.
 
     This mirrors the gateway/run.py bootstrap behavior: without this, running
@@ -265,10 +265,10 @@ def test_load_hermes_env_bridges_config_yaml_scalars(tmp_path, monkeypatch):
     """
     import os
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / ".env").write_text("SOME_TOKEN=abc123\n", encoding="utf-8")
-    (hermes_home / "config.yaml").write_text(
+    moor_home = tmp_path / ".moor"
+    moor_home.mkdir()
+    (moor_home / ".env").write_text("SOME_TOKEN=abc123\n", encoding="utf-8")
+    (moor_home / "config.yaml").write_text(
         "TELEGRAM_HOME_CHANNEL: '5550001111'\nnested:\n  ignored: true\n"
     )
 
@@ -287,7 +287,7 @@ def test_load_hermes_env_bridges_config_yaml_scalars(tmp_path, monkeypatch):
     assert os.environ.get("SOME_TOKEN") == "abc123"
     assert os.environ.get("TELEGRAM_HOME_CHANNEL") == "5550001111"
 
-def test_load_hermes_env_utf8_bom_preserves_first_key(tmp_path, monkeypatch):
+def test_load_moor_env_utf8_bom_preserves_first_key(tmp_path, monkeypatch):
     """A leading UTF-8 BOM must not mangle the first .env key name.
 
     PowerShell 5.1 `Set-Content -Encoding UTF8` and Notepad prepend a BOM
@@ -432,20 +432,20 @@ def test_load_moor_env_bom_only_env_is_noop(tmp_path, monkeypatch):
 
 def test_help_and_empty_list_hint_name_the_resolved_home(tmp_path, monkeypatch, capsys):
     """``--help`` and the ``--list`` empty-state hint derive their paths from the resolved home instead of a
-    hardcoded ``~/.hermes`` (absent on a Windows install or under a profile home)."""
+    hardcoded ``~/.moor`` (absent on a Windows install or under a profile home)."""
     import argparse
     import sys
     import types
 
-    home = tmp_path / "AppData" / "Local" / "hermes"
+    home = tmp_path / "AppData" / "Local" / "moor"
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
-    parser = argparse.ArgumentParser(prog="hermes")
+    parser = argparse.ArgumentParser(prog="moor")
     send_parser = send_cmd.register_send_subparser(parser.add_subparsers(dest="command"))
     help_text = send_parser.format_help()
     assert str(home / ".env") in help_text and str(home / "config.yaml") in help_text
-    assert "~/.hermes" not in help_text
+    assert "~/.moor" not in help_text
 
     fake_gw_config = types.ModuleType("gateway.config")
     fake_gw_config.load_gateway_config = lambda: types.SimpleNamespace(get_connected_platforms=lambda: [])
@@ -458,4 +458,4 @@ def test_help_and_empty_list_hint_name_the_resolved_home(tmp_path, monkeypatch, 
     assert send_cmd._list_targets(None, json_mode=False) == 0
     out = capsys.readouterr().out
     assert str(home / "channel_directory.json") in out
-    assert "~/.hermes" not in out
+    assert "~/.moor" not in out

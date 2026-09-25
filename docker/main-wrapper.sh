@@ -80,7 +80,7 @@ if [ $# -eq 0 ]; then
     drop moor
 fi
 
-# A leading flag is a hermes global option (`-p <profile> gateway run`), never an executable:
+# A leading flag is a moor global option (`-p <profile> gateway run`), never an executable:
 # `command -v -p` parses -p as an option to `command` itself and succeeds, so the wrapper exec'd
 # "-p" and the container restart-looped.
 case "$1" in

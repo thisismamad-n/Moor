@@ -164,8 +164,8 @@ def provider_readiness_status(provider: dict, config: dict, *, features=None, is
     """Honest readiness state for a provider picker row.
     ``features`` avoids re-fetching portal state per row. ``is_active`` is the completed-setup fallback
     for post_setup hooks with no registered installed-check (selecting a row runs its hook)."""
-    from hermes_cli.tools_config import _POST_SETUP_READY, _provider_env_ready, get_nous_subscription_features
-    from hermes_cli.tools_config_post_setup import _POST_SETUP_AUTH_READY
+    from moor_cli.tools_config import _POST_SETUP_READY, _provider_env_ready, get_moor_subscription_features
+    from moor_cli.tools_config_post_setup import _POST_SETUP_AUTH_READY
 
     if provider.get("env_vars", []):
         return "ready" if _provider_env_ready(provider) else "needs_keys"
@@ -499,10 +499,10 @@ def _managed_image_catalog(config: dict):
 
     A free-pool account is funded for FAL only, so its picker never offers a Krea or Portal model it
     would be denied at generation time; a logged-out or paid account sees everything."""
-    from hermes_cli.tools_config import get_nous_subscription_features
+    from moor_cli.tools_config import get_moor_subscription_features
     from tools.image_generation_managed import managed_image_catalog
 
-    acct = get_nous_subscription_features(config).account_info
+    acct = get_moor_subscription_features(config).account_info
     pool_only = bool(acct and acct.logged_in and acct.paid_service_access is not True)
     return managed_image_catalog(
         include_krea=not pool_only or acct.tool_gateway_entitled_for("krea"), include_portal=not pool_only)
@@ -510,10 +510,10 @@ def _managed_image_catalog(config: dict):
 
 # Per-backend model catalog (config_key = top-level config.yaml section, catalog_fn(config) -> ({model_id:
 # metadata}, default_model)); a TOOL_CATEGORIES row tagged `imagegen_backend: "<name>"` selects the catalog at
-# picker time. "nous" is the single managed row: one catalog spanning the FAL, Krea and Portal gateways.
+# picker time. "moor" is the single managed row: one catalog spanning the FAL, Krea and Portal gateways.
 IMAGEGEN_BACKENDS = {
     "fal": {"display": "FAL.ai", "config_key": "image_gen", "catalog_fn": _fal_model_catalog},
-    "nous": {"display": "Nous Subscription", "config_key": "image_gen", "catalog_fn": _managed_image_catalog}}
+    "moor": {"display": "Moor Subscription", "config_key": "image_gen", "catalog_fn": _managed_image_catalog}}
 
 
 def _plugin_model_catalog(registry_module: str, plugin_name: str):
@@ -807,7 +807,7 @@ def _finish_provider_selection(provider: dict, config: dict, managed_feature) ->
     backend = provider.get("imagegen_backend")
     if backend:
         _configure_imagegen_model(backend, config)
-        # "nous" for the managed row (the picked model id chooses the FAL / Krea / Portal gateway at run time),
+        # "moor" for the managed row (the picked model id chooses the FAL / Krea / Portal gateway at run time),
         # "fal" for BYOK, drop legacy use_gateway — never clobber a managed pick back onto direct keys.
         _select_into(config, "image_gen", "provider", "fal", managed_feature)
     # STT rows prompt for a model after the pick (skipped for managed rows — the gateway pins it).
@@ -835,7 +835,7 @@ def _print_provider_selection(provider: dict, managed_feature, *, reconfigure: b
         _print_success(f"  Browser engine set to: {provider['browser_engine']}")
     if provider.get("web_backend"):
         tier = f" ({provider['web_tier']} tier)" if reconfigure and provider.get("web_tier") else ""
-        backend = NOUS_MANAGED_PROVIDER if managed_feature else provider["web_backend"]
+        backend = MOOR_MANAGED_PROVIDER if managed_feature else provider["web_backend"]
         _print_success(f"  Web backend set to: {backend}{tier}")
     if reconfigure and provider.get("computer_use_backend"):
         _print_success(f"  Computer Use backend set to: {provider['computer_use_backend']}")

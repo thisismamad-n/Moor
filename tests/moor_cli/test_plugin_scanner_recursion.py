@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.plugins import PluginManager
 
@@ -124,13 +124,13 @@ class TestForeignHarnessManifestDirs:
         ``plugin.json`` per OTHER agent harness inside ``.claude-plugin/``,
         ``.codex-plugin/`` etc. Those manifests can never satisfy the Agent
         Plugins v1 schema, so scanning them warned on every discovery pass.
-        They must be skipped silently; the plugin's real Hermes manifest
-        (``.hermes-plugin/plugin.yaml``) is still discovered."""
+        They must be skipped silently; the plugin's real Moor manifest
+        (``.moor-plugin/plugin.yaml``) is still discovered."""
         import os
-        hermes_home = Path(os.environ["HERMES_HOME"])  # set by hermetic conftest fixture
-        sp = hermes_home / "plugins" / "superpowers"
-        (sp / ".hermes-plugin").mkdir(parents=True)
-        (sp / ".hermes-plugin" / "plugin.yaml").write_text(
+        moor_home = Path(os.environ["MOOR_HOME"])  # set by hermetic conftest fixture
+        sp = moor_home / "plugins" / "superpowers"
+        (sp / ".moor-plugin").mkdir(parents=True)
+        (sp / ".moor-plugin" / "plugin.yaml").write_text(
             yaml.safe_dump(
                 {
                     "name": "superpowers",
@@ -152,11 +152,11 @@ class TestForeignHarnessManifestDirs:
                 json.dumps({"name": "superpowers", "version": "6.3.0"})
             )
 
-        with caplog.at_level("WARNING", logger="hermes_cli.plugins"):
+        with caplog.at_level("WARNING", logger="moor_cli.plugins"):
             mgr = PluginManager()
             mgr.discover_and_load()
 
-        assert "superpowers/.hermes-plugin" in mgr._plugins
+        assert "superpowers/.moor-plugin" in mgr._plugins
         parse_warnings = [
             r for r in caplog.records if "Failed to parse" in r.getMessage()
         ]
@@ -166,12 +166,12 @@ class TestForeignHarnessManifestDirs:
         """A genuinely broken portable plugin.json (not a foreign-harness
         convention directory) must still surface its parse warning."""
         import os
-        hermes_home = Path(os.environ["HERMES_HOME"])  # set by hermetic conftest fixture
-        broken = hermes_home / "plugins" / "broken-portable"
+        moor_home = Path(os.environ["MOOR_HOME"])  # set by hermetic conftest fixture
+        broken = moor_home / "plugins" / "broken-portable"
         broken.mkdir(parents=True)
         (broken / "plugin.json").write_text(json.dumps({"name": "broken"}))
 
-        with caplog.at_level("WARNING", logger="hermes_cli.plugins"):
+        with caplog.at_level("WARNING", logger="moor_cli.plugins"):
             mgr = PluginManager()
             mgr.discover_and_load()
 
@@ -287,9 +287,9 @@ class TestRegisterImageGenProvider:
                 return {"success": True, "image": "test://fake"}
 
         import os
-        hermes_home = Path(os.environ["HERMES_HOME"])  # set by hermetic conftest fixture
+        moor_home = Path(os.environ["MOOR_HOME"])  # set by hermetic conftest fixture
         _write_plugin(
-            hermes_home / "plugins",
+            moor_home / "plugins",
             ["my-img-plugin"],
             register_body=(
                 "from agent.image_gen_provider import ImageGenProvider\n"

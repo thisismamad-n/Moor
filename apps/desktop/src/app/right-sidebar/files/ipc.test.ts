@@ -45,7 +45,7 @@ describe('readProjectDir', () => {
   afterEach(() => {
     clearProjectDirCache()
     $showIgnoredRoots.set([])
-    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
   })
 
   it('returns no-bridge when the desktop bridge is unavailable', async () => {

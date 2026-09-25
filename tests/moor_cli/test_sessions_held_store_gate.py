@@ -1,4 +1,4 @@
-"""`hermes sessions optimize|optimize-storage|prune` refuse while another process holds state.db (#110054).
+"""`moor sessions optimize|optimize-storage|prune` refuse while another process holds state.db (#110054).
 
 Running the storage rewrite underneath a fleet of live gateways put every agent into the retired-WAL
 refusal; the command now runs the same fail-closed holder scan doctor/repair use, names each holder as
@@ -13,7 +13,7 @@ from argparse import Namespace
 
 import pytest
 
-import hermes_cli.sessions_cmd as sessions_cmd
+import moor_cli.sessions_cmd as sessions_cmd
 
 pytestmark = pytest.mark.platforms("posix")  # holder scan is unavailable on Windows
 
@@ -29,11 +29,11 @@ _HOLDER = (
 
 @pytest.fixture
 def state_db(monkeypatch, tmp_path):
-    import hermes_state
-    from hermes_state import SessionDB
+    import moor_state
+    from moor_state import SessionDB
 
     db_path = tmp_path / "state.db"
-    monkeypatch.setattr(hermes_state, "_default_db_path", lambda: db_path)
+    monkeypatch.setattr(moor_state, "_default_db_path", lambda: db_path)
     seed = SessionDB(db_path=db_path)
     seed.create_session("seed", "cli")
     seed.append_message("seed", "user", "hello")
@@ -69,7 +69,7 @@ def _args(action, force):
 
 def _sessions_subparsers():
     parser = argparse.ArgumentParser()
-    from hermes_cli.subcommands.sessions import build_sessions_parser
+    from moor_cli.subcommands.sessions import build_sessions_parser
 
     build_sessions_parser(parser.add_subparsers(dest="command"), cmd_sessions=sessions_cmd.cmd_sessions)
     subparsers = [a for a in parser._actions if isinstance(a, argparse._SubParsersAction)][0]
@@ -83,7 +83,7 @@ def test_store_rewrites_refuse_and_name_the_holder_until_forced(action, state_db
     assert sessions_cmd.cmd_sessions(_args(action, force=False)) == 1
     out = capsys.readouterr().out
     assert f"PID {foreign_holder.pid} (" in out
-    assert f"Refusing `hermes sessions {action}`" in out and "--force" in out
+    assert f"Refusing `moor sessions {action}`" in out and "--force" in out
     # The gate scans the store the command actually opened, not some other resolver's file: no
     # gated action can point the command at another database, so the default resolver IS the
     # operated-on path, and the refusal names it. (Offline commands such as set-journal-mode
@@ -107,7 +107,7 @@ def test_prune_preview_passes_the_delete_waits_for_a_quiet_store(state_db, forei
     prune_preview.dry_run = False
     prune_preview.yes = True
     assert sessions_cmd.cmd_sessions(prune_preview) == 1
-    assert "Refusing `hermes sessions prune`" in capsys.readouterr().out
+    assert "Refusing `moor sessions prune`" in capsys.readouterr().out
     # Control: once the holder exits the same command runs.
     foreign_holder.stdin.close()
     foreign_holder.wait(timeout=10)

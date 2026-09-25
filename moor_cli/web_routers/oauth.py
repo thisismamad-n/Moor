@@ -156,7 +156,7 @@ def _codex_client(httpx) -> Any:
     The helpers take the ``httpx`` module as a parameter (tests inject a scripted one), so the
     dashboard builds its own client here and only shares the response hook, not the client factory.
     """
-    from hermes_cli.auth_codex import _cap_codex_response_body
+    from moor_cli.auth_codex import _cap_codex_response_body
 
     return httpx.Client(timeout=httpx.Timeout(15.0), event_hooks={"response": [_cap_codex_response_body]})
 
@@ -168,7 +168,7 @@ def _codex_post(httpx, url: str, **kwargs: Any) -> Any:
     linear backoff before propagating: losing the token exchange to a single SSL EOF wastes a
     device-code approval the user already completed in the browser (#114610).
     """
-    from hermes_cli.auth_codex import _is_transient_transport_error
+    from moor_cli.auth_codex import _is_transient_transport_error
 
     attempt, attempts = 1, 3
     while True:
@@ -201,7 +201,7 @@ def _codex_request_user_code(httpx) -> Dict[str, Any]:
 
 def _codex_poll_authorization(httpx, sess: Dict[str, Any], session_id: str) -> Any:
     """Step 2: poll until authorized. ``None`` = expired; ``_CANCELLED`` = user cancelled."""
-    from hermes_cli.auth_codex import _is_transient_transport_error
+    from moor_cli.auth_codex import _is_transient_transport_error
 
     deadline = time.monotonic() + sess["expires_in"]
     payload = {"device_auth_id": sess["device_auth_id"], "user_code": sess["user_code"]}

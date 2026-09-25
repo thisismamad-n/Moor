@@ -2,7 +2,7 @@ import type { Unstable_TriggerAdapter, Unstable_TriggerItem } from '@assistant-u
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo } from 'react'
 
-import type { HermesGateway } from '@/hermes'
+import type { MoorGateway } from '@/moor'
 import { useI18n } from '@/i18n'
 import { sessionTitle } from '@/lib/chat-runtime'
 import {
@@ -57,7 +57,7 @@ const SESSION_INLINE_LIMIT = 7
 
 /** Live `/` completions backed by the gateway's `complete.slash` RPC. */
 export function useSlashCompletions(options: {
-  gateway: HermesGateway | null
+  gateway: MoorGateway | null
   /** Skill completions are per session: project-local skills follow the
    *  session's repo, so the catalog and each query are fetched and cached per
    *  session. */

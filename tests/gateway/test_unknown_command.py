@@ -235,7 +235,7 @@ async def test_sync_plugin_command_runs_off_loop_thread(monkeypatch):
     import time
 
     import gateway.run as gateway_run
-    from hermes_cli import plugins as _plugins_mod
+    from moor_cli import plugins as _plugins_mod
 
     runner = _make_runner()
     seen_threads = []

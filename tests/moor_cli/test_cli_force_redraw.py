@@ -104,7 +104,7 @@ class TestForceFullRedraw:
         app.renderer._last_size = Size(rows=30, columns=200)  # the paint: at the old width
         out.get_size.return_value = Size(rows=30, columns=new_width if paint == "clipped" else 200)
         bare_cli._note_chrome_paint(app, True)
-        from hermes_cli.cli_terminal_mixin import _RESIZE_PAINT_MARGIN
+        from moor_cli.cli_terminal_mixin import _RESIZE_PAINT_MARGIN
         bare_cli._resize_seen_at = time.monotonic() + (_RESIZE_PAINT_MARGIN / 2 if paint == "late" else 1.0)
         out.get_size.return_value = Size(rows=30, columns=new_width)
 

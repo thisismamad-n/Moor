@@ -19,7 +19,7 @@ from tests.compat.old_updater_support import (
 @pytest.mark.parametrize(
     "module,name,args,kwargs,cached",
     [
-        *((f"hermes_cli.{module}", name, args, kwargs, None) for module, name, args, kwargs in [
+        *((f"moor_cli.{module}", name, args, kwargs, None) for module, name, args, kwargs in [
         ("managed_uv", "ensure_uv", (), {}),
         ("managed_uv", "ensure_uv", (), {"repair_observer": lambda result: pytest.fail("repair observer ran")}),
         ("managed_uv", "update_managed_uv", (), {}),
@@ -55,15 +55,15 @@ from tests.compat.old_updater_support import (
         ("update_cmd", "_reload_updated_runtime_modules", (), {}),
         ("update_cmd_maint", "_reload_updated_runtime_modules", (), {}),
     ]),
-        *(("hermes_cli.main", name, args, kwargs, None) for name, args, kwargs in [
+        *(("moor_cli.main", name, args, kwargs, None) for name, args, kwargs in [
         ("_desktop_stamp_path", (), {}),
         ("_expected_windows_pe_machines", (), {}),
-        ("_hermes_exe_shims", (Path("venv"),), {}),
+        ("_moor_exe_shims", (Path("venv"),), {}),
         ("_insert_python_pin", (["uv", "pip", "install", "-e", "."],), {}),
         ("_interpreter_scripts_dir", (), {}),
         ("_load_installable_optional_extras", (), {"group": "termux-all"}),
-        ("_parse_pe_machine", (Path("Hermes.exe"),), {}),
-        ("_quarantine_running_hermes_exe", (Path("venv"),), {"max_attempts": 1, "failed_out": []}),
+        ("_parse_pe_machine", (Path("Moor.exe"),), {}),
+        ("_quarantine_running_moor_exe", (Path("venv"),), {"max_attempts": 1, "failed_out": []}),
         ("_repair_broken_lazy_refresh_imports", (["uv", "pip"], ["certifi"]), {"env": {"VIRTUAL_ENV": "venv"}}),
         ("_run_install_with_heartbeat", (["uv", "pip", "install", "-e", "."],),
          {"env": {"VIRTUAL_ENV": "venv"}, "heartbeat_interval_seconds": 1}),
@@ -80,7 +80,7 @@ from tests.compat.old_updater_support import (
         ("_windows_native_machine", (), {}),
         ("_windows_shim_in_process_chain", (), {}),
     ]),
-        *(("hermes_cli.main", name, args, kwargs, cached) for name, args, kwargs in [
+        *(("moor_cli.main", name, args, kwargs, cached) for name, args, kwargs in [
         ("_capture_active_lazy_features", (), {}),
         ("_refresh_active_lazy_features", (), {}),
         ("_refresh_active_lazy_features", (["browser"],), {}),
@@ -91,13 +91,13 @@ from tests.compat.old_updater_support import (
         ("_write_update_incomplete_marker", (), {}),
         ("_reload_updated_runtime_modules", (), {}),
     ] for cached in (False, True)),
-        ("hermes_cli.main_web_build", "_run_with_idle_timeout", (["npm", "ci"], Path("web")), {}, None),
-        ("hermes_cli.main_web_build", "_run_npm_install_deterministic", ("npm", Path("web")), {}, None),
-        ("hermes_cli.main_web_build", "_nixos_build_env", (), {}, None),
-        ("hermes_cli.main", "_reexec_dependency_sync_off_windows_shim", (), {}, None),
-        ("hermes_cli.update_cmd", "get_default_hermes_root", (), {}, None),
-        ("hermes_cli.tools_config", "_pip_install", (["--quiet", "honcho-ai"],), {}, None),
-        ("hermes_cli.tools_config", "_pip_install", (["--quiet", "honcho-ai"],), {"timeout": 120, "capture_output": False}, None),
+        ("moor_cli.main_web_build", "_run_with_idle_timeout", (["npm", "ci"], Path("web")), {}, None),
+        ("moor_cli.main_web_build", "_run_npm_install_deterministic", ("npm", Path("web")), {}, None),
+        ("moor_cli.main_web_build", "_nixos_build_env", (), {}, None),
+        ("moor_cli.main", "_reexec_dependency_sync_off_windows_shim", (), {}, None),
+        ("moor_cli.update_cmd", "get_default_moor_root", (), {}, None),
+        ("moor_cli.tools_config", "_pip_install", (["--quiet", "honcho-ai"],), {}, None),
+        ("moor_cli.tools_config", "_pip_install", (["--quiet", "honcho-ai"],), {"timeout": 120, "capture_output": False}, None),
         ("tools.lazy_deps", "install_specs", ([],), {"timeout": 120}, None),
         ("tools.lazy_deps", "install_specs", (["honcho-ai"],), {"timeout": 120}, None),
     ],
@@ -105,7 +105,7 @@ from tests.compat.old_updater_support import (
 def test_retired_dependency_entrypoints_handoff_without_fallback(module, name, args, kwargs, cached, fresh_child, monkeypatch):
     # Some boundaries (notably psutil_android) hand off during import itself.
     # Resolve ordinary modules before the guard: their CLI startup is not a shim.
-    if module != "hermes_cli.psutil_android":
+    if module != "moor_cli.psutil_android":
         resolved = importlib.import_module(module)
         if cached is not None:
             # Reset lazy exports even when earlier rows warmed the facade.
@@ -124,7 +124,7 @@ def test_retired_dependency_entrypoints_handoff_without_fallback(module, name, a
 @pytest.mark.parametrize("unpack", [False, True], ids=["path-era", "tuple-era"])
 @pytest.mark.parametrize("status", [0, 19])
 def test_ensure_uv_stops_both_historical_return_contracts(unpack, status, fresh_child):
-    from hermes_cli.managed_uv import ensure_uv
+    from moor_cli.managed_uv import ensure_uv
 
     fresh_child.returncode = status
     with fresh_child.exits():
@@ -137,7 +137,7 @@ def test_ensure_uv_stops_both_historical_return_contracts(unpack, status, fresh_
 
 
 def test_retired_probes_and_refreshes_do_no_work(no_external_work, tmp_path):
-    from hermes_cli import _install_repair, backup, banner, config, main, update_cmd
+    from moor_cli import _install_repair, backup, banner, config, main, update_cmd
     from tools import browser_tool
 
     assert _install_repair._sync_windows_cli_launchers(tmp_path) == []
@@ -212,7 +212,7 @@ def test_old_updater_retains_its_code_but_loads_new_managed_uv(old_updater, fres
 
 
 def test_live_windows_scan_does_not_use_the_retired_main_alias(monkeypatch, no_external_work):
-    from hermes_cli import main, process_identity, update_cmd_windows
+    from moor_cli import main, process_identity, update_cmd_windows
 
     # Routing, not OS emulation: lifecycle fallback accepts rows on any host.
     monkeypatch.setattr(main, "_detect_venv_python_processes", no_external_work)
@@ -220,6 +220,6 @@ def test_live_windows_scan_does_not_use_the_retired_main_alias(monkeypatch, no_e
     monkeypatch.setattr(update_cmd_windows, "_psutil", lambda: None)
     monkeypatch.setattr(
         update_cmd_windows, "_detect_venv_python_processes",
-        lambda: [(123, "python", "python -m hermes_cli.main serve")],
+        lambda: [(123, "python", "python -m moor_cli.main serve")],
     )
     assert update_cmd_windows._desktop_owns_gateway_lifecycle() is True

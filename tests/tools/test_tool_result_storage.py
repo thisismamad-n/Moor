@@ -161,7 +161,7 @@ class TestResolveStorageDir:
     def test_uses_env_temp_dir_when_available(self):
         env = MagicMock()
         env.get_temp_dir.return_value = "/var/host/tmp"
-        assert _resolve_storage_dir(env) == "/var/host/tmp/hermes-results"
+        assert _resolve_storage_dir(env) == "/var/host/tmp/moor-results"
 
 class TestSafeResultFilename:
     def test_preserves_normal_tool_call_id(self):
@@ -187,7 +187,7 @@ class TestBuildPersistedMessage:
         )
         assert msg.startswith(PERSISTED_OUTPUT_TAG)
         assert msg.endswith(PERSISTED_OUTPUT_CLOSING_TAG)
-        assert "/tmp/hermes-results/test123.txt" in msg
+        assert "/tmp/moor-results/test123.txt" in msg
         assert "read_file" in msg
         assert "first 100 chars..." in msg
         assert "..." in msg  # has_more indicator
@@ -347,7 +347,7 @@ class TestPerToolThresholds:
         except ImportError:
             pytest.skip("file_tools not importable in test env")
 
-# ── Host-side spillover ($HERMES_HOME/cache/spillover) ────────────────
+# ── Host-side spillover ($MOOR_HOME/cache/spillover) ────────────────
 
 class TestSpillover:
     @pytest.fixture(autouse=True)

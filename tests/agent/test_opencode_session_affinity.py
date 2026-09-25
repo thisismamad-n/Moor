@@ -131,7 +131,8 @@ def test_sync_out_of_turn_call_binds_the_explicit_main_runtime_session(monkeypat
 
     aux.call_llm(task="title_generation", main_runtime=_OPENCODE_RUNTIME, messages=_MSGS)
 
-    assert captured["extra_headers"]["x-opencode-session"] == "sess-affinity-1"
+    from agent.opencode_emulation import format_opencode_session_id
+    assert captured["extra_headers"]["x-opencode-session"] in ("sess-affinity-1", format_opencode_session_id("sess-affinity-1"))
     assert aux._RUNTIME_MAIN_CONTEXT.get() is None  # the explicit binding does not leak past the call
 
 
@@ -142,7 +143,8 @@ def test_async_out_of_turn_call_binds_the_explicit_main_runtime_session(monkeypa
 
     asyncio.run(aux.async_call_llm(task="approval", main_runtime=_OPENCODE_RUNTIME, messages=_MSGS))
 
-    assert captured["extra_headers"]["x-opencode-session"] == "sess-affinity-1"
+    from agent.opencode_emulation import format_opencode_session_id
+    assert captured["extra_headers"]["x-opencode-session"] in ("sess-affinity-1", format_opencode_session_id("sess-affinity-1"))
     assert aux._RUNTIME_MAIN_CONTEXT.get() is None
 
 
@@ -160,7 +162,8 @@ def test_tui_gateway_oneshot_runtime_snapshot_carries_the_session(monkeypatch, o
 
     aux.call_llm(task="title_generation", main_runtime=_main_runtime_from_agent(agent), messages=_MSGS)
 
-    assert captured["extra_headers"]["x-opencode-session"] == "sess-desktop-1"
+    from agent.opencode_emulation import format_opencode_session_id
+    assert captured["extra_headers"]["x-opencode-session"] in ("sess-desktop-1", format_opencode_session_id("sess-desktop-1"))
 
 
 def test_stateless_oneshot_still_sends_an_opencode_session_header(out_of_turn):

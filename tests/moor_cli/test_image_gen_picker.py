@@ -161,10 +161,10 @@ class TestCodexOAuthBootstrapHook:
 
     @pytest.mark.parametrize("logged_in", [False, True])
     def test_hook_starts_codex_oauth_only_when_credentials_missing(self, monkeypatch, logged_in):
-        from hermes_cli import auth, tools_config_post_setup
+        from moor_cli import auth, tools_config_post_setup
 
         monkeypatch.setattr(auth, "get_codex_auth_status", lambda: {"logged_in": logged_in})
-        monkeypatch.setattr("hermes_cli.setup.prompt_choice", lambda *a, **kw: 0)
+        monkeypatch.setattr("moor_cli.setup.prompt_choice", lambda *a, **kw: 0)
         started, saved = [], []
         monkeypatch.setattr(auth, "_codex_device_code_login",
                             lambda: started.append(1) or {"tokens": {"access_token": "t"}, "last_refresh": "x"})
@@ -177,23 +177,23 @@ class TestCodexOAuthBootstrapHook:
         assert saved == ([] if logged_in else [{"set_active": False}])
 
     def test_hook_prints_auth_command_instead_of_device_login_when_noninteractive(self, monkeypatch, capsys):
-        """Desktop's PostSetupRunner spawns `hermes tools post-setup openai_codex` with stdin=DEVNULL and
-        HERMES_NONINTERACTIVE=1: nobody can complete a device-code login there, so the hook must name
+        """Desktop's PostSetupRunner spawns `moor tools post-setup openai_codex` with stdin=DEVNULL and
+        MOOR_NONINTERACTIVE=1: nobody can complete a device-code login there, so the hook must name
         the real command and return instead of starting one."""
-        from hermes_cli import auth, tools_config_post_setup
+        from moor_cli import auth, tools_config_post_setup
 
-        monkeypatch.setenv("HERMES_NONINTERACTIVE", "1")
+        monkeypatch.setenv("MOOR_NONINTERACTIVE", "1")
         monkeypatch.setattr(auth, "get_codex_auth_status", lambda: {"logged_in": False})
-        monkeypatch.setattr("hermes_cli.setup.prompt_choice", lambda *a, **kw: 0)
+        monkeypatch.setattr("moor_cli.setup.prompt_choice", lambda *a, **kw: 0)
         monkeypatch.setattr(auth, "_codex_device_code_login",
                             lambda: pytest.fail("device-code login must not start without a human"))
 
         tools_config_post_setup._POST_SETUP_HOOKS["openai_codex"]()
 
-        assert "hermes auth add openai-codex" in capsys.readouterr().out
+        assert "moor auth add openai-codex" in capsys.readouterr().out
 
     def test_readiness_reports_codex_row_from_auth_store(self, monkeypatch):
-        from hermes_cli import auth, tools_config
+        from moor_cli import auth, tools_config
 
         row = {"name": "OpenAI (Codex auth)", "env_vars": [], "image_gen_plugin_name": "openai-codex",
                "post_setup": "openai_codex"}

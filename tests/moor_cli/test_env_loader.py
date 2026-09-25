@@ -588,37 +588,37 @@ def test_other_profile_home_does_not_bridge_process_config(tmp_path, monkeypatch
 
 
 def test_parent_injected_dashboard_session_token_survives_dotenv(tmp_path, monkeypatch):
-    """A parent that spawns `hermes dashboard` mints HERMES_DASHBOARD_SESSION_TOKEN and keeps it for
-    its own /api probes; a persisted token in ~/.hermes/.env must not replace it, or the parent gets
+    """A parent that spawns `moor dashboard` mints MOOR_DASHBOARD_SESSION_TOKEN and keeps it for
+    its own /api probes; a persisted token in ~/.moor/.env must not replace it, or the parent gets
     HTTP 401 from its own child (#115955). Ordinary keys keep the documented .env-wins precedence."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
     (home / ".env").write_text(
-        "HERMES_DASHBOARD_SESSION_TOKEN=persisted-token\nHERMES_DASHBOARD_PUBLIC_URL=http://127.0.0.1:1\n",
+        "MOOR_DASHBOARD_SESSION_TOKEN=persisted-token\nMOOR_DASHBOARD_PUBLIC_URL=http://127.0.0.1:1\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "link-token")
-    monkeypatch.setenv("HERMES_DASHBOARD_PUBLIC_URL", "http://127.0.0.1:43123")
+    monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "link-token")
+    monkeypatch.setenv("MOOR_DASHBOARD_PUBLIC_URL", "http://127.0.0.1:43123")
 
-    load_hermes_dotenv(hermes_home=home)
-    assert os.environ["HERMES_DASHBOARD_SESSION_TOKEN"] == "link-token"
-    assert os.environ["HERMES_DASHBOARD_PUBLIC_URL"] == "http://127.0.0.1:1"  # control: .env still wins
+    load_moor_dotenv(moor_home=home)
+    assert os.environ["MOOR_DASHBOARD_SESSION_TOKEN"] == "link-token"
+    assert os.environ["MOOR_DASHBOARD_PUBLIC_URL"] == "http://127.0.0.1:1"  # control: .env still wins
 
     # Reload with the same injection: the injected value still holds.
-    load_hermes_dotenv(hermes_home=home)
-    assert os.environ["HERMES_DASHBOARD_SESSION_TOKEN"] == "link-token"
+    load_moor_dotenv(moor_home=home)
+    assert os.environ["MOOR_DASHBOARD_SESSION_TOKEN"] == "link-token"
 
 
 def test_dotenv_published_dashboard_session_token_still_reloads(tmp_path, monkeypatch):
     """No injection: the .env token is published, and a later edit + reload replaces the value the
     earlier pass published (the guard only protects values dotenv did not put there)."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
-    monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
-    (home / ".env").write_text("HERMES_DASHBOARD_SESSION_TOKEN=first\n", encoding="utf-8")
-    load_hermes_dotenv(hermes_home=home)
-    assert os.environ["HERMES_DASHBOARD_SESSION_TOKEN"] == "first"
+    monkeypatch.delenv("MOOR_DASHBOARD_SESSION_TOKEN", raising=False)
+    (home / ".env").write_text("MOOR_DASHBOARD_SESSION_TOKEN=first\n", encoding="utf-8")
+    load_moor_dotenv(moor_home=home)
+    assert os.environ["MOOR_DASHBOARD_SESSION_TOKEN"] == "first"
 
-    (home / ".env").write_text("HERMES_DASHBOARD_SESSION_TOKEN=second\n", encoding="utf-8")
-    load_hermes_dotenv(hermes_home=home)
-    assert os.environ["HERMES_DASHBOARD_SESSION_TOKEN"] == "second"
+    (home / ".env").write_text("MOOR_DASHBOARD_SESSION_TOKEN=second\n", encoding="utf-8")
+    load_moor_dotenv(moor_home=home)
+    assert os.environ["MOOR_DASHBOARD_SESSION_TOKEN"] == "second"

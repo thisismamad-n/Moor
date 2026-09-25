@@ -145,7 +145,7 @@ def test_gateway_health_metrics_reach_loopback_collector():
         names = {metric.name for _, request in received
                  for resource in request.resource_metrics
                  for scope in resource.scope_metrics for metric in scope.metrics}
-        assert "hermes.gateway.up" in names
+        assert "moor.gateway.up" in names
     finally:
         if runtime is not None:
             runtime.shutdown()

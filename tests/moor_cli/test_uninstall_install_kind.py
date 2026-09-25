@@ -7,7 +7,7 @@ valid everywhere — ``data`` — removes user data without touching code.
 
 Adapted from the restack branch: detection here reads the install stamp
 (``install-stamp.json`` with its required ``updateMechanism``) through
-``hermes_cli.steward`` instead of restack's ``installation.tree``.
+``moor_cli.steward`` instead of restack's ``installation.tree``.
 """
 
 import json
@@ -16,8 +16,8 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_cli.uninstall as un
-from hermes_cli.steward import (
+import moor_cli.uninstall as un
+from moor_cli.steward import (
     STEWARD_DESKTOP,
     STEWARD_DOCKER,
     STEWARD_NIX,
@@ -51,7 +51,7 @@ def test_all_refusals_point_at_the_data_mode():
     # CLI stewards point at the CLI flag; desktop refusals deliberately
     # point at the app's own data path.
     for steward in (STEWARD_NIX, STEWARD_DOCKER, "somepkg"):
-        assert "hermes uninstall --data" in steward_uninstall_message(steward)
+        assert "moor uninstall --data" in steward_uninstall_message(steward)
     for platform in ("win32", "darwin", "linux"):
         message = steward_uninstall_message(STEWARD_DESKTOP, platform=platform)
         assert "Settings -> About" in message
@@ -63,7 +63,7 @@ def test_all_refusals_point_at_the_data_mode():
 
 
 def _fake_project_root(monkeypatch, tmp_path: Path, *, git: bool, distribution: "str | None" = None) -> Path:
-    root = tmp_path / "hermes-agent"
+    root = tmp_path / "moor-agent"
     root.mkdir()
     if git:
         (root / ".git").mkdir()
@@ -125,15 +125,15 @@ def test_run_gui_uninstall_exits_on_sealed_tree(monkeypatch, tmp_path, capsys):
 
 
 def _make_home(tmp_path: Path) -> Path:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     (home / "sessions").mkdir(parents=True)
     (home / "sessions" / "s1.json").write_text("{}", encoding="utf-8")
     (home / "logs").mkdir()
     (home / "config.yaml").write_text("x: 1\n", encoding="utf-8")
     (home / ".env").write_text("KEY=secret\n", encoding="utf-8")
-    agent = home / "hermes-agent"
-    (agent / "hermes_cli").mkdir(parents=True)
-    (agent / "hermes_cli" / "__init__.py").write_text("", encoding="utf-8")
+    agent = home / "moor-agent"
+    (agent / "moor_cli").mkdir(parents=True)
+    (agent / "moor_cli" / "__init__.py").write_text("", encoding="utf-8")
     return home
 
 
@@ -142,8 +142,8 @@ def test_run_data_uninstall_removes_electron_userdata(monkeypatch, tmp_path):
     userdata = tmp_path / "electron-userdata"
     userdata.mkdir()
     (userdata / "connection.json").write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(un, "get_hermes_home", lambda: home)
-    import hermes_cli.gui_uninstall as gu
+    monkeypatch.setattr(un, "get_moor_home", lambda: home)
+    import moor_cli.gui_uninstall as gu
 
     monkeypatch.setattr(gu, "desktop_userdata_dir", lambda: userdata)
 
@@ -155,18 +155,18 @@ def test_run_data_uninstall_removes_electron_userdata(monkeypatch, tmp_path):
 def test_run_data_uninstall_works_on_sealed_trees(monkeypatch, tmp_path):
     # The whole point of the data mode: no code-removal gate applies.
     home = _make_home(tmp_path)
-    (home / "hermes-agent" / "install-stamp.json").write_text(
+    (home / "moor-agent" / "install-stamp.json").write_text(
         json.dumps({"distribution": "nix", "updateMechanism": "external"})
     , encoding="utf-8")
-    monkeypatch.setattr(un, "get_hermes_home", lambda: home)
-    import hermes_cli.gui_uninstall as gu
+    monkeypatch.setattr(un, "get_moor_home", lambda: home)
+    import moor_cli.gui_uninstall as gu
 
     monkeypatch.setattr(gu, "desktop_userdata_dir", lambda: tmp_path / "none")
 
     un.run_data_uninstall(SimpleNamespace(yes=True))
 
     assert not (home / "config.yaml").exists()
-    assert (home / "hermes-agent").exists()
+    assert (home / "moor-agent").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -175,10 +175,10 @@ def test_run_data_uninstall_works_on_sealed_trees(monkeypatch, tmp_path):
 
 
 def test_gui_summary_reports_steward_and_gate(monkeypatch, tmp_path):
-    import hermes_cli.gui_uninstall as gu
-    from hermes_cli import steward as st
+    import moor_cli.gui_uninstall as gu
+    from moor_cli import steward as st
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     monkeypatch.setattr(gu, "packaged_gui_app_paths", lambda: [])
     monkeypatch.setattr(gu, "desktop_userdata_dir", lambda: tmp_path / "none")
@@ -197,20 +197,20 @@ def test_gui_summary_reports_steward_and_gate(monkeypatch, tmp_path):
 
 
 def test_gui_summary_classifies_the_agent_root(tmp_path, monkeypatch):
-    """The steward facts classify the home's ``hermes-agent`` checkout — the
+    """The steward facts classify the home's ``moor-agent`` checkout — the
     tree the code-removal modes would delete — not some unrelated root."""
-    import hermes_cli.gui_uninstall as gu
-    from hermes_cli import steward as st
+    import moor_cli.gui_uninstall as gu
+    from moor_cli import steward as st
 
     seen = []
     monkeypatch.setattr(st, "classify_install", lambda root: seen.append(root) or ("git", True))
     monkeypatch.setattr(gu, "packaged_gui_app_paths", lambda: [])
     monkeypatch.setattr(gu, "desktop_userdata_dir", lambda: tmp_path / "none")
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     gu.gui_install_summary(home)
 
-    assert seen == [home / "hermes-agent"]
+    assert seen == [home / "moor-agent"]
 
 
 # ---------------------------------------------------------------------------

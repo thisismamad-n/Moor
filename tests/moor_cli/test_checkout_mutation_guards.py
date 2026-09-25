@@ -17,8 +17,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import hermes_cli.main as main_mod
-from hermes_cli import _early_recovery as er
+import moor_cli.main as main_mod
+from moor_cli import _early_recovery as er
 
 CHECKOUT_ROOT = Path(er.__file__).resolve().parent.parent
 

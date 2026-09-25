@@ -220,7 +220,7 @@ Unpinned cron jobs **do** support fallback: `run_job()` reads `fallback_provider
 Fallback behavior is exercised across several suites:
 
 - `tests/agent/test_fallback_credential_isolation.py` — credential isolation between primary and fallback
-- `tests/hermes_cli/test_fallback_cmd.py` — the `/fallback` CLI command
+- `tests/moor_cli/test_fallback_cmd.py` — the `/fallback` CLI command
 
 ## Related docs
 

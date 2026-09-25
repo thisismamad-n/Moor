@@ -1,4 +1,4 @@
-"""``hermes doctor`` connectivity probe for Azure Foundry Anthropic-style endpoints (#66756).
+"""``moor doctor`` connectivity probe for Azure Foundry Anthropic-style endpoints (#66756).
 
 The ``/anthropic`` route on Foundry has no ``GET /models``; a working deployment answered the generic
 Bearer ``/models`` probe with HTTP 404. The probe must follow the runtime protocol instead:
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import httpx
 
-from hermes_cli import doctor_connectivity as dc
+from moor_cli import doctor_connectivity as dc
 
 _AZURE_BASE = "https://res.services.ai.azure.com/anthropic"
 

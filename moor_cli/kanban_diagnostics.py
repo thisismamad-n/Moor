@@ -585,7 +585,7 @@ def _rule_running_with_open_parents(task, events, runs, now, cfg) -> list[Diagno
                "parent is done or archived. Finish the parent, or unlink the edge if it was never meant "
                "to gate this run.",
         actions=[_cli_hint("Unlink the parent that should not gate this run",
-                           f"hermes kanban unlink {parent_ids[0]} {task_id}")],
+                           f"moor kanban unlink {parent_ids[0]} {task_id}")],
         first_seen_at=seen_at, last_seen_at=now, count=len(parent_ids),
         data={"open_parents": [{"id": p["id"], "status": p.get("status")} for p in open_parents]},
     )]

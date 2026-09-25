@@ -16,7 +16,7 @@ from moor_cli.update_source import (
 )
 
 CANONICAL_URL = "https://github.com/thisismamad-n/Moor.git"
-HERMES_URL = "https://github.com/NousResearch/hermes-agent.git"  # LEGACY-REBRAND-TEST: test fixture
+MOOR_URL = "https://github.com/thisismamad-n/Moor.git"  # LEGACY-REBRAND-TEST: test fixture
 
 
 def test_source_constants_are_the_moor_repo():
@@ -33,9 +33,9 @@ def test_validate_source_accepts_canonical_url_forms():
     validate_source(CANONICAL_URL, "master")
 
 
-def test_validate_source_rejects_hermes_origin():  # LEGACY-REBRAND-TEST: guard test
+def test_validate_source_rejects_moor_origin():  # LEGACY-REBRAND-TEST: guard test
     with pytest.raises(ValueError, match="Moor"):
-        validate_source(HERMES_URL, "master")  # LEGACY-REBRAND-TEST: guard test
+        validate_source(MOOR_URL, "master")  # LEGACY-REBRAND-TEST: guard test
 
 
 def test_validate_source_rejects_other_forks():
@@ -68,7 +68,7 @@ def _write(path: Path, text: str) -> None:
 
 
 MOOR_PYPROJECT = '[project]\nname = "moor-agent"\n\n[project.scripts]\nmoor = "moor_cli.main:main"\n'
-HERMES_PYPROJECT = '[project]\nname = "hermes-agent"\n\n[project.scripts]\nhermes = "hermes_cli.main:main"\n'  # LEGACY-REBRAND-TEST: fixture
+MOOR_PYPROJECT = '[project]\nname = "moor-agent"\n\n[project.scripts]\nmoor = "moor_cli.main:main"\n'  # LEGACY-REBRAND-TEST: fixture
 
 
 def test_validate_update_tree_accepts_moor_tree(tmp_path):
@@ -82,8 +82,8 @@ def _write_moor_tree(tmp_path: Path) -> None:
     _write_component_files(tmp_path)
 
 
-def test_validate_update_tree_rejects_hermes_pyproject(tmp_path):  # LEGACY-REBRAND-TEST: guard test
-    (tmp_path / "pyproject.toml").write_text(HERMES_PYPROJECT, encoding="utf-8")  # LEGACY-REBRAND-TEST: fixture
+def test_validate_update_tree_rejects_moor_pyproject(tmp_path):  # LEGACY-REBRAND-TEST: guard test
+    (tmp_path / "pyproject.toml").write_text(MOOR_PYPROJECT, encoding="utf-8")  # LEGACY-REBRAND-TEST: fixture
     _write_component_files(tmp_path)
 
     with pytest.raises(ValueError, match="not Moor"):
@@ -120,12 +120,12 @@ def test_validate_git_target_reads_remote_tree(tmp_path):
     validate_git_target(["git"], tmp_path, "master")
 
 
-def test_validate_git_target_rejects_hermes_remote_tree(tmp_path):  # LEGACY-REBRAND-TEST: guard test
+def test_validate_git_target_rejects_moor_remote_tree(tmp_path):  # LEGACY-REBRAND-TEST: guard test
     _git("init", "-q", cwd=tmp_path)
-    (tmp_path / "pyproject.toml").write_text(HERMES_PYPROJECT, encoding="utf-8")  # LEGACY-REBRAND-TEST: fixture
+    (tmp_path / "pyproject.toml").write_text(MOOR_PYPROJECT, encoding="utf-8")  # LEGACY-REBRAND-TEST: fixture
     _write_component_files(tmp_path)
     _git("add", "-A", cwd=tmp_path)
-    _git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "hermes", cwd=tmp_path)  # LEGACY-REBRAND-TEST: commit
+    _git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "moor", cwd=tmp_path)  # LEGACY-REBRAND-TEST: commit
     _git("branch", "-M", "master", cwd=tmp_path)
     _git("remote", "add", "origin", CANONICAL_URL, cwd=tmp_path)
     _git("update-ref", "refs/remotes/origin/master", "HEAD", cwd=tmp_path)

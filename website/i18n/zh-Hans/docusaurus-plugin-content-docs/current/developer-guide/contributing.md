@@ -37,7 +37,7 @@ description: "如何为 Moor Agent 做贡献 — 开发环境配置、代码风�
 ### PM 开发环境
 
 [PM 开发工作流](../reference/package-management.md#developer-workflow) 包含首次准备、激活、日常使用、依赖更新和当前 bootstrap 限制。
-请在准备环境前选择独立的开发 `HERMES_HOME`，避免实验代码迁移生产数据。
+请在准备环境前选择独立的开发 `MOOR_HOME`，避免实验代码迁移生产数据。
 
 成功准备后，每次在仓库根目录的新 shell 中激活已有环境。
 
@@ -45,26 +45,26 @@ Bash：
 
 ```bash
 source ./activate
-hermes --version
+moor --version
 ```
 
 PowerShell：
 
 ```powershell
 . .\activate.ps1
-hermes --version
+moor --version
 ```
 
 PowerShell 开头的点和空格用于 dot-source，不能省略。
 激活通过 PM 准备工具并同步依赖，但不创建 JS workspaces，也不设置常规 venv 提示符。
-激活把 `hermes` 定义成当前 worktree 的函数，因此会盖住全局命令和 MSIX 别名，
+激活把 `moor` 定义成当前 worktree 的函数，因此会盖住全局命令和 MSIX 别名，
 并在离开该 worktree 时拒绝运行。
 `deactivate` 恢复激活前的环境，不卸载依赖或停止已启动的进程。
 
 ### 独立开发和测试环境 {#manual-development-and-test-environment}
 
 先按 [PM 开发工作流](../reference/package-management.md#developer-workflow) 准备 Python 3.14。
-在该 checkout 中使用准备好的 Python，并保持相同的开发 `HERMES_HOME`。
+在该 checkout 中使用准备好的 Python，并保持相同的开发 `MOOR_HOME`。
 PM 必须能够启动，才能构建独立测试环境：
 
 ```bash
@@ -73,14 +73,14 @@ python -m pm.build_env --source . --out .venv --group dev --group test
 
 此命令使用提交的锁文件，创建新环境并检查依赖一致性。输出路径必须不存在。
 如需重新生成，请先停止使用该环境的进程，再明确删除该可丢弃的环境。
-PM 不会自动删除已有目录。不要通过原始 pip 或 uv 命令修改 Hermes 环境。
+PM 不会自动删除已有目录。不要通过原始 pip 或 uv 命令修改 Moor 环境。
 
 测试 runner 自动发现仓库的 `.venv`。它会清除 `PYTHONPATH`，因此 pytest 必须安装在解释器自身的环境中。
-也可将 `--out` 指向仓库外的新路径，再将 `HERMES_PYTHON` 设为该环境的解释器。
+也可将 `--out` 指向仓库外的新路径，再将 `MOOR_PYTHON` 设为该环境的解释器。
 Windows 上通过 Bash 运行 `scripts/run_tests.sh`，并预先准备本机 C++ 编译环境。
 
 独立测试环境不替代 PM 工具存储或应用的依赖选择。不要修改签名应用的载荷。
-运行开发实例前，选择临时的 `HERMES_HOME`，再使用 `hermes setup` 配置它。
+运行开发实例前，选择临时的 `MOOR_HOME`，再使用 `moor setup` 配置它。
 不要把生产凭据复制到 checkout。
 
 从仓库根目录运行 `npm ci` 安装 JS workspaces。网站单独使用：
@@ -90,8 +90,8 @@ npm ci --prefix website
 npm run build:fast --prefix website
 ```
 
-图标从 `assets/nous-girl-*.svg` 和 `assets/backgrounds/` 生成。
-`node scripts/generate-icons.mjs` 使用 Hermes 运行时 Python（`HERMES_PYTHON`，否则为 PATH 上的 `python`）渲染图标：Pillow 和 resvg-py 是核心依赖。不要提交生成的 PNG/ICO/ICNS 文件。
+图标从 `assets/moor-girl-*.svg` 和 `assets/backgrounds/` 生成。
+`node scripts/generate-icons.mjs` 使用 Moor 运行时 Python（`MOOR_PYTHON`，否则为 PATH 上的 `python`）渲染图标：Pillow 和 resvg-py 是核心依赖。不要提交生成的 PNG/ICO/ICNS 文件。
 
 ### 运行测试
 
@@ -99,7 +99,7 @@ npm run build:fast --prefix website
 scripts/run_tests.sh
 ```
 
-该脚本清除凭据环境、设置 UTC 和临时 `HERMES_HOME`，并使用独立子进程运行各测试文件。
+该脚本清除凭据环境、设置 UTC 和临时 `MOOR_HOME`，并使用独立子进程运行各测试文件。
 不同文件可并行，单个文件内的测试串行执行。不要绕过脚本直接运行 pytest。
 
 ## 代码风格
@@ -108,11 +108,11 @@ scripts/run_tests.sh
 - **注释**：仅在解释非显而易见的意图、权衡取舍或 API 特殊行为时添加
 - **错误处理**：捕获具体异常。对于意外错误，使用 `logger.warning()`/`logger.error()` 并设置 `exc_info=True`
 - **跨平台**：不得假设 Unix 环境（见下文）
-- **Profile 安全路径**：不得硬编码 `~/.moor` — 代码路径使用 `moor_constants` 中的 `get_moor_home()`，面向用户的消息使用 `display_moor_home()`。完整规则参见 [AGENTS.md](https://github.com/NousResearch/hermes-agent/blob/main/AGENTS.md#profiles-multi-instance-support)。
+- **Profile 安全路径**：不得硬编码 `~/.moor` — 代码路径使用 `moor_constants` 中的 `get_moor_home()`，面向用户的消息使用 `display_moor_home()`。完整规则参见 [AGENTS.md](https://github.com/thisismamad-n/Moor/blob/main/AGENTS.md#profiles-multi-instance-support)。
 
 ## 跨平台兼容性
 
-Hermes 支持 Linux、macOS、WSL2 和原生 Windows。Windows shell 由 PM 解析 Git Bash。Dashboard 聊天通过 pywinpty/ConPTY 支持原生 Windows，并非仅限 WSL2。平台和依赖限制见[平台支持](../getting-started/platform-support.md)。
+Moor 支持 Linux、macOS、WSL2 和原生 Windows。Windows shell 由 PM 解析 Git Bash。Dashboard 聊天通过 pywinpty/ConPTY 支持原生 Windows，并非仅限 WSL2。平台和依赖限制见[平台支持](../getting-started/platform-support.md)。
 
 贡献代码时，请遵守以下规则：
 
@@ -227,7 +227,7 @@ fix(security): prevent shell injection in sudo password piping
 
 ## 报告问题
 
-- 使用 [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 使用 [GitHub Issues](https://github.com/thisismamad-n/Moor/issues)
 - 请包含：操作系统、Python 版本、Moor 版本（`moor --version`）、完整错误堆栈
 - 包含复现步骤
 - 创建前请检查是否已有重复 issue
@@ -241,4 +241,4 @@ fix(security): prevent shell injection in sudo password piping
 
 ## 许可证
 
-提交贡献即表示您同意您的贡献将以 [MIT 许可证](https://github.com/NousResearch/hermes-agent/blob/main/LICENSE) 授权。
+提交贡献即表示您同意您的贡献将以 [MIT 许可证](https://github.com/thisismamad-n/Moor/blob/main/LICENSE) 授权。

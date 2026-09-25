@@ -44,7 +44,7 @@ def test_corrupt_store_polls_return_status_and_warn_once_per_interval(tmp_path, 
     for resp in (first, second, third):
         assert resp.status_code == 503
         assert resp.json()["detail"]["error"] == "state_db_corrupt"
-    # Only the dashboard's own warning counts: hermes_state logs an unrelated
+    # Only the dashboard's own warning counts: moor_state logs an unrelated
     # once-per-process SQLite-version advisory on some interpreters (CI's 3.50.4).
     warnings = [
         r for r in caplog.records
@@ -70,7 +70,7 @@ def test_corrupt_store_as_status_maps_replaced_store_errors_to_503_without_fix_n
     must come back as a structured 503 like the corrupt case, and the guidance must never tell the
     user to run `doctor --fix` while a holder is live (#110054). Busy/locked still propagates."""
     from fastapi import HTTPException
-    from hermes_state_errors import DeletedWalGenerationError, StateDbReplacedError
+    from moor_state_errors import DeletedWalGenerationError, StateDbReplacedError
 
     monkeypatch.setattr(_common, "_corrupt_store_warned_at", {})
     db_path = tmp_path / "state.db"
@@ -82,10 +82,10 @@ def test_corrupt_store_as_status_maps_replaced_store_errors_to_503_without_fix_n
         assert info.value.detail["error"] == code
         assert info.value.detail["path"] == str(db_path)
         msg = info.value.detail["message"]
-        assert "run `hermes doctor`" in msg
+        assert "run `moor doctor`" in msg
         # `--fix` may only appear negated — never as the action to take while a holder is live.
-        negated = re.findall(r"(?i)(?:do not|don't|never) run `hermes doctor --fix`", msg)
-        assert len(negated) == msg.count("`hermes doctor --fix`"), msg
+        negated = re.findall(r"(?i)(?:do not|don't|never) run `moor doctor --fix`", msg)
+        assert len(negated) == msg.count("`moor doctor --fix`"), msg
 
     with pytest.raises(sqlite3.OperationalError):
         with _common.corrupt_store_as_status(db_path):
@@ -93,7 +93,7 @@ def test_corrupt_store_as_status_maps_replaced_store_errors_to_503_without_fix_n
 
     # Sibling route: GET /api/sessions and the session-id resolver used to let the same
     # RuntimeError family fall through to a generic 500.
-    from hermes_cli.web_routers import sessions
+    from moor_cli.web_routers import sessions
 
     class _RetiredDb:
         db_path = str(tmp_path / "state.db")

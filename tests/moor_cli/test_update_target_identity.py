@@ -13,9 +13,9 @@ import urllib.request
 
 import pytest
 
-from hermes_cli import main as cli_main, update_cmd, update_receipt
-from hermes_cli.update_inventory import UpdatePlan
-from hermes_cli.update_cmd import _sync_with_upstream_if_needed
+from moor_cli import main as cli_main, update_cmd, update_receipt
+from moor_cli.update_inventory import UpdatePlan
+from moor_cli.update_cmd import _sync_with_upstream_if_needed
 
 
 def git(root, *args):
@@ -28,8 +28,8 @@ def update_tree(tmp_path, monkeypatch):
     monkeypatch.setenv('GIT_CONFIG_GLOBAL', str(tmp_path / 'git-config'))
     monkeypatch.setenv('GIT_CONFIG_NOSYSTEM', '1')
     monkeypatch.setenv('GIT_ALLOW_PROTOCOL', 'file')
-    monkeypatch.delenv('HERMES_UPDATE_HANDOFF_PID', raising=False)
-    monkeypatch.delenv('HERMES_UPDATE_REEXEC', raising=False)
+    monkeypatch.delenv('MOOR_UPDATE_HANDOFF_PID', raising=False)
+    monkeypatch.delenv('MOOR_UPDATE_REEXEC', raising=False)
     origin = tmp_path / 'origin'
     origin.mkdir()
     git(origin, 'init', '-q', '-b', 'main')
@@ -71,7 +71,7 @@ def update_tree(tmp_path, monkeypatch):
         plans.append(plan)
         return plan
 
-    monkeypatch.setattr('hermes_cli.update_inventory.collect_runtime_inventory', inventory)
+    monkeypatch.setattr('moor_cli.update_inventory.collect_runtime_inventory', inventory)
     monkeypatch.setattr(cli_main, '_sync_with_upstream_if_needed',
                         lambda *_a, **_k: pytest.fail('stable update reached upstream branch sync'))
 
@@ -194,8 +194,8 @@ def test_stable_git_uses_remote_identity_without_moving_local_tags(update_tree, 
     """A stable update is pinned to the channel's exact commit: no tag lookup on
     origin, the stale local ``v1.1.0`` never moves, and an explicit --branch
     bypasses the channel."""
-    from hermes_cli import source_releases
-    from hermes_cli.release_channels import ChannelResolution
+    from moor_cli import source_releases
+    from moor_cli.release_channels import ChannelResolution
 
     t = update_tree
     # The stable channel is an R2 record whose published build pins t.wanted
@@ -268,14 +268,14 @@ def test_stable_git_uses_remote_identity_without_moving_local_tags(update_tree, 
 @pytest.mark.platforms('windows')
 @pytest.mark.parametrize('transport', ['gitless', 'no-git', 'git-error', 'dirty'])
 def test_stable_zip_consumes_the_same_commit_through_the_real_swap(update_tree, monkeypatch, tmp_path, transport):
-    from hermes_cli import source_releases
-    from hermes_cli.release_channels import ChannelResolution
+    from moor_cli import source_releases
+    from moor_cli.release_channels import ChannelResolution
 
     t = update_tree
     monkeypatch.setattr(cli_main, '_pause_windows_gateways_for_update',
                         lambda: {"resume_needed": True})
     archive = tmp_path / 'source.zip'
-    git(t.origin, 'archive', '--format=zip', '--prefix=hermes-agent-source/', f'--output={archive}', t.wanted)
+    git(t.origin, 'archive', '--format=zip', '--prefix=moor-agent-source/', f'--output={archive}', t.wanted)
     archive_bytes = archive.read_bytes()
     record = {"schema": 1, "name": "stable", "repository": "NousResearch/hermes-agent",
               "policy": "stable-release", "state": "active", "identity": {}, "nextSequence": 2,
@@ -365,7 +365,7 @@ def test_stable_zip_consumes_the_same_commit_through_the_real_swap(update_tree, 
             assert request['snapshot_id'] == 'release-snapshot'
             assert (t.clone / 'content.txt').read_text(encoding='utf-8-sig') == 'release\n'
             assert [url for url in urls if '/archive/' in url] == [
-                f'https://github.com/NousResearch/hermes-agent/archive/{t.wanted}.zip']
+                f'https://github.com/thisismamad-n/Moor/archive/{t.wanted}.zip']
         assert t.resumed
         if transport in {'git-error', 'dirty'}:
             assert failed and fetched
@@ -392,10 +392,10 @@ def test_update_syntax_failure_restores_pre_update_head(update_tree, monkeypatch
         remote = upstream
     else:
         remote = t.origin
-    bad = remote / 'hermes_cli' / 'config.py'
+    bad = remote / 'moor_cli' / 'config.py'
     bad.parent.mkdir()
     bad.write_text('def broken(:\n', encoding='utf-8')
-    git(remote, 'add', 'hermes_cli/config.py')
+    git(remote, 'add', 'moor_cli/config.py')
     git(remote, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
         '-c', 'commit.gpgsign=false', 'commit', '-qm', 'invalid syntax')
     unexpected_head = git(remote, 'rev-parse', 'HEAD')
@@ -422,13 +422,13 @@ def test_update_syntax_failure_restores_pre_update_head(update_tree, monkeypatch
     if sync_phase == 'late-other-branch':
         assert git(t.clone, 'rev-parse', 'unexpected') == unexpected_head
         assert git(t.clone, 'branch', '--show-current') == 'unexpected'
-        assert (t.clone / 'hermes_cli/config.py').read_bytes() == bad.read_bytes()
+        assert (t.clone / 'moor_cli/config.py').read_bytes() == bad.read_bytes()
         assert "checkout is on 'unexpected'" in output
         assert 'Rolling back' not in output
     else:
         assert 'Pulled code has a syntax error' in output
         assert git(t.clone, 'rev-parse', 'HEAD') == t.base
-        assert not (t.clone / 'hermes_cli' / 'config.py').exists()
+        assert not (t.clone / 'moor_cli' / 'config.py').exists()
     assert not git(t.clone, 'status', '--porcelain')
     assert bool(git(t.clone, 'stash', 'list')) is dirty
     if dirty:

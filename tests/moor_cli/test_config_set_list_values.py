@@ -52,7 +52,7 @@ def test_yaml_flow_list_is_parsed(user_home):
 def test_invalid_list_literal_is_refused_and_nothing_written(user_home, capsys):
     # Was warn-and-store: every isinstance-gated reader ignored the string while
     # `config get` echoed it back (#114471). The writer now refuses the literal.
-    from hermes_cli.config import set_config_value, read_raw_config
+    from moor_cli.config import set_config_value, read_raw_config
 
     with pytest.raises(SystemExit):
         set_config_value("platform_toolsets.line", '["unclosed')
@@ -167,7 +167,7 @@ def test_bare_string_into_list_slot_absent_from_defaults_is_refused(user_home, c
     """`plugins.enabled` / `model_catalog.excluded_providers` are omitted from DEFAULT_CONFIG, so the
     container guard did not know them and `config set plugins.enabled a,b` stored a string every
     isinstance(list) reader ignored (#83308, #105706)."""
-    from hermes_cli.config import set_config_value, read_raw_config
+    from moor_cli.config import set_config_value, read_raw_config
 
     for key in ("plugins.enabled", "model_catalog.excluded_providers"):
         with pytest.raises(SystemExit):

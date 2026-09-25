@@ -215,7 +215,7 @@ class TestSymlinkedRootOnTheFilesLane:
 
     @pytest.fixture
     def linked(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         target = tmp_path / "target"
         target.mkdir()
         (target / "real.md").write_text("TOKEN\n")
@@ -276,7 +276,7 @@ class TestSymlinkedRootOnTheFilesLane:
         """
         from tools.file_tools import _get_file_ops
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         hidden = tmp_path / ".dot"
         (hidden / "real").mkdir(parents=True)
         (hidden / "real" / "f.md").write_text("NEEDLE\n")

@@ -145,7 +145,7 @@ def _is_self_hosted_provider(provider: Optional[str]) -> bool:
         return False
     if raw == "custom" or raw.startswith("custom:"):
         return True
-    from hermes_cli import models as _m
+    from moor_cli import models as _m
 
     normalized = _m.normalize_provider(raw)
     if normalized == "custom" or normalized.startswith("custom:"):
@@ -179,7 +179,7 @@ def _stock_host(provider: str) -> str:
     overlay when models.dev is cold). A foreign row is not this provider's stock
     endpoint — using it would exempt the real cloud host.
     """
-    from hermes_cli.providers import get_provider
+    from moor_cli.providers import get_provider
     from utils import base_url_hostname
 
     token = _provider_token(provider)
@@ -215,7 +215,7 @@ def provider_allows_model_whitespace(provider: Optional[str], base_url: Optional
     if _non_public_host(host):
         return True
     raw = _provider_token(provider)
-    from hermes_cli import models as _m
+    from moor_cli import models as _m
 
     normalized = _m.normalize_provider(raw) if raw else ""
     stock = _stock_host(normalized or raw)
@@ -427,7 +427,7 @@ def static_model_provider_conflict(model_name: str, provider: Optional[str], *, 
     names no vendor lists (hidden or preview slugs) stay permissive. A conflict is a name outside
     the provider's family that another native vendor's catalog lists — or any foreign-family name
     on the OAuth catalogs with a strict family gate (``_STATIC_FAMILY_PREFIXES``) (#96817)."""
-    from hermes_cli import models as _m
+    from moor_cli import models as _m
 
     requested = (model_name or "").strip()
     normalized = _m.normalize_provider(provider)
@@ -578,7 +578,7 @@ def _validate_managed_local(req: _Request) -> Optional[dict[str, Any]]:
     (case-insensitive: typing matches the file name, the router registers the preset id);
     anything else falls through to the live listing, which stays authoritative for ids that
     were never downloaded here."""
-    from hermes_cli.local_runtime.bootstrap import staged_model_ids
+    from moor_cli.local_runtime.bootstrap import staged_model_ids
 
     staged = {sid.lower() for sid in staged_model_ids()}
     if req.lookup.strip().lower() in staged:
@@ -616,7 +616,7 @@ def _validate_live_listing(req: _Request) -> Optional[dict[str, Any]]:
     """Generic live /v1/models probe. Returns None when the API was unreachable (the caller then
     tries Bedrock discovery / the curated catalog). A profile that owns its catalog is validated
     against that catalog (``provider_model_ids`` — the picker's list) before the generic listing."""
-    from hermes_cli import models as _m
+    from moor_cli import models as _m
 
     catalog, authoritative = _profile_catalog(req.normalized)
     if catalog:

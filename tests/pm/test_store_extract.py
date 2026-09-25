@@ -120,7 +120,7 @@ def test_install_ps1_bootstrap_skips_the_same_msys_links_as_pm(tmp_path):
 
 
 def test_target_uses_shared_native_arch(monkeypatch):
-    from hermes_platform.host import facts
+    from moor_platform.host import facts
     from pm import store
 
     monkeypatch.setattr(facts, "native_arch", lambda: "arm64")

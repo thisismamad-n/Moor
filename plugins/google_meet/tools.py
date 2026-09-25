@@ -145,7 +145,7 @@ def handle_meet_join(args: Dict[str, Any], **_kw) -> str:
         if not check_meet_requirements():
             return {"ok": False, "error": (
                 "google_meet plugin prerequisites missing — install with "
-                "`hermes meet install`. Plugin is supported on Linux and macOS only.")}
+                "`moor meet install`. Plugin is supported on Linux and macOS only.")}
         return pm.start(**common)
 
     return _dispatch(args.get("node"), "start_bot", lambda c: c.start_bot(**common), _local)

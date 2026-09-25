@@ -8,7 +8,7 @@ import time as _time
 
 from pathlib import Path
 from typing import NoReturn
-from hermes_cli import _early_recovery as _early_recovery_mod
+from moor_cli import _early_recovery as _early_recovery_mod
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("moor_cli.main")
@@ -31,7 +31,7 @@ def _pyproject_project(debug_fmt: str | None = None) -> dict | None:
     return project if isinstance(project, dict) else None
 
 
-# Install-scoped breadcrumbs live next to the venv (not under $HERMES_HOME)
+# Install-scoped breadcrumbs live next to the venv (not under $MOOR_HOME)
 # because the venv is shared across profiles.
 #   ``.update-incomplete``       — generic core ``.[all]`` install was interrupted;
 #     cleared only after a confirmed full dependency reinstall/recovery.
@@ -77,12 +77,12 @@ def _clear_lazy_refresh_incomplete_marker() -> None:
 
 
 # Frozen old-updater import; current updates never detach dependency work.
-_UPDATE_REEXEC_ENV = "HERMES_UPDATE_REEXEC"
+_UPDATE_REEXEC_ENV = "MOOR_UPDATE_REEXEC"
 
 
 def _reexec_dependency_sync_off_windows_shim() -> NoReturn:
     """Stop a mixed old-code/new-files updater at the retired sync boundary."""
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
     stop_for_relaunch()
 
 
@@ -92,8 +92,8 @@ def _is_windows() -> bool:
 
 def _venv_scripts_dir() -> Path | None:
     """Return the venv Scripts directory if we're running inside the project venv."""
-    from hermes_cli.main import PROJECT_ROOT
-    from hermes_constants import project_venv_dir
+    from moor_cli.main import PROJECT_ROOT
+    from moor_constants import project_venv_dir
     from pm.environments import venv_bin_dir
     venv_dir = project_venv_dir(PROJECT_ROOT)
     if venv_dir is None:
@@ -241,15 +241,15 @@ def _configured_features_missing_deps() -> list[tuple[str, str]]:
         for platform in load_gateway_config().get_connected_platforms():
             entry = platform_registry.get(platform.value)
             if entry is not None and not entry.check_fn():
-                missing.append((entry.label, entry.install_hint or "Run `hermes setup` to install support."))
+                missing.append((entry.label, entry.install_hint or "Run `moor setup` to install support."))
     except Exception as exc:
         logger.debug("configured-platform dependency check skipped: %s", exc)
     try:
         import importlib.util
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
 
         if (load_config_readonly().get("mcp_servers") or {}) and importlib.util.find_spec("mcp") is None:
-            missing.append(("MCP servers", "Run `hermes pm install` to install MCP support."))
+            missing.append(("MCP servers", "Run `moor pm install` to install MCP support."))
     except Exception as exc:
         logger.debug("configured-MCP dependency check skipped: %s", exc)
     return missing

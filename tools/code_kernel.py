@@ -567,9 +567,9 @@ def _bind_rpc_socket(kernel: SessionKernel) -> str:
         host, port = server_sock.getsockname()[:2]
         rpc_endpoint = f"tcp://{host}:{port}"
     else:
-        from hermes_constants import socket_safe_tmpdir
+        from moor_constants import socket_safe_tmpdir
         sock_tmpdir = socket_safe_tmpdir()
-        rpc_endpoint = kernel.sock_path = os.path.join(sock_tmpdir, f"hermes_rpc_{uuid.uuid4().hex}.sock")
+        rpc_endpoint = kernel.sock_path = os.path.join(sock_tmpdir, f"moor_rpc_{uuid.uuid4().hex}.sock")
         server_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         server_sock.bind(kernel.sock_path)
         os.chmod(kernel.sock_path, 0o600)
@@ -705,14 +705,14 @@ _REAPER_STARTED = False
 
 
 def _sweep_stale_staging_dirs(now: Optional[float] = None) -> int:
-    """Remove ``hermes_kernel_*`` staging dirs untouched for over a week. A live host
+    """Remove ``moor_kernel_*`` staging dirs untouched for over a week. A live host
     rmtrees each dir within one idle timeout of the kernel's last use, so a week-old
     dir belongs to a host that died before its cleanup could run; younger dirs are left
     alone because a concurrently running host's live kernel may own one. rmtree never
     follows symlinks, so a planted link is rejected rather than chased."""
     now = time.time() if now is None else now
     removed = 0
-    for path in glob.glob(os.path.join(tempfile.gettempdir(), "hermes_kernel_*")):
+    for path in glob.glob(os.path.join(tempfile.gettempdir(), "moor_kernel_*")):
         try:
             if now - os.path.getmtime(path) > _STALE_STAGING_DIR_AGE:
                 # No ignore_errors: a rejected symlink (or a half-removed dir) must not
@@ -742,7 +742,7 @@ def _ensure_background_reaper() -> None:
             return
         _REAPER_STARTED = True
     threading.Thread(target=_background_reaper, daemon=True,
-                     name="hermes-kernel-idle-reaper").start()
+                     name="moor-kernel-idle-reaper").start()
 
 
 def _background_reaper() -> None:

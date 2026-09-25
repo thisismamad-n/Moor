@@ -66,4 +66,4 @@ def test_unparseable_json_still_degrades_and_preserves_a_copy(store_file):
 
 def test_healthy_store_is_returned_unchanged(store_file):
     result = auth._load_auth_store(store_file)
-    assert result["providers"]["nous"]["api_key"] == "secret"
+    assert result["providers"]["moor"]["api_key"] == "secret"

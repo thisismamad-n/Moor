@@ -668,7 +668,7 @@ PM 通过 `pyproject.toml` 中的 extras 管理可选 Python 功能。
 关闭按需安装：
 
 ```bash
-hermes config set security.allow_lazy_installs false
+moor config set security.allow_lazy_installs false
 ```
 
 已安装的依赖仍可使用。显式安装命令与按需安装不同。
@@ -676,5 +676,5 @@ hermes config set security.allow_lazy_installs false
 该设置不是禁止显式插件准入或手动包管理命令的沙箱。
 官方 Docker 镜像还通过内部策略关闭按需安装，仅更改配置不能覆盖它。
 
-用 `hermes tools` 和 `hermes doctor` 检查缺失需求。
+用 `moor tools` 和 `moor doctor` 检查缺失需求。
 不要向签名载荷或系统 Python 执行 pip 安装。详见[包管理](../reference/package-management.md)。

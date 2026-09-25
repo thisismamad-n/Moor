@@ -95,7 +95,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
             "saved-tag update_url feeds (with mismatch protection), git "
             "ls-remote for git installs, and a stateless PyPI probe for "
             "pip entry-point plugins. NEVER mutates anything — apply with "
-            "`hermes plugins update <name>`."
+            "`moor plugins update <name>`."
         ),
     )
     plugins_check.add_argument(

@@ -11,10 +11,10 @@ Moor has a plugin system for adding custom tools, hooks, and integrations withou
 
 If you want to create a custom tool for yourself, your team, or one project,
 this is usually the right path. The developer guide's
-[Adding Tools](../../developer-guide/adding-tools.md) page is for built-in Hermes
+[Adding Tools](../../developer-guide/adding-tools.md) page is for built-in Moor
 core tools that live in `tools/` and `toolsets.py`.
 
-**→ [Build a Hermes Plugin](../../developer-guide/plugins/index.md)** — step-by-step guide with a complete working example.
+**→ [Build a Moor Plugin](../../developer-guide/plugins/index.md)** — step-by-step guide with a complete working example.
 
 ## Quick overview
 
@@ -106,8 +106,8 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 | Inject messages | `ctx.inject_message(content, role="user", session_key=...)` - see [Injecting Messages](#injecting-messages) |
 | Ship data files | `Path(__file__).parent / "data" / "file.yaml"` |
 | Bundle skills | `ctx.register_skill(name, path)` — namespaced as `plugin:skill`, loaded via `skill_view("plugin:skill")` |
-| Gate on env vars | `requires_env: [API_KEY]` in plugin.yaml — prompted during `hermes plugins install` |
-| Distribute via pip | `[project.entry-points."hermes_agent.plugins"]` |
+| Gate on env vars | `requires_env: [API_KEY]` in plugin.yaml — prompted during `moor plugins install` |
+| Distribute via pip | `[project.entry-points."moor_agent.plugins"]` |
 | Register a gateway platform (Discord, Telegram, IRC, …) | `ctx.register_platform(name, label, adapter_factory, check_fn, ...)` — see [Adding Platform Adapters](../../developer-guide/adding-platform-adapters.md) |
 | Register an image-generation backend | `ctx.register_image_gen_provider(provider)` — see [Image Generation Provider Plugins](../../developer-guide/image-gen-provider-plugin.md) |
 | Register a video-generation backend | `ctx.register_video_gen_provider(provider)` — see [Video Generation Provider Plugins](../../developer-guide/video-gen-provider-plugin.md) |
@@ -123,11 +123,11 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 
 | Source | Path | Use case |
 |--------|------|----------|
-| Bundled | `<repo>/plugins/` | Ships with Hermes — see [Built-in Plugins](./built-in-plugins.md) |
-| User | `~/.hermes/plugins/` | Personal plugins |
-| Project | `.hermes/plugins/` | Project-specific plugins (requires `HERMES_ENABLE_PROJECT_PLUGINS=true`) |
-| pip | `hermes_agent.plugins` entry_points | Distributed packages |
-| Nix | `services.hermes-agent.extraPlugins` / `extraPythonPackages` | NixOS declarative installs — see [Nix Setup](../../getting-started/nix-setup.md#plugins) |
+| Bundled | `<repo>/plugins/` | Ships with Moor — see [Built-in Plugins](./built-in-plugins.md) |
+| User | `~/.moor/plugins/` | Personal plugins |
+| Project | `.moor/plugins/` | Project-specific plugins (requires `MOOR_ENABLE_PROJECT_PLUGINS=true`) |
+| pip | `moor_agent.plugins` entry_points | Distributed packages |
+| Nix | `services.moor-agent.extraPlugins` / `extraPythonPackages` | NixOS declarative installs — see [Nix Setup](../../getting-started/nix-setup.md#plugins) |
 
 Later sources override earlier ones on name collision, so a user plugin with the same name as a bundled plugin replaces it.
 
@@ -151,7 +151,7 @@ User plugins at `~/.moor/plugins/model-providers/<name>/` override bundled model
 **General plugins and user-installed backends are disabled by default** — discovery finds them (so they show up in `moor plugins` and `/plugins`), but nothing with hooks or tools loads until you add the plugin's name to `plugins.enabled` in `~/.moor/config.yaml`. This stops third-party code from running without your explicit consent.
 
 :::note `plugins.enabled` governs plugins only
-[Gateway event hooks](./hooks.md#gateway-event-hooks) under `~/.hermes/hooks/<name>/` are not plugins and are **not** gated by `plugins.enabled` or `plugins.disabled`. That directory is trusted by placement: any subdirectory holding a valid `HOOK.yaml` + `handler.py` is imported by the gateway at startup, and placing the files there is the opt-in. See the [gateway hook trust model](./hooks.md#gateway-hook-trust).
+[Gateway event hooks](./hooks.md#gateway-event-hooks) under `~/.moor/hooks/<name>/` are not plugins and are **not** gated by `plugins.enabled` or `plugins.disabled`. That directory is trusted by placement: any subdirectory holding a valid `HOOK.yaml` + `handler.py` is imported by the gateway at startup, and placing the files there is the opt-in. See the [gateway hook trust model](./hooks.md#gateway-hook-trust).
 :::
 
 ```yaml
@@ -207,21 +207,21 @@ plugin; choose a new exact commit explicitly with
 profile-local install metadata contains no config values, environment values,
 secrets, or capability grants.
 
-The same pin is available in Hermes Desktop: **Skills → Plugins → Install from
+The same pin is available in Moor Desktop: **Skills → Plugins → Install from
 Git** has a *Pin to commit* field that takes the full 40-character SHA, and the
 plugins list shows a `pinned @ <sha8>` badge on every pinned install so a team
-can confirm everyone is running the same commit. `hermes plugins list` prints
+can confirm everyone is running the same commit. `moor plugins list` prints
 the pin in its Source column (`git pinned@<sha8>`). Pins work for private
 repositories too, through the same stored credentials described below.
 
 ### Installing from a private repository
 
-`hermes plugins install` clones non-interactively (it never prompts for a
-username or password), so a private repo needs a credential Hermes can find on
-its own. Every clone, pinned `--ref` fetch and `hermes plugins update` pull is
+`moor plugins install` clones non-interactively (it never prompts for a
+username or password), so a private repo needs a credential Moor can find on
+its own. Every clone, pinned `--ref` fetch and `moor plugins update` pull is
 attempted anonymously first — public repos never see your credential, so a
 stale or revoked token cannot break a public install. Only when the remote
-refuses anonymous access does Hermes look for a credential. For an `https://`
+refuses anonymous access does Moor look for a credential. For an `https://`
 source it tries, in order:
 
 1. `GITHUB_TOKEN` or `GH_TOKEN` from your `.env` (GitHub hosts only).
@@ -235,7 +235,7 @@ SSH sources (`git@host:owner/repo.git`) authenticate through your ssh-agent as
 before. The same resolution applies to `moor plugins update`, catalog MCP
 installs from git, and profile distributions fetched from a git URL.
 
-`hermes doctor` sends a configured `GITHUB_TOKEN`/`GH_TOKEN` to `api.github.com`
+`moor doctor` sends a configured `GITHUB_TOKEN`/`GH_TOKEN` to `api.github.com`
 (under **API Connectivity**) and, when GitHub rejects it, names the variable and the
 `.env` file that carries the expired token so you can remove or replace it.
 
@@ -316,7 +316,7 @@ When you upgrade to a version of Moor that has opt-in plugins (config schema v21
 
 ## Available hooks
 
-Plugins can register the 27 lifecycle events currently accepted by `hermes_cli.plugins.VALID_HOOKS`. The **[Event Hooks catalog](./hooks.md#shipped-plugin-hook-catalog)** is canonical for exact timing, return handling, payload fields, and privacy notes.
+Plugins can register the 27 lifecycle events currently accepted by `moor_cli.plugins.VALID_HOOKS`. The **[Event Hooks catalog](./hooks.md#shipped-plugin-hook-catalog)** is canonical for exact timing, return handling, payload fields, and privacy notes.
 
 | Descriptive category | Shipped hooks |
 |---|---|
@@ -344,10 +344,10 @@ The table above shows the four plugin categories, but within "General plugins" t
 
 | Want to add… | How | Authoring guide |
 |---|---|---|
-| A **tool** the LLM can call | Python plugin — `ctx.register_tool()` | [Build a Hermes Plugin](../../developer-guide/plugins/index.md) · [Adding Tools](../../developer-guide/adding-tools.md) |
-| A **lifecycle hook** (pre/post LLM, session start/end, tool filter) | Python plugin — `ctx.register_hook()` | [Hooks reference](./hooks.md) · [Build a Hermes Plugin](../../developer-guide/plugins/index.md) |
-| A **slash command** for the CLI / gateway | Python plugin — `ctx.register_command()` | [Build a Hermes Plugin](../../developer-guide/plugins/index.md) · [Extending the CLI](../../developer-guide/extending-the-cli.md) |
-| A **subcommand** for `hermes <thing>` | Python plugin — `ctx.register_cli_command()` | [Extending the CLI](../../developer-guide/extending-the-cli.md) |
+| A **tool** the LLM can call | Python plugin — `ctx.register_tool()` | [Build a Moor Plugin](../../developer-guide/plugins/index.md) · [Adding Tools](../../developer-guide/adding-tools.md) |
+| A **lifecycle hook** (pre/post LLM, session start/end, tool filter) | Python plugin — `ctx.register_hook()` | [Hooks reference](./hooks.md) · [Build a Moor Plugin](../../developer-guide/plugins/index.md) |
+| A **slash command** for the CLI / gateway | Python plugin — `ctx.register_command()` | [Build a Moor Plugin](../../developer-guide/plugins/index.md) · [Extending the CLI](../../developer-guide/extending-the-cli.md) |
+| A **subcommand** for `moor <thing>` | Python plugin — `ctx.register_cli_command()` | [Extending the CLI](../../developer-guide/extending-the-cli.md) |
 | A bundled **skill** that your plugin ships | Python plugin — `ctx.register_skill()` | [Creating Skills](../../developer-guide/creating-skills.md) |
 | An **inference backend** (LLM provider: OpenAI-compat, Codex, Anthropic-Messages, Bedrock) | Provider plugin — `register_provider(ProviderProfile(...))` in `plugins/model-providers/<name>/` | **[Model Provider Plugins](../../developer-guide/model-provider-plugin.md)** · [Adding Providers](../../developer-guide/adding-providers.md) |
 | A **gateway channel** (Discord / Telegram / IRC / Teams / etc.) | Platform plugin — `ctx.register_platform()` in `plugins/platforms/<name>/` | [Adding Platform Adapters](../../developer-guide/adding-platform-adapters.md) |
@@ -356,10 +356,10 @@ The table above shows the four plugin categories, but within "General plugins" t
 | An **image-generation backend** (DALL·E, SDXL, …) | Backend plugin — `ctx.register_image_gen_provider()` | [Image Generation Provider Plugins](../../developer-guide/image-gen-provider-plugin.md) |
 | A **video-generation backend** (Veo, Kling, Pixverse, Grok-Imagine, Runway, …) | Backend plugin — `ctx.register_video_gen_provider()` | [Video Generation Provider Plugins](../../developer-guide/video-gen-provider-plugin.md) |
 | A **TTS backend** (any CLI — Piper, VoxCPM, Kokoro, xtts, voice-cloning scripts, …) | Config-driven (recommended) — declare under `tts.providers.<name>` with `type: command` in `config.yaml`. OR Python backend plugin — `ctx.register_tts_provider()` for Python-SDK / streaming engines that need more than a shell template. | [TTS Setup](./tts.md#custom-command-providers) · [Python plugin guide](./tts.md#python-plugin-providers) |
-| An **STT backend** (any CLI — whisper.cpp, custom whisper binary, local ASR CLI) | Config-driven (recommended) — declare under `stt.providers.<name>` with `type: command` in `config.yaml`, or set `HERMES_LOCAL_STT_COMMAND` for the legacy single-command escape hatch. OR Python backend plugin — `ctx.register_transcription_provider()` for Python-SDK engines (OpenRouter, SenseAudio, Gemini-STT, etc.). | [STT Setup](./tts.md#stt-custom-command-providers) · [Python plugin guide](./tts.md#python-plugin-providers-stt) |
-| **External tools via MCP** (filesystem, GitHub, Linear, Notion, any MCP server) | Config-driven — declare `mcp_servers.<name>` with `command:` / `url:` in `config.yaml`. Hermes auto-discovers the server's tools and registers them alongside built-ins. | [MCP](./mcp.md) |
-| **Additional skill sources** (custom GitHub repos, private skill indexes) | CLI — `hermes skills tap add <repo>` | [Skills Hub](./skills.md#skills-hub) · [Publishing a custom tap](./skills.md#publishing-a-custom-skill-tap) |
-| **Gateway event hooks** (fire on `gateway:startup`, `session:start`, `agent:end`, `command:*`) | Drop `HOOK.yaml` + `handler.py` into `~/.hermes/hooks/<name>/` | [Event Hooks](./hooks.md#gateway-event-hooks) |
+| An **STT backend** (any CLI — whisper.cpp, custom whisper binary, local ASR CLI) | Config-driven (recommended) — declare under `stt.providers.<name>` with `type: command` in `config.yaml`, or set `MOOR_LOCAL_STT_COMMAND` for the legacy single-command escape hatch. OR Python backend plugin — `ctx.register_transcription_provider()` for Python-SDK engines (OpenRouter, SenseAudio, Gemini-STT, etc.). | [STT Setup](./tts.md#stt-custom-command-providers) · [Python plugin guide](./tts.md#python-plugin-providers-stt) |
+| **External tools via MCP** (filesystem, GitHub, Linear, Notion, any MCP server) | Config-driven — declare `mcp_servers.<name>` with `command:` / `url:` in `config.yaml`. Moor auto-discovers the server's tools and registers them alongside built-ins. | [MCP](./mcp.md) |
+| **Additional skill sources** (custom GitHub repos, private skill indexes) | CLI — `moor skills tap add <repo>` | [Skills Hub](./skills.md#skills-hub) · [Publishing a custom tap](./skills.md#publishing-a-custom-skill-tap) |
+| **Gateway event hooks** (fire on `gateway:startup`, `session:start`, `agent:end`, `command:*`) | Drop `HOOK.yaml` + `handler.py` into `~/.moor/hooks/<name>/` | [Event Hooks](./hooks.md#gateway-event-hooks) |
 | **Shell hooks** (run a shell command on events — notifications, audit logs, desktop alerts) | Config-driven — declare under `hooks:` in `config.yaml` | [Shell Hooks](./hooks.md#shell-hooks) |
 
 :::note
@@ -368,14 +368,14 @@ Not everything is a Python plugin. Some extension surfaces intentionally use **c
 
 ## NixOS declarative plugins
 
-On NixOS, plugins can be installed declaratively via the module options — no `hermes plugins install` needed. See the **[Nix Setup guide](../../getting-started/nix-setup.md#plugins)** for full details.
+On NixOS, plugins can be installed declaratively via the module options — no `moor plugins install` needed. See the **[Nix Setup guide](../../getting-started/nix-setup.md#plugins)** for full details.
 
 ```nix
 services.moor-agent = {
   # Directory plugin (source tree with plugin.yaml)
   extraPlugins = [ (pkgs.fetchFromGitHub { ... }) ];
   # Entry-point plugin (pip package)
-  extraPythonPackages = [ (config.services.hermes-agent.package.python.pkgs.buildPythonPackage { ... }) ];
+  extraPythonPackages = [ (config.services.moor-agent.package.python.pkgs.buildPythonPackage { ... }) ];
   # Enable in config
   settings.plugins.enabled = [ "my-plugin" ];
 };
@@ -386,49 +386,49 @@ Declarative plugins are symlinked with a `nix-managed-` prefix — they coexist 
 ## Managing plugins
 
 ```bash
-hermes plugins                               # unified interactive UI
-hermes plugins list                          # table: enabled / disabled / not enabled (bundled backends,
+moor plugins                               # unified interactive UI
+moor plugins list                          # table: enabled / disabled / not enabled (bundled backends,
                                              # platforms and the live memory.provider count as enabled)
-hermes plugins search <term>                 # search the Hermes plugin catalog
-hermes plugins install <name>                # install a catalog entry (repo @ reviewed pinned SHA)
-hermes plugins install user/repo             # install from Git, then prompt Enable? [y/N]
-hermes plugins install user/repo --enable    # request enable; dependency consent still applies
-hermes plugins install user/repo --no-enable # install but leave disabled (no prompt)
-hermes plugins update my-plugin              # pull latest (local edits are autostashed and re-applied)
-hermes plugins remove my-plugin              # uninstall; also drops it from plugins.enabled/disabled/entries
+moor plugins search <term>                 # search the Moor plugin catalog
+moor plugins install <name>                # install a catalog entry (repo @ reviewed pinned SHA)
+moor plugins install user/repo             # install from Git, then prompt Enable? [y/N]
+moor plugins install user/repo --enable    # request enable; dependency consent still applies
+moor plugins install user/repo --no-enable # install but leave disabled (no prompt)
+moor plugins update my-plugin              # pull latest (local edits are autostashed and re-applied)
+moor plugins remove my-plugin              # uninstall; also drops it from plugins.enabled/disabled/entries
                                              # and resets memory.provider when it was the live provider
-hermes plugins enable my-plugin              # add to allow-list
-hermes plugins disable my-plugin             # remove from allow-list + add to disabled (bundled platforms:
+moor plugins enable my-plugin              # add to allow-list
+moor plugins disable my-plugin             # remove from allow-list + add to disabled (bundled platforms:
                                              # either spelling works, e.g. photon-platform or platforms/photon)
-hermes plugins capabilities [my-plugin]      # declared vs granted capabilities
-hermes plugins check-updates                 # read-only: is any installed plugin outdated?
-hermes plugins adopt my-plugin               # track a self-cloned plugin dir (read its git origin)
-hermes plugins trust-update-url my-plugin    # confirm a changed update_url after review
+moor plugins capabilities [my-plugin]      # declared vs granted capabilities
+moor plugins check-updates                 # read-only: is any installed plugin outdated?
+moor plugins adopt my-plugin               # track a self-cloned plugin dir (read its git origin)
+moor plugins trust-update-url my-plugin    # confirm a changed update_url after review
 ```
 
 ### Update checks and provenance
 
-Hermes records Git install source and revision in `.install-metadata.json`.
+Moor records Git install source and revision in `.install-metadata.json`.
 Unpinned tracked installs compare the saved source's remote HEAD, or a matching
 saved `update_url` feed. Pinned installs remain pinned. Self-cloned directories
-need `hermes plugins adopt NAME` before they become tracked installations.
+need `moor plugins adopt NAME` before they become tracked installations.
 Manually copied or provenance-drifted directories receive diagnostic guidance.
 Pip entry-point plugins can report an owning distribution's available version;
 that check does not turn them into Git-managed installs.
 
-`hermes plugins check-updates` leaves plugin files unchanged. A scheduled gateway
+`moor plugins check-updates` leaves plugin files unchanged. A scheduled gateway
 check runs when `plugins.auto_update_check_hours` is due: default 24 hours,
-`0` disables it. Its receipt is available through `hermes pm status` and the
+`0` disables it. Its receipt is available through `moor pm status` and the
 desktop sync-status view. This is not a hard once-per-day limit if you configure
 a different interval.
 
-By default, updates require `hermes plugins update NAME`. Setting
+By default, updates require `moor plugins update NAME`. Setting
 `plugins.auto_apply: true` opts tracked Git plugins into unattended updates.
 Both routes use the update security scan. Auto-apply does not manage pinned,
 manual, drifted, or pip-distribution rows.
 
-If a manifest changes or introduces `update_url`, Hermes refuses the new address
-until you approve it with `hermes plugins trust-update-url NAME`. This is a
+If a manifest changes or introduces `update_url`, Moor refuses the new address
+until you approve it with `moor plugins trust-update-url NAME`. This is a
 feed-source check, not a sandbox against already trusted plugin code.
 
 ### Dependency preparation and preservation
@@ -440,7 +440,7 @@ Node sidecar dependencies have a separate prompt and remain plugin-local.
 
 PM prepares Python dependencies with core and the enabled plugin set before
 publishing the new environment and configuration. A resolution failure preserves
-the previous selection. Restart Hermes when a new selected environment is not
+the previous selection. Restart Moor when a new selected environment is not
 yet active in the running process.
 
 The enabled set is the union over the default home **and every profile** under
@@ -452,7 +452,7 @@ dependency preparation for **all** homes (`could not parse plugin selection:
 <path>`), rather than silently dropping that profile's plugins from the next
 environment. Fix or remove the offending file; an empty `config.yaml` is fine.
 
-Ordinary Hermes application updates preserve user plugin directories, including
+Ordinary Moor application updates preserve user plugin directories, including
 wrapper files and external sidecar links. Explicit plugin updates or removals
 can change those files. See [Package management](../../reference/package-management.md)
 and the [plugin authoring guide](../../developer-guide/plugins/index.md#lazy-install-optional-python-dependencies).
@@ -462,14 +462,14 @@ Moor Desktop registers the `moor://` URL scheme, so a website, README, or
 chat message can link straight to a plugin install:
 
 ```
-hermes://plugin/install?catalog=NAME               # catalog entry, installs the reviewed pin
-hermes://plugin/install?repo=owner/repo            # any git repo
-hermes://plugin/install?repo=owner/repo&enable=1   # enable the agent plugin after install
-hermes://plugin/install?repo=owner/repo&force=1    # replace an existing install
-hermes://plugin/install?catalog=<name>             # reviewed catalog entry at its pinned commit
+moor://plugin/install?catalog=NAME               # catalog entry, installs the reviewed pin
+moor://plugin/install?repo=owner/repo            # any git repo
+moor://plugin/install?repo=owner/repo&enable=1   # enable the agent plugin after install
+moor://plugin/install?repo=owner/repo&force=1    # replace an existing install
+moor://plugin/install?catalog=<name>             # reviewed catalog entry at its pinned commit
 ```
 
-The `catalog=<name>` form is what the **Open in Hermes Desktop** button on
+The `catalog=<name>` form is what the **Open in Moor Desktop** button on
 every [Plugin Catalog](./plugin-catalog.md) card uses. Desktop resolves the
 name against the live catalog (the same feed the **Capabilities → Plugins**
 picker shows) and opens the same **reviewed catalog entry** dialog an in-app
@@ -479,7 +479,7 @@ catalog shows an error toast and nothing else — it is never reinterpreted as a
 git path, so a link cannot smuggle an unreviewed repo behind a
 familiar-looking name.
 
-For a `repo=` link, clicking one opens Hermes and shows a **confirmation dialog** — the repo id,
+For a `repo=` link, clicking one opens Moor and shows a **confirmation dialog** — the repo id,
 a "Before you install" note, and GitHub browse + clone links — then
 shallow-clones the repo to detect what it ships (an **agent plugin** —
 backend Python, a **desktop plugin** — app UI, or both). You pick the
@@ -501,7 +501,7 @@ Websites need no SDK — a normal anchor works:
 ```
 
 MCP servers have the equivalent link form — see
-[Add to Hermes link](../../reference/mcp-config-reference.md#add-to-hermes-link).
+[Add to Moor link](../../reference/mcp-config-reference.md#add-to-moor-link).
 
 ### Plugin capabilities and consent
 
@@ -752,7 +752,7 @@ every finding stays in the report with file and line:
   `.rst`, `.html`) can never on its own produce **dangerous**: a command or
   credential path quoted there (an uninstall step, a refusal list naming
   `~/.ssh`) steps down one severity, and a README removing the plugin's
-  **own** install directory (`rm -rf "$HOME/.hermes/plugins/<name>"`) is a
+  **own** install directory (`rm -rf "$HOME/.moor/plugins/<name>"`) is a
   note. Agent-facing shapes keep full severity — prompt injection, Markdown
   exfil, agent-config edits, `curl … | sh` one-liners, an `authorized_keys`
   append, a leaked provider key — and so does anything under a bundled
@@ -871,7 +871,7 @@ In gateway mode:
 - Returns `True` when the live gateway accepts the request for asynchronous dispatch. This does not confirm that the agent turn or platform delivery has completed.
 - Returns `False` when `session_key` is omitted, the permission is not granted, or no live host can accept the request. Unknown or unroutable session keys discovered after asynchronous acceptance are written to the gateway log.
 
-Ink TUI (`hermes --tui`) and the desktop / dashboard chat are a third host. They do not set the classic CLI reference and they do not register on the messaging-gateway injector — those two hosts stay separate so a live gateway cannot clobber the TUI (or the reverse). Pass the session's durable `session_key` (the `ses_…` id), not the ephemeral UI session id. Hermes queues the text on that session's prompt queue: a busy session keeps the message for the next turn, an idle session starts one. A key that is not a live TUI session is left for the messaging gateway when one is running, and is never rerouted to a different chat.
+Ink TUI (`moor --tui`) and the desktop / dashboard chat are a third host. They do not set the classic CLI reference and they do not register on the messaging-gateway injector — those two hosts stay separate so a live gateway cannot clobber the TUI (or the reverse). Pass the session's durable `session_key` (the `ses_…` id), not the ephemeral UI session id. Moor queues the text on that session's prompt queue: a busy session keeps the message for the next turn, an idle session starts one. A key that is not a live TUI session is left for the messaging gateway when one is running, and is never rerouted to a different chat.
 
 This enables plugins like remote control viewers, messaging bridges, or webhook receivers to feed messages into the conversation from external sources.
 

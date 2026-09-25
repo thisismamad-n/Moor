@@ -25,7 +25,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.session_lost_and_found import (
+from moor_cli.session_lost_and_found import (
     _parse_sqlite3_cli_version,
     _wal_reset_vulnerable,
     find_sqlite3_cli,
@@ -33,7 +33,7 @@ from hermes_cli.session_lost_and_found import (
 )
 from moor_cli.sqlite_runtime import is_sqlite_wal_reset_vulnerable
 
-LIVE_DB_SALVAGE_COMMAND = 'sqlite3 ~/.hermes/state.db ".recover"'
+LIVE_DB_SALVAGE_COMMAND = 'sqlite3 ~/.moor/state.db ".recover"'
 
 # ---------------------------------------------------------------------------
 # The version gate itself

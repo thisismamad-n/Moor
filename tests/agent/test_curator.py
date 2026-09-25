@@ -78,12 +78,12 @@ def test_bundled_skills_are_off_limits_unless_opted_in(curator_env, monkeypatch)
     the same reader flips with the key. Both loaders see the same answer (DEFAULT_CONFIG agrees)."""
     import importlib
     import tools.skill_usage as usage
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.config_defaults import DEFAULT_CONFIG
     importlib.reload(usage)  # the fixture pins _prune_builtins_enabled; reload restores the real reader
-    monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"curator": {}})
+    monkeypatch.setattr("moor_cli.config.load_config", lambda: {"curator": {}})
     assert usage._prune_builtins_enabled() is False
     assert DEFAULT_CONFIG["curator"]["prune_builtins"] is False
-    monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"curator": {"prune_builtins": True}})
+    monkeypatch.setattr("moor_cli.config.load_config", lambda: {"curator": {"prune_builtins": True}})
     assert usage._prune_builtins_enabled() is True
 
 
@@ -630,7 +630,7 @@ def test_state_atomic_write_no_tmp_leftovers(curator_env):
 
 
 def test_cli_pin_refuses_bundled_skill(curator_env):
-    from hermes_cli import curator as cli
+    from moor_cli import curator as cli
     skills_dir = curator_env["home"] / "skills"
     _write_skill(skills_dir, "ship-skill")
     (skills_dir / ".bundled_manifest").write_text(
@@ -847,10 +847,10 @@ def test_review_fork_receives_configured_reasoning(curator_env, monkeypatch):
         def close(self):
             pass
 
-    monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
-    monkeypatch.setattr("hermes_cli.config.load_config_readonly", lambda: cfg)
+    monkeypatch.setattr("moor_cli.config.load_config", lambda: cfg)
+    monkeypatch.setattr("moor_cli.config.load_config_readonly", lambda: cfg)
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda **kwargs: {"provider": "openai-api", "api_key": "k", "base_url": "https://api.openai.com/v1",
                           "api_mode": "codex_responses"},
     )

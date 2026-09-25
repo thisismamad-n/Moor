@@ -36,7 +36,7 @@ _SECRET_SOURCES: dict[str, str] = {}
 _SECRET_SOURCE_VALUES_BY_HOME: dict[str, dict[str, str]] = {}
 # Per home: the subset of the snapshot a dotenv reload may re-assert — see ``AppliedVar.authoritative`` (#74265).
 _SECRET_SOURCE_RESTORE_BY_HOME: dict[str, dict[str, str]] = {}
-# HERMES_HOME paths already pulled external secrets for: load_hermes_dotenv() runs at import time from
+# MOOR_HOME paths already pulled external secrets for: load_moor_dotenv() runs at import time from
 # several hot modules, so without this the Bitwarden status line prints 3-5x per startup and the config
 # re-parse + ASCII sweep re-run each time (Bitwarden's own cache only saves the network call).
 _APPLIED_HOMES: set[str] = set()
@@ -55,13 +55,13 @@ _DOTENV_PASSES = itertools.count()
 _DOTENV_LOCK = threading.RLock()
 
 # Per-process credentials a parent mints and injects into the child's environment (the Desktop shell /
-# a link-style launcher spawns `hermes dashboard` with a fresh HERMES_DASHBOARD_SESSION_TOKEN and keeps
+# a link-style launcher spawns `moor dashboard` with a fresh MOOR_DASHBOARD_SESSION_TOKEN and keeps
 # the same token for its own /api probes). They are never .env configuration, so a persisted value in
-# ~/.hermes/.env must not replace an injected one — the parent would then 401 against its own child
+# ~/.moor/.env must not replace an injected one — the parent would then 401 against its own child
 # (#115955). A value an earlier dotenv pass published is still reloaded normally.
-_SPAWN_CREDENTIAL_KEYS: frozenset[str] = frozenset({"HERMES_DASHBOARD_SESSION_TOKEN"})
+_SPAWN_CREDENTIAL_KEYS: frozenset[str] = frozenset({"MOOR_DASHBOARD_SESSION_TOKEN"})
 
-# Behavioral routing keys a parent Hermes process injects into child env that silently redirect a profile
+# Behavioral routing keys a parent Moor process injects into child env that silently redirect a profile
 # onto the wrong provider path; these — and ONLY these — are scrubbed at startup when absent from the
 # profile's .env. Credentials are excluded: shell exports are a documented way to supply them, and
 # read-time secret-scope checks (agent/secret_scope.py) own cross-profile credential isolation.
@@ -267,9 +267,9 @@ def _load_dotenv_with_fallback(path: Path, *, override: bool, load_pass: int | N
     ``${VAR}`` / ``${VAR:-default}`` / precedence rules — except that ``${VAR}`` resolves against the value
     VAR had before this process's earlier passes published it (see ``_DOTENV_PUBLISHED``).
 
-    ``load_pass`` groups the layered files of one ``load_hermes_dotenv`` call: within a pass a later layer
+    ``load_pass`` groups the layered files of one ``load_moor_dotenv`` call: within a pass a later layer
     (project, managed) still sees the earlier layer's output, as it always did; only OTHER passes' output
-    is peeled. A bare call (``hermes send``'s direct reload) is its own pass."""
+    is peeled. A bare call (``moor send``'s direct reload) is its own pass."""
     raw = path.read_bytes()
     try:
         # utf-8-sig strips a leading BOM (PowerShell 5.1 / Notepad); plain utf-8 would keep U+FEFF on the
@@ -660,15 +660,15 @@ def _process_moor_home() -> Path:
       (mtime,size)-keyed config cache is safe to reuse; under an override it
       must fall through to an isolated parse of the scoped profile.
 
-    ``hermes_constants.get_routing_process_hermes_home()`` is the override-immune
+    ``moor_constants.get_routing_process_moor_home()`` is the override-immune
     resolver built for exactly this; delegate to it. It is also immune to a host
-    that mirrors the served profile into the live ``HERMES_HOME`` env var
-    (``pin_process_hermes_home``): without that, the mirrored profile satisfied
+    that mirrors the served profile into the live ``MOOR_HOME`` env var
+    (``pin_process_moor_home``): without that, the mirrored profile satisfied
     the guard above and bridged ITS ``terminal.*`` into the shared env.
     """
     try:
-        from hermes_constants import get_routing_process_hermes_home
+        from moor_constants import get_routing_process_moor_home
 
-        return get_routing_process_hermes_home()
+        return get_routing_process_moor_home()
     except Exception:
         return Path.home() / ".moor"

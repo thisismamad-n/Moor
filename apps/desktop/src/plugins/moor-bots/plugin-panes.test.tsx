@@ -257,14 +257,14 @@ describe('the Scheduled jobs pane', () => {
     const harness = recordingContext()
 
     mocks.botChatOwnsWorkspace.mockReturnValue(true)
-    store(`hermes-bots:pane`).set(true)
+    store(`moor-bots:pane`).set(true)
     plugin.register(harness.ctx)
     await settle()
 
     // Boot straight into a bot chat: the pane arrives and a Close from a past
     // launch is dropped once (#102224).
     expect(mocks.undismissPane).toHaveBeenCalledTimes(1)
-    expect(mocks.undismissPane).toHaveBeenCalledWith('hermes-bots:routines')
+    expect(mocks.undismissPane).toHaveBeenCalledWith('moor-bots:routines')
 
     // The user ✕-es the pane, opens a group room (the tile must not sit
     // beside a group chat) and comes back to the bot chat — all inside one
@@ -281,9 +281,9 @@ describe('the Scheduled jobs pane', () => {
 
     // Leaving Bot Mode and coming back is the ask for the bot's chrome again.
     mocks.botChatOwnsWorkspace.mockReturnValue(false)
-    store(`hermes-bots:pane`).set(false)
+    store(`moor-bots:pane`).set(false)
     mocks.botChatOwnsWorkspace.mockReturnValue(true)
-    store(`hermes-bots:pane`).set(true)
+    store(`moor-bots:pane`).set(true)
     expect(mocks.undismissPane).toHaveBeenCalledTimes(2)
 
     harness.dispose()
@@ -313,10 +313,10 @@ describe('returning to Sessions', () => {
 
     plugin.register(harness.ctx)
     await settle()
-    store(`hermes-bots:pane`).set(true)
+    store(`moor-bots:pane`).set(true)
     $pendingBotOpen.set({ generation: 1, key: 'local::bravo' })
 
-    store(`hermes-bots:pane`).set(false)
+    store(`moor-bots:pane`).set(false)
 
     expect($pendingBotOpen.get()).toBeNull()
     expect(mocks.setWorkspaceScope).toHaveBeenCalledWith('sessions')

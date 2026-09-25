@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { classifyGroupMention, renderGroupMentionText } from './group-mention-text'
 import type { GroupMember } from './types'
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { atom } = await import('nanostores')
 
   return {
@@ -25,7 +25,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
   }
 })
 
-vi.mock('./shared', () => ({ getPluginCtx: () => null, ID: 'hermes-bots' }))
+vi.mock('./shared', () => ({ getPluginCtx: () => null, ID: 'moor-bots' }))
 
 const members = [
   { name: 'planner', handle: 'planner' },

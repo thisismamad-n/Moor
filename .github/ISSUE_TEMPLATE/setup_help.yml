@@ -12,7 +12,7 @@ body:
         - Run `moor debug share` and paste the links in the Debug Report section below
         - If you're in a chat session, you can use `/debug` instead — it does the same thing
         - Try `moor update` to get the latest version
-        - Check the [README troubleshooting section](https://github.com/NousResearch/hermes-agent#troubleshooting)
+        - Check the [README troubleshooting section](https://github.com/thisismamad-n/Moor#troubleshooting)
         - For general questions, consider the [Moor inc. Discord](https://discord.gg/NousResearch) for faster help
 
   - type: textarea

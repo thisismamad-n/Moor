@@ -5,9 +5,9 @@ keep the user's real HOME by default so external CLIs find existing credentials.
 Containers still use the profile home for persistence, and users can explicitly
 opt into profile HOME isolation on the host.
 
-See: https://github.com/NousResearch/hermes-agent/issues/25114
-See: https://github.com/NousResearch/hermes-agent/issues/36144
-See: https://github.com/NousResearch/hermes-agent/issues/29015
+See: https://github.com/thisismamad-n/Moor/issues/25114
+See: https://github.com/thisismamad-n/Moor/issues/36144
+See: https://github.com/thisismamad-n/Moor/issues/29015
 """
 
 from pathlib import Path
@@ -51,13 +51,13 @@ class TestGetSubprocessHome:
         """A systemd system unit with no HOME at all should still get real HOME repaired."""
         self._host_mode(monkeypatch)
         real_home = tmp_path / "real-home"
-        hermes_home = real_home / ".hermes" / "profiles" / "coder"
-        profile_home = hermes_home / "home"
+        moor_home = real_home / ".moor" / "profiles" / "coder"
+        profile_home = moor_home / "home"
         profile_home.mkdir(parents=True)
         monkeypatch.delenv("HOME", raising=False)
-        monkeypatch.setenv("HERMES_REAL_HOME", str(real_home))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        from hermes_constants import get_subprocess_home
+        monkeypatch.setenv("MOOR_REAL_HOME", str(real_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
+        from moor_constants import get_subprocess_home
         assert get_subprocess_home() == str(real_home)
 
     def test_terminal_child_env_carries_home_when_host_has_none(self, tmp_path, monkeypatch):
@@ -71,8 +71,8 @@ class TestGetSubprocessHome:
         real_home = tmp_path / "real-home"
         real_home.mkdir()
         monkeypatch.delenv("HOME", raising=False)
-        monkeypatch.setenv("HERMES_REAL_HOME", str(real_home))
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_REAL_HOME", str(real_home))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         from tools.environments.local import build_subprocess_env
         assert build_subprocess_env()["HOME"] == str(real_home)
 

@@ -30,6 +30,6 @@ def test_advisory_remediation_uses_active_moor_home(monkeypatch, tmp_path):
     monkeypatch.setattr(sa, "display_moor_home", lambda: "~/.moor/profiles/work")
     hit = SimpleNamespace(advisory=sa.ADVISORIES[0], package="mistralai", installed_version="2.4.6")
     text = "\n".join(sa.full_remediation_text(hit))
-    assert "~/.hermes/profiles/work/.env" in text
-    assert "{hermes_home}" not in text
-    assert not re.search(r"~/\.hermes/\.env", text)
+    assert "~/.moor/profiles/work/.env" in text
+    assert "{moor_home}" not in text
+    assert not re.search(r"~/\.moor/\.env", text)

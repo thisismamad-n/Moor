@@ -2,7 +2,7 @@
 
 Settled user decision (2026-09-03): Windows gateway supervision stays on the
 existing user-logon Scheduled Task. The desktop6:Service manifest fragment
-and the `gateway run --service` / `hermes gateway service` frontend were
+and the `gateway run --service` / `moor gateway service` frontend were
 removed because the desktop6 schema cannot grant the promised installing-user
 account model (StartAccount is required and limited to
 localSystem|localService|networkService). These tests pin the surface the
@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import argparse
 
-import hermes_cli.config_defaults as config_defaults
-from hermes_cli.subcommands import gateway as gateway_subcommands
+import moor_cli.config_defaults as config_defaults
+from moor_cli.subcommands import gateway as gateway_subcommands
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -34,7 +34,7 @@ def test_gateway_subparser_has_no_service_subcommand(capsys):
     except SystemExit:
         pass
     else:
-        raise AssertionError("`hermes gateway service` must stay removed")
+        raise AssertionError("`moor gateway service` must stay removed")
     finally:
         capsys.readouterr()
 

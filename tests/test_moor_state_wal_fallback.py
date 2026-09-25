@@ -18,10 +18,10 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_state
-import hermes_state_wal
-from hermes_state import SessionDB, get_last_init_error
-from hermes_state_wal import WalUnsupportedError, apply_wal_with_fallback
+import moor_state
+import moor_state_wal
+from moor_state import SessionDB, get_last_init_error
+from moor_state_wal import WalUnsupportedError, apply_wal_with_fallback
 
 
 # ``sqlite3.Connection.execute`` is a C-level slot and can't be monkeypatched

@@ -384,41 +384,41 @@ class TestGatewayRuntimeStatus:
         assert status._command_line_belongs_to_profile(cmdline, home) is True
 
     def test_command_line_belongs_to_profile_rejects_sibling_homes(self):
-        """A substring test let ``HERMES_HOME=/root/profiles/ops2`` satisfy the ``ops`` profile's
+        """A substring test let ``MOOR_HOME=/root/profiles/ops2`` satisfy the ``ops`` profile's
         predicate, so a stale state record could borrow the sibling's live gateway identity (same
         shape as the ``-p ops`` vs ``-p ops-2`` token rule) -- on the named AND the default branch
         (#115031). An exact or absent assignment still matches."""
         home = Path("/fixture/profiles/ops")
         for cmdline in (
-            "HERMES_HOME=/fixture/profiles/ops2 hermes gateway run",
-            "HERMES_HOME=/fixture/profiles/ops-backup hermes gateway run",
-            "HERMES_HOME=/fixture/profiles/ops/2 hermes gateway run",
+            "MOOR_HOME=/fixture/profiles/ops2 moor gateway run",
+            "MOOR_HOME=/fixture/profiles/ops-backup moor gateway run",
+            "MOOR_HOME=/fixture/profiles/ops/2 moor gateway run",
         ):
             assert not status._command_line_belongs_to_profile(cmdline, home), cmdline
-        default_home = Path("/opt/hermes-data")
-        assert not status._command_line_belongs_to_profile("HERMES_HOME=/opt/hermes-data2 hermes gateway run", default_home)
-        assert status._command_line_belongs_to_profile("HERMES_HOME=/opt/hermes-data hermes gateway run", default_home)
-        assert status._command_line_belongs_to_profile("hermes gateway run", default_home)
+        default_home = Path("/opt/moor-data")
+        assert not status._command_line_belongs_to_profile("MOOR_HOME=/opt/moor-data2 moor gateway run", default_home)
+        assert status._command_line_belongs_to_profile("MOOR_HOME=/opt/moor-data moor gateway run", default_home)
+        assert status._command_line_belongs_to_profile("moor gateway run", default_home)
 
     def test_command_line_belongs_to_profile_matches_own_home_spellings_only(self):
         """Token-bounded value AND name: quoted values (ps/wmic re-quoting) and a trailing separator
-        (systemd ``Environment=``, ``sh -c`` wrappers) are the same home; ``FOO=hermes_home=/x``
+        (systemd ``Environment=``, ``sh -c`` wrappers) are the same home; ``FOO=moor_home=/x``
         embeds the name inside another token and is not an assignment."""
         home = Path("/opt/data/profiles/coder with space")
         assert status._command_line_belongs_to_profile(
-            'hermes_home="/opt/data/profiles/coder with space" hermes gateway run', home)
+            'moor_home="/opt/data/profiles/coder with space" moor gateway run', home)
         # /proc and psutil hand argv back space-joined, so an unquoted value with a space is cut at
         # the space by the token parser; the whole-home literal match must still claim it.
         assert status._command_line_belongs_to_profile(
-            "HERMES_HOME=/opt/data/profiles/coder with space hermes gateway run", home)
+            "MOOR_HOME=/opt/data/profiles/coder with space moor gateway run", home)
         assert status._command_line_belongs_to_profile(
-            r"HERMES_HOME=C:\Users\John Doe\.hermes hermes gateway run", Path(r"C:\Users\John Doe\.hermes"))
+            r"MOOR_HOME=C:\Users\John Doe\.moor moor gateway run", Path(r"C:\Users\John Doe\.moor"))
         assert not status._command_line_belongs_to_profile(
-            "HERMES_HOME=/opt/data/profiles/coder with spaces hermes gateway run", home)
+            "MOOR_HOME=/opt/data/profiles/coder with spaces moor gateway run", home)
         home = Path("/fixture/profiles/ops")
-        assert status._command_line_belongs_to_profile("HERMES_HOME=/fixture/profiles/ops/ hermes gateway run", home)
-        assert status._command_line_belongs_to_profile("HERMES_HOME=/opt/hermes-data/ hermes gateway run", Path("/opt/hermes-data"))
-        assert not status._command_line_belongs_to_profile("FOO=hermes_home=/fixture/profiles/ops hermes gateway run", home)
+        assert status._command_line_belongs_to_profile("MOOR_HOME=/fixture/profiles/ops/ moor gateway run", home)
+        assert status._command_line_belongs_to_profile("MOOR_HOME=/opt/moor-data/ moor gateway run", Path("/opt/moor-data"))
+        assert not status._command_line_belongs_to_profile("FOO=moor_home=/fixture/profiles/ops moor gateway run", home)
 
 
     def test_write_runtime_status_explicit_none_clears_stale_fields(self, tmp_path, monkeypatch):
@@ -482,7 +482,7 @@ class TestRuntimeStatusBackgroundWriter:
     def test_blocked_write_does_not_block_publish_and_burst_coalesces(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         write_started = threading.Event()
         release_write = threading.Event()
         publish_returned = threading.Event()
@@ -540,7 +540,7 @@ class TestRuntimeStatusBackgroundWriter:
     def test_sync_write_can_bound_a_blocked_persistence_wait(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         write_started = threading.Event()
         release_write = threading.Event()
 
@@ -1417,9 +1417,9 @@ class TestLaunchdPlistRespawnGovernance:
         import re
 
         from gateway.restart import LAUNCHD_GUI_EXIT_TIMEOUT_CLAMP_S, LAUNCHD_STOP_CLEANUP_RESERVE_S
-        from hermes_cli.gateway import generate_launchd_plist
+        from moor_cli.gateway import generate_launchd_plist
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         plist = generate_launchd_plist()
         m = re.search(r"<key>ExitTimeOut</key>\s*<integer>(\d+)</integer>", plist)
         assert m, plist
@@ -1612,7 +1612,7 @@ class TestResolveGatewayLiveness:
         permissions error must not turn into a 500.
         """
         # Empty rendezvous dir: no host gateway owns the role, so the multiplexer rung stays quiet.
-        monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path))
+        monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path))
 
         def _boom(*a, **k):
             raise RuntimeError("probe exploded")
@@ -1722,7 +1722,7 @@ def test_strict_gateway_identity_rejects_reused_pid(tmp_path, monkeypatch):
 def test_retained_gateway_state_keeps_watchdog_degraded_like_startup_failed():
     """A watchdog-stamped ``degraded`` of a dead process is a current failure under the same rule as
     ``startup_failed`` (#113372): kept while the operator wants the gateway running, ``stopped`` once
-    ``hermes gateway stop`` records the intent. The startup-time ``degraded`` (retryable platforms, no
+    ``moor gateway stop`` records the intent. The startup-time ``degraded`` (retryable platforms, no
     watchdog exit_reason) of a dead process is just ``stopped``."""
     watchdog = {"gateway_state": "degraded", "exit_reason": "loop_liveness_watchdog"}
     assert status.retained_gateway_state(watchdog) == "degraded"

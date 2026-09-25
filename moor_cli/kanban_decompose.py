@@ -202,7 +202,7 @@ class _Routing:
 
 
 def _load_routing(*, root_assignee: Optional[str] = None) -> _Routing:
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     try:
         cfg = load_config_readonly()
     except Exception:  # decompose_task promises ok=False, never a raise, on config trouble

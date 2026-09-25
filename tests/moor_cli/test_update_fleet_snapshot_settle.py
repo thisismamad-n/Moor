@@ -74,7 +74,7 @@ def test_snapshot_keeps_waiting_when_the_unit_is_unknown_to_the_asked_scope(monk
     clock = _FakeClock()
     monkeypatch.setattr(update_cmd_fleet._time, "monotonic", clock.monotonic)
     monkeypatch.setattr(update_cmd_fleet._time, "sleep", clock.sleep)
-    monkeypatch.setattr("hermes_cli.update_receipt.collect_fleet_versions", lambda **_kwargs: [])
+    monkeypatch.setattr("moor_cli.update_receipt.collect_fleet_versions", lambda **_kwargs: [])
 
     def systemctl(cmd, *, timeout):
         # Real systemctl shape: the owning (user) scope has the unit loaded and active; the system
@@ -85,9 +85,9 @@ def test_snapshot_keeps_waiting_when_the_unit_is_unknown_to_the_asked_scope(monk
             stderr="", returncode=0)
 
     monkeypatch.setattr(update_cmd_fleet, "_systemctl", systemctl)
-    assert update_cmd_fleet._restarted_units_gone(("system/hermes-gateway.service",)) is False
+    assert update_cmd_fleet._restarted_units_gone(("system/moor-gateway.service",)) is False
 
-    restart = SimpleNamespace(pre_restart_gateway_pids=[101], restarted_scoped_units={"system/hermes-gateway.service"})
+    restart = SimpleNamespace(pre_restart_gateway_pids=[101], restarted_scoped_units={"system/moor-gateway.service"})
     assert update_cmd_fleet._collect_fleet_snapshot(restart, rows_expected=True) == []
     assert clock.now >= update_cmd_fleet._FLEET_PROBE_SETTLE_TIMEOUT_SECONDS
 
@@ -101,7 +101,7 @@ def test_snapshot_waits_for_the_relaunched_pid_to_publish_its_identity(monkeypat
     unknown = {"profile": "default", "pid": 34516, "code_sha": None, "code_version": None, "state": "unknown"}
     current = {**unknown, "code_sha": "new", "code_version": "0.21.3", "state": "current"}
     snapshots = iter([[dict(unknown)]] * 5 + [[current]])
-    monkeypatch.setattr("hermes_cli.update_receipt.collect_fleet_versions", lambda **_kwargs: next(snapshots))
+    monkeypatch.setattr("moor_cli.update_receipt.collect_fleet_versions", lambda **_kwargs: next(snapshots))
     restart = SimpleNamespace(pre_restart_gateway_pids=[32512], restarted_scoped_units=set())
 
     assert update_cmd_fleet._collect_fleet_snapshot(restart, rows_expected=True) == [current]
@@ -109,7 +109,7 @@ def test_snapshot_waits_for_the_relaunched_pid_to_publish_its_identity(monkeypat
 
     # Control: the same unknown row for a pid that was already running pre-update is settled as-is.
     clock.now = 0.0
-    monkeypatch.setattr("hermes_cli.update_receipt.collect_fleet_versions", lambda **_kwargs: [dict(unknown)])
+    monkeypatch.setattr("moor_cli.update_receipt.collect_fleet_versions", lambda **_kwargs: [dict(unknown)])
     survivor = SimpleNamespace(pre_restart_gateway_pids=[34516], restarted_scoped_units=set())
     result = update_cmd_fleet._collect_fleet_snapshot(survivor, rows_expected=True)
     assert clock.now == 2.0 and "identity_pending" not in result[0]

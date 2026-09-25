@@ -437,7 +437,7 @@ def _probe_single_server(
     # Deep transport code (tools/mcp_tool_transport.py::_negotiate_session) reads its OWN
     # session.initialize() bound straight off config["connect_timeout"], independent of the
     # `connect_timeout` param above. Callers that extend the param to give a user time to finish
-    # an OAuth browser flow (e.g. `hermes mcp login`'s 315s) left that inner bound at the
+    # an OAuth browser flow (e.g. `moor mcp login`'s 315s) left that inner bound at the
     # (unrelated) 60s default, so the still-pending OAuth callback wait got cancelled mid-flow —
     # surfacing as a retry that re-opens a second authorization against the same callback port.
     config["connect_timeout"] = connect_timeout
@@ -854,9 +854,9 @@ def _reauth_oauth_server(name: str, server_config: dict, *, flow: str | None = N
             # metadata stays. A fresh discovery still overwrites it, but when the metadata document
             # cannot be re-fetched (WAF-fronted split-host servers) it is the only thing that keeps
             # the announced authorize URL off the SDK's `{mcp-origin}/authorize` guess (#115329).
-            from tools.mcp_oauth import HermesTokenStorage
+            from tools.mcp_oauth import MoorTokenStorage
             get_manager().evict(name)
-            HermesTokenStorage(name).remove(keep_metadata=True)
+            MoorTokenStorage(name).remove(keep_metadata=True)
     except Exception as exc:
         _warning(f"Could not clear existing OAuth state: {exc}")
 
@@ -866,7 +866,7 @@ def _reauth_oauth_server(name: str, server_config: dict, *, flow: str | None = N
     # The probe triggers the OAuth flow (browser redirect + callback capture). Its bound must outlast
     # the oauth.timeout callback window (plus headroom for the token exchange), or a user who raised
     # oauth.timeout still gets cut off at the old fixed floor — matching the GUI re-auth path in
-    # web_server_mcp.py and tui_gateway/mcp_oauth_sessions.py. force_interactive_oauth: `hermes mcp
+    # web_server_mcp.py and tui_gateway/mcp_oauth_sessions.py. force_interactive_oauth: `moor mcp
     # login` is explicitly user-initiated even when stdin isn't a TTY (desktop / agent-spawned
     # terminals), where _is_interactive() alone would refuse to open a browser.
     try:
@@ -1113,8 +1113,8 @@ def mcp_command(args):
     if handler:
         # A handler's int return is the process exit code (``main()`` exits non-zero on it).
         return handler(args)
-    # No subcommand — drop the user into the catalog picker (same UX as `hermes plugin`).
-    from hermes_cli.mcp_picker import run_picker
+    # No subcommand — drop the user into the catalog picker (same UX as `moor plugin`).
+    from moor_cli.mcp_picker import run_picker
     run_picker()
     print(color("  Commands:", Colors.CYAN))
     for line in _MCP_USAGE:

@@ -164,8 +164,8 @@ class TestFeishuAdapterMessaging(unittest.TestCase):
         Without this UA tag the Feishu server does not push group @mention
         events over the WebSocket transport. The long-lived client must also
         stay off asyncio's shared default executor. See
-        https://github.com/NousResearch/hermes-agent/issues/50656
-        https://github.com/NousResearch/hermes-agent/issues/78318
+        https://github.com/thisismamad-n/Moor/issues/50656
+        https://github.com/thisismamad-n/Moor/issues/78318
         """
         from gateway.config import PlatformConfig
         from plugins.platforms.feishu.adapter import FeishuAdapter
@@ -1005,8 +1005,8 @@ class TestAdapterBehavior(unittest.TestCase):
     @patch.dict(
         os.environ,
         {
-            "HERMES_FEISHU_TEXT_BATCH_MAX_MESSAGES": "8",
-            "HERMES_FEISHU_TEXT_BATCH_MAX_CHARS": "4000",
+            "MOOR_FEISHU_TEXT_BATCH_MAX_MESSAGES": "8",
+            "MOOR_FEISHU_TEXT_BATCH_MAX_CHARS": "4000",
         },
         clear=False,
     )
@@ -2422,14 +2422,14 @@ def test_hydrated_bot_identity_wins_over_stale_env_values(fake_lark_requests, mo
     """#16993: /bot/v3/info runs even when FEISHU_BOT_* are configured, and the hydrated identity
     replaces the env values so a stale id from an old app registration can't break @mention gating."""
     monkeypatch.setenv("FEISHU_BOT_OPEN_ID", "ou_env")
-    monkeypatch.setenv("FEISHU_BOT_NAME", "Env Hermes")
+    monkeypatch.setenv("FEISHU_BOT_NAME", "Env Moor")
     adapter = _plain_feishu_adapter()
     assert adapter._bot_open_id == "ou_env"
     requests = []
 
     def _request(req):
         requests.append(req)
-        return _bot_info_response("ou_hydrated", "Hydrated Hermes")
+        return _bot_info_response("ou_hydrated", "Hydrated Moor")
 
     adapter._client = SimpleNamespace(request=_request)
 
@@ -2437,7 +2437,7 @@ def test_hydrated_bot_identity_wins_over_stale_env_values(fake_lark_requests, mo
 
     assert [r.uri for r in requests] == ["/open-apis/bot/v3/info"]
     assert adapter._bot_open_id == "ou_hydrated"
-    assert adapter._bot_name == "Hydrated Hermes"
+    assert adapter._bot_name == "Hydrated Moor"
 
 
 def test_bot_sender_name_is_fetched_via_basic_batch_and_cached(fake_lark_requests):

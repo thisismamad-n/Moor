@@ -708,7 +708,7 @@ class TestLightpandaSessionLifecycle:
         """A parseable-but-non-object state file is swept like an unreadable one —
         never an AttributeError that wedges the reaper."""
         from tools import browser_lightpanda
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         state_dir = browser_lightpanda._state_dir()
         bad = state_dir / "broken.json"
         bad.write_text('"not a record"', encoding="utf-8")

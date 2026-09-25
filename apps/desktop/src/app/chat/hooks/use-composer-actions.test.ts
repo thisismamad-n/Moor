@@ -308,7 +308,7 @@ describe('useComposerActions native image drops', () => {
     )
 
     const add = vi.fn()
-    Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: { saveImageBuffer } })
+    Object.defineProperty(window, 'moorDesktop', { configurable: true, value: { saveImageBuffer } })
 
     const { result } = renderHook(() =>
       useComposerActions({
@@ -410,14 +410,14 @@ describe('useComposerActions native image drops', () => {
 
 describe('useComposerActions generated paste title metadata', () => {
   afterEach(() => {
-    Reflect.deleteProperty(window, 'hermesDesktop')
+    Reflect.deleteProperty(window, 'moorDesktop')
     vi.clearAllMocks()
   })
 
-  it('marks only a Hermes-generated large paste with a bounded title preview', async () => {
+  it('marks only a moor-generated large paste with a bounded title preview', async () => {
     const savePastedText = vi.fn(async () => '/tmp/composer-pastes/pasted-content.txt')
     const add = vi.fn<(attachment: ComposerAttachment) => void>()
-    Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: { savePastedText } })
+    Object.defineProperty(window, 'moorDesktop', { configurable: true, value: { savePastedText } })
 
     const { result } = renderHook(() =>
       useComposerActions({

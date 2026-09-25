@@ -136,7 +136,7 @@ _BILLING_ERROR_CODES = frozenset({
     # terminal for this credential until limits are raised.
     "credit_balance_exhausted", "organization_spend_limit_exceeded",
     "organization_usage_limit_exceeded", "project_spend_limit_exceeded",
-    # Nous paid model behind an empty credit balance arrives as a 404 (#115702).
+    # Moor paid model behind an empty credit balance arrives as a 404 (#115702).
     "insufficient_credits_for_paid_model",
 })
 
@@ -529,7 +529,7 @@ _REASONING_REQUIRED_MARKERS = (
 
 def is_reasoning_required_rejection(error_msg: str) -> bool:
     """Provider 400 saying the model's reasoning cannot be switched OFF ("Reasoning is mandatory for
-    this endpoint and cannot be disabled", the Nous Portal on gpt-6-astra). The opposite of
+    this endpoint and cannot be disabled", the Moor Portal on gpt-6-astra). The opposite of
     ``is_reasoning_field_rejection``: the field is understood, the *disable* is refused, so the right
     reaction is to step the effort up to the lowest level rather than drop the field (a dropped field
     also works, but tells the caller nothing about the next call)."""
@@ -793,7 +793,7 @@ def _moor_welcome_tier(c: _Ctx) -> Optional[Verdict]:
         # A named credential's fairshare 429 is an ordinary rate limit, whatever its body says. The
         # one welcome refusal it does receive is the gateway's mirror 400 on the welcome host; its
         # reconnect copy stands, only the sign-in card is withheld (``_welcome_surface_kind``).
-        if c.provider == "nous" and status == 400 and welcome_route_refusal(status, c.msg) == "named_on_welcome_host":
+        if c.provider == "moor" and status == 400 and welcome_route_refusal(status, c.msg) == "named_on_welcome_host":
             return _v(_R.format_error, retryable=False, should_fallback=True,
                       error_context={"welcome_route": "named_on_welcome_host"})
         return None
@@ -966,11 +966,11 @@ def classify_api_error(
 ) -> ClassifiedError:
     """Classify an API error into a structured recovery recommendation (see ``_STAGES``).
 
-    ``base_url`` (optional) is the route the call went to; the Nous welcome tier keys its
+    ``base_url`` (optional) is the route the call went to; the Moor welcome tier keys its
     dark-tier 403 on it because that refusal carries no distinguishing message.
     ``api_key`` identifies an anonymous request; a host or fairshare reason alone does not.
     The credential is never included in the returned context."""
-    from hermes_cli.anon_auth import is_anonymous_request
+    from moor_cli.anon_auth import is_anonymous_request
     status_code = _extract_status_code(error)
     # Copilot/GitHub Models RateLimitError may not set .status_code; force 429.
     if status_code is None and type(error).__name__ == "RateLimitError":
@@ -996,7 +996,7 @@ def classify_api_error(
 
 def _off_route_host(c: _Ctx) -> str:
     """The contacted host when ``base_url`` is set and is not the provider's own endpoint; ``""`` otherwise."""
-    from hermes_cli.route_identity import provider_owns_route
+    from moor_cli.route_identity import provider_owns_route
     from utils import base_url_hostname
     host = base_url_hostname(c.base_url)
     if not host or provider_owns_route(c.provider_slug, c.base_url) is True:
@@ -1156,7 +1156,7 @@ def _classify_400(c: _Ctx) -> Verdict:
         "conflicting authenticated continuation identities" in msg
     ):
         return _V_INVALID_ENCRYPTED
-    # Route rejecting a reasoning disable: a reasoning-mandatory route (GLM-5.3 on Nous Portal /
+    # Route rejecting a reasoning disable: a reasoning-mandatory route (GLM-5.3 on Moor Portal /
     # OpenRouter) or a chat-only relay that does not accept ``reasoning_effort: none`` at all
     # (#114460). Deterministic for the request shape, but the only bad field is the disable — the
     # loop drops it and retries once. Must precede request-validation, which would abort as format_error.

@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 from gateway.restart import GATEWAY_SERVICE_RESTART_EXIT_CODE
-from hermes_constants import get_hermes_home, get_process_hermes_home
+from moor_constants import get_moor_home, get_process_moor_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def _hard_exit(exit_code: int) -> None:
 def _mark_exited_quietly(exit_code: int, reason: str) -> None:
     """Best-effort terminal stamp on BOTH lifecycle records before ``os._exit`` skips teardown:
     the lifecycle ledger (so the next boot names the watchdog, not SIGKILL/OOM) and
-    ``gateway_state.json`` (so ``hermes gateway status`` and every other reader of that file stop
+    ``gateway_state.json`` (so ``moor gateway status`` and every other reader of that file stop
     seeing ``running`` for a process the watchdog killed — #113372). The runtime-status write goes
     LAST: it is the record housekeeping refreshes, so nothing may overwrite it after we stamp it."""
     with contextlib.suppress(Exception):
@@ -172,9 +172,9 @@ def _mark_exited_quietly(exit_code: int, reason: str) -> None:
             gateway_state="degraded", exit_reason=reason, wait_timeout=0.25, **restart)
 
 
-def _process_hermes_home() -> Path:
-    """HERMES_HOME for process-level identity files (ignore profile overrides)."""
-    return get_process_hermes_home() if os.environ.get("HERMES_HOME", "").strip() else get_hermes_home()
+def _process_moor_home() -> Path:
+    """MOOR_HOME for process-level identity files (ignore profile overrides)."""
+    return get_process_moor_home() if os.environ.get("MOOR_HOME", "").strip() else get_moor_home()
 
 
 def _home(home: Optional[Path]) -> Path:

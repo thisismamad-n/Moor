@@ -260,7 +260,7 @@ Moor command with its description.
 
 Under the hood: Moor ships with a generated Slack app manifest (see
 Step 1, Option A) that declares every command in
-[`COMMAND_REGISTRY`](https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/commands.py)
+[`COMMAND_REGISTRY`](https://github.com/thisismamad-n/Moor/blob/main/moor_cli/commands.py)
 as a slash command. In Socket Mode, Slack routes the command event
 through the WebSocket regardless of the manifest's `url` field.
 
@@ -363,7 +363,7 @@ If you maintain your Slack manifest by hand and just want the slash
 command list:
 
 ```bash
-hermes slack manifest --slashes-only > ~/.hermes/cache/scratch/slashes.json
+moor slack manifest --slashes-only > ~/.moor/cache/scratch/slashes.json
 ```
 
 Paste that array into the `features.slash_commands` key of your
@@ -599,7 +599,7 @@ platforms:
   recoverable reason (API error, rate limit), Moor falls back to a single continuously edited text message so
   progress stays live for the turn. A relay egress refusal of the destination
   is not recoverable and suppresses progress for the turn.
-- If Slack closes a stream during a long turn, Hermes opens a fresh card in
+- If Slack closes a stream during a long turn, Moor opens a fresh card in
   the same thread with the current task list and keeps updating there. The
   previous card remains visible.
 - The card stream is stopped exactly once when the turn finalizes, including

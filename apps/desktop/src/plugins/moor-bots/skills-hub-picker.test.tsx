@@ -9,7 +9,7 @@
  * frame's contentWindow and the identifier is charset-checked.
  */
 
-import type * as HermesSdk from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -122,7 +122,7 @@ describe('hub pick messages', () => {
     const frame = container.querySelector('iframe') as HTMLIFrameElement
 
     postPick(
-      { identifier: 'nous/web-research', name: 'Web Research', type: 'hermes-skill-pick' },
+      { identifier: 'moor/web-research', name: 'Web Research', type: 'moor-skill-pick' },
       { source: frame.contentWindow }
     )
 
@@ -139,7 +139,7 @@ describe('hub pick messages', () => {
         {
           action: 'install',
           profile: 'backend-worker',
-          query: 'nous/web-research'
+          query: 'moor/web-research'
         }
       ]
     ])

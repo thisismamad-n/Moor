@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.web_routers import files
+from moor_cli.web_routers import files
 
 
 @pytest.mark.asyncio
@@ -16,7 +16,7 @@ async def test_get_media_reads_and_encodes_off_event_loop(monkeypatch, tmp_path)
     image = image_dir / "sample.png"
     image.write_bytes(b"\x89PNG\r\n\x1a\nimage-data")
 
-    monkeypatch.setattr(files, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(files, "get_moor_home", lambda: tmp_path)
     original_read_bytes = Path.read_bytes
     read_threads = []
 

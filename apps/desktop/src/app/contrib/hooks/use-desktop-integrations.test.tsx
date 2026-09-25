@@ -179,7 +179,7 @@ describe('useDesktopIntegrations', () => {
     })
 
     it('announces the restored session so the pre-session draft follows the cold-start navigation', () => {
-      window.localStorage.setItem('hermes.desktop.lastRoute.profile.default', '/remembered-session')
+      window.localStorage.setItem('moor.desktop.lastRoute.profile.default', '/remembered-session')
       // Typed on the fresh chat while the backend was still coming up.
       stashSessionDraft(null, 'typed while booting', [])
 
@@ -443,7 +443,7 @@ describe('useDesktopIntegrations', () => {
 
   describe('route-scoped restoration', () => {
     it('restores a non-session route like /capabilities', () => {
-      window.localStorage.setItem('hermes.desktop.lastRoute.profile.default', '/capabilities')
+      window.localStorage.setItem('moor.desktop.lastRoute.profile.default', '/capabilities')
 
       const sessions = [session({ id: 'some-session', profile: 'default' })]
 
@@ -594,17 +594,17 @@ describe('useDesktopIntegrations', () => {
       expect(navigate).not.toHaveBeenCalled()
     })
 
-    it('routes hermes://plugin/install?catalog= to the catalog lookup, not the git-path modal', () => {
+    it('routes moor://plugin/install?catalog= to the catalog lookup, not the git-path modal', () => {
       let deepLink: ((payload: { kind: string; name: string; params: Record<string, string> }) => void) | undefined
-      desktopWindow.hermesDesktop = {
-        ...desktopWindow.hermesDesktop,
+      desktopWindow.moorDesktop = {
+        ...desktopWindow.moorDesktop,
         onDeepLink: (cb: (payload: { kind: string; name: string; params: Record<string, string> }) => void) => {
           deepLink = cb
 
           return () => undefined
         },
         signalDeepLinkReady: vi.fn()
-      } as unknown as Window['hermesDesktop']
+      } as unknown as Window['moorDesktop']
 
       render({ profileReady: true, sessions: [] })
       deepLink?.({ kind: 'plugin', name: 'install', params: { catalog: 'weather', repo: 'evil/repo' } })

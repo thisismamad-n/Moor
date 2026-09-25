@@ -12,9 +12,9 @@ const initialMoorDesktop = desktopWindow.moorDesktop
 const open = vi.fn().mockResolvedValue({ ok: true })
 
 function installBridge() {
-  desktopWindow.hermesDesktop = {
+  desktopWindow.moorDesktop = {
     hud: { open }
-  } as unknown as Window['hermesDesktop']
+  } as unknown as Window['moorDesktop']
 }
 
 function session(overrides: Partial<SessionInfo>): SessionInfo {

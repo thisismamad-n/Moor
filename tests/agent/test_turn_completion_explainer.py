@@ -185,7 +185,7 @@ def test_explanation_persistence_fts_index_never_advises_recovery():
     assert "restore from a backup" not in lower and "backups/" not in lower
     assert "would have been lost" not in lower
     assert "free" not in lower  # never disk-space advice
-    assert "hermes doctor" in lower
+    assert "moor doctor" in lower
 
 
 def test_explanation_persistence_replaced_cause_forbids_inplace_repair():
@@ -208,7 +208,7 @@ def test_deleted_wal_cause_is_plain_first_steps_not_a_forensic_runbook():
         "session_persistence_failed", "deleted_wal"
     ).lower()
     assert "deleted_wal" in PERSISTENCE_ERROR_CAUSES
-    assert "hermes gateway stop" in out and "hermes doctor" in out
+    assert "moor gateway stop" in out and "moor doctor" in out
     for jargon in ("manifest", "state.db-wal", "sidecar", "header_only", "--inspect-only", "generation"):
         assert jargon not in out, jargon
     assert "~/.moor" not in out  # display_moor_home(), never a hardcoded path
@@ -216,19 +216,19 @@ def test_deleted_wal_cause_is_plain_first_steps_not_a_forensic_runbook():
 
 @pytest.mark.parametrize("cause", ["replaced", "deleted_wal", "unknown"])
 def test_persistence_commands_are_pinned_to_the_failing_profile(monkeypatch, tmp_path, cause):
-    """Every copy-pasteable ``hermes`` command in a persistence explanation names the profile
+    """Every copy-pasteable ``moor`` command in a persistence explanation names the profile
     whose store failed — a multi-profile backend serves sessions whose state.db is not the
-    process default, and a bare ``hermes`` follows the sticky active_profile (#105887). The
+    process default, and a bare ``moor`` follows the sticky active_profile (#105887). The
     corrupt/fts_index causes already did this; replaced/deleted_wal/default did not."""
-    from hermes_constants import profile_cli_selector
+    from moor_constants import profile_cli_selector
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes" / "profiles" / "research"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor" / "profiles" / "research"))
     selector = profile_cli_selector()
     assert selector.strip(), "fixture must resolve to a named profile"
     out = AIAgent._format_turn_completion_explanation("session_persistence_failed", cause)
     assert "{profile_arg}" not in out
-    assert f"`hermes {selector}doctor" in out
-    assert "`hermes doctor" not in out and "`hermes gateway" not in out
+    assert f"`moor {selector}doctor" in out
+    assert "`moor doctor" not in out and "`moor gateway" not in out
 
 
 def test_explanation_persistence_unknown_cause_is_neutral():
@@ -249,7 +249,7 @@ def test_explanation_persistence_one_arg_backward_compat():
     """Existing one-arg callers must keep working (optional second param)."""
     out = AIAgent._format_turn_completion_explanation("session_persistence_failed")
     assert out.strip() != ""
-    assert "hermes doctor" in out.lower()
+    assert "moor doctor" in out.lower()
 
 
 def test_explanation_cause_ignored_for_other_reasons():

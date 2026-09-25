@@ -1,4 +1,4 @@
-"""A CONVERGED host is a no-op for ``hermes gateway migrate --multiplex``, run after run.
+"""A CONVERGED host is a no-op for ``moor gateway migrate --multiplex``, run after run.
 
 Driven through the REAL topology path, not stubbed per-profile PIDs: a live host rendezvous
 record + the per-profile ``gateway_state.json`` the multiplexer stamps, so
@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pytest
 
-import hermes_constants
-from hermes_cli import gateway_migrate as gm
+import moor_constants
+from moor_cli import gateway_migrate as gm
 
 
 @pytest.fixture
@@ -30,37 +30,37 @@ def converged_host(tmp_path, monkeypatch):
     Returns the root home. ``signals`` on the returned object records every service operation and
     process stop the migration would perform — a converged host must produce none.
     """
-    root = tmp_path / "home" / ".hermes"
+    root = tmp_path / "home" / ".moor"
     for sub in ("profiles/coder", "profiles/ops"):
         (root / sub).mkdir(parents=True)
         (root / sub / "SOUL.md").write_text("x\n", encoding="utf-8")
     (root / "config.yaml").write_text("model:\n  default: x\n", encoding="utf-8")
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
-    assert str(hermes_constants.get_default_hermes_root()).startswith(str(tmp_path))
+    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None)
+    assert str(moor_constants.get_default_moor_root()).startswith(str(tmp_path))
 
     served = ["default", "coder", "ops"]
     pid = os.getpid()
     # What a live multiplexer leaves on disk: its own pid file + runtime record in the launch
     # home, and a runtime record stamped into EVERY served profile's home.
-    (root / "gateway.pid").write_text(json.dumps({"pid": pid, "hermes_home": str(root)}))
+    (root / "gateway.pid").write_text(json.dumps({"pid": pid, "moor_home": str(root)}))
     (root / "gateway_state.json").write_text(json.dumps(
-        {"pid": pid, "hermes_home": str(root), "gateway_state": "running", "served_profiles": served}))
+        {"pid": pid, "moor_home": str(root), "gateway_state": "running", "served_profiles": served}))
     for name in ("coder", "ops"):
         home = root / "profiles" / name
         (home / "gateway_state.json").write_text(json.dumps(
-            {"pid": pid, "hermes_home": str(home), "gateway_state": "running"}))
+            {"pid": pid, "moor_home": str(home), "gateway_state": "running"}))
 
     import gateway.status as status
     from gateway import host_attach, host_rendezvous as hr
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda p: "hermes gateway run")
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda p: "moor gateway run")
     # The WIRE only: the owner's control socket answer. Everything that reads it is real.
     monkeypatch.setattr("gateway.control_socket.identify_gateway",
-                        lambda home: {"pid": pid, "hermes_home": str(root), "served_profiles": served})
+                        lambda home: {"pid": pid, "moor_home": str(root), "served_profiles": served})
     hr.publish_record(hr.ROLE_GATEWAY, profiles=tuple(served), home=str(root))
     host_attach.invalidate_host_gateway_cache()
 

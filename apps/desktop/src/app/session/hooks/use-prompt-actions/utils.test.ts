@@ -479,7 +479,7 @@ describe('renderRpcResult', () => {
           output: 20,
           total: 30,
           account_lines: ['📈 Account limits', 'Provider: openai-codex (Plus)', 'Weekly: 12% used'],
-          credits_lines: ['Nous credits: 8,420 remaining', 'Resets: 2026-08-01']
+          credits_lines: ['Moor credits: 8,420 remaining', 'Resets: 2026-08-01']
         },
         'usage'
       )
@@ -488,7 +488,7 @@ describe('renderRpcResult', () => {
         '📈 Account limits',
         'Provider: openai-codex (Plus)',
         'Weekly: 12% used',
-        'Nous credits: 8,420 remaining',
+        'Moor credits: 8,420 remaining',
         'Resets: 2026-08-01'
       ])
     })

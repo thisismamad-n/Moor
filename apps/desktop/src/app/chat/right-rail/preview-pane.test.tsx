@@ -156,8 +156,8 @@ describe('PreviewPane console state', () => {
   it('does not offer the URL-only pop-out action for a local HTML file', async () => {
     vi.stubGlobal('window', {
       ...window,
-      hermesDesktop: {
-        ...window.hermesDesktop,
+      moorDesktop: {
+        ...window.moorDesktop,
         openBrowserWindow: vi.fn(async () => ({ ok: true }))
       }
     })
@@ -702,21 +702,21 @@ describe('PreviewPane console state', () => {
 
 describe('PreviewPane guest external handoff', () => {
   // #112941: a guest page's `_blank` anchor (Streamlit's "Ask Google" button)
-  // reaches the OS browser only through the audited `hermes:openExternal` IPC.
-  const desktopWindow = window as unknown as { hermesDesktop?: Window['hermesDesktop'] }
-  const initialHermesDesktop = desktopWindow.hermesDesktop
+  // reaches the OS browser only through the audited `moor:openExternal` IPC.
+  const desktopWindow = window as unknown as { moorDesktop?: Window['moorDesktop'] }
+  const initialMoorDesktop = desktopWindow.moorDesktop
 
   afterEach(() => {
-    if (initialHermesDesktop) {
-      desktopWindow.hermesDesktop = initialHermesDesktop
+    if (initialMoorDesktop) {
+      desktopWindow.moorDesktop = initialMoorDesktop
     } else {
-      delete desktopWindow.hermesDesktop
+      delete desktopWindow.moorDesktop
     }
   })
 
   async function renderWebview() {
     const openExternal = vi.fn(async () => undefined)
-    desktopWindow.hermesDesktop = { openExternal } as unknown as Window['hermesDesktop']
+    desktopWindow.moorDesktop = { openExternal } as unknown as Window['moorDesktop']
 
     let rendered!: ReturnType<typeof render>
 
@@ -772,13 +772,13 @@ describe('PreviewPane local HTML Render|Source toggle', () => {
     url: 'file:///work/page.html'
   }
 
-  const desktopWindow = window as unknown as { hermesDesktop?: Window['hermesDesktop'] }
+  const desktopWindow = window as unknown as { moorDesktop?: Window['moorDesktop'] }
 
   beforeEach(() => {
     $connection.set({ mode: 'local' } as never)
-    desktopWindow.hermesDesktop = {
+    desktopWindow.moorDesktop = {
       readFileText: vi.fn(async () => ({ byteSize: 22, path: target.path, text: '<!doctype html><p>x</p>' }))
-    } as unknown as Window['hermesDesktop']
+    } as unknown as Window['moorDesktop']
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
       window.setTimeout(() => callback(Date.now()), 0)
     )
@@ -789,7 +789,7 @@ describe('PreviewPane local HTML Render|Source toggle', () => {
     cleanup()
     closeRightRail()
     $connection.set(null)
-    delete desktopWindow.hermesDesktop
+    delete desktopWindow.moorDesktop
     vi.unstubAllGlobals()
   })
 
@@ -839,11 +839,11 @@ describe('PreviewPane local HTML Render|Source toggle', () => {
   })
 
   it('lands on Source, not Diff, when Source is picked for a file with uncommitted changes', async () => {
-    desktopWindow.hermesDesktop = {
-      ...desktopWindow.hermesDesktop,
+    desktopWindow.moorDesktop = {
+      ...desktopWindow.moorDesktop,
       git: { fileDiff: vi.fn(async () => '--- a/page.html\n+++ b/page.html\n-<p>x</p>\n+<p>y</p>\n') },
       gitRoot: vi.fn(async () => '/work')
-    } as unknown as Window['hermesDesktop']
+    } as unknown as Window['moorDesktop']
 
     openPreview(target)
 

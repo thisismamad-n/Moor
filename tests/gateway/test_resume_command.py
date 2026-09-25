@@ -260,7 +260,7 @@ class TestHandleResumeCommand:
     async def test_bare_resume_ranks_lineages_by_last_activity(self, tmp_path):
         """A lineage whose root started days ago but was touched last must lead the list: the
         picker ranks by lineage activity, not root ``started_at`` (#114271)."""
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "state.db")
         event = _make_event(text="/resume")

@@ -214,7 +214,7 @@ The auth store has no credentials for `minimax-oauth`. You have not logged in ye
 
 The main agent or an auxiliary task (compression, vision, …) is pinned to `minimax-oauth` and the auth store has no login. There is no `MINIMAX_API_KEY`-style environment variable for the OAuth provider — `MINIMAX_API_KEY` belongs to the plain API-key `minimax` provider.
 
-**Fix:** run `hermes auth add minimax-oauth` to sign in, or switch that provider to `minimax` with an API key.
+**Fix:** run `moor auth add minimax-oauth` to sign in, or switch that provider to `minimax` with an API key.
 
 ## Logging Out
 

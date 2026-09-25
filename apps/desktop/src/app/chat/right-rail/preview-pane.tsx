@@ -1051,7 +1051,7 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
     // clicked `_blank` anchor here. Admission is our side of the contract —
     // http/https only, so a guest page can never reach the local-file
     // opener — and the open itself goes through the audited
-    // `hermes:openExternal` channel, never a popup side effect.
+    // `moor:openExternal` channel, never a popup side effect.
     const onGuestExternal = (event: Event) => {
       const detail = event as Event & { args?: unknown[]; channel?: string }
 
@@ -1062,7 +1062,7 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
       const url = String(detail.args?.[0] ?? '')
 
       if (admitPreviewExternalUrl(url)) {
-        void window.hermesDesktop?.openExternal?.(url)
+        void window.moorDesktop?.openExternal?.(url)
       }
     }
 

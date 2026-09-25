@@ -90,7 +90,7 @@ esac
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ASSETS="$REPO_ROOT/tests/install/e2e-assets"
 # Pin driver tooling before an installer changes PATH. CI prepares locked deps.
-export HERMES_E2E_NODE="${HERMES_E2E_NODE:-$(command -v node)}"
+export MOOR_E2E_NODE="${MOOR_E2E_NODE:-$(command -v node)}"
 
 # Everything lives OUTSIDE the checkout; an untracked dir inside the repo
 # would make later dirty-tree checks lie.
@@ -176,9 +176,9 @@ arm_source_redirect "$REPO_ROOT" "$WORK_ROOT" "$SERVE_REPO"
 export HOME="$WORK_ROOT/home"
 mkdir -p "$HOME/.local/bin"
 export PATH="$HOME/.local/bin:$PATH"
-export HERMES_HOME="$HOME/.hermes"
-export HERMES_DESKTOP_USER_DATA_DIR="$WORK_ROOT/electron-user-data"
-mkdir -p "$HERMES_HOME"
+export MOOR_HOME="$HOME/.moor"
+export MOOR_DESKTOP_USER_DATA_DIR="$WORK_ROOT/electron-user-data"
+mkdir -p "$MOOR_HOME"
 
 INSTALL_DIR="$MOOR_HOME/moor-agent"
 
@@ -192,12 +192,12 @@ INSTALL_DIR="$MOOR_HOME/moor-agent"
 # hundreds of lines above close_running_desktop.
 env_key_names() { # label
   local label="$1"
-  if [ ! -s "$HERMES_HOME/.env" ]; then
+  if [ ! -s "$MOOR_HOME/.env" ]; then
     printf '  [env] %s: (no .env)\n' "$label"
     return 0
   fi
   printf '  [env] %s: %s\n' "$label" \
-    "$(grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$HERMES_HOME/.env" | tr -d '=' | sort | tr '\n' ' ')"
+    "$(grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$MOOR_HOME/.env" | tr -d '=' | sort | tr '\n' ' ')"
 }
 
 assert_desktop_artifact() {
@@ -226,19 +226,19 @@ assert_checkout() {
   got="$(git -C "$INSTALL_DIR" rev-parse HEAD)"
   [ "$got" = "$1" ] || fail "installed checkout is $got, expected $2 ($1)"
   ok "checkout is $2 ($1)"
-  local hermes
-  hermes="$(source_hermes "$INSTALL_DIR")" || fail "no usable installed command at $2"
+  local moor
+  moor="$(source_moor "$INSTALL_DIR")" || fail "no usable installed command at $2"
   python3 -B "$REPO_ROOT/tests/install/e2e-assets/source_driver.py" \
-    --root "$INSTALL_DIR" --launcher "$hermes" --desktop "$EXPECT_DESKTOP" \
+    --root "$INSTALL_DIR" --launcher "$moor" --desktop "$EXPECT_DESKTOP" \
     || fail "read-only verification failed at $2; no repair was attempted"
-  HERMES_DISABLE_LAZY_INSTALLS=1 PYTHONDONTWRITEBYTECODE=1 source_build_env "$hermes" --version 2>&1 | ts_prefix > "$LOG_DIR/version-$2.log" \
-    || fail "hermes --version failed after $2; log in $LOG_DIR/version-$2.log"
-  ok "hermes --version works: $(head -c 120 "$LOG_DIR/version-$2.log" | tr -d '\n')"
+  MOOR_DISABLE_LAZY_INSTALLS=1 PYTHONDONTWRITEBYTECODE=1 source_build_env "$moor" --version 2>&1 | ts_prefix > "$LOG_DIR/version-$2.log" \
+    || fail "moor --version failed after $2; log in $LOG_DIR/version-$2.log"
+  ok "moor --version works: $(head -c 120 "$LOG_DIR/version-$2.log" | tr -d '\n')"
 }
 
 desktop_checkpoint() { # phase, expected commit, selected method
-  source_build_env "$HERMES_E2E_NODE" "$ASSETS/source-desktop-smoke.mjs" \
-    --root "$INSTALL_DIR" --home "$HERMES_HOME" --user-data "$HERMES_DESKTOP_USER_DATA_DIR" \
+  source_build_env "$MOOR_E2E_NODE" "$ASSETS/source-desktop-smoke.mjs" \
+    --root "$INSTALL_DIR" --home "$MOOR_HOME" --user-data "$MOOR_DESKTOP_USER_DATA_DIR" \
     --out "$LOG_DIR" --phase "$1" --expect-commit "$2" \
     --desktop "$EXPECT_DESKTOP" --method "$3"
 }
@@ -270,12 +270,12 @@ close_running_desktop() {
   # prints only that stamp is Electron's silent secondary-instance path. After
   # every matching process is gone, these isolated-route artifacts are stale,
   # not user data, and must not reject Playwright's lock-owning launch.
-  rm -f "$HERMES_DESKTOP_USER_DATA_DIR/SingletonLock" \
-    "$HERMES_DESKTOP_USER_DATA_DIR/SingletonSocket" \
-    "$HERMES_DESKTOP_USER_DATA_DIR/SingletonCookie"
+  rm -f "$MOOR_DESKTOP_USER_DATA_DIR/SingletonLock" \
+    "$MOOR_DESKTOP_USER_DATA_DIR/SingletonSocket" \
+    "$MOOR_DESKTOP_USER_DATA_DIR/SingletonCookie"
 }
 
-# The redirect must stay at TRANSPORT level. `hermes update` resolves its
+# The redirect must stay at TRANSPORT level. `moor update` resolves its
 # update channel from the release archive and validates the record against
 # `git config --get remote.origin.url`; if the configured URL ever looked like
 # the rehearsal source, channel resolution would fail outright and the leg
@@ -284,7 +284,7 @@ assert_redirect_is_transport_only() {
   # Either official form is valid: the installer clones over SSH or HTTPS
   # depending on the environment, and both are "the official URL" as far as
   # channel resolution is concerned.
-  local official_https='https://github.com/NousResearch/hermes-agent.git'
+  local official_https='https://github.com/thisismamad-n/Moor.git'
   local official_ssh='git@github.com:NousResearch/hermes-agent.git'
   local configured observed
   configured="$(git -C "$INSTALL_DIR" config --get remote.origin.url)"
@@ -296,7 +296,7 @@ assert_redirect_is_transport_only() {
   # detection sees it), so read the TRANSPORT url through the real git that
   # arm_source_redirect exported — otherwise `remote get-url origin` returns
   # the official URL and this check would always fail.
-  local real="${HERMES_E2E_REAL_GIT:-git}"
+  local real="${MOOR_E2E_REAL_GIT:-git}"
   observed="$("$real" -C "$INSTALL_DIR" remote get-url origin)"
   case "$observed" in
     file://*|*serve.git*) ;;
@@ -309,12 +309,12 @@ assert_redirect_is_transport_only() {
 # left pointing at a vanished tree is exactly the "update lost something" shape
 # a checkout-hash assertion cannot see.
 assert_user_shims() {
-  local hermes user_shim
-  hermes="$(source_hermes "$INSTALL_DIR")" || fail "no usable launcher after the upgrade"
-  [ -x "$hermes" ] || fail "launcher is not executable: $hermes"
-  user_shim="$HOME/.local/bin/hermes"
+  local moor user_shim
+  moor="$(source_moor "$INSTALL_DIR")" || fail "no usable launcher after the upgrade"
+  [ -x "$moor" ] || fail "launcher is not executable: $moor"
+  user_shim="$HOME/.local/bin/moor"
   if [ -e "$user_shim" ] || [ -L "$user_shim" ]; then
-    HERMES_DISABLE_LAZY_INSTALLS=1 PYTHONDONTWRITEBYTECODE=1 \
+    MOOR_DISABLE_LAZY_INSTALLS=1 PYTHONDONTWRITEBYTECODE=1 \
       "$user_shim" --version > "$LOG_DIR/version-path-shim.log" 2>&1 \
       || fail "the PATH shim stopped working after the upgrade: $user_shim"
     ok "PATH shim still runs: $user_shim"
@@ -340,15 +340,15 @@ fi
 # A real, chat-capable provider, started BEFORE the first desktop checkpoint. An
 # existing user HAS one configured, the durability check needs a real turn (not a
 # file we wrote ourselves), and the checkpoint's own chat smoke asserts against
-# HERMES_E2E_MOCK_URL -- so starting this later left TWO mocks per leg: the
+# MOOR_E2E_MOCK_URL -- so starting this later left TWO mocks per leg: the
 # checkpoint's (which the app's config pointed at and kept using) and the
 # driver's, which the smoke then waited on. That is the "The mock must receive
 # this checkpoint prompt after the send" timeout: the app was talking to 43475
 # while the smoke asserted against 46723. One mock, started here, is also
 # written into the provider config BEFORE preserve_before_upgrade snapshots the
 # home, so nothing reconfigures provider state inside the verified window.
-if [ -z "${HERMES_E2E_MOCK_URL:-}" ]; then
-  PATH="$(dirname "$HERMES_E2E_NODE"):$PATH" mock_start "$WORK_ROOT"
+if [ -z "${MOOR_E2E_MOCK_URL:-}" ]; then
+  PATH="$(dirname "$MOOR_E2E_NODE"):$PATH" mock_start "$WORK_ROOT"
   trap mock_stop EXIT
 fi
 
@@ -357,8 +357,8 @@ desktop_checkpoint old "$OLD_SHA" "$INSTALL_METHOD"
 # Produce the user's own state through the ordinary CLI, then snapshot what
 # must survive. Done as late as possible before the update so the window
 # verify() covers contains only the upgrade.
-HERMES="$(source_hermes "$INSTALL_DIR")" || fail "no installed command to drive"
-source_build_env user_state_produce "$HERMES"
+MOOR="$(source_moor "$INSTALL_DIR")" || fail "no installed command to drive"
+source_build_env user_state_produce "$MOOR"
 user_state_before_upgrade
 assert_redirect_is_transport_only
 # Configure the provider LAST, immediately before the snapshot. The steps above
@@ -367,14 +367,14 @@ assert_redirect_is_transport_only
 # ADDITIONS after the snapshot, meaning the snapshot had missed them. Re-pointing
 # here fixes what the upgrade starts from, whatever those steps did, and nothing
 # rewrites provider state after this line.
-mock_configure_provider "${HERMES_E2E_MOCK_URL:?HERMES_E2E_MOCK_URL must be set before snapshotting}"
+mock_configure_provider "${MOOR_E2E_MOCK_URL:?MOOR_E2E_MOCK_URL must be set before snapshotting}"
 env_key_names "after provider configure"
-grep -q '^OPENAI_BASE_URL=' "$HERMES_HOME/.env" \
-  || fail "provider configure did not reach $HERMES_HOME/.env"
+grep -q '^OPENAI_BASE_URL=' "$MOOR_HOME/.env" \
+  || fail "provider configure did not reach $MOOR_HOME/.env"
 preserve_before_upgrade
 env_key_names "after snapshot"
-grep -q '^OPENAI_BASE_URL=' "$HERMES_HOME/.env" \
-  || fail "the snapshot phase cleared OPENAI_BASE_URL from $HERMES_HOME/.env"
+grep -q '^OPENAI_BASE_URL=' "$MOOR_HOME/.env" \
+  || fail "the snapshot phase cleared OPENAI_BASE_URL from $MOOR_HOME/.env"
 
 # The verifier's OWN view of every .env it judges, printed right after its
 # snapshot. When this disagrees with the probe above, the snapshot recorded a
@@ -385,7 +385,7 @@ env_verifier_view() {
   local py
   py="$(_user_state_python)"
   printf '  [env] verifier view:\n'
-  "$py" "$USER_STATE_VERIFIER" env-keys --home "$HERMES_HOME" 2>&1 | sed 's/^/    /' || true
+  "$py" "$USER_STATE_VERIFIER" env-keys --home "$MOOR_HOME" 2>&1 | sed 's/^/    /' || true
 }
 env_verifier_view
 
@@ -410,12 +410,12 @@ collect_install_side_logs() {
   COLLECTED_INSTALL_LOGS=1
   ildest="$LOG_DIR/install-logs"
   mkdir -p "$ildest"
-  cp -R "$HERMES_HOME/logs" "$ildest/hermes-logs" 2>/dev/null || true
+  cp -R "$MOOR_HOME/logs" "$ildest/moor-logs" 2>/dev/null || true
   if [ -n "${XDG_DATA_HOME:-}" ]; then
-    cp -R "$XDG_DATA_HOME/hermes/logs" "$ildest/desktop-userdata-logs" 2>/dev/null || true
+    cp -R "$XDG_DATA_HOME/moor/logs" "$ildest/desktop-userdata-logs" 2>/dev/null || true
   fi
-  cp "$HERMES_HOME/.hermes-update-result.json" "$ildest" 2>/dev/null || true
-  ls -la "$HERMES_HOME" > "$ildest/hermes-home-ls.txt" 2>/dev/null || true
+  cp "$MOOR_HOME/.moor-update-result.json" "$ildest" 2>/dev/null || true
+  ls -la "$MOOR_HOME" > "$ildest/moor-home-ls.txt" 2>/dev/null || true
   ls -la "$INSTALL_DIR/venv/bin" > "$ildest/venv-bin-ls.txt" 2>/dev/null || true
   ok "collected install-side logs to $ildest"
 }
@@ -424,14 +424,14 @@ case "$UPDATE_METHOD" in
   moor-update)
     # `--yes` reaches the update subcommand only in later releases, and
     # argparse rejects the whole invocation when it does not exist. Ask the
-    # installed hermes; older ones read the prompt from stdin, so close it.
-    HERMES="$(source_hermes "$INSTALL_DIR")" || fail "no installed update command"
-    help="$(source_build_env "$HERMES" update --help 2>&1)" || fail "installed update --help failed: $help"
-    build_source_update_command "$HERMES" "$help"
+    # installed moor; older ones read the prompt from stdin, so close it.
+    MOOR="$(source_moor "$INSTALL_DIR")" || fail "no installed update command"
+    help="$(source_build_env "$MOOR" update --help 2>&1)" || fail "installed update --help failed: $help"
+    build_source_update_command "$MOOR" "$help"
     rc=0
     (cd "$INSTALL_DIR" && source_build_env "${update_cmd[@]}" < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/update.log") || rc=$?
-    log_group "hermes update transcript" "$LOG_DIR/update.log"
-    [ "$rc" -eq 0 ] || fail "hermes update exited $rc; transcript above, log at $LOG_DIR/update.log"
+    log_group "moor update transcript" "$LOG_DIR/update.log"
+    [ "$rc" -eq 0 ] || fail "moor update exited $rc; transcript above, log at $LOG_DIR/update.log"
     ;;
   installer-script)
     # A user re-running the one-liner today gets the CURRENT script.
@@ -451,7 +451,7 @@ case "$UPDATE_METHOD" in
     # _electron.launch. Everything before the spawn (build, stamps, sandbox
     # fixup) runs for real in the installed code.
     EXPECT_DESKTOP=present
-    HERMES="$(source_hermes "$INSTALL_DIR")" || fail "no installed desktop command"
+    MOOR="$(source_moor "$INSTALL_DIR")" || fail "no installed desktop command"
     accept_installer_marker "$INSTALL_DIR" \
       || fail "installed source has changes other than the generated install marker"
     ASSETS="$REPO_ROOT/tests/install/e2e-assets"
@@ -467,27 +467,27 @@ case "$UPDATE_METHOD" in
     # is what config.yaml/.env hold. Nothing here may touch provider state: this
     # point is INSIDE the window the user-state verifier judges, so a rewrite (or
     # a new mock on a new port) reads as the upgrade modifying .env. The app reads
-    # config.yaml/.env, not HERMES_E2E_MOCK_URL.
+    # config.yaml/.env, not MOOR_E2E_MOCK_URL.
     source "$ASSETS/mock-provider.sh"
     trap mock_stop EXIT
 
     step "capturing the moor desktop launch spec (build runs for real)"
     rc=0
-    if [ "$HERMES" = "$INSTALL_DIR/.hermes/bin/hermes" ]; then
+    if [ "$MOOR" = "$INSTALL_DIR/.moor/bin/moor" ]; then
       # The PM launcher uses -I: PYTHONPATH/sitecustomize cannot reach it.
       # Ask the installed launcher for its own isolated command, then inject
       # the driver hook into that command without changing product code.
       (cd "$INSTALL_DIR" && source_build_env python3 -I "$ASSETS/launch-capture/pm-launch.py" \
-        "$HERMES" "$SPEC" < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/desktop-launch-capture.log") || rc=$?
+        "$MOOR" "$SPEC" < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/desktop-launch-capture.log") || rc=$?
     else
       # Pre-PM console scripts load sitecustomize from PYTHONPATH.
       (cd "$INSTALL_DIR" && \
         PYTHONPATH="$ASSETS/launch-capture${PYTHONPATH:+:$PYTHONPATH}" \
-        HERMES_E2E_CAPTURE_LAUNCH="$SPEC" \
-        source_build_env "$HERMES" desktop < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/desktop-launch-capture.log") || rc=$?
+        MOOR_E2E_CAPTURE_LAUNCH="$SPEC" \
+        source_build_env "$MOOR" desktop < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/desktop-launch-capture.log") || rc=$?
     fi
-    log_group "hermes desktop (launch capture) transcript" "$LOG_DIR/desktop-launch-capture.log"
-    [ "$rc" -eq 0 ] || fail "hermes desktop exited $rc during launch capture; transcript above"
+    log_group "moor desktop (launch capture) transcript" "$LOG_DIR/desktop-launch-capture.log"
+    [ "$rc" -eq 0 ] || fail "moor desktop exited $rc during launch capture; transcript above"
     # Exit 0 without a capture means a version that never reached its
     # launch - that must fail loudly, not pass as a no-op.
     [ -f "$SPEC.captured" ] || fail "moor desktop exited 0 but no launch was captured at $SPEC"
@@ -497,10 +497,10 @@ case "$UPDATE_METHOD" in
     step "driving the app under Playwright: Settings -> About -> Update now"
     # Use the checkout module closure and current driver Node, not OLD tooling.
     rc=0
-    (cd "$WORK_ROOT" && "$HERMES_E2E_NODE" "$ASSETS/launch-from-spec.mjs" \
+    (cd "$WORK_ROOT" && "$MOOR_E2E_NODE" "$ASSETS/launch-from-spec.mjs" \
       --spec "$SPEC" \
-      --old-sha "$OLD_SHA" --chat-out "$LOG_DIR/update-window" --mock-url "$HERMES_E2E_MOCK_URL" \
-      --result "$HERMES_HOME/.hermes-update-result.json" \
+      --old-sha "$OLD_SHA" --chat-out "$LOG_DIR/update-window" --mock-url "$MOOR_E2E_MOCK_URL" \
+      --result "$MOOR_HOME/.moor-update-result.json" \
       --expect-sha "$TARGET_SHA" \
       --repo-dir "$INSTALL_DIR" 2>&1 \
       | ts_prefix > "$LOG_DIR/app-update.log") || rc=$?
@@ -525,12 +525,12 @@ collect_install_side_logs
 # its backend replace the live bundle and kills Playwright's renderer target.
 # Desktop legs must therefore drive the ordinary CLI startup even when the
 # launcher exists. No-desktop legs retain the legacy missing-launcher recovery.
-if [ "$EXPECT_DESKTOP" = "present" ] || ! source_hermes "$INSTALL_DIR" >/dev/null 2>&1; then
+if [ "$EXPECT_DESKTOP" = "present" ] || ! source_moor "$INSTALL_DIR" >/dev/null 2>&1; then
   step "next ordinary startup after the update (completes deferred source-update work)"
-  STARTUP_HERMES="$(source_hermes_for_startup "$INSTALL_DIR")" \
+  STARTUP_MOOR="$(source_moor_for_startup "$INSTALL_DIR")" \
     || fail "no installed command to start after the update"
   startup_rc=0
-  source_build_env "$STARTUP_HERMES" status > "$LOG_DIR/post-update-startup.log" 2>&1 || startup_rc=$?
+  source_build_env "$STARTUP_MOOR" status > "$LOG_DIR/post-update-startup.log" 2>&1 || startup_rc=$?
   log_group "post-update startup" "$LOG_DIR/post-update-startup.log"
   ok "post-update startup ran (exit $startup_rc); the read-only checks below assert completion"
 fi

@@ -9,9 +9,9 @@ from urllib.parse import urlsplit
 
 import pytest
 
-from hermes_cli import main, update_cmd
-from hermes_cli.source_releases import resolve_source_release
-from hermes_cli.update_channel import set_install_channel
+from moor_cli import main, update_cmd
+from moor_cli.source_releases import resolve_source_release
+from moor_cli.update_channel import set_install_channel
 
 
 def git(root, *args):
@@ -47,14 +47,14 @@ def releases(tmp_path, monkeypatch, request):
     git(checkout, "config", "commit.gpgsign", "false")
     git(checkout, "checkout", "--detach", commits[0])
     monkeypatch.setattr(main, "PROJECT_ROOT", checkout)
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(checkout))
-    monkeypatch.delenv("HERMES_MANAGED", raising=False)
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(checkout))
+    monkeypatch.delenv("MOOR_MANAGED", raising=False)
 
     responses = {}
     requests = []
     for channel, tag in tags.items():
         responses[f"/releases/{channel}/index.html"] = (
-            f'<meta name="hermes-build" content="{tag}">'
+            f'<meta name="moor-build" content="{tag}">'
         )
         responses[f"/repos/NousResearch/hermes-agent/releases/tags/{tag}"] = {
             "tag_name": tag, "draft": False, "prerelease": channel == "canary",
@@ -92,7 +92,7 @@ def releases(tmp_path, monkeypatch, request):
     monkeypatch.setattr(urllib.request, "urlopen", local_urlopen)
     # Legacy pointer tests below retain their HTTP/tag boundary. New CLI callers
     # consume the protocol reader, whose complete schema is tested independently.
-    from hermes_cli import source_releases
+    from moor_cli import source_releases
     def resolve_channel(name, repository):
         record = {"name": name, "repository": repository, "state": "active",
                   "policy": "source-branch" if name == "main" else "preview"}
@@ -174,21 +174,21 @@ def test_source_check_honors_transient_channel_without_rewriting_record(releases
 
 
 def test_fork_origin_uses_its_own_published_release_not_the_official_pointer(releases):
-    url = "https://github.com/Fixture/hermes-agent.git"
+    url = "https://github.com/Fixture/moor-agent.git"
     git(releases.root, "config", "remote.origin.url", url)
     git(releases.root, "config", f"url.{releases.origin}.insteadOf", url)
     tag = releases.tags["stable"]
     git(releases.origin, "tag", "-f", tag, releases.commits[3])
-    releases.responses["/repos/Fixture/hermes-agent/releases/latest"] = {
+    releases.responses["/repos/Fixture/moor-agent/releases/latest"] = {
         "tag_name": tag, "draft": False, "prerelease": False,
     }
-    releases.responses[f"/repos/Fixture/hermes-agent/commits/{tag}"] = {"sha": releases.commits[3]}
+    releases.responses[f"/repos/Fixture/moor-agent/commits/{tag}"] = {"sha": releases.commits[3]}
     assert resolve_source_release("stable", ["git"], releases.root) == (tag, releases.commits[3])
     assert not any(path.startswith("/releases/") for path in releases.requests)
 
 
 def test_zip_fallback_keeps_selected_repository_and_commit(releases, monkeypatch):
-    from hermes_cli import update_cmd_zip
+    from moor_cli import update_cmd_zip
 
     seen = []
     monkeypatch.setattr(update_cmd_zip, "_abort_zip_update_if_dirty_tree", lambda: None)
@@ -201,8 +201,8 @@ def test_zip_fallback_keeps_selected_repository_and_commit(releases, monkeypatch
     with pytest.raises(DownloadBoundary):
         update_cmd_zip._update_via_zip(
             SimpleNamespace(branch=None), target_sha=releases.commits[2],
-            target_repository="Fixture/hermes-agent", completion_request={})
-    assert seen == [f"https://github.com/Fixture/hermes-agent/archive/{releases.commits[2]}.zip"]
+            target_repository="Fixture/moor-agent", completion_request={})
+    assert seen == [f"https://github.com/Fixture/moor-agent/archive/{releases.commits[2]}.zip"]
 
 
 @pytest.mark.parametrize("git_cmd", [["git"], None], ids=["git", "no-git"])

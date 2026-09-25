@@ -1,7 +1,7 @@
 """Plugin install metadata (``.install-metadata.json`` source/revision/pin records) and the git plumbing
 behind clone, exact-revision checkout, credential scrubbing and the autostashing ``git pull``.
 
-Sibling of :mod:`hermes_cli.plugins_cmd` (the facade re-exports the names other modules use and is
+Sibling of :mod:`moor_cli.plugins_cmd` (the facade re-exports the names other modules use and is
 imported late here, never at module level).
 """
 
@@ -16,14 +16,14 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, Optional
 
-from hermes_cli._subprocess_compat import noninteractive_git_env
-from hermes_constants import get_hermes_home
+from moor_cli._subprocess_compat import noninteractive_git_env
+from moor_constants import get_moor_home
 from utils import atomic_write_text
 
 
 def _pc():
     """The facade, read at call time: tests patch ``plugins_cmd.<name>`` and sibling calls must see it."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     return plugins_cmd
 
 
@@ -31,7 +31,7 @@ _EXACT_COMMIT_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 def _install_metadata_path() -> Path:
-    return get_hermes_home() / "plugins" / ".install-metadata.json"
+    return get_moor_home() / "plugins" / ".install-metadata.json"
 
 
 def _read_install_metadata() -> dict[str, dict[str, object]]:
@@ -63,7 +63,7 @@ def _install_metadata_lock():
     """Serialize read-modify-write of the sidecar across threads and processes. Installs overlap (the
     Desktop install card runs its rows a second apart); each held a snapshot read before its clone, so
     the later write dropped the earlier plugin's record."""
-    from hermes_cli.auth import _file_lock
+    from moor_cli.auth import _file_lock
 
     path = _install_metadata_path()
     with _file_lock(path.with_name(f"{path.name}.lock"), _INSTALL_METADATA_LOCK_HOLDER, 10.0,
@@ -257,7 +257,7 @@ def _run_plugin_git(
     """Run one git command inside a plugin checkout (non-interactive). *auth_url* names the remote
     a network verb talks to; it runs anonymously first and a stored user credential for that host
     is attached only when the remote refuses anonymous access (private repos)."""
-    from hermes_cli.git_credentials import run_git_with_credential_fallback
+    from moor_cli.git_credentials import run_git_with_credential_fallback
     return run_git_with_credential_fallback(
         [git_exe, *args], auth_url, env=noninteractive_git_env(), capture_output=True, text=True,
         encoding='utf-8', errors='replace', timeout=timeout, cwd=str(target))
@@ -296,14 +296,14 @@ def _autostash_dirty_tree(git_exe: str, target: Path) -> tuple[str, str]:
         return "", ""
     # `git add -N` entries make `git stash push` fail outright (see update_cmd_stash), so promote them
     # to real staged adds first; the checkout's own local edits are otherwise unstashable.
-    from hermes_cli.update_cmd_stash import _intent_to_add_paths
+    from moor_cli.update_cmd_stash import _intent_to_add_paths
 
     intent_to_add = _intent_to_add_paths(status.stdout)
     if intent_to_add:
         _pc()._run_plugin_git(git_exe, target, "add", "--", *intent_to_add)
     pre_stash = _stash_ref(git_exe, target)
     push = _pc()._run_plugin_git(
-        git_exe, target, "stash", "push", "--include-untracked", "-m", "hermes-plugin-update-autostash")
+        git_exe, target, "stash", "push", "--include-untracked", "-m", "moor-plugin-update-autostash")
     post_stash = _stash_ref(git_exe, target)
     if not post_stash or post_stash == pre_stash:
         err = _safe_git_error(push)
@@ -325,7 +325,7 @@ def _git_pull_plugin_dir(target: Path) -> tuple[bool, str]:
     Users tweak installed plugins in place (config constants, small patches), and a plain ``pull --ff-only``
     then aborts with "Your local changes ... would be overwritten by merge" — making the plugin permanently
     un-updatable until they hand-run git. Same UX class Factory Droid fixed in v0.188 ("Updating a plugin
-    marketplace now succeeds when its checkout has local changes"), and the same autostash approach ``hermes
+    marketplace now succeeds when its checkout has local changes"), and the same autostash approach ``moor
     update`` already uses for the main checkout (PR #70161).
     """
     git_exe = _pc()._resolve_git_executable()

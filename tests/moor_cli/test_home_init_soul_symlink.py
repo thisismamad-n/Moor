@@ -9,15 +9,15 @@ wiring and stays a link.
 
 import pytest
 
-from hermes_cli.config import DEFAULT_SOUL_MD, _ensure_default_soul_md
-from hermes_cli.config_home import initialize_home
+from moor_cli.config import DEFAULT_SOUL_MD, _ensure_default_soul_md
+from moor_cli.config_home import initialize_home
 
 _SUBDIRS = ("cron", "sessions", "logs", "memories")
 
 
 @pytest.mark.parametrize("target", ["SOUL.md", "missing-dir/SOUL.md"], ids=["cyclic", "dangling"])
 def test_initialize_home_replaces_unwritable_soul_symlink(tmp_path, target):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     soul = home / "SOUL.md"
     soul.symlink_to(home / target)
@@ -31,7 +31,7 @@ def test_initialize_home_replaces_unwritable_soul_symlink(tmp_path, target):
 
 def test_soul_symlink_to_customized_file_is_left_alone(tmp_path):
     """Control: a resolving link survives and its content is untouched."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     target = tmp_path / "shared-identity.md"
     target.write_text("custom identity\n", encoding="utf-8")

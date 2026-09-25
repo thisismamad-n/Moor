@@ -60,15 +60,15 @@ moor computer-use install
 
 This asks PM to prepare the pinned `cua-driver` package (verified against
 `pm/lock.json`) — it does not run the upstream installer. Use
-`hermes computer-use status` to verify the install.
+`moor computer-use status` to verify the install.
 
 Already have cua-driver? Moor reuses it when it supports the 0.20 runtime
 contract. During setup, toolset enablement, `moor update`, and the first
 `computer_use` call of a session, Moor checks the local version and
 manifest. It repairs an old or incomplete standard installation through
 PM (at most once per session at runtime). A binary
-selected with `HERMES_CUA_DRIVER_CMD` stays
-under your control, so Hermes reports the incompatibility and leaves it
+selected with `MOOR_CUA_DRIVER_CMD` stays
+under your control, so Moor reports the incompatibility and leaves it
 unchanged.
 
 If you install Cua Driver first, `cua-driver skills install` installs Cua's
@@ -84,7 +84,7 @@ platform-appropriate prereqs:
 
 | Platform | Prereqs |
 |---|---|
-| **macOS** | System Settings → Privacy & Security → **Accessibility** + **Screen Recording**. Grant the identity named by `hermes computer-use doctor` (CuaDriver, `com.trycua.driver`, in every permission mode — the driver daemon always launches through `CuaDriver.app`). |
+| **macOS** | System Settings → Privacy & Security → **Accessibility** + **Screen Recording**. Grant the identity named by `moor computer-use doctor` (CuaDriver, `com.trycua.driver`, in every permission mode — the driver daemon always launches through `CuaDriver.app`). |
 | **Windows** | None at install time. If you're driving over SSH (not RDP / console), you need the autostart pattern — see [cua.ai/docs/how-to-guides/driver/windows-ssh](https://cua.ai/docs/how-to-guides/driver/windows-ssh) for the Session 0 ↔ Session 1+ proxy. |
 | **Linux** | A reachable display server: `DISPLAY` set for X11, or `XDG_SESSION_TYPE=wayland`. Wayland sessions need an XWayland bridge for capture. AT-SPI must be on (default on GNOME/KDE/Xfce). |
 
@@ -213,7 +213,7 @@ and a unit that runs `cua-driver serve` gets a `daemon (...)` check that
 connects to its socket — `fail` when nothing is listening (crash loop,
 stopped, never started), `pass` when the daemon answers. Reinstalling the
 driver does not start a daemon; `systemctl --user status <unit>` does.
-`hermes computer-use status` prints the same dead-daemon line and exits 1.
+`moor computer-use status` prints the same dead-daemon line and exits 1.
 
 ## The agent cursor and sessions
 
@@ -442,9 +442,9 @@ of screenshot context, not ~600K.
     has the recipe.
   - **Linux** requires a reachable display server. Headless servers
     get one from [Bot Screen](./bot-screen.md): a per-profile Xfce
-    desktop over TigerVNC, streamed into Hermes Desktop, where you can
+    desktop over TigerVNC, streamed into Moor Desktop, where you can
     take over for logins and 2FA. You start it from the Desktop's
-    Screen pane or `hermes computer-use screen start`; it starts on
+    Screen pane or `moor computer-use screen start`; it starts on
     first use (the first `computer_use` call or headed browser use) only
     when `bot_desktop.auto_start: true` is set (off by default).
     Pure Wayland sessions need an XWayland bridge for screen capture
@@ -614,7 +614,7 @@ run `moor tools` and enable the Computer Use toolset.
 didn't see may be blocking input. Dismiss it with `escape` or the close
 button.
 
-**macOS: System Settings shows CuaDriver ON, but `hermes computer-use
+**macOS: System Settings shows CuaDriver ON, but `moor computer-use
 permissions status` / `doctor` report Accessibility or Screen Recording as
 not granted** — the stored grant is stale. macOS keys each permission row to
 the app's code-signing requirement; a row written for an earlier CuaDriver
@@ -624,7 +624,7 @@ rewrite it. Reset the affected rows and re-grant:
 ```
 tccutil reset Accessibility com.trycua.driver
 tccutil reset ScreenCapture com.trycua.driver
-hermes computer-use permissions grant
+moor computer-use permissions grant
 ```
 
 **Element indices are stale** — SOM indices are only valid until the

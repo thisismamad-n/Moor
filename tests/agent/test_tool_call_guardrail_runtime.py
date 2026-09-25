@@ -389,7 +389,7 @@ def test_context_pruned_effectful_call_blocks_before_dispatch():
 
     # The hook may rewrite args; the boundary is enforced on what it returns.
     with (
-        patch("hermes_cli.plugins._dispatch_pre_tool_call_hooks", return_value=(None, pruned)) as plugin,
+        patch("moor_cli.plugins._dispatch_pre_tool_call_hooks", return_value=(None, pruned)) as plugin,
         patch("model_tools.handle_function_call", return_value="SHOULD_NOT_RUN") as dispatch,
     ):
         agent._execute_tool_calls_sequential(msg, messages, "task-1")

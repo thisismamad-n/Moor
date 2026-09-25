@@ -288,7 +288,7 @@ class TestPromptToolkitTerminalCompatibility:
 
         The native-Windows arm (``_terminal_may_leak_cpr() is False``, plus
         the ``PROMPT_TOOLKIT_NO_CPR`` override that outranks it) lives in
-        ``tests/hermes_cli/test_cpr_local_leak.py`` under ``platforms("windows")``, where it
+        ``tests/moor_cli/test_cpr_local_leak.py`` under ``platforms("windows")``, where it
         runs against a real Windows console.
         """
         from cli import _terminal_may_leak_cpr
@@ -359,7 +359,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "Recent sessions" in output
-        assert "Checking Running Hermes Agent" in output
+        assert "Checking Running Moor Agent" in output
 
 
 
@@ -508,7 +508,7 @@ class TestRootLevelProviderOverride:
 
     def test_model_provider_wins_over_root_provider(self, tmp_path, monkeypatch):
         """model.provider takes priority — root-level provider is only a fallback."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         moor_home = tmp_path / ".moor"
         moor_home.mkdir()
@@ -531,7 +531,7 @@ class TestRootLevelProviderOverride:
 
     def test_root_provider_used_as_fallback_when_model_provider_missing(self, tmp_path, monkeypatch):
         """Legacy root-level provider still populates model.provider in the CLI loader."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         moor_home = tmp_path / ".moor"
         moor_home.mkdir()
@@ -554,7 +554,7 @@ class TestRootLevelProviderOverride:
 
     def test_root_base_url_used_as_fallback_when_model_base_url_missing(self, tmp_path, monkeypatch):
         """Legacy root-level base_url still populates model.base_url in the CLI loader."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         moor_home = tmp_path / ".moor"
         moor_home.mkdir()
@@ -576,7 +576,7 @@ class TestRootLevelProviderOverride:
 
     def test_terminal_vercel_runtime_bridged_to_env(self, tmp_path, monkeypatch):
         """Classic CLI must expose terminal.vercel_runtime to terminal_tool.py."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         moor_home = tmp_path / ".moor"
         moor_home.mkdir()
@@ -744,13 +744,13 @@ class TestPluginToolsetStartupValidation:
     def _init_toolsets(monkeypatch, toolsets, *, registry, plugin_keys):
         import cli as _cli_mod
 
-        stub = object.__new__(_cli_mod.HermesCLI)
+        stub = object.__new__(_cli_mod.MoorCLI)
         printed: list[str] = []
         stub._console_print = printed.append
         monkeypatch.setattr(_cli_mod, "validate_toolset", lambda name: name in registry)
         monkeypatch.setattr(_cli_mod, "CLI_CONFIG", {"agent": {}})
         monkeypatch.setattr(
-            "hermes_cli.plugins.get_plugin_toolset_keys_nowait",
+            "moor_cli.plugins.get_plugin_toolset_keys_nowait",
             lambda: set(plugin_keys),
         )
         stub._init_toolsets(list(toolsets))

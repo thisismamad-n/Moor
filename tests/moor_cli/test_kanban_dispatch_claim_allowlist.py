@@ -89,7 +89,7 @@ def test_present_blank_or_null_allowlist_skips_all_cards(
     (kanban_home / "config.yaml").write_text(
         f"kanban:\n  dispatch_profiles:{rendered}\n", encoding="utf-8",
     )
-    with kbc.connect() as conn, caplog.at_level("WARNING", logger="hermes_cli.kanban_db"):
+    with kbc.connect() as conn, caplog.at_level("WARNING", logger="moor_cli.kanban_db"):
         tid = kb.create_task(conn, title="foreign card", assignee="default")
         res = kbd.dispatch_once(conn, dry_run=True)
     assert res.spawned == []
@@ -102,7 +102,7 @@ def test_allowlist_config_read_failure_skips_all_cards(
     kanban_home, all_assignees_spawnable, monkeypatch,
 ):
     """A broken config read must not make this shared home claim every profile."""
-    from hermes_cli import config_effective
+    from moor_cli import config_effective
 
     def raise_read_error(**_kwargs):
         raise OSError("config unavailable")
@@ -121,11 +121,11 @@ def test_allowlist_config_read_failure_skips_all_cards(
     ("kanban:\n  dispatch_profiles: []\n", "none (fail-closed"),
 ], ids=["absent", "listed", "empty_list"])
 def test_diagnostics_reports_resolved_allowlist(kanban_home, capsys, config, expected):
-    """`hermes kanban diagnostics` (text and --json) shows what this home may claim."""
+    """`moor kanban diagnostics` (text and --json) shows what this home may claim."""
     import argparse
     import json
 
-    from hermes_cli import kanban as kanban_cli
+    from moor_cli import kanban as kanban_cli
 
     if config:
         (kanban_home / "config.yaml").write_text(config, encoding="utf-8")

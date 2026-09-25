@@ -18,9 +18,9 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_write_text, is_truthy_value
 from moor_cli.config import cfg_get
 from agent.skill_utils import (
@@ -356,8 +356,8 @@ def _guarded_write(name: str, skill_dir: Path, target: Path, action: str, label:
         if read_guard := _background_review_read_before_write_guard(name, target, action, label):
             return read_guard
         original = target.read_text(encoding="utf-8-sig")
-    from hermes_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(target.parent)
+    from moor_constants import mkdir_under_moor_home
+    mkdir_under_moor_home(target.parent)
     atomic_write_text(target, content, preserve_mode=True, create_mode=0o644)
     scan_error = _security_scan_skill(skill_dir)
     if not scan_error:
@@ -403,7 +403,7 @@ def _attach_lint_findings(result: Dict[str, Any], skill_md: Path, before: Option
         {"severity": f.severity, "rule": f.rule, "message": f.message} for f in findings]
     result["lint_hint"] = (
         "The write succeeded. These are advisory authoring-convention findings (not blockers) "
-        "— fix them with skill_manage(action='patch') to match Hermes skill standards.")
+        "— fix them with skill_manage(action='patch') to match Moor skill standards.")
 
 
 def _clip(text: str, n: int, ellipsis: str) -> str:
@@ -419,8 +419,8 @@ def _create_skill(name: str, content: str, category: str = None) -> Dict[str, An
     if existing := _find_skill(name):
         return _err(f"A skill named '{name}' already exists at {existing['path']}.")
     skill_dir = _resolve_skill_dir(name, category)
-    from hermes_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(skill_dir.parent)
+    from moor_constants import mkdir_under_moor_home
+    mkdir_under_moor_home(skill_dir.parent)
     try:
         skill_dir.mkdir(exist_ok=False)
     except FileExistsError:

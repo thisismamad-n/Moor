@@ -204,9 +204,9 @@ def _handle_send(args):
     if not target or not message:
         return tool_error("Both 'target' and 'message' are required when action='send'")
     # Lone surrogates reach the outbound body via surrogateescape-decoded argv
-    # (`hermes send` MESSAGE) and crash the UTF-8 marshal inside platform SDK
+    # (`moor send` MESSAGE) and crash the UTF-8 marshal inside platform SDK
     # request bodies (feishu/lark, #113799). Every send_message caller (model tool
-    # call, `hermes send`, dashboard console) enters here, so scrub once before the
+    # call, `moor send`, dashboard console) enters here, so scrub once before the
     # media extraction, the session mirror and the platform sender see the text.
     # Model output delivered by the gateway/cron is already scrubbed upstream
     # (``agent/turn_finalizer.py::finalize_turn``, ``gateway/run.py``).
@@ -324,12 +324,12 @@ def _resolve_platform_config(platform_name, config):
 
 def _not_configured_error(platform_name, platform, entry):
     """Name the resolved home and what each credential source held, so the user edits the file this
-    process actually read (a hardcoded ``~/.hermes`` does not exist on a Windows or profile home)."""
+    process actually read (a hardcoded ``~/.moor`` does not exist on a Windows or profile home)."""
     from agent.secret_scope import load_env_file
     from gateway.config import _getenv
     from gateway.config_env import _ENV_ENABLE_CREDENTIALS
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from moor_constants import get_moor_home
+    home = get_moor_home()
     env_names = list(_ENV_ENABLE_CREDENTIALS.get(platform) or (entry.required_env if entry else ()))
     names = "/".join(env_names) or "credentials"
     env_path, config_path = home / ".env", home / "config.yaml"
@@ -337,7 +337,7 @@ def _not_configured_error(platform_name, platform, entry):
     dotenv_state = (f"{names} present" if any(n in dotenv_keys for n in env_names) else f"no {names}") \
         if env_path.exists() else "missing"
     try:
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
         user_config = load_user_config_effective(config_path) or {}
         block = user_config.get("platforms", {}).get(platform_name)
     except Exception:
@@ -355,14 +355,14 @@ def _not_configured_error(platform_name, platform, entry):
            f"{config_path} ({config_state}), environment ({env_state}), "
            f"external secret sources ({_secret_sources_state(user_config)}).")
     # The gateway can hold a token only in its own process environment; a fresh CLI cannot see it. A
-    # gateway started from the default root (the reporter's shell had HERMES_HOME=<root>/profiles/<p>)
+    # gateway started from the default root (the reporter's shell had MOOR_HOME=<root>/profiles/<p>)
     # never reads this profile's .env at all.
     try:
         from gateway.status import read_runtime_status, runtime_status_pid_is_live
-        from hermes_constants import get_default_hermes_root, hermes_home_key
-        root = get_default_hermes_root()
+        from moor_constants import get_default_moor_root, moor_home_key
+        root = get_default_moor_root()
         gateways = [(home, read_runtime_status())]
-        if hermes_home_key(root) != hermes_home_key(home):
+        if moor_home_key(root) != moor_home_key(home):
             gateways.append((root, read_runtime_status(root / "gateway_state.json")))
         for gw_home, record in gateways:
             state = ((record or {}).get("platforms") or {}).get(platform_name, {}).get("state")
@@ -776,7 +776,7 @@ SEND_MESSAGE_SCHEMA = {
             },
             "message": {
                 "type": "string",
-                "description": "The message text to send. To send an image or file, include MEDIA:<local_path> (e.g. 'MEDIA:~/.hermes/cache/scratch/report.pdf') in the message — the platform will deliver it as a native media attachment."
+                "description": "The message text to send. To send an image or file, include MEDIA:<local_path> (e.g. 'MEDIA:~/.moor/cache/scratch/report.pdf') in the message — the platform will deliver it as a native media attachment."
             },
             "emoji": {
                 "type": "string",

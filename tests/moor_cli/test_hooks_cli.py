@@ -232,7 +232,7 @@ def test_print_run_result_shows_decision_for_error_and_timeout():
 
 
 def test_hooks_test_distinguishes_fail_closed_from_fail_open(tmp_path):
-    """`hermes hooks test` on a missing command shows the dispatcher's decision (#115968).
+    """`moor hooks test` on a missing command shows the dispatcher's decision (#115968).
 
     Drives the real CLI subcommand: a fail_closed hook whose command does not exist
     must print the block decision, while the fail-open twin prints the "contributed
@@ -248,7 +248,7 @@ def test_hooks_test_distinguishes_fail_closed_from_fail_open(tmp_path):
         },
         "hooks_auto_accept": True,
     }
-    with patch("hermes_cli.config.load_config", return_value=cfg):
+    with patch("moor_cli.config.load_config", return_value=cfg):
         out = _run(SimpleNamespace(
             hooks_action="test", event="pre_tool_call",
             for_tool="terminal", payload_file=None,

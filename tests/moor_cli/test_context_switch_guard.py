@@ -75,11 +75,11 @@ def test_cap_lowers_the_switch_warning_threshold_below_the_ratio(monkeypatch):
     500K (no warning at 300K in-flight), the cap says less — the guard must warn with the capped number."""
     cap = 256_000
     monkeypatch.setattr(
-        "hermes_cli.context_switch_guard._estimate_tokens",
+        "moor_cli.context_switch_guard._estimate_tokens",
         lambda *a, **k: 300_000,
     )
     monkeypatch.setattr(
-        "hermes_cli.context_switch_guard.resolve_display_context_length",
+        "moor_cli.context_switch_guard.resolve_display_context_length",
         lambda *a, **k: 1_000_000,
     )
     cc = _compressor(

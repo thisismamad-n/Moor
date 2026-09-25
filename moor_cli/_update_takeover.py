@@ -13,15 +13,15 @@ def prepare(request: dict) -> tuple[Path, dict[str, str]]:
     sys.path.insert(0, str(root))
     # The old shim's UI has been frozen since the pull; from here the new
     # tree can publish stages (and pop the panel the old shim couldn't).
-    from hermes_cli.update_stage import ensure_panel, publish_stage
+    from moor_cli.update_stage import ensure_panel, publish_stage
 
     ensure_panel(root)
     publish_stage("Updating Python dependencies (PM)")
     from pm import receipt
     from pm.client import ensure_tools_for_sync, sync_venv, venv_is_current
     from pm.environments import activation_environment, install_state_dir, runtime_facts_path
-    from hermes_cli._launchers import resolve_store_python
-    from hermes_cli.venv_sync import publish_launchers
+    from moor_cli._launchers import resolve_store_python
+    from moor_cli.venv_sync import publish_launchers
 
     correlation = request["update_id"]
     with receipt.worker_context(correlation):
@@ -50,13 +50,13 @@ def prepare(request: dict) -> tuple[Path, dict[str, str]]:
 
 
 def _record_failure(request: dict, result: Path, code: int, detail: str) -> None:
-    from hermes_cli import update_receipt
-    from hermes_constants import get_hermes_home
+    from moor_cli import update_receipt
+    from moor_constants import get_moor_home
 
     update_receipt.record_step("historical_takeover", False, detail)
     saved = update_receipt.finalize_pending_update_receipt(code, detail)
     if request.get("gateway_mode"):
-        (get_hermes_home() / ".update_exit_code").write_text(f"{code}\n", encoding="utf-8")
+        (get_moor_home() / ".update_exit_code").write_text(f"{code}\n", encoding="utf-8")
     result.write_text(json.dumps({"receipt_handled": saved is not None, "resume_handled": False}), encoding="utf-8")
 
 
@@ -67,20 +67,20 @@ def main() -> int:
     if "stopped_serves" in request:
         # Historical atexit cleanup may run after the update's result is fixed.
         # It must reuse that installation, never start a second update/repair.
-        from hermes_cli._launchers import resolve_store_python
+        from moor_cli._launchers import resolve_store_python
         from pm.environments import activation_environment
 
         root = Path(request["root"])
         python = resolve_store_python(root)
         if python is None:
-            print("Cannot resume stopped backends: no selected Hermes interpreter", file=sys.stderr)
+            print("Cannot resume stopped backends: no selected Moor interpreter", file=sys.stderr)
             return 1
         return subprocess.run(
-            [str(python), "-I", "-B", "-X", "utf8", str(root / "hermes_cli/update_serve_resume.py"),
+            [str(python), "-I", "-B", "-X", "utf8", str(root / "moor_cli/update_serve_resume.py"),
              str(context), str(result)], cwd=root, env=activation_environment(root),
         ).returncode
-    from hermes_cli import update_receipt
-    from hermes_cli.update_lock import UpdateLock, describe_holder
+    from moor_cli import update_receipt
+    from moor_cli.update_lock import UpdateLock, describe_holder
 
     lock = UpdateLock()
     if not lock.acquire():
@@ -95,7 +95,7 @@ def main() -> int:
         context.write_text(json.dumps(request), encoding="utf-8")
         # This file is new too. Direct execution bypasses normal launch-time
         # update liveness checks while the waiting parent still holds its lock.
-        command = [str(python), "-I", "-B", "-X", "utf8", str(Path(request["root"]) / "hermes_cli/update_finish.py"),
+        command = [str(python), "-I", "-B", "-X", "utf8", str(Path(request["root"]) / "moor_cli/update_finish.py"),
                    str(context), str(result)]
         code = subprocess.run(command, cwd=request["root"], env=env).returncode
         if code != 0 and not result.is_file():

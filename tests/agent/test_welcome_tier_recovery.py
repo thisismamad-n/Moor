@@ -15,7 +15,7 @@ import pytest
 from agent.agent_runtime_helpers import extract_api_error_context
 from agent.error_classifier import FailoverReason, classify_api_error
 from agent.turn_retry_state import TurnRetryState
-from tests.hermes_cli.anon_portal import make_jwt
+from tests.moor_cli.anon_portal import make_jwt
 
 WELCOME = "https://welcome-api.nousresearch.com/v1"
 PAID = "https://inference-api.nousresearch.com/v1"
@@ -42,8 +42,8 @@ def _refusal(reason: str, *, retry_after: int = 0, alternates=None) -> MockAPIEr
                                 "alternates": alternates or [], "upgrade_url": "https://portal.example/signup"})
 
 
-def _classify(err: MockAPIError, *, model: str = "nous/welcome", base_url: str = WELCOME):
-    return classify_api_error(err, provider="nous", model=model, base_url=base_url, api_key=make_jwt())
+def _classify(err: MockAPIError, *, model: str = "moor/welcome", base_url: str = WELCOME):
+    return classify_api_error(err, provider="moor", model=model, base_url=base_url, api_key=make_jwt())
 
 
 class TestDarkTier403:
@@ -77,9 +77,9 @@ class TestDarkTier403:
 def _agent(**overrides):
     lines = []
     agent = SimpleNamespace(
-        provider="nous", api_key=make_jwt(), model="gpt-5", base_url=WELCOME, log_prefix="", _rate_limit_state=None,
+        provider="moor", api_key=make_jwt(), model="gpt-5", base_url=WELCOME, log_prefix="", _rate_limit_state=None,
         _vprint=lambda text, force=False, diagnostic=False: lines.append(text),
-        _try_refresh_nous_client_credentials=lambda **kw: True,
+        _try_refresh_moor_client_credentials=lambda **kw: True,
     )
     for k, v in overrides.items():
         setattr(agent, k, v)
@@ -94,8 +94,8 @@ class TestOneShotRecoveries:
         classified = _classify(_refusal("model_not_free", alternates=["moor/welcome"]), model="gpt-5")
         retry = TurnRetryState()
         assert _recover_welcome_tier(agent, classified, retry) is True
-        assert agent.model == "nous/welcome"
-        assert agent._nous_model_switch == ("gpt-5", "nous/welcome")
+        assert agent.model == "moor/welcome"
+        assert agent._moor_model_switch == ("gpt-5", "moor/welcome")
         # Once: a second refusal in the same attempt falls through to the terminal path.
         assert _recover_welcome_tier(agent, classified, retry) is False
 
@@ -121,10 +121,10 @@ class TestOneShotRecoveries:
     def test_a_named_account_on_the_welcome_host_re_reads_the_route_once(self):
         from agent.turn_recovery import _recover_welcome_tier
         calls = []
-        agent = _agent(api_key=make_jwt(account_tier="free", client_id="hermes-cli"),
-                       _try_refresh_nous_client_credentials=lambda **kw: calls.append(kw) or True)
-        body = {"status": 400, "message": "This endpoint serves anonymous Hermes Agent accounts only. Use https://inference-api.nousresearch.com with your API key or signed-in account."}
-        classified = classify_api_error(_gateway_error(400, body), provider="nous", base_url=WELCOME, api_key=agent.api_key)
+        agent = _agent(api_key=make_jwt(account_tier="free", client_id="moor-cli"),
+                       _try_refresh_moor_client_credentials=lambda **kw: calls.append(kw) or True)
+        body = {"status": 400, "message": "This endpoint serves anonymous Moor Agent accounts only. Use https://inference-api.nousresearch.com with your API key or signed-in account."}
+        classified = classify_api_error(_gateway_error(400, body), provider="moor", base_url=WELCOME, api_key=agent.api_key)
         assert classified.error_context["welcome_route"] == "named_on_welcome_host"
         retry = TurnRetryState()
         assert _recover_welcome_tier(agent, classified, retry) is True
@@ -168,7 +168,7 @@ class TestLongWaitRule:
         assert recorded and recorded[0]["error_context"]["reset_at"] == classified.error_context["reset_at"]
         # The same body for a named account is not an anonymous allowance verdict.
         recorded.clear()
-        assert _is_genuine_nous_rate_limit(_agent(base_url=PAID, api_key=make_jwt(account_tier="paid")), err, turn_ctx, classified) is False
+        assert _is_genuine_moor_rate_limit(_agent(base_url=PAID, api_key=make_jwt(account_tier="paid")), err, turn_ctx, classified) is False
         assert recorded == []
         # A short one is not an exhausted allowance: nothing recorded, the turn waits it out.
         recorded.clear()
@@ -182,7 +182,7 @@ class TestOutageCopy:
                                         FailoverReason.server_error])
     def test_a_spent_transport_failure_on_the_welcome_host_reads_as_one_sentence(self, reason):
         from agent.turn_recovery import _welcome_outage_copy
-        from hermes_cli.anon_auth import FREE_TIER_OUTAGE_COPY
+        from moor_cli.anon_auth import FREE_TIER_OUTAGE_COPY
         assert _welcome_outage_copy(WELCOME, SimpleNamespace(reason=reason), anonymous=True) == FREE_TIER_OUTAGE_COPY
 
     def test_other_routes_and_other_reasons_keep_the_technical_summary(self):

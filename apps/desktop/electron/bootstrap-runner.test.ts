@@ -278,7 +278,7 @@ test('resolveInstallScript rethrows when the 404 fallback is unavailable', async
 test('installer log lines reach the emitter without escape sequences; \\r redraws keep the last frame', () => {
   assert.equal(cleanInstallerLogLine('\u001b[0;32m✓\u001b[0m Detected: macos (macos)'), '✓ Detected: macos (macos)')
   assert.equal(cleanInstallerLogLine('\u001b[2K\u001b[1GCloning repository…\u001b[K'), 'Cloning repository…')
-  assert.equal(cleanInstallerLogLine('\u001b]0;hermes\u0007Installing Hermes'), 'Installing Hermes')
+  assert.equal(cleanInstallerLogLine('\u001b]0;moor\u0007Installing Moor'), 'Installing Moor')
   assert.equal(cleanInstallerLogLine('\r 12%\r 67%\r100%\u001b[K'), '100%')
   assert.equal(cleanInstallerLogLine('Resolving dependencies…\r'), 'Resolving dependencies…')
   // Only-escape frames drop entirely, so the caller emits nothing for them.
@@ -301,7 +301,7 @@ test.skipIf(process.platform === 'win32')(
       installStamp: null,
       activeRoot: home,
       sourceRepoRoot: home,
-      hermesHome: home,
+      moorHome: home,
       logRoot: home,
       onEvent: () => {}
     })

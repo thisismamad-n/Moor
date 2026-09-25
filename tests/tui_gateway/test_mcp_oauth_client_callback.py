@@ -15,7 +15,7 @@ Covers the three seams added for remote Desktop backends:
 
 import pytest
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from tools.connectors import mcp_oauth
 from tools.connectors.mcp_oauth import _validate_client_redirect_uri
 from tools.mcp_dashboard_oauth import DashboardOAuthFlow
@@ -71,7 +71,7 @@ def _fake_worker_publishes_url(monkeypatch, state="teststate123"):
     carrying *state* and then waits for the callback like the real worker's
     SDK does."""
 
-    def worker(hermes_home, server_name, cfg, reconnect_live, *, flow, on_done=None, **_card_options):
+    def worker(moor_home, server_name, cfg, reconnect_live, *, flow, on_done=None, **_card_options):
         import asyncio
 
         asyncio.run(
@@ -128,7 +128,7 @@ def test_start_flow_client_redirect_skips_gateway_listener(monkeypatch):
 
     # The connection-card path does not require a dashboard web server: it binds the same backend
     # receiver, registers the flow for callback relay, and carries the SSH paste hint in detail.
-    import hermes_cli.mcp_config as mcp_config
+    import moor_cli.mcp_config as mcp_config
 
     monkeypatch.setattr(
         mcp_config,
@@ -148,7 +148,7 @@ def test_start_flow_client_redirect_skips_gateway_listener(monkeypatch):
     # A pre-registered client owns its pinned listener inside the SDK; the receiver picker must
     # publish that URI without attempting a second bind.
     pinned = DashboardOAuthFlow(
-        "pinned", "asana", None, str(get_hermes_home()), ""
+        "pinned", "asana", None, str(get_moor_home()), ""
     )
     pinned_bound = []
     monkeypatch.setattr(

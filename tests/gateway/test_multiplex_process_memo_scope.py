@@ -8,7 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_constants import reset_moor_home_override, set_moor_home_override
 

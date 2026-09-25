@@ -1,8 +1,8 @@
 """Harness: a named profile does not get a gateway of its own inside the container.
 
-Multiplex-only (#118273, #118433): ONE gateway per container serves every profile. ``hermes
+Multiplex-only (#118273, #118433): ONE gateway per container serves every profile. ``moor
 profile create`` still registers the profile's s6 slot (so ``--force`` has something to drive),
-but ``hermes -p <profile> gateway start`` without ``--force`` refuses, names the escape, and
+but ``moor -p <profile> gateway start`` without ``--force`` refuses, names the escape, and
 leaves the slot's want-state DOWN. ``--force`` is the only path to a second, supervised
 per-profile gateway, and that path keeps working (its slot wants up, and stop takes it down).
 
@@ -10,7 +10,7 @@ NB: The harness profile has no model/auth configured. A ``--force``-started supe
 process may spin up (svstat ``up``) or exit fast and be throttled (``down …, want up``). We
 assert the *want* intent the lifecycle command set, NOT the supervised process's health.
 
-Every ``docker exec`` here runs as the unprivileged ``hermes`` user (via
+Every ``docker exec`` here runs as the unprivileged ``moor`` user (via
 :func:`docker_exec_sh` in conftest); see the conftest module docstring.
 """
 from __future__ import annotations
@@ -89,7 +89,7 @@ def test_named_profile_gateway_start_refuses_without_force(
     r = _sh(container_name, f"test -d /run/service/gateway-{PROFILE}")
     assert r.returncode == 0, "s6 service slot not created on profile create"
 
-    r = _sh(container_name, f"hermes -p {PROFILE} gateway start", timeout=60)
+    r = _sh(container_name, f"moor -p {PROFILE} gateway start", timeout=60)
     assert r.returncode != 0, f"a named profile started its own gateway: {r.stdout!r}"
     assert not _svstat_wants_up(container_name), (
         f"refused start still flipped the slot's want-state: {_svstat(container_name)!r}")
@@ -99,10 +99,10 @@ def test_named_profile_gateway_force_start_then_stop(
     built_image: str, container_name: str,
 ) -> None:
     start_container(built_image, container_name, cmd="sleep 120")
-    r = _sh(container_name, f"hermes profile create {PROFILE}")
+    r = _sh(container_name, f"moor profile create {PROFILE}")
     assert r.returncode == 0, f"profile create failed: {r.stderr}"
 
-    r = _sh(container_name, f"hermes -p {PROFILE} gateway start --force", timeout=60)
+    r = _sh(container_name, f"moor -p {PROFILE} gateway start --force", timeout=60)
     assert r.returncode == 0, (
         f"--force gateway start failed: stderr={r.stderr!r} stdout={r.stdout!r}"
     )

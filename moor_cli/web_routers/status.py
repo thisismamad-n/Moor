@@ -22,12 +22,12 @@ from gateway.status import (
     derive_gateway_busy, derive_gateway_drainable, normalize_updated_at, parse_active_agents,
     profile_platforms_from_multiplexer, resolve_gateway_liveness, retained_gateway_state,
     runtime_status_heartbeat_age_s, runtime_status_is_stale)
-from hermes_cli import __release_date__
-from hermes_cli.config import get_config_path, get_env_path
-from hermes_cli.version_info import get_version_info
-from hermes_constants import get_process_hermes_home, profile_name_for_home
-from hermes_cli.web_models import CuratorPause, LearningNodeRef, LearningNodeEdit, DebugShareRequest
-from hermes_cli.web_routers._common import config_scoped_to_thread, destructive_profile, scoped_to_thread
+from moor_cli import __release_date__
+from moor_cli.config import get_config_path, get_env_path
+from moor_cli.version_info import get_version_info
+from moor_constants import get_process_moor_home, profile_name_for_home
+from moor_cli.web_models import CuratorPause, LearningNodeRef, LearningNodeEdit, DebugShareRequest
+from moor_cli.web_routers._common import config_scoped_to_thread, destructive_profile, scoped_to_thread
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -48,9 +48,9 @@ _resolve_restart_drain_timeout = late("_resolve_restart_drain_timeout", "moor_cl
 _spawn_moor_action = late("_spawn_moor_action", "moor_cli.web_server_gateway")
 _ssh_runtime_intact = late("_ssh_runtime_intact")
 app = LateState("app")  # the FastAPI instance (app.state.*)
-check_config_version = late("check_config_version", "hermes_cli.config")
-get_hermes_home = late("get_hermes_home", "hermes_cli.config")
-_profile_cli_args = late("_profile_cli_args", "hermes_cli.web_server_profiles")
+check_config_version = late("check_config_version", "moor_cli.config")
+get_moor_home = late("get_moor_home", "moor_cli.config")
+_profile_cli_args = late("_profile_cli_args", "moor_cli.web_server_profiles")
 get_install_id = late("get_install_id")
 get_running_pid_cached = late("get_running_pid_cached", "gateway.status")
 get_runtime_status_running_pid = late("get_runtime_status_running_pid", "gateway.status")
@@ -123,18 +123,18 @@ async def get_health():
 
 @router.get("/api/host/identity")
 async def get_host_identity(request: Request):
-    """Prove to an attaching `hermes serve`/`dashboard` WHO owns this port.
+    """Prove to an attaching `moor serve`/`dashboard` WHO owns this port.
 
     The host rendezvous record names a (pid, port) owner, but a record cannot say whether that
     owner still holds the port: a graceful-shutdown window or an unrelated listener that
     inherited the port both look identical on disk. The attaching side dials this endpoint with
     the owner's 0600 token and attaches only when pid+role match. ``servesSpa`` is false for
-    headless ``serve``, so a `hermes dashboard` user is never routed to a backend with no UI.
+    headless ``serve``, so a `moor dashboard` user is never routed to a backend with no UI.
     """
     _require_token(request)
     # ``role`` is the host ROLE this process published (gateway/host_rendezvous.ROLE_SERVE, or
-    # ROLE_DESKTOP_SERVE for a Desktop-owned child), not the launch mode: `hermes serve` and
-    # `hermes dashboard` are one host role that differ in SPA.
+    # ROLE_DESKTOP_SERVE for a Desktop-owned child), not the launch mode: `moor serve` and
+    # `moor dashboard` are one host role that differ in SPA.
     return {"ok": True, "protocolVersion": 1, "pid": os.getpid(),
             "role": getattr(app.state, "host_role", None) or "serve",
             "servesSpa": bool(getattr(app.state, "serves_spa", False))}
@@ -143,14 +143,14 @@ async def get_host_identity(request: Request):
 @router.get("/api/health/idle")
 async def get_health_idle(request: Request):
     """Token-gated diagnostic snapshot; never a retirement permit. None means cannot prove idle."""
-    from hermes_cli.web_server_idle_proof import idle_proof
+    from moor_cli.web_server_idle_proof import idle_proof
     _require_token(request)
     return {"ok": True, **idle_proof()}
 
 
 @router.post("/api/health/retirement")
 async def post_health_retirement(request: Request):
-    from hermes_cli.backend_retirement import retirement
+    from moor_cli.backend_retirement import retirement
 
     _require_token(request)
     try:
@@ -168,7 +168,7 @@ async def post_health_retirement(request: Request):
     return getattr(retirement, action)(token)
 
 
-# Profile segment mirrors hermes_cli.profiles._PROFILE_ID_RE. Platform segment mirrors the
+# Profile segment mirrors moor_cli.profiles._PROFILE_ID_RE. Platform segment mirrors the
 # Platform enum's normalized values: built-in members plus plugin directory names
 # (lowercased), which allow hyphens as well as underscores (e.g. ``reviewer:foo-bar``).
 _PROFILE_PLATFORM_STATUS_KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}:[a-z0-9][a-z0-9_-]{0,63}$")
@@ -331,7 +331,7 @@ async def _resolve_gateway_status(profile_dir: Optional[Path], health_url) -> Di
         elif gateway_state in {"running", "degraded", "starting"} and runtime_status_is_stale(runtime):
             # Alive PID, but housekeeping stopped re-stamping the heartbeat: the loop or the
             # housekeeping thread wedged while the file still says 'running' (#113372). Same arm
-            # as ``hermes gateway status`` so the sidebar strip and the CLI agree.
+            # as ``moor gateway status`` so the sidebar strip and the CLI agree.
             gateway_heartbeat_stale_s = runtime_status_heartbeat_age_s(runtime)
         gateway_platforms = _project_gateway_platforms(
             runtime.get("platforms") or {}, configured, gateway_running, gateway_state)
@@ -526,7 +526,7 @@ async def get_status(profile: Optional[str] = None):
             status["install_id"] = install_id
 
         # Advisory only. Expose no paths or process identities on this public probe.
-        from hermes_cli.shared_profile_warning import shared_profile_warning
+        from moor_cli.shared_profile_warning import shared_profile_warning
         status["shared_profile_warning"] = bool(await run_in_threadpool(shared_profile_warning))
 
         components = await _component_health(gateway)
@@ -571,7 +571,7 @@ async def get_system_stats():
         "arch": _platform.machine(), "hostname": _platform.node(),
         "python_version": _platform.python_version(),
         "python_impl": _platform.python_implementation(),
-        "hermes_version": get_version_info().base_version, "cpu_count": os.cpu_count()}
+        "moor_version": get_version_info().base_version, "cpu_count": os.cpu_count()}
 
     def _disk():
         du = psutil.disk_usage(str(get_moor_home()))
@@ -641,17 +641,17 @@ async def get_curator_status(profile: Optional[str] = None):
 @router.put("/api/curator/paused")
 async def set_curator_paused(body: CuratorPause, profile: Optional[str] = None):
     from agent import curator
-    # ``_state_file()`` is ``get_hermes_home()/skills/.curator_state`` resolved at call
+    # ``_state_file()`` is ``get_moor_home()/skills/.curator_state`` resolved at call
     # time, so the request's home override is what decides which profile pauses.
     await config_scoped_to_thread(profile, lambda: curator.set_paused(bool(body.paused)))
     return {"ok": True, "paused": bool(body.paused)}
 
 
 def _spawn_action(argv: list, name: str, prefix: str, profile: Optional[str] = None) -> dict:
-    """Spawn a background ``hermes -p <profile> <argv>`` action; a spawn failure is
+    """Spawn a background ``moor -p <profile> <argv>`` action; a spawn failure is
     ``500 "<prefix>: <exc>"``."""
     try:
-        proc = _spawn_hermes_action(_profile_cli_args(profile) + argv, name)
+        proc = _spawn_moor_action(_profile_cli_args(profile) + argv, name)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"{prefix}: {exc}")
     return {"ok": True, "pid": proc.pid, "name": name}
@@ -809,12 +809,12 @@ async def get_logs(
     file: str = "agent", lines: int = 100, level: Optional[str] = None,
     component: Optional[str] = None, search: Optional[str] = None,
     profile: Optional[str] = None):
-    from hermes_cli.logs import _read_tail, LOG_FILES
+    from moor_cli.logs import _read_tail, LOG_FILES
     log_name = LOG_FILES.get(file)
     if not log_name:
         raise HTTPException(status_code=400, detail=f"Unknown log file: {file}")
     with _config_profile_scope(profile):
-        log_path = get_hermes_home() / "logs" / log_name
+        log_path = get_moor_home() / "logs" / log_name
     if not log_path.exists():
         return {"file": file, "lines": []}
 

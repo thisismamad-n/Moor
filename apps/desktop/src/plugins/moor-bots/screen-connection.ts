@@ -10,8 +10,8 @@
  * voice playback opens `/api/audio/speak-stream` beside `/api/ws`.
  */
 
-import { host, resolveSiblingWsUrl } from '@hermes/plugin-sdk'
-import type { DisplayLease, PluginProfileRoute, RpcEvent } from '@hermes/plugin-sdk'
+import { host, resolveSiblingWsUrl } from '@moor/plugin-sdk'
+import type { DisplayLease, PluginProfileRoute, RpcEvent } from '@moor/plugin-sdk'
 
 import { resolveBotConnectionRoute } from './routing'
 import type { RosterRow } from './types'
@@ -22,7 +22,7 @@ export type {
   DisplayObserveResult,
   DisplayStatus,
   DisplayThumbnailResult as DisplayThumbnail
-} from '@hermes/plugin-sdk'
+} from '@moor/plugin-sdk'
 
 /** This window's identity for one attach: the minted id plus its lease-payload hash. */
 export interface ScreenViewer {
@@ -51,7 +51,7 @@ export function leaseHeldBy(lease: DisplayLease | null | undefined, viewer: Scre
   return lease.viewer_hash === viewer.hash
 }
 
-/** JSON-RPC method-not-found: the bot's Hermes predates the `display.*` surface. */
+/** JSON-RPC method-not-found: the bot's Moor predates the `display.*` surface. */
 export function isDisplayUnavailable(error: unknown): boolean {
   const record = typeof error === 'object' && error !== null ? (error as { code?: unknown; message?: unknown }) : null
 
@@ -82,7 +82,7 @@ export function botScreenRoute(bot: RosterRow): PluginProfileRoute | string | nu
 
 /**
  * Does a `display.*` event belong to `bot`'s screen? Two hosts can share the same
- * `~/.hermes` path, so the profile key alone is ambiguous: the event must also have
+ * `~/.moor` path, so the profile key alone is ambiguous: the event must also have
  * arrived on the bot's registry connection (local/legacy events carry no tag).
  */
 export function isEventForBotScreen(bot: RosterRow, event: RpcEvent, profileKey: null | string | undefined): boolean {

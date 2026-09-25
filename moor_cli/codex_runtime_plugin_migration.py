@@ -61,7 +61,7 @@ class MigrationReport:
         if self.preserved_user_servers:
             lines.append(
                 f"Kept {len(self.preserved_user_servers)} user-owned MCP server(s) already in "
-                f"config.toml (Hermes projection skipped): {', '.join(self.preserved_user_servers)}")
+                f"config.toml (Moor projection skipped): {', '.join(self.preserved_user_servers)}")
         lines.extend(f"⚠ {err}" for err in self.errors)
         return "\n".join(lines)
 
@@ -247,7 +247,7 @@ def _unmanaged_mcp_server_names(toml_text: str) -> set[str]:
 
     Unlike ``[plugins.*]`` — where ``plugin/list`` is the source of truth and we own the
     namespace — ``mcp_servers`` is shared: the docs promise that anything outside the managed
-    block is the user's. A Hermes server whose name is already declared by the user is therefore
+    block is the user's. A Moor server whose name is already declared by the user is therefore
     NOT re-emitted (the user's table wins and is preserved verbatim); emitting both would be a
     duplicate table header, which is invalid TOML that codex refuses to load (issue #79023).
     """
@@ -329,7 +329,7 @@ def _query_codex_plugins(
         return [], f"transport unavailable: {exc}"
     try:
         with CodexAppServerClient(codex_bin=codex_bin, codex_home=str(codex_home) if codex_home else None) as client:
-            client.initialize(client_name="hermes-migration")
+            client.initialize(client_name="moor-migration")
             resp = client.request("plugin/list", {}, timeout=timeout)
     except Exception as exc:
         return [], f"plugin/list query failed: {exc}"
@@ -457,9 +457,9 @@ def migrate(
     plugins: list[dict] = []
     plugin_query_succeeded = False
     if discover_plugins and not dry_run:
-        from hermes_cli.codex_runtime_switch import get_configured_codex_binary
+        from moor_cli.codex_runtime_switch import get_configured_codex_binary
         plugins, plugin_err = _query_codex_plugins(
-            codex_home=codex_home, codex_bin=get_configured_codex_binary(hermes_config))
+            codex_home=codex_home, codex_bin=get_configured_codex_binary(moor_config))
         if plugin_err:
             report.plugin_query_error = plugin_err
         # An authoritative plugin/list (even an empty one) means we own [plugins.*] for this
@@ -468,10 +468,10 @@ def migrate(
         report.migrated_plugins += [f"{p['name']}@{p['marketplace']}" for p in plugins]
     if default_permission_profile:
         report.wrote_permissions_default = default_permission_profile
-    if expose_hermes_tools:
-        translated[HERMES_TOOLS_MCP_SERVER_NAME] = _build_hermes_tools_mcp_entry()
-        if HERMES_TOOLS_MCP_SERVER_NAME not in report.migrated:
-            report.migrated.append(HERMES_TOOLS_MCP_SERVER_NAME)
+    if expose_moor_tools:
+        translated[MOOR_TOOLS_MCP_SERVER_NAME] = _build_moor_tools_mcp_entry()
+        if MOOR_TOOLS_MCP_SERVER_NAME not in report.migrated:
+            report.migrated.append(MOOR_TOOLS_MCP_SERVER_NAME)
     without_managed = ""
     if target.exists():
         try:
@@ -485,7 +485,7 @@ def migrate(
             except tomllib.TOMLDecodeError:
                 # codex could not load the pre-broken file, so plugin/list failed for that reason.
                 report.plugin_query_error += (
-                    "; existing config.toml was unloadable — re-run `hermes codex-runtime migrate` "
+                    "; existing config.toml was unloadable — re-run `moor codex-runtime migrate` "
                     "to migrate plugins")
         without_managed = _strip_existing_managed_block(existing)
         if plugin_query_succeeded:

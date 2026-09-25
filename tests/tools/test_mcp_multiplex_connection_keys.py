@@ -318,7 +318,7 @@ def test_launch_profile_pruning_a_server_keeps_served_profiles_same_named_connec
     disc._adopt_server("x", srv_b)
     assert core._server_scope_keys[(scope_b, "x")] == scope_b
 
-    with patch("hermes_constants.get_hermes_home_override", return_value=None):
+    with patch("moor_constants.get_moor_home_override", return_value=None):
         assert core._mcp_registry_scope() is None
         srv_launch = _server("x", cfg)
         disc._adopt_server("x", srv_launch)
@@ -350,7 +350,7 @@ def test_launch_profile_pruning_a_server_keeps_served_profiles_same_named_connec
 
 def test_adopter_scope_setup_failure_leaks_no_override_and_continues(two_profiles, monkeypatch):
     """A corrupt/removed adopter home raising inside ``build_profile_secret_scope`` must
-    not leak that adopter's HERMES_HOME override into the caller's context, and the
+    not leak that adopter's MOOR_HOME override into the caller's context, and the
     remaining adopters still get their re-registration pass."""
     import agent.secret_scope as ss
     import tools.mcp_tool as core
@@ -371,7 +371,7 @@ def test_adopter_scope_setup_failure_leaks_no_override_and_continues(two_profile
 
     lifecycle._reregister_orphaned_adopters()
 
-    from hermes_constants import get_hermes_home_override
-    assert get_hermes_home_override() is None
+    from moor_constants import get_moor_home_override
+    assert get_moor_home_override() is None
     assert ss.current_secret_scope() is None
     assert registered == [{"x": {"url": "https://mcp.example/x"}}]

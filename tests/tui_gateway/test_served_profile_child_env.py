@@ -92,7 +92,7 @@ def test_launch_profile_worker_spawns_with_own_home_after_multiplex_flip(mux_hom
     import tui_gateway.server as server
 
     a, _b = mux_homes
-    monkeypatch.setattr(server, "_hermes_home", str(a))  # launch profile home, captured at import
+    monkeypatch.setattr(server, "_moor_home", str(a))  # launch profile home, captured at import
     captured = {}
 
     class _Popen:
@@ -110,7 +110,7 @@ def test_launch_profile_worker_spawns_with_own_home_after_multiplex_flip(mux_hom
         server._SlashWorker("sess", "", profile_home=None)
     # No UnscopedSecretError: the worker is launched under the launch profile's own home, not routed.
     env = captured["env"]
-    assert env["HERMES_HOME"] == str(a)
+    assert env["MOOR_HOME"] == str(a)
     assert env["A_MARKER"] == "a"  # launch residual retained (target is not a routed/foreign home)
 
 

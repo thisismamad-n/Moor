@@ -545,7 +545,7 @@ class TestSequentialToolTimeoutResolver:
         from agent import tool_executor
 
         monkeypatch.setattr("agent.deadline._timeouts_section", lambda: {})
-        monkeypatch.delenv("HERMES_CONCURRENT_TOOL_TIMEOUT_S", raising=False)
+        monkeypatch.delenv("MOOR_CONCURRENT_TOOL_TIMEOUT_S", raising=False)
         assert self._resolver()() == tool_executor._resolve_concurrent_tool_timeout()
 
     def test_inherits_concurrent_env_bridge(self, monkeypatch):

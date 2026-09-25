@@ -93,7 +93,7 @@ class TestProviderModelsSWR:
     def test_codex_token_rotation_keeps_account_gated_models_for_same_principal(
         self, tmp_path, monkeypatch,
     ):
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
 
         def jwt(account_id, subject, nonce, exp=None):
             def segment(value):
@@ -109,7 +109,7 @@ class TestProviderModelsSWR:
             return f"{segment({'alg': 'none'})}.{segment(claims)}.sig"
 
         auth_path = tmp_path / "auth.json"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         monkeypatch.setenv("HOME", str(tmp_path))
 
         def write_auth(token, request_count, mtime_ns):

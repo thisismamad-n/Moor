@@ -7,10 +7,10 @@ import types
 import pytest
 
 
-from hermes_cli.config import load_config, save_config
-import hermes_cli.main  # bootstrap before per-test filesystem guards
-from hermes_cli import setup as setup_mod
-from hermes_cli.setup import setup_model_provider
+from moor_cli.config import load_config, save_config
+import moor_cli.main  # bootstrap before per-test filesystem guards
+from moor_cli import setup as setup_mod
+from moor_cli.setup import setup_model_provider
 
 
 def _maybe_keep_current_tts(question, choices):
@@ -259,7 +259,7 @@ def test_vercel_setup_prefills_project_and_team_from_link_file(tmp_path, monkeyp
 @pytest.mark.parametrize("succeeds", [True, False])
 def test_python_setup_uses_declared_extras_and_reports_restart(extra, succeeds, monkeypatch, capsys):
     import pm
-    from hermes_cli import setup_terminal, setup_tts
+    from moor_cli import setup_terminal, setup_tts
 
     calls = []
     def sync(extras, *, explicit):
@@ -278,17 +278,17 @@ def test_python_setup_uses_declared_extras_and_reports_restart(extra, succeeds, 
     assert calls == [([extra], True)]
     output = capsys.readouterr().out
     if succeeds:
-        assert "Restart Hermes" in output
+        assert "Restart Moor" in output
         assert sys.modules[extra] is None  # installing never activates in this process
     else:
         assert "resolution refused" in output
-        assert "Retry with: hermes setup" in output
+        assert "Retry with: moor setup" in output
         assert "installed." not in output
 
 
 @pytest.mark.parametrize("extra", ["neutts", "kittentts"])
 def test_unsupported_tts_selection_is_retained_without_installing(extra, monkeypatch, capsys):
-    from hermes_cli import setup_tts
+    from moor_cli import setup_tts
 
     monkeypatch.setattr("pm.extras.extra_supported", lambda name: False)
     def forbidden(*args, **kwargs):

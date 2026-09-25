@@ -27,7 +27,7 @@ def test_config_migration_runs_on_boot(
         f"config.yaml not found in $MOOR_HOME: {r.stdout}"
     )
 
-    # Verify config.yaml is owned by hermes (migration ran as hermes)
+    # Verify config.yaml is owned by moor (migration ran as moor)
     r = docker_exec_sh(
         container_name,
         'stat -c "%U" /opt/data/config.yaml',

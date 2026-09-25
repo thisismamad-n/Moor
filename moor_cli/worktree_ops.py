@@ -19,8 +19,8 @@ import uuid
 from pathlib import Path
 from typing import Dict, Optional
 
-from hermes_cli._subprocess_compat import kill_process_tree
-from hermes_constants import get_hermes_home
+from moor_cli._subprocess_compat import kill_process_tree
+from moor_constants import get_moor_home
 from utils import atomic_json_write
 
 logger = logging.getLogger("cli")
@@ -115,11 +115,11 @@ def _cleanup_failed_worktree_add(repo_root: str, wt_path: Path, branch_name: str
 
 _PACK_SPRAWL_THRESHOLD = 15
 _REPACK_TIMEOUT = 1800
-# One repack attempt per clone per interval, box-wide. Every ``hermes -w`` launch on a shared clone
+# One repack attempt per clone per interval, box-wide. Every ``moor -w`` launch on a shared clone
 # used to start its own ``git repack -a`` of the whole store; on a multi-agent box that stacked 50+
 # concurrent multi-GB repacks (each too slow under the others to ever finish inside the timeout).
 _REPACK_MIN_INTERVAL = 6 * 3600
-_REPACK_LOCK = "hermes-repack.lock"
+_REPACK_LOCK = "moor-repack.lock"
 
 
 def _claim_repack_slot(git_dir: Path) -> bool:
@@ -195,7 +195,7 @@ def _maintain_pack_health(repo_root: str) -> None:
             return
         if not _claim_repack_slot(pack_dir.parent.parent):
             return
-        from hermes_cli.gitlock import clear_stale_tmp_packs
+        from moor_cli.gitlock import clear_stale_tmp_packs
         clear_stale_tmp_packs(Path(repo_root))
         logger.info("git pack sprawl (%d packs) — repacking in background", packs)
         _run_bounded_repack(repo_root)

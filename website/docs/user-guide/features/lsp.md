@@ -128,26 +128,26 @@ composer global require laravel/lsp
 export PATH="$HOME/.config/composer/vendor/bin:$PATH"
 ```
 
-Hermes launches it as `laravel-lsp lsp` (stdio). There is no
-auto-install recipe; `hermes lsp status` shows `manual-only` until the
+Moor launches it as `laravel-lsp lsp` (stdio). There is no
+auto-install recipe; `moor lsp status` shows `manual-only` until the
 binary is found.
 
 A few servers are installed alongside a peer dependency that npm
 won't auto-pull. `typescript-language-server` and `@vue/language-server`
 require the `typescript` SDK importable from the same `node_modules`
-tree — Hermes installs `typescript@6` (the last JavaScript-based line;
+tree — Moor installs `typescript@6` (the last JavaScript-based line;
 TypeScript 7 is the Go port and ships no `tsserver.js`) together with
-the server when you run `hermes lsp install typescript` /
-`hermes lsp install vue-language-server` or auto-install fires on first use.
+the server when you run `moor lsp install typescript` /
+`moor lsp install vue-language-server` or auto-install fires on first use.
 
 Vue is pinned to `@vue/language-server@2`, started with
 `vue.hybridMode: false` so it hosts its own TypeScript service. The 3.x
 line only works behind a client-hosted `tsserver` tunnel (the VS Code /
-Neovim setup) that Hermes's generic client does not run, so it never
-publishes diagnostics. If an earlier Hermes installed 3.x, the log shows a
+Neovim setup) that Moor's generic client does not run, so it never
+publishes diagnostics. If an earlier Moor installed 3.x, the log shows a
 one-time `vue-language-server: ... 3.x` warning; delete
-`<HERMES_HOME>/lsp/node_modules/@vue` and `<HERMES_HOME>/lsp/bin/vue-language-server*`,
-then run `hermes lsp install vue-language-server` (the recipe co-installs the
+`<MOOR_HOME>/lsp/node_modules/@vue` and `<MOOR_HOME>/lsp/bin/vue-language-server*`,
+then run `moor lsp install vue-language-server` (the recipe co-installs the
 TypeScript SDK).
 
 ## CLI
@@ -197,7 +197,7 @@ lsp:
 
   # After a server fails for a workspace (spawn error, or the request
   # outran its budget) that (server, root) pair is skipped. 0 = for the
-  # rest of the process (until `hermes lsp restart`); N = retried after
+  # rest of the process (until `moor lsp restart`); N = retried after
   # N seconds, so one transient stall does not silence a workspace
   # forever. Skips are logged once per root at INFO with the retry time.
   broken_retry_seconds: 0
@@ -218,17 +218,17 @@ lsp:
   install_strategy: auto
 
   # Node package manager for the npm-based servers: npm (default), pnpm
-  # or yarn. Installs still land in <HERMES_HOME>/lsp/node_modules; a
+  # or yarn. Installs still land in <MOOR_HOME>/lsp/node_modules; a
   # manager that is configured but not installed — or a value outside
   # npm|pnpm|yarn — skips the install with a warning instead of silently
   # using npm, so a pnpm/yarn supply-chain policy (minimumReleaseAge,
   # allowBuilds, …) is never bypassed. Yarn Berry (2+): its default PnP
   # linker writes no node_modules/.bin, so set `nodeLinker: node-modules`
-  # in <HERMES_HOME>/lsp/.yarnrc.yml. pnpm 11 blocks git-hosted transitive
+  # in <MOOR_HOME>/lsp/.yarnrc.yml. pnpm 11 blocks git-hosted transitive
   # deps by default (ERR_PNPM_EXOTIC_SUBDEP); @vue/language-server 2.x pulls
   # one in, so under pnpm that server is skipped with the pnpm error in the
   # log — install it once with npm, or relax block-exotic-subdeps in
-  # <HERMES_HOME>/lsp/.npmrc if your policy allows it.
+  # <MOOR_HOME>/lsp/.npmrc if your policy allows it.
   package_manager: npm
 
   # How long an unused language-server client stays alive (seconds).
@@ -268,7 +268,7 @@ lsp:
 Any `lsp.servers` key that is **not** a built-in server id declares
 your own language server. It needs `command` and `extensions`; the
 other keys are optional. Custom servers are matched *before* the
-built-ins, so they can also take over an extension Hermes already
+built-ins, so they can also take over an extension Moor already
 handles.
 
 ```yaml
@@ -285,7 +285,7 @@ lsp:
 ```
 
 Custom servers are never auto-installed: put the binary on PATH (or
-give an absolute path) and `hermes lsp status` lists it as
+give an absolute path) and `moor lsp status` lists it as
 `installed`. A malformed entry is logged and skipped without
 affecting the other servers.
 
@@ -325,7 +325,7 @@ which would let every later edit block for the cold-build duration.
 A server that fails for a workspace — spawn error, or a request that
 outran its budget — marks that `(server, root)` pair broken and every
 later request for it is skipped (logged once per root at INFO). By
-default the pair stays broken until `hermes lsp restart` or process
+default the pair stays broken until `moor lsp restart` or process
 exit; `lsp.broken_retry_seconds: N` retries it after N seconds so one
 transient stall does not cost the workspace its diagnostics for good.
 A root you never want served — one monorepo whose server cannot finish
@@ -348,11 +348,11 @@ respawned automatically on the next relevant file operation. Set
 for the life of the process.
 
 Servers are also released when their workspace goes away, even if they
-are not idle: removing a Hermes-managed worktree (`hermes -w` session
+are not idle: removing a moor-managed worktree (`moor -w` session
 end, Kanban task cleanup, a delegated subagent's pruned worktree) shuts
 down that tree's language servers before `git worktree remove` runs, and
 the periodic sweep shuts down any server whose project root no longer
-exists on disk (deleted outside Hermes). The sweep is part of the idle
+exists on disk (deleted outside Moor). The sweep is part of the idle
 reaper, so `idle_timeout: 0` also disables deleted-root reaping; the
 worktree-removal release always runs. A multi-root server only drops the
 vanished folder and keeps serving its sibling roots.

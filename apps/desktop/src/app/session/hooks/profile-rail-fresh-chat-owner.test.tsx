@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vite
 
 import { createSessionRpcDispatcher } from '@/app/contrib/session-rpc-dispatcher'
 import { prepareDefaultNewSession } from '@/app/session/new-session-route'
-import { getSession } from '@/hermes'
+import { getSession } from '@/moor'
 import { $defaultProfileRoute } from '@/store/default-profile'
 import {
   activeGateway,
@@ -47,7 +47,7 @@ import {
 } from '@/store/session'
 import { foregroundSessionScopes } from '@/store/session-states'
 import { deferred } from '@/test/deferred'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import type { ClientSessionState } from '../../types'
 
@@ -504,7 +504,7 @@ describe('profile rail: a fresh Omar chat keeps its exact registry owner across 
     expect(resolveNewChatOwnerRoute()).toEqual({ connectionId: SOURCE_ID, profile: 'omar' })
     await waitFor(() => expect(activeGatewayProfileKey()).toBe('omar'))
     expect(activeGatewayConnectionId()).toBe(SOURCE_ID)
-    expect(window.hermesDesktop.getConnection).not.toHaveBeenCalledWith('omar')
+    expect(window.moorDesktop.getConnection).not.toHaveBeenCalledWith('omar')
   })
 
   it.each([
@@ -519,7 +519,7 @@ describe('profile rail: a fresh Omar chat keeps its exact registry owner across 
       await ensureGatewayAgent(SOURCE_ID, activeProfile)
       ownerPort = connectionId === null ? V1_PORT : OMAR_PORT
       const activation = deferred<void>()
-      const desktop = window.hermesDesktop!
+      const desktop = window.moorDesktop!
       vi.mocked(desktop.getConnectionFor!).mockClear()
       const getConnection = vi.mocked(desktop.getConnection).getMockImplementation()!
       const getConnectionFor = vi.mocked(desktop.getConnectionFor!).getMockImplementation()!

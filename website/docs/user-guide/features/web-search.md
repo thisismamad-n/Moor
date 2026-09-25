@@ -9,9 +9,9 @@ sidebar_position: 6
 
 Python dependency commands on this page use a
 [PM-prepared source checkout](../../reference/package-management.md#developer-workflow).
-After a dependency change, reactivate the checkout and restart Hermes.
+After a dependency change, reactivate the checkout and restart Moor.
 
-Hermes Agent includes two model-callable web tools backed by multiple providers:
+Moor Agent includes two model-callable web tools backed by multiple providers:
 
 - **`web_search`** — search the web and return ranked results
 - **`web_extract`** — fetch and extract readable content from one or more URLs
@@ -31,10 +31,10 @@ Both are configured through a single backend selection. Providers are chosen via
 | **Tavily** | `TAVILY_API_KEY` (optional) | ✔ | ✔ | ✔ Opt-in keyless when selected |
 | **Perplexity** | `PERPLEXITY_API_KEY` | ✔ | ✔ (query-relevant snippets) | Paid (per-request Search API pricing) |
 | **Keenable** | `KEENABLE_API_KEY` (optional) | ✔ | ✔ | ✔ Keyless ring member · paid with key |
-| **xAI (Grok)** | `XAI_API_KEY` or `hermes auth add xai-oauth` | ✔ | — | Paid (SuperGrok or per-token) |
-| **OpenAI Native (Codex)** | `hermes auth add openai-codex` | ✔ | — | Requires a ChatGPT/Codex subscription |
+| **xAI (Grok)** | `XAI_API_KEY` or `moor auth add xai-oauth` | ✔ | — | Paid (SuperGrok or per-token) |
+| **OpenAI Native (Codex)** | `moor auth add openai-codex` | ✔ | — | Requires a ChatGPT/Codex subscription |
 
-Brave Search, DDGS, xAI, and OpenAI Native are **search-only** — pair any of them with Firecrawl/Tavily/Perplexity/Keenable/Exa/Parallel when you also need `web_extract`. DDGS uses the [`ddgs` Python package](https://pypi.org/project/ddgs/) under the hood; if it isn't already installed, run `python -c "import pm; pm.sync_venv(['ddgs'], explicit=True)"` (or let Hermes lazy-install it on first use). xAI runs Grok's server-side `web_search` tool on the Responses API — results are LLM-generated rather than index-backed, so titles, descriptions, and URL choice are all model output (see the [trust-model caveat](#xai-grok) below). OpenAI Native declares the same kind of provider-executed tool on the Codex Responses endpoint (see [below](#openai-native)).
+Brave Search, DDGS, xAI, and OpenAI Native are **search-only** — pair any of them with Firecrawl/Tavily/Perplexity/Keenable/Exa/Parallel when you also need `web_extract`. DDGS uses the [`ddgs` Python package](https://pypi.org/project/ddgs/) under the hood; if it isn't already installed, run `python -c "import pm; pm.sync_venv(['ddgs'], explicit=True)"` (or let Moor lazy-install it on first use). xAI runs Grok's server-side `web_search` tool on the Responses API — results are LLM-generated rather than index-backed, so titles, descriptions, and URL choice are all model output (see the [trust-model caveat](#xai-grok) below). OpenAI Native declares the same kind of provider-executed tool on the Codex Responses endpoint (see [below](#openai-native)).
 
 **Per-capability split:** you can use different providers for search and extract independently — for example SearXNG (free) for search and Firecrawl for extract. See [Per-capability configuration](#per-capability-configuration) below.
 
@@ -44,8 +44,8 @@ A fresh install with **no web credentials at all** gets working `web_search` and
 
 **Choosing free vs paid explicitly:** in `moor tools`, Exa, Parallel, and Keenable each appear as two rows — **Free (keyless)** and **Paid (API key)**. Picking Free pins that vendor's anonymous endpoint (even if you later add a key); picking Paid pins the keyed path (a missing key then errors instead of silently downgrading to the free tier). The selection is stored as `web.provider_tier.<name>: free|paid`; leave it unset for auto (key present → paid, otherwise the keyless ring).
 
-:::tip Nous Subscribers
-If you have a paid [Nous Portal](https://portal.nousresearch.com) subscription, web search and extract are available through the **[Tool Gateway](tool-gateway.md)** as managed web search — no API key needed. New installs can run `hermes setup --portal` to log in and turn on all gateway tools at once; existing installs can flip just web via `hermes tools`.
+:::tip Moor Subscribers
+If you have a paid [Moor Portal](https://portal.nousresearch.com) subscription, web search and extract are available through the **[Tool Gateway](tool-gateway.md)** as managed web search — no API key needed. New installs can run `moor setup --portal` to log in and turn on all gateway tools at once; existing installs can flip just web via `moor tools`.
 :::
 
 ---
@@ -382,17 +382,17 @@ Unlike index-backed providers (Brave, Tavily, Exa) which return verbatim search-
 
 ### OpenAI Native (Codex Responses) {#openai-native}
 
-Declares OpenAI's provider-executed `web_search` tool on the Codex Responses endpoint (ChatGPT/Codex subscriptions). The model drives search server-side and folds the results into its own answer — Hermes never runs a client-side search in this mode.
+Declares OpenAI's provider-executed `web_search` tool on the Codex Responses endpoint (ChatGPT/Codex subscriptions). The model drives search server-side and folds the results into its own answer — Moor never runs a client-side search in this mode.
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.moor/config.yaml
 web:
   search_backend: "openai-native"
 ```
 
 Requirements and scope:
 
-- **Credentials**: an openai-codex OAuth login (`hermes auth add openai-codex`). This backend has no API key of its own; without a login it is simply unavailable.
+- **Credentials**: an openai-codex OAuth login (`moor auth add openai-codex`). This backend has no API key of its own; without a login it is simply unavailable.
 - **Transport**: only the Codex Responses endpoint exposes the built-in. On any other transport — a custom OpenAI-compatible `base_url`, or a non-OpenAI model — the client-side `web_search` function is left untouched, because the endpoint cannot be relied on to host the tool. Point `web.search_backend` at an ordinary provider for those.
 - **Search only**: the built-in covers search, not extraction. Pair it with Firecrawl (or another extract-capable backend) through `web.extract_backend` when you also need `web_extract`.
 
@@ -423,16 +423,16 @@ web:
   extract_backend: "firecrawl"  # used by web_extract
 ```
 
-When a per-capability key is empty, that capability falls through to `web.backend`. Only when no **shared** web selection has ever been written (`web.backend` or the managed `hermes tools` row) is the backend auto-detected from whichever API key/URL is present — once a shared selection exists, the runtime always uses it, and adding a key to `.env` does not reroute web traffic. A per-capability key affects only its own capability: setting `web.extract_backend` alone leaves `web_search` on its auto-detected backend.
+When a per-capability key is empty, that capability falls through to `web.backend`. Only when no **shared** web selection has ever been written (`web.backend` or the managed `moor tools` row) is the backend auto-detected from whichever API key/URL is present — once a shared selection exists, the runtime always uses it, and adding a key to `.env` does not reroute web traffic. A per-capability key affects only its own capability: setting `web.extract_backend` alone leaves `web_search` on its auto-detected backend.
 
 **Priority order (per capability):**
 1. `web.search_backend` / `web.extract_backend` (explicit per-capability)
-2. `web.backend` (shared fallback; `nous` = managed Tool Gateway)
+2. `web.backend` (shared fallback; `moor` = managed Tool Gateway)
 3. Auto-detect from environment variables (no shared selection written)
 
 ### Auto-detection
 
-If no shared backend has **ever** been selected (no `web.backend` written by you or `hermes tools`), Hermes picks the first available one based on which credentials are set:
+If no shared backend has **ever** been selected (no `web.backend` written by you or `moor tools`), Moor picks the first available one based on which credentials are set:
 
 | Credential present | Auto-selected backend |
 |--------------------|-----------------------|
@@ -441,7 +441,7 @@ If no shared backend has **ever** been selected (no `web.backend` written by you
 | `EXA_API_KEY` | exa |
 | `PARALLEL_API_KEY` | parallel |
 | `FIRECRAWL_API_KEY` or `FIRECRAWL_API_URL` | firecrawl |
-| Nous Tool Gateway ready (Portal subscription) | managed web search via the Tool Gateway |
+| Moor Tool Gateway ready (Portal subscription) | managed web search via the Tool Gateway |
 | `SEARXNG_URL` | searxng |
 | `BRAVE_SEARCH_API_KEY` | brave-free |
 | `ddgs` package importable | ddgs |
@@ -468,7 +468,7 @@ For a source checkout, you can also check the module after
 whose web configuration you intend to inspect:
 
 ```bash
-# From the Hermes source checkout, in a clean shell
+# From the Moor source checkout, in a clean shell
 source ./activate
 python -m tools.web_tools
 ```

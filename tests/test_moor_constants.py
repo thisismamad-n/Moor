@@ -7,20 +7,20 @@ from pathlib import Path
 
 import pytest
 
-import hermes_constants
-from hermes_platform.host import runtime as host_runtime
-from hermes_constants import (
+import moor_constants
+from moor_platform.host import runtime as host_runtime
+from moor_constants import (
     agent_browser_runnable,
-    get_default_hermes_root,
-    get_hermes_dir,
-    get_hermes_home,
-    get_process_hermes_home,
+    get_default_moor_root,
+    get_moor_dir,
+    get_moor_home,
+    get_process_moor_home,
     is_container,
     node_tool_runnable,
     parse_reasoning_effort,
     reset_moor_home_override,
     secure_parent_dir,
-    set_hermes_home_override,
+    set_moor_home_override,
 )
 
 
@@ -28,9 +28,9 @@ class TestGetDefaultMoorRoot:
     """Tests for get_default_moor_root() — Docker/custom deployment awareness."""
 
     @pytest.mark.platforms("linux")
-    def test_no_hermes_home_returns_native(self, tmp_path, monkeypatch):
-        """When HERMES_HOME is not set, returns ~/.hermes."""
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+    def test_no_moor_home_returns_native(self, tmp_path, monkeypatch):
+        """When MOOR_HOME is not set, returns ~/.moor."""
+        monkeypatch.delenv("MOOR_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         assert get_default_moor_root() == tmp_path / ".moor"
@@ -54,15 +54,15 @@ class TestGetDefaultMoorRoot:
         home_token = "$" + "HOME"
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv(
-            "HERMES_HOME", f"{home_token}/deployment/profiles/research"
+            "MOOR_HOME", f"{home_token}/deployment/profiles/research"
         )
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "native-home")
 
-        assert get_default_hermes_root() == custom_root
+        assert get_default_moor_root() == custom_root
 
     @pytest.mark.platforms("windows")
-    def test_no_hermes_home_returns_localappdata_root_on_windows(self, tmp_path, monkeypatch):
-        """Native Windows falls back to %LOCALAPPDATA%\\hermes, not ~/.hermes."""
+    def test_no_moor_home_returns_localappdata_root_on_windows(self, tmp_path, monkeypatch):
+        """Native Windows falls back to %LOCALAPPDATA%\\moor, not ~/.moor."""
         local_appdata = tmp_path / "LocalAppData"
         monkeypatch.delenv("MOOR_HOME", raising=False)
         monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
@@ -80,13 +80,13 @@ class TestGetMoorHome:
 
     def test_warn_once_latch_engages_on_first_check_even_without_warning(self, tmp_path, monkeypatch):
         """Regression for #90065: the latch must engage on the first check even when there is
-        nothing to warn about, otherwise every get_hermes_home() call re-stats active_profile."""
-        monkeypatch.delenv("HERMES_HOME", raising=False)
-        monkeypatch.setattr(hermes_constants, "_profile_fallback_warned", False)
-        monkeypatch.setattr(hermes_constants, "_get_platform_default_hermes_home", lambda: tmp_path)
+        nothing to warn about, otherwise every get_moor_home() call re-stats active_profile."""
+        monkeypatch.delenv("MOOR_HOME", raising=False)
+        monkeypatch.setattr(moor_constants, "_profile_fallback_warned", False)
+        monkeypatch.setattr(moor_constants, "_get_platform_default_moor_home", lambda: tmp_path)
 
-        get_hermes_home()
-        assert hermes_constants._profile_fallback_warned is True
+        get_moor_home()
+        assert moor_constants._profile_fallback_warned is True
 
     @pytest.mark.platforms("windows")
     def test_windows_fallback_uses_localappdata(self, tmp_path, monkeypatch):
@@ -122,16 +122,16 @@ class TestGetProcessMoorHome:
 
         for syntax in (home_token, "~"):
             process_home = tmp_path / "process-home"
-            monkeypatch.setenv("HERMES_HOME", f"{syntax}/process-home")
-            assert get_process_hermes_home() == process_home
+            monkeypatch.setenv("MOOR_HOME", f"{syntax}/process-home")
+            assert get_process_moor_home() == process_home
 
             override_home = tmp_path / "override-home"
-            token = set_hermes_home_override(f"{syntax}/override-home")
+            token = set_moor_home_override(f"{syntax}/override-home")
             try:
-                assert get_hermes_home() == override_home
-                assert get_process_hermes_home() == process_home
+                assert get_moor_home() == override_home
+                assert get_process_moor_home() == process_home
             finally:
-                reset_hermes_home_override(token)
+                reset_moor_home_override(token)
 
 
 
@@ -269,14 +269,14 @@ class TestResolvePerModelReasoningEffort:
         prefix while the documented key spelling keeps ``provider/model``; a key for a different
         model must still miss.
         """
-        from hermes_constants import resolve_per_model_reasoning_effort
+        from moor_constants import resolve_per_model_reasoning_effort
         overrides = {"ollama-local/qwen3.6:27b-q4_k_m": "low"}
         assert resolve_per_model_reasoning_effort("qwen3.6:27b-q4_k_m", overrides) == {"enabled": True, "effort": "low"}
         assert resolve_per_model_reasoning_effort("llama3.2:3b", overrides) is None
 
     def test_direct_match_wins_over_reverse_lookup(self):
         """A direct/variant key match keeps priority over a prefixed reverse match."""
-        from hermes_constants import resolve_per_model_reasoning_effort
+        from moor_constants import resolve_per_model_reasoning_effort
         overrides = {"qwen3.6:27b": "medium", "ollama-local/qwen3.6:27b": "low"}
         assert resolve_per_model_reasoning_effort("qwen3.6:27b", overrides) == {"enabled": True, "effort": "medium"}
 
@@ -335,7 +335,7 @@ class TestResolveReasoningConfig:
     def test_dict_form_passes_bespoke_tier_verbatim_globally_and_per_model(self):
         """#93238: providers with custom tiers (fast/thinking) need the dict form to send their
         real level; a bare non-ladder string stays rejected so typos never reach the wire."""
-        from hermes_constants import parse_reasoning_effort, resolve_reasoning_config
+        from moor_constants import parse_reasoning_effort, resolve_reasoning_config
         cfg = self._cfg(effort={"enabled": True, "effort": "thinking"},
                         overrides={"lumo-max": {"enabled": True, "effort": "fast"}})
         assert resolve_reasoning_config(cfg, "gpt-5") == {"enabled": True, "effort": "thinking"}
@@ -344,7 +344,7 @@ class TestResolveReasoningConfig:
 
     def test_dict_form_disabled_or_empty_effort(self):
         """enabled:false disables regardless of level; a dict without a level is 'unset'."""
-        from hermes_constants import parse_reasoning_effort
+        from moor_constants import parse_reasoning_effort
         assert parse_reasoning_effort({"enabled": False, "effort": "low"}) == {"enabled": False}
         assert parse_reasoning_effort({"enabled": True}) is None
         assert parse_reasoning_effort({"effort": 0}) is None
@@ -606,61 +606,61 @@ class TestWslPathTranslation:
 
 
 class TestProjectVenvDirOutOfTree:
-    """#116148: a checkout with no in-tree venv whose interpreter lives in ``$HERMES_HOME/venvs/<name>``
+    """#116148: a checkout with no in-tree venv whose interpreter lives in ``$MOOR_HOME/venvs/<name>``
     (the layout the shipped Windows launchers pin) must resolve to the running interpreter's venv,
     never ``None`` — every updater call site turns ``None`` into a fabricated ``<checkout>/venv`` that
     uv cannot inspect, so tool dependencies are never refreshed."""
 
     @staticmethod
     def _running_from(monkeypatch, checkout, venv):
-        monkeypatch.setattr(hermes_constants, "__file__", str(checkout / "hermes_constants.py"))
+        monkeypatch.setattr(moor_constants, "__file__", str(checkout / "moor_constants.py"))
         monkeypatch.setattr(sys, "prefix", str(venv))
         monkeypatch.setattr(sys, "base_prefix", str(checkout / "no-such-base"))
 
     @staticmethod
     def _venv_installed_from(venv, source):
         from pm.environments import site_packages
-        hermes_constants.venv_python_path(venv).parent.mkdir(parents=True)
-        hermes_constants.venv_python_path(venv).write_text("", encoding="utf-8")
-        dist_info = site_packages(venv) / "hermes_agent-0.0.0.dist-info"
+        moor_constants.venv_python_path(venv).parent.mkdir(parents=True)
+        moor_constants.venv_python_path(venv).write_text("", encoding="utf-8")
+        dist_info = site_packages(venv) / "moor_agent-0.0.0.dist-info"
         dist_info.mkdir(parents=True)
-        (dist_info / "METADATA").write_text("Name: hermes-agent\nVersion: 0.0.0\n", encoding="utf-8")
+        (dist_info / "METADATA").write_text("Name: moor-agent\nVersion: 0.0.0\n", encoding="utf-8")
         (dist_info / "direct_url.json").write_text(
             json.dumps({"url": source.resolve().as_uri(), "dir_info": {"editable": True}}), encoding="utf-8")
 
     def test_out_of_tree_install_resolves_the_running_interpreter_venv(self, monkeypatch, tmp_path):
-        checkout = tmp_path / "hermes-agent"
+        checkout = tmp_path / "moor-agent"
         checkout.mkdir()
-        venv = tmp_path / "venvs" / "hermes"
+        venv = tmp_path / "venvs" / "moor"
         self._venv_installed_from(venv, checkout)
         self._running_from(monkeypatch, checkout, venv)
 
-        assert hermes_constants.project_venv_dir(checkout) == venv
+        assert moor_constants.project_venv_dir(checkout) == venv
 
     def test_another_installs_interpreter_is_never_claimed(self, monkeypatch, tmp_path):
         """``PYTHONPATH=<dev checkout> <app venv>/bin/python``: the code comes from the dev checkout,
         but the venv belongs to the app install. Claiming it pointed the dev checkout's update sync at
         the app's venv, which became an editable install of the dev tree."""
-        dev = tmp_path / "dev" / "hermes-agent"
+        dev = tmp_path / "dev" / "moor-agent"
         dev.mkdir(parents=True)
-        app = tmp_path / "app" / "hermes-agent"
+        app = tmp_path / "app" / "moor-agent"
         app.mkdir(parents=True)
         venv = tmp_path / "app" / "venv"
         self._venv_installed_from(venv, app)
         self._running_from(monkeypatch, dev, venv)
 
-        assert hermes_constants.project_venv_dir(dev) is None
+        assert moor_constants.project_venv_dir(dev) is None
 
     def test_foreign_root_and_in_tree_venv_are_unchanged(self, monkeypatch, tmp_path):
         """A temp dir / another clone never claims the running venv; an in-tree venv still wins."""
-        checkout = tmp_path / "hermes-agent"
+        checkout = tmp_path / "moor-agent"
         checkout.mkdir()
-        venv = tmp_path / "venvs" / "hermes"
+        venv = tmp_path / "venvs" / "moor"
         self._venv_installed_from(venv, checkout)
         self._running_from(monkeypatch, checkout, venv)
         other = tmp_path / "not-our-checkout"
         other.mkdir()
 
-        assert hermes_constants.project_venv_dir(other) is None
+        assert moor_constants.project_venv_dir(other) is None
         (checkout / ".venv").mkdir()
-        assert hermes_constants.project_venv_dir(checkout) == checkout / ".venv"
+        assert moor_constants.project_venv_dir(checkout) == checkout / ".venv"

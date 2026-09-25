@@ -48,10 +48,10 @@ Gmail, Calendar, Drive, Contacts, Sheets, and Docs — through moor-managed OAut
 The setup is fully non-interactive — you drive it step by step so it works
 on CLI, Telegram, Discord, or any platform.
 
-Run the setup script with Python from the Hermes environment, not an unrelated
-system Python. `--install-deps` syncs Hermes' declared Google extra through PM;
-after syncing, restart Hermes and rerun the OAuth command. If Hermes is not
-importable, use `hermes setup` first rather than installing packages with pip.
+Run the setup script with Python from the Moor environment, not an unrelated
+system Python. `--install-deps` syncs Moor' declared Google extra through PM;
+after syncing, restart Moor and rerun the OAuth command. If Moor is not
+importable, use `moor setup` first rather than installing packages with pip.
 
 Define a shorthand first:
 

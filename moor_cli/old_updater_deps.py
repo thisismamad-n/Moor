@@ -1,7 +1,7 @@
 """Retired dependency hooks requested by already-running historical updaters."""
 from typing import NoReturn
 
-from hermes_cli._old_updater import stop_for_relaunch
+from moor_cli._old_updater import stop_for_relaunch
 
 
 def _capture_active_lazy_features() -> NoReturn:
@@ -19,7 +19,7 @@ def _refresh_active_memory_provider_dependencies() -> NoReturn:
     stop_for_relaunch()
 
 
-def _npm_lockfile_changed(hermes_root) -> NoReturn:
+def _npm_lockfile_changed(moor_root) -> NoReturn:
     # Do not authorize an old npm install through a fabricated currency result.
     stop_for_relaunch()
 
@@ -50,7 +50,7 @@ def _ledger_manual_serve_holders(matches: list[tuple[int, str, str]]) -> NoRetur
 
 
 def _relaunch_stopped_serves(token: dict) -> None:
-    from hermes_cli._old_updater import relaunch_stopped_serves
+    from moor_cli._old_updater import relaunch_stopped_serves
     relaunch_stopped_serves(token)
 
 

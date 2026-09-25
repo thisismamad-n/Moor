@@ -1160,8 +1160,8 @@ class TestGetHumanDelay:
         return adapter
 
     def test_off_and_installed_range_never_touch_process_env(self):
-        env = {"HERMES_HUMAN_DELAY_MODE": "custom", "HERMES_HUMAN_DELAY_MIN_MS": "10",
-               "HERMES_HUMAN_DELAY_MAX_MS": "20"}
+        env = {"MOOR_HUMAN_DELAY_MODE": "custom", "MOOR_HUMAN_DELAY_MIN_MS": "10",
+               "MOOR_HUMAN_DELAY_MAX_MS": "20"}
         with patch.dict(os.environ, env), patch(
             "gateway.platforms.base.random.uniform", return_value=1.5
         ) as uniform:

@@ -75,13 +75,13 @@ def test_discovery_refuses_unsupported_owner_without_releasing_lease(tmp_path, m
         with pytest.raises(ValueError, match="not available in this build") as caught:
             discover_attach_url("old", registry_home=tmp_path)
         first, details = str(caught.value).splitlines()
-        assert "hermes --resume old" in first
+        assert "moor --resume old" in first
         assert details.startswith("Details: ")
         assert active_session_registry_snapshot(tmp_path)[0]["lease_id"] == lease.lease_id
         registry = tmp_path / "runtime" / "active_sessions.json"
         with monkeypatch.context() as patch:
             # Our own pid is never probed (#108005), so model a FOREIGN owner whose inspection is denied.
-            from hermes_cli.active_sessions import _read_entries, _write_entries
+            from moor_cli.active_sessions import _read_entries, _write_entries
             entries = _read_entries(registry)
             entries[0]["pid"] = os.getpid() + 2**22
             _write_entries(registry, entries)
@@ -99,7 +99,7 @@ def test_discovery_refuses_unsupported_owner_without_releasing_lease(tmp_path, m
 
 def test_discovery_failure_message_names_state_and_resume_path(tmp_path):
     """A refused handshake keeps the lease and points at the working alternative."""
-    from hermes_cli.shared_session_attach import discover_attach_url
+    from moor_cli.shared_session_attach import discover_attach_url
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -122,7 +122,7 @@ def test_discovery_failure_message_names_state_and_resume_path(tmp_path):
         with pytest.raises(ValueError, match="just failed") as caught:
             discover_attach_url("held", registry_home=tmp_path)
         first, details = str(caught.value).splitlines()
-        assert "hermes --resume held" in first
+        assert "moor --resume held" in first
         assert details.startswith("Details: ")
     finally:
         lease.release()

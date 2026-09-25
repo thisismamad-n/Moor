@@ -78,7 +78,7 @@ def on_tool_execution(**kwargs):
 
 If multiple plugins register the same execution middleware kind, Moor runs
 them as a nested chain in registration order. Middleware failures are fail-open:
-Hermes logs a warning and continues with the next middleware or the base
+Moor logs a warning and continues with the next middleware or the base
 runtime path. A callback that fails the same way on every call (typically a
 signature naming a field the middleware does not send) is reported **once** at
 WARNING — the message lists the fields it does provide — and identical repeats go
@@ -131,10 +131,10 @@ For isolated local testing, use one `MOOR_HOME` for plugin enablement and the
 agent run:
 
 ```bash
-export HERMES_HOME=$HOME/.hermes/cache/scratch/hermes-middleware-test
-mkdir -p "$HERMES_HOME"
-hermes plugins enable <plugin-name>
-hermes chat --query 'Reply exactly ok'
+export MOOR_HOME=$HOME/.moor/cache/scratch/moor-middleware-test
+mkdir -p "$MOOR_HOME"
+moor plugins enable <plugin-name>
+moor chat --query 'Reply exactly ok'
 ```
 
 For source checkouts, use the [PM developer workflow](../reference/package-management.md#developer-workflow)
@@ -142,11 +142,11 @@ and a separate development home so the runtime sees plugins and middleware from
 the working tree:
 
 ```bash
-export HERMES_HOME="$HOME/hermes-middleware-test"
-export HERMES_RUNTIME_DIR="$HERMES_HOME/tools"
+export MOOR_HOME="$HOME/moor-middleware-test"
+export MOOR_RUNTIME_DIR="$MOOR_HOME/tools"
 source ./activate
-python hermes plugins enable <plugin-name>
-python hermes chat --query 'Reply exactly ok'
+python moor plugins enable <plugin-name>
+python moor chat --query 'Reply exactly ok'
 ```
 
 ## Generic Plugin Examples
@@ -194,7 +194,7 @@ def normalize_terminal_workdir(**kwargs):
     if kwargs.get("tool_name") != "terminal":
         return None
     args = dict(kwargs["args"])
-    args.setdefault("workdir", str(Path.home() / ".hermes" / "cache" / "scratch" / "hermes-middleware-demo"))
+    args.setdefault("workdir", str(Path.home() / ".moor" / "cache" / "scratch" / "moor-middleware-demo"))
     return {
         "args": args,
         "source": "middleware-demo",

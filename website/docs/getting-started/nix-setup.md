@@ -38,7 +38,7 @@ pin, and `nix/pm-packages.nix` exposes matching archives as `pm-NAME` derivation
 nix build .#pm-ripgrep
 ```
 
-These outputs unpack the pinned archives. They are not the complete Hermes
+These outputs unpack the pinned archives. They are not the complete Moor
 wrapper or a guarantee that each archive runs without platform integration.
 The application still uses the uv2nix environment and Nix wrapper.
 
@@ -91,7 +91,7 @@ The `default` package adds ~700 MB to the closure. If you only need messaging pl
 <summary><strong>Running from a local clone</strong></summary>
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/thisismamad-n/Moor.git
 cd moor-agent
 nix develop
 moor setup
@@ -799,9 +799,9 @@ Plugins are symlinked into `$MOOR_HOME/plugins/` at activation time. Moor discov
 For pip-packaged plugins that register via `[project.entry-points."moor_agent.plugins"]` (e.g., [rtk-moor](https://github.com/ogallotti/rtk-moor)):
 
 ```nix
-services.hermes-agent.extraPythonPackages = [
-  (config.services.hermes-agent.package.python.pkgs.buildPythonPackage {
-    pname = "rtk-hermes";
+services.moor-agent.extraPythonPackages = [
+  (config.services.moor-agent.package.python.pkgs.buildPythonPackage {
+    pname = "rtk-moor";
     version = "1.0.0";
     src = pkgs.fetchFromGitHub {
       owner = "ogallotti";
@@ -810,7 +810,7 @@ services.hermes-agent.extraPythonPackages = [
       hash = "sha256-...";
     };
     format = "pyproject";
-    build-system = [ config.services.hermes-agent.package.python.pkgs.setuptools ];
+    build-system = [ config.services.moor-agent.package.python.pkgs.setuptools ];
   })
 ];
 ```
@@ -828,7 +828,7 @@ services.moor-agent.extraDependencyGroups = [ "messaging" ];
 
 ```nix
 # Enable a memory provider
-services.hermes-agent = {
+services.moor-agent = {
   extraDependencyGroups = [ "honcho" ];
   settings.memory.provider = "honcho";
 };
@@ -857,7 +857,7 @@ requirements can still fail that resolution. The table lists common groups;
 | `firecrawl` | Firecrawl web search |
 | `fal` | FAL image generation |
 
-Memory providers that live in the [plugin catalog](../user-guide/features/plugins.md) rather than in the Hermes tree (e.g. Hindsight) are not extras. Install them like any catalog plugin with `hermes plugins install hindsight`, or declaratively via [`extraPlugins`](#directory-plugins-extraplugins) pointing at the plugin's source tree.
+Memory providers that live in the [plugin catalog](../user-guide/features/plugins.md) rather than in the Moor tree (e.g. Hindsight) are not extras. Install them like any catalog plugin with `moor plugins install hindsight`, or declaratively via [`extraPlugins`](#directory-plugins-extraplugins) pointing at the plugin's source tree.
 
 Or use the pre-built `#messaging` or `#full` flake packages instead of per-extra configuration (see [Quick Start](#quick-start-any-nix-user)).
 
@@ -877,7 +877,7 @@ A directory plugin with third-party Python dependencies needs both options:
 ```nix
 services.moor-agent = {
   extraPlugins = [ my-plugin-src ];          # plugin source
-  extraPythonPackages = [ config.services.hermes-agent.package.python.pkgs.redis ];  # its Python dep
+  extraPythonPackages = [ config.services.moor-agent.package.python.pkgs.redis ];  # its Python dep
   extraPackages = [ pkgs.redis ];            # system binary it needs
 };
 ```
@@ -892,8 +892,8 @@ External flakes can override the package directly:
   outputs = { moor-agent, nixpkgs, ... }: {
     nixpkgs.overlays = [ moor-agent.overlays.default ];
     # Then:
-    #   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
-    #   pkgs.hermes-agent.override { extraDependencyGroups = [ "honcho" ]; }
+    #   pkgs.moor-agent.override { extraPythonPackages = [...]; }
+    #   pkgs.moor-agent.override { extraDependencyGroups = [ "honcho" ]; }
   };
 }
 ```
@@ -920,16 +920,16 @@ A build-time collision check prevents plugin packages from shadowing core moor d
 ### Dev Shell
 
 The flake provides an editable Python environment with the lock-derived interpreter
-and the `dev` dependency group. `HERMES_PYTHON` points to its interpreter. It does not install
+and the `dev` dependency group. `MOOR_PYTHON` points to its interpreter. It does not install
 Python dependencies into a repository-local `.venv`. The shell also provides
 Node.js and runtime tools. Its npm hook refreshes JS workspaces when their inputs change.
 
 ```bash
 cd moor-agent
 nix develop
-"$HERMES_PYTHON" -c "import sys; print(sys.executable); print(sys.version)"
-hermes setup
-hermes chat
+"$MOOR_PYTHON" -c "import sys; print(sys.executable); print(sys.version)"
+moor setup
+moor chat
 ```
 
 ### direnv (Recommended)
@@ -1034,9 +1034,9 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `extraArgs` | `listOf str` | `[]` | Extra args for `hermes gateway` |
-| `extraPackages` | `listOf package` | `[]` | Extra packages available to the agent. Added to the hermes user's per-user profile so terminal commands, skills, and cron jobs all see them |
-| `extraPlugins` | `listOf package` | `[]` | Directory plugin packages to symlink into `$HERMES_HOME/plugins/`. Each must contain `plugin.yaml` |
+| `extraArgs` | `listOf str` | `[]` | Extra args for `moor gateway` |
+| `extraPackages` | `listOf package` | `[]` | Extra packages available to the agent. Added to the moor user's per-user profile so terminal commands, skills, and cron jobs all see them |
+| `extraPlugins` | `listOf package` | `[]` | Directory plugin packages to symlink into `$MOOR_HOME/plugins/`. Each must contain `plugin.yaml` |
 | `extraPythonPackages` | `listOf package` | `[]` | Python packages added to PYTHONPATH for entry-point plugin discovery. Use the selected package’s `python.pkgs` |
 | `extraDependencyGroups` | `listOf str` | `[]` | pyproject.toml optional extras to include in the sealed venv (e.g. `["honcho"]`). Resolved by uv — no collisions |
 | `restart` | `str` | `"always"` | The systemd `Restart=` policy. macOS does not use it. |
@@ -1163,9 +1163,9 @@ Same layout, mounted into the container:
 
 | Container path | Host path | Mode | Notes |
 |---|---|---|---|
-| `/nix/store` | `/nix/store` | `ro` | Hermes binary + all Nix deps |
-| `/data` | `/var/lib/hermes` | `rw` | All state, config, workspace |
-| `/home/hermes` | `${stateDir}/home` | `rw` | Persistent agent home — `pip install --user`, tool caches |
+| `/nix/store` | `/nix/store` | `ro` | Moor binary + all Nix deps |
+| `/data` | `/var/lib/moor` | `rw` | All state, config, workspace |
+| `/home/moor` | `${stateDir}/home` | `rw` | Persistent agent home — `pip install --user`, tool caches |
 | `/usr`, `/usr/local`, `/tmp` | (writable layer) | `rw` | `apt`/`pip`/`npm` installs — persists across restarts, lost on recreation | <!-- no-tmp: ok — documents the container's own writable layer -->
 
 ---
@@ -1246,7 +1246,7 @@ nix-store --query --roots $(docker exec moor-agent readlink /data/current-packag
 | Symptom | Cause | Fix |
 |---|---|---|
 | `Cannot save configuration: managed by NixOS` | CLI guards active | Edit `configuration.nix` and `nixos-rebuild switch` |
-| `No adapter available for discord` (or telegram/slack) | Messaging deps missing from the sealed Nix venv | Install `#messaging` variant: `nix profile install ...#messaging`. For NixOS module: `extraDependencyGroups = [ "messaging" ]`. Read `journalctl -u hermes-agent` for `InstallError` or `requirements not met` and the underlying cause. |
+| `No adapter available for discord` (or telegram/slack) | Messaging deps missing from the sealed Nix venv | Install `#messaging` variant: `nix profile install ...#messaging`. For NixOS module: `extraDependencyGroups = [ "messaging" ]`. Read `journalctl -u moor-agent` for `InstallError` or `requirements not met` and the underlying cause. |
 | Container recreated unexpectedly | `extraVolumes`, `extraOptions`, or `image` changed | Expected — writable layer resets. Reinstall packages or use a custom image |
 | `moor --version` shows old version | Container not restarted | `systemctl restart moor-agent` |
 | Permission denied on `/var/lib/moor` | State dir is `0750 moor:moor` | Use `docker exec` or `sudo -u moor` |

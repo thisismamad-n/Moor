@@ -29,10 +29,10 @@ from pathlib import Path
 from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from hermes_constants import OPENROUTER_BASE_URL, hermes_home_key, secure_parent_dir
+from moor_constants import OPENROUTER_BASE_URL, moor_home_key, secure_parent_dir
 from agent.credential_persistence import sanitize_borrowed_credential_payload
 from utils import atomic_json_write, env_float, file_signature, is_truthy_value  # noqa: F401  (env_float: agent.credential_pool reads auth_mod.env_float)
-from hermes_cli.auth_zai_kimi import (  # noqa: F401  re-exported
+from moor_cli.auth_zai_kimi import (  # noqa: F401  re-exported
     KIMI_CODE_BASE_URL, ZAI_ENDPOINTS, _normalize_lmstudio_runtime_base_url, _resolve_kimi_base_url,
     _resolve_zai_base_url, detect_zai_endpoint)
 from moor_cli.auth_model_picker import (  # noqa: F401  re-exported
@@ -80,7 +80,7 @@ from moor_cli.auth_codex import (  # noqa: F401  re-exported
     _probe_codex_quota_restored, _read_codex_tokens, _refresh_codex_auth_tokens,
     _refresh_expired_codex_probe_token, _save_codex_tokens, clear_codex_pool_quota_cooldowns,
     refresh_codex_oauth_pure, resolve_codex_runtime_credentials)
-from hermes_cli.auth_spotify import (  # noqa: F401  re-exported
+from moor_cli.auth_spotify import (  # noqa: F401  re-exported
     _refresh_spotify_oauth_state, get_spotify_auth_status, login_spotify_command,
     resolve_spotify_runtime_credentials)
 from moor_cli.auth_openrouter import _openrouter_pkce_login  # noqa: F401  re-exported
@@ -232,6 +232,9 @@ _REGISTRY_ROWS: Tuple[Any, ...] = (
     # Qwen 3.7: Anthropic Messages under /v1/messages). Keep the base at /v1; api_mode is per-model.
     ("opencode-go", "OpenCode Go", "https://opencode.ai/zen/go/v1", ("OPENCODE_GO_API_KEY",),
      "OPENCODE_GO_BASE_URL"),
+    # Keyless free tier: served anonymously on the Zen relay. No env vars — _provider_is_keyless()
+    # returns True so get_api_key_provider_status() reports logged_in without any credential.
+    ("opencode-free", "OpenCode Free", "https://opencode.ai/zen/v1", ()),
     ("kilocode", "Kilo Code", "https://api.kilo.ai/api/gateway", ("KILOCODE_API_KEY",), "KILOCODE_BASE_URL"),
     ("huggingface", "Hugging Face", "https://router.huggingface.co/v1", ("HF_TOKEN",), "HF_BASE_URL"),
     ("xiaomi", "Xiaomi MiMo", "https://api.xiaomimimo.com/v1", ("XIAOMI_API_KEY",), "XIAOMI_BASE_URL"),
@@ -252,16 +255,16 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
 # The rows above, before any plugin touches the dict (a user plugin may override these; #48450).
 BUILTIN_PROVIDER_IDS = frozenset(PROVIDER_REGISTRY)
 
-# ``hermes_cli.config`` discovers model-provider plugins while importing, and a plugin may read this
+# ``moor_cli.config`` discovers model-provider plugins while importing, and a plugin may read this
 # module's registry during that discovery. Keep the import below ProviderConfig / PROVIDER_REGISTRY so
 # a plugin never observes a partially initialized auth module (CONTRACT: during discovery a plugin may
 # rely only on ``ProviderConfig`` and ``PROVIDER_REGISTRY`` from here — nothing defined below).
-from hermes_cli.config import (  # noqa: E402
-    atomic_config_write, get_hermes_home, get_config_path, read_raw_config, require_readable_config_before_write)
+from moor_cli.config import (  # noqa: E402
+    atomic_config_write, get_moor_home, get_config_path, read_raw_config, require_readable_config_before_write)
 
 # Plugin profiles (plugins/model-providers/<name>/) are mirrored into PROVIDER_REGISTRY with the
 # auth_type they declare; the mirror lives in the sibling so it can be re-run after discovery.
-from hermes_cli.auth_plugin_providers import (  # noqa: E402
+from moor_cli.auth_plugin_providers import (  # noqa: E402
     get_plugin_oauth_auth_status, registry_lookup as _registry_lookup, sync_plugin_provider_registry)
 
 sync_plugin_provider_registry()
@@ -443,7 +446,7 @@ def primary_failure_wording(error: Exception) -> tuple[str, str]:
     return "auth failed", "Primary auth failed"
 
 
-# Entitlement failures: Nous gets a Portal-aware message; other providers a fixed generic one (or
+# Entitlement failures: Moor gets a Portal-aware message; other providers a fixed generic one (or
 # the raw error when no generic text exists for the code).
 _GENERIC_ENTITLEMENT_MESSAGES = {
     "subscription_required": "No active paid subscription found. Please purchase/activate a subscription, then retry.",
@@ -458,10 +461,10 @@ def format_auth_error(error: Exception) -> str:
         # Rate-limit / quota errors are not credential problems: never append "re-authenticate".
         return str(error)
     if error.relogin_required:
-        # Profile-aware: a bare `hermes model` from a named profile re-signs the ROOT store (#114012).
-        from hermes_constants import profile_cli_selector
+        # Profile-aware: a bare `moor model` from a named profile re-signs the ROOT store (#114012).
+        from moor_constants import profile_cli_selector
 
-        return f"{error} Run `hermes {profile_cli_selector()}model` to re-authenticate."
+        return f"{error} Run `moor {profile_cli_selector()}model` to re-authenticate."
     if error.code in _ENTITLEMENT_ERROR_CODES:
         if error.provider == "moor":
             return _format_moor_entitlement_auth_error(error)
@@ -902,7 +905,7 @@ _POOL_TOKEN_GENERATION_FIELDS = (
     "access_token", "refresh_token", "expires_at", "expires_at_ms", "expires_in", "obtained_at",
     "last_refresh", "agent_key", "agent_key_expires_at", "agent_key_expires_in", "agent_key_id",
     "agent_key_obtained_at", "agent_key_reused",
-    # Refresh-coupled metadata: a Nous refresh rewrites scope and the validated
+    # Refresh-coupled metadata: a Moor refresh rewrites scope and the validated
     # inference route together with the new pair, so they travel with it.
     "scope", "inference_base_url",
 )
@@ -969,7 +972,7 @@ def _merge_disk_cooldown_state(
     ``write_credential_pool`` persists an in-memory snapshot that may predate another process
     marking the same credential exhausted/dead; without this merge the later rewrite resurrects a
     rate-limited key as healthy and both processes resume hammering it. The mirror image is a
-    ``hermes auth reset`` that postdates the snapshot's cooldown (``status_cleared_at`` newer than
+    ``moor auth reset`` that postdates the snapshot's cooldown (``status_cleared_at`` newer than
     its ``last_status_at``): the disk row wins there too, or a live session's next ordinary flush
     would write the reset cooldown straight back (#89415)."""
     if not isinstance(disk_entry, dict):
@@ -1193,16 +1196,16 @@ _VERTEX_PROVIDER_IDS = ("vertex", "google-vertex", "vertex-ai", "gcp-vertex", "v
 def _env_secret(name: str) -> bool:
     """True when *name* resolves to a usable secret in the active profile scope.
 
-    Must not read raw ``os.getenv``: under ``hermes serve`` / Desktop multiplex the
+    Must not read raw ``os.getenv``: under ``moor serve`` / Desktop multiplex the
     process environ is the *launch* profile, so a DeepSeek key pasted into another
     profile's ``.env`` would be invisible to ``explicit_only`` Settings → Model
     until a Bot-chat Refresh ran against that profile's own backend.
     Same reader as the credential resolver (``get_env_value_prefer_dotenv``: the current
-    HERMES_HOME ``.env`` first, then the scope-checked environ) so the gate and the key that
+    MOOR_HOME ``.env`` first, then the scope-checked environ) so the gate and the key that
     actually authenticates never disagree — an empty ``DEEPSEEK_API_KEY=`` export in the parent
     shell must not hide a real key in ``.env`` (#77007).
     """
-    from hermes_cli.config import get_env_value_prefer_dotenv
+    from moor_cli.config import get_env_value_prefer_dotenv
     return has_usable_secret(get_env_value_prefer_dotenv(name) or "")
 
 
@@ -1319,11 +1322,6 @@ def deactivate_provider() -> None:
 
 def _get_config_hint_for_unknown_provider(provider_name: str) -> str:
     """Return a helpful hint string when provider resolution fails."""
-    if str(provider_name or "").strip().lower() in {"opencode-free", "free", "opencode_free"}:
-        return ("OpenCode discontinued anonymous free-tier access outside its own client "
-                "(relay 403s FreeTierError), so the keyless 'opencode-free' provider was removed. "
-                "Switch to 'opencode-zen' (pay-as-you-go, OPENCODE_ZEN_API_KEY) or 'opencode-go' "
-                "($10/mo subscription, OPENCODE_GO_API_KEY) via 'hermes model'.")
     try:
         from moor_cli.config import validate_config_structure
         issues = validate_config_structure()
@@ -1346,7 +1344,7 @@ def _refuse_env_adoption_if_config_corrupt() -> None:
     silently adopt the PAID openrouter provider over whatever the broken config really names.
     Fires ONLY on the auto path and clears itself once the file parses again."""
     try:
-        from hermes_cli.config_read_errors import get_active_config_parse_failure
+        from moor_cli.config_read_errors import get_active_config_parse_failure
         err = get_active_config_parse_failure()
         if not err:
             return
@@ -1497,7 +1495,7 @@ def _config_model_provider() -> Tuple[Any, Optional[str]]:
         # Bare ``providers:`` name (the ``custom:<name>`` intent spelled without the prefix); reuse the
         # runtime's own lookup so disabled / endpoint-less entries stay excluded.
         if provider:
-            from hermes_cli.runtime_provider_custom import has_named_custom_provider
+            from moor_cli.runtime_provider_custom import has_named_custom_provider
             if has_named_custom_provider(provider):
                 return model_cfg, "custom"
         # No provider pin but a base_url the bare-custom runtime rung would honour (a loopback
@@ -1761,9 +1759,9 @@ def resolve_moor_access_token(
 
     with _provider_state_transaction("moor") as (auth_store, state, state_source_path):
         if not state:
-            raise _nous_err("Hermes is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
-        portal_base_url = _nous_portal_base_url(state)
-        client_id = str(state.get("client_id") or DEFAULT_NOUS_CLIENT_ID)
+            raise _moor_err("Moor is not logged into Moor Portal.", "moor_auth_missing", relogin=True)
+        portal_base_url = _moor_portal_base_url(state)
+        client_id = str(state.get("client_id") or DEFAULT_MOOR_CLIENT_ID)
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
         persist = lambda: _save_provider_state_to_source(  # noqa: E731
             auth_store, "moor", state, state_source_path)
@@ -1789,8 +1787,8 @@ def resolve_moor_access_token(
             access_token = state.get("access_token")
             refresh_token = state.get("refresh_token")
             if not isinstance(access_token, str) or not access_token:
-                raise _nous_err(
-                    "No access token found for Nous Portal login.", "nous_auth_missing_access_token", relogin=True)
+                raise _moor_err(
+                    "No access token found for Moor Portal login.", "moor_auth_missing_access_token", relogin=True)
 
             if not _is_expiring(state.get("expires_at"), refresh_skew_seconds):
                 if merged_shared:
@@ -1801,8 +1799,8 @@ def resolve_moor_access_token(
                 return _memo(access_token)
 
             if not isinstance(refresh_token, str) or not refresh_token:
-                raise _nous_err(
-                    "Session expired and no refresh token is available.", "nous_auth_missing_refresh_token",
+                raise _moor_err(
+                    "Session expired and no refresh token is available.", "moor_auth_missing_refresh_token",
                     relogin=True)
 
             with httpx.Client(timeout=httpx.Timeout(timeout_seconds or 15.0),
@@ -1894,15 +1892,15 @@ class OAuthProviderFlow:
 
 _OAUTH_GRANT_DEAD_CODES = frozenset({"invalid_grant", "invalid_token", "refresh_token_reused"})
 
-# Nous state-shape failures raised BEFORE any refresh POST (no login, no token pair): retrying
+# Moor state-shape failures raised BEFORE any refresh POST (no login, no token pair): retrying
 # cannot succeed either, so the pool must not bench them as a transient outage (#113718).
-_NOUS_AUTH_MISSING_CODES = frozenset({
-    "nous_auth_missing", "nous_auth_missing_access_token", "nous_auth_missing_refresh_token"})
+_MOOR_AUTH_MISSING_CODES = frozenset({
+    "moor_auth_missing", "moor_auth_missing_access_token", "moor_auth_missing_refresh_token"})
 
 OAUTH_PROVIDER_FLOWS: Dict[str, OAuthProviderFlow] = {
-    "nous": OAuthProviderFlow(
-        "nous", "resolve_nous_runtime_credentials", "get_nous_auth_status",
-        terminal_refresh_codes=_OAUTH_GRANT_DEAD_CODES | _NOUS_AUTH_MISSING_CODES, logout_from_config=True),
+    "moor": OAuthProviderFlow(
+        "moor", "resolve_moor_runtime_credentials", "get_moor_auth_status",
+        terminal_refresh_codes=_OAUTH_GRANT_DEAD_CODES | _MOOR_AUTH_MISSING_CODES, logout_from_config=True),
     "openai-codex": OAuthProviderFlow(
         "openai-codex", "resolve_codex_runtime_credentials", "get_codex_auth_status",
         terminal_refresh_codes=_OAUTH_GRANT_DEAD_CODES | {"codex_refresh_failed", "codex_auth_missing_refresh_token"},
@@ -1973,11 +1971,27 @@ def _provider_env_base_url(pconfig: ProviderConfig) -> str:
     return os.getenv(pconfig.base_url_env_var, "").strip() if pconfig.base_url_env_var else ""
 
 
+def _provider_is_keyless(provider_id: str) -> bool:
+    """MoorOverlay keyless flag — the same source the provider catalog and GUI contract tests use."""
+    try:
+        from moor_cli.providers import MOOR_OVERLAYS
+        return bool(getattr(MOOR_OVERLAYS.get(provider_id), "keyless", False))
+    except Exception:
+        return False
+
+
 def get_api_key_provider_status(provider_id: str) -> Dict[str, Any]:
     """Status snapshot for API-key providers (z.ai, Kimi, MiniMax)."""
     pconfig = _registry_lookup(provider_id)
     if not pconfig or pconfig.auth_type != "api_key":
         return {"configured": False}
+    status = {
+        "configured": True, "provider": provider_id, "name": pconfig.name, "key_source": "keyless",
+        "base_url": pconfig.inference_base_url, "logged_in": True}
+    if _provider_is_keyless(provider_id):
+        # Keyless providers (opencode-free) are served anonymously: every install counts as
+        # configured.
+        return status
     api_key, key_source = _resolve_api_key_provider_secret(provider_id, pconfig)
     env_url = _provider_env_base_url(pconfig)
     if provider_id in {"kimi-coding", "kimi-coding-cn"}:
@@ -2000,7 +2014,7 @@ def _external_process_auth_evidence(provider_id: str, resolved_command: Optional
 
     False means "not verifiable from here", NOT "signed out". Subprocess-free (spawning the CLI from
     status endpoints/pickers re-creates the cold-start stall copilot_auth.py avoids). Generic evidence
-    for any external-process profile is its binary resolving: the subprocess owns real auth and Hermes
+    for any external-process profile is its binary resolving: the subprocess owns real auth and Moor
     has nothing else to inspect, so out-of-tree ACP rows pass credential-gated surfaces (Desktop
     ``explicit_only`` picker) like the bundled one, whose CLI additionally exposes readable token stores."""
     if provider_id == "copilot-acp":
@@ -2156,9 +2170,9 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
                     "azure-identity is installed; live credential validation "
                     "is skipped here. Run `moor doctor` to verify token acquisition."
                 ) if installed else (
-                    "azure-identity not installed. From the Hermes environment, run: "
+                    "azure-identity not installed. From the Moor environment, run: "
                     f"{install_hint('azure-identity')}. "
-                    "Then restart Hermes."))
+                    "Then restart Moor."))
         except Exception as exc:
             info["logged_in"] = False
             info["error"] = f"azure-identity check failed: {exc}"

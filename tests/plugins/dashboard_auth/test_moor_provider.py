@@ -29,8 +29,8 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-import plugins.dashboard_auth.nous as nous_plugin
-from hermes_cli.dashboard_auth import (
+import plugins.dashboard_auth.moor as moor_plugin
+from moor_cli.dashboard_auth import (
     InvalidCodeError,
     ProviderError,
     Session,
@@ -109,7 +109,7 @@ def _mint_token(
         headers={"kid": rsa_keypair["kid"]},
     )
 
-def _patched_jwks(provider: nous_plugin.NousDashboardAuthProvider, rsa_keypair):
+def _patched_jwks(provider: moor_plugin.MoorDashboardAuthProvider, rsa_keypair):
     """Patch the provider's JWKS client to return our fixture key."""
     fake_key = MagicMock()
     fake_key.key = serialization.load_pem_private_key(
@@ -541,4 +541,4 @@ class TestRefreshAndRevoke:
         assert kwargs["data"]["grant_type"] == "refresh_token"
         assert kwargs["data"]["client_id"] == "agent:inst123"
         assert kwargs["data"]["refresh_token"] == "rt_old_value"
-        assert kwargs["headers"]["x-nous-refresh-token"] == "rt_old_value"
+        assert kwargs["headers"]["x-moor-refresh-token"] == "rt_old_value"

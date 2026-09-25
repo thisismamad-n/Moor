@@ -342,7 +342,7 @@ Prompt（提示词）缓存和 provider 专属的调节项很容易出现回归�
 再使用标准运行器；它会隔离每个测试文件并清除凭据环境变量：
 
 ```bash
-scripts/run_tests.sh tests/hermes_cli/test_runtime_provider_resolution.py tests/cli/test_cli_provider_resolution.py tests/hermes_cli/test_setup_model_provider.py tests/run_agent/test_provider_parity.py -q
+scripts/run_tests.sh tests/moor_cli/test_runtime_provider_resolution.py tests/cli/test_cli_provider_resolution.py tests/moor_cli/test_setup_model_provider.py tests/run_agent/test_provider_parity.py -q
 ```
 
 对于更深层的修改，在推送前运行完整测试套件：
@@ -358,15 +358,15 @@ scripts/run_tests.sh tests/ -q
 
 ```bash
 source ./activate
-python hermes chat -q "Say hello" --provider your-provider --model your-model
+python moor chat -q "Say hello" --provider your-provider --model your-model
 ```
 
 如果你修改了菜单，也测试交互式流程：
 
 ```bash
 source ./activate
-python hermes model
-python hermes setup
+python moor model
+python moor setup
 ```
 
 对于原生 provider，至少也验证一次工具调用，而不仅仅是纯文本响应。

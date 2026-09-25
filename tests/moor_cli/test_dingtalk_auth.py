@@ -161,7 +161,7 @@ class TestRenderQR:
 @pytest.mark.parametrize("succeeds", [True, False])
 def test_missing_qrcode_enables_dingtalk_without_switching_the_live_process(monkeypatch, succeeds):
     import pm
-    from hermes_cli import dingtalk_auth
+    from moor_cli import dingtalk_auth
 
     monkeypatch.setitem(sys.modules, "qrcode", None)
     calls = []
@@ -179,7 +179,7 @@ def test_missing_qrcode_enables_dingtalk_without_switching_the_live_process(monk
 
 def test_available_qrcode_does_not_install(monkeypatch):
     import pm
-    from hermes_cli import dingtalk_auth
+    from moor_cli import dingtalk_auth
 
     monkeypatch.setitem(sys.modules, "qrcode", MagicMock())
     def forbidden(*args, **kwargs):

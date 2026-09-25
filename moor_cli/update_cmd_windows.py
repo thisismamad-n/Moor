@@ -146,7 +146,7 @@ def _detect_venv_python_processes(*, exclude_pids: set[int] | None = None) -> li
     psutil = _psutil()
     if not _m()._is_windows() or psutil is None:
         return []
-    from hermes_constants import project_venv_dir
+    from moor_constants import project_venv_dir
     venv_dir = project_venv_dir(_m().PROJECT_ROOT) or _m().PROJECT_ROOT / "venv"
     venv_prefix = _lower_dir_prefix(venv_dir)
     root_prefix = _lower_dir_prefix(_m().PROJECT_ROOT)
@@ -272,7 +272,7 @@ def _venv_launcher_ancestors(pids: list[int]) -> list[int]:
     psutil = _psutil()
     if not _m()._is_windows() or not pids or psutil is None:
         return []
-    from hermes_constants import project_venv_dir
+    from moor_constants import project_venv_dir
     venv_dir = project_venv_dir(_m().PROJECT_ROOT) or _m().PROJECT_ROOT / "venv"
     venv_prefix = _lower_dir_prefix(venv_dir)
     skip = _self_and_non_gateway_ancestor_pids(psutil) | set(pids)
@@ -292,21 +292,21 @@ def _venv_holder_kind(cmdline: str) -> str:
     """Machine-readable class of one venv holder for ``--list-venv-holders``.
 
     ``gateway`` (the pausable gateway matcher), ``backend`` (``serve``/``dashboard`` -- the Desktop
-    app's backend shape), ``hermes:<subcommand>`` for any other Hermes entry, else ``python``.
+    app's backend shape), ``moor:<subcommand>`` for any other Moor entry, else ``python``.
     Derived from the same classifiers the refusal path uses so automation stops exactly what the
     guard would refuse on."""
-    from hermes_cli._scan_venv_blockers import _is_pausable_gateway
+    from moor_cli._scan_venv_blockers import _is_pausable_gateway
     if _is_pausable_gateway(cmdline):
         return "gateway"
-    subcommand = _hermes_holder_subcommand(cmdline)
+    subcommand = _moor_holder_subcommand(cmdline)
     if subcommand in _BACKEND_PURPOSES:
         return "backend"
     if subcommand:
-        return f"hermes:{subcommand}"
+        return f"moor:{subcommand}"
     return "python"
 
 
-VENV_HOLDERS_EXIT = 3  # ``hermes update --list-venv-holders``: holders present (distinct from refusal 2)
+VENV_HOLDERS_EXIT = 3  # ``moor update --list-venv-holders``: holders present (distinct from refusal 2)
 
 
 def list_venv_holders() -> list[dict]:
@@ -314,7 +314,7 @@ def list_venv_holders() -> list[dict]:
 
     Off Windows (or without psutil) the guard never fires, so the list is empty. ``exe``/``argv`` are the
     live psutil values when readable (the scan may carry only a cmdline prefix)."""
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     psutil = _psutil()
     holders: list[dict] = []
     for pid, name, cmdline in _m()._detect_venv_python_processes():

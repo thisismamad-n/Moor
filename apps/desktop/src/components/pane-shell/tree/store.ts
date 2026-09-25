@@ -49,7 +49,7 @@ import { tabStripVisibleForZone } from './renderer/strip-visibility'
 
 // v2: v1 trees were saved against placeholder panes with index-order zone
 // assignment (chat could land in a corner cell). Retire them wholesale.
-writeKey('hermes.desktop.layoutTree.v1', null)
+writeKey('moor.desktop.layoutTree.v1', null)
 
 const defaultTrees: Record<InterfaceMode, LayoutNode | null> = { advanced: null, simple: null }
 

@@ -10,12 +10,12 @@ import json
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import gateway.status as _gw_status
-import hermes_cli.config as _cfg_mod
-import hermes_cli.web_server_chat as _web_server_chat
-import hermes_cli.web_server_gateway as _web_server_gateway
-import hermes_cli.web_server_messaging as _web_server_messaging
+import moor_cli.config as _cfg_mod
+import moor_cli.web_server_chat as _web_server_chat
+import moor_cli.web_server_gateway as _web_server_gateway
+import moor_cli.web_server_messaging as _web_server_messaging
 
 
 @pytest.fixture
@@ -512,7 +512,7 @@ class TestProfileScopedGateway:
         self, client, isolated_profiles, monkeypatch
     ):
         """A durable stop intent takes precedence over an old startup failure."""
-        import hermes_cli.web_server as web_server
+        import moor_cli.web_server as web_server
 
         runtime = {
             "pid": 4242,
@@ -624,7 +624,7 @@ class TestProfileScopedTelegramOnboarding:
 
 
 class TestProfileScopedChatPty:
-    def test_chat_argv_scopes_hermes_home(self, isolated_profiles, monkeypatch):
+    def test_chat_argv_scopes_moor_home(self, isolated_profiles, monkeypatch):
 
         monkeypatch.setattr(
             "moor_cli.main_tui_launch._make_tui_argv",

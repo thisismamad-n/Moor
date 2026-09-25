@@ -477,8 +477,8 @@ def test_idle_permits_are_reclaimed_from_a_peer_instance(db):
 @pytest.mark.requires_wal
 def test_peak_is_bounded_across_many_database_files(tmp_path):
     """Read connections must be capped for the PROCESS, not just per file."""
-    from hermes_state import SessionDB, _READ_POOL_MAX
-    from hermes_state_readpool import _READ_POOL_PROCESS_MAX
+    from moor_state import SessionDB, _READ_POOL_MAX
+    from moor_state_readpool import _READ_POOL_PROCESS_MAX
 
     n_files = (_READ_POOL_PROCESS_MAX // _READ_POOL_MAX) + 2
     dbs = []
@@ -633,7 +633,7 @@ def test_duplicate_handles_on_one_path_are_reported(db, caplog):
 
     extra = []
     try:
-        with caplog.at_level(logging.WARNING, logger="hermes_state"):
+        with caplog.at_level(logging.WARNING, logger="moor_state"):
             # A read-only attach is outside the count (#110934); it must be outside the list too.
             extra.append(open_read_only_attach())
             for _ in range(_HANDLES_PER_PATH_WARN + 1):
@@ -703,15 +703,15 @@ def test_handle_diagnostics_unavailable_does_not_block_database(tmp_path, monkey
     """An audit hook denying frame access must not deny session storage."""
     from types import SimpleNamespace
 
-    import hermes_state
+    import moor_state
 
     def deny_frame_access(depth):
         raise PermissionError("frame access denied")
 
     # Replace only this module's sys reference; pytest/logging keep the real one.
-    module_sys = SimpleNamespace(**vars(hermes_state.sys))
+    module_sys = SimpleNamespace(**vars(moor_state.sys))
     module_sys._getframe = deny_frame_access
-    monkeypatch.setattr(hermes_state, "sys", module_sys)
+    monkeypatch.setattr(moor_state, "sys", module_sys)
 
     with SessionDB(db_path=tmp_path / "state.db") as handle:
         handle.create_session(session_id="available", source="cli", model="m")
@@ -724,14 +724,14 @@ def test_closed_handles_do_not_count_toward_duplicate_writer_warning(db, caplog)
     """Closing a writer releases its duplicate-writer diagnostic membership."""
     import logging
 
-    from hermes_state_readpool import _HANDLES_PER_PATH_WARN
+    from moor_state_readpool import _HANDLES_PER_PATH_WARN
 
     closed = [SessionDB(db_path=db.db_path) for _ in range(_HANDLES_PER_PATH_WARN - 1)]
     for handle in closed:
         handle.close()
 
     caplog.clear()
-    with caplog.at_level(logging.WARNING, logger="hermes_state"):
+    with caplog.at_level(logging.WARNING, logger="moor_state"):
         survivor = SessionDB(db_path=db.db_path)
     try:
         assert not any(
@@ -743,7 +743,7 @@ def test_closed_handles_do_not_count_toward_duplicate_writer_warning(db, caplog)
 
 def test_failed_initialization_does_not_register_duplicate_writer_handle(db, monkeypatch):
     """A constructor that raises before opening must never join the handle budget."""
-    budget = hermes_state_readpool._read_budget_for(db.db_path)
+    budget = moor_state_readpool._read_budget_for(db.db_path)
     registered = []
     original_register = budget.register
 

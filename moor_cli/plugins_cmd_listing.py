@@ -1,6 +1,6 @@
-"""Read-only presentation: ``hermes plugins list``, ``show`` and ``compat``.
+"""Read-only presentation: ``moor plugins list``, ``show`` and ``compat``.
 
-Sibling of :mod:`hermes_cli.plugins_cmd` (the facade re-exports the names other modules use and is
+Sibling of :mod:`moor_cli.plugins_cmd` (the facade re-exports the names other modules use and is
 imported late here, never at module level).
 """
 
@@ -13,12 +13,12 @@ from typing import Any
 
 def _pc():
     """The facade, read at call time: tests patch ``plugins_cmd.<name>`` and sibling calls must see it."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     return plugins_cmd
 
 
 def _filter_plugin_entries(entries: list, args: Any, enabled: set, disabled: set) -> list:
-    """Apply ``hermes plugins list`` CLI filters."""
+    """Apply ``moor plugins list`` CLI filters."""
     filtered = entries
     if getattr(args, "no_bundled", False) or getattr(args, "user", False):
         filtered = [entry for entry in filtered if entry[3] != "bundled"]
@@ -41,13 +41,13 @@ def cmd_list(args: Any | None = None) -> None:
     entries = _pc()._discover_all_plugins()
     if not entries:
         console.print("[dim]No plugins installed.[/dim]")
-        console.print("[dim]Install with:[/dim] hermes plugins install owner/repo")
+        console.print("[dim]Install with:[/dim] moor plugins install owner/repo")
         return
 
     enabled = _pc()._get_enabled_set()
     disabled = _pc()._get_disabled_set()
     entries = _filter_plugin_entries(entries, args, enabled, disabled)
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     # Source shows catalog provenance (``catalog:<tier>@<sha8>``) or a ``--ref`` pin
     # (``git pinned@<sha8>``) so a team can eyeball that everyone runs the same commit.
     pins = _pc()._read_install_metadata()
@@ -81,7 +81,7 @@ def cmd_list(args: Any | None = None) -> None:
         (("Name", "bold"), ("Status", None), ("Version", "dim"), ("Description", None), ("Source", "dim")),
         title="Plugins", show_lines=False)
     # provenance class per user-installed dir (bundled entries show '-')
-    from hermes_cli.plugins_provenance import plugins_provenance
+    from moor_cli.plugins_provenance import plugins_provenance
 
     prov_classes = {
         p.name: p.klass.value for p in plugins_provenance(_pc()._plugins_dir())
@@ -106,9 +106,9 @@ def cmd_list(args: Any | None = None) -> None:
     for line in removed_lines:
         console.print(line)
     console.print()
-    console.print("[dim]Compact view:[/dim] hermes plugins list --plain --no-bundled")
-    console.print("[dim]Interactive toggle:[/dim] hermes plugins")
-    console.print("[dim]Enable/disable:[/dim] hermes plugins enable/disable <name>")
+    console.print("[dim]Compact view:[/dim] moor plugins list --plain --no-bundled")
+    console.print("[dim]Interactive toggle:[/dim] moor plugins")
+    console.print("[dim]Enable/disable:[/dim] moor plugins enable/disable <name>")
     console.print("[dim]Plugins are opt-in by default — only 'enabled' plugins load.[/dim]")
 
 
@@ -118,7 +118,7 @@ def cmd_show(name: str) -> None:
     match = _pc()._find_plugin_entry(name)
     if match is None:
         console.print(f"[red]Plugin '{name}' not found.[/red]")
-        _pc()._fail(console, "[dim]List installed plugins:[/dim] hermes plugins list")
+        _pc()._fail(console, "[dim]List installed plugins:[/dim] moor plugins list")
 
     pname, version, description, source, dir_path, key = match
     manifest = _pc()._read_manifest(Path(dir_path)) if dir_path else {}
@@ -138,10 +138,10 @@ def cmd_show(name: str) -> None:
 
 
 def cmd_compat(args: Any | None = None) -> None:
-    """``hermes plugins compat`` — which installed plugins import paths scheduled for removal, and where."""
+    """``moor plugins compat`` — which installed plugins import paths scheduled for removal, and where."""
     import sys
     from pathlib import Path
-    from hermes_cli.plugin_compat import (
+    from moor_cli.plugin_compat import (
         ALLOW_KEY, COMPAT_REMOVAL, compat_report, removal_in_effect, scan_plugin, summary_lines)
     console = _pc()._console()
     path = getattr(args, "path", None)

@@ -519,7 +519,7 @@ class TestCallbackPortReservation:
     @staticmethod
     def _seed_client_info(tmp_path, payload):
         """Write *payload* verbatim to the real ``mcp-tokens/srv.client.json`` under a temp home."""
-        storage = HermesTokenStorage("srv", hermes_home=tmp_path)
+        storage = MoorTokenStorage("srv", moor_home=tmp_path)
         path = storage._client_info_path()
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload), encoding="utf-8")

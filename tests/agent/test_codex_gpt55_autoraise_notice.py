@@ -20,8 +20,8 @@ import contextlib
 import io
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
-from hermes_state import SessionDB
+from moor_constants import get_moor_home
+from moor_state import SessionDB
 from run_agent import AIAgent
 
 from agent.agent_init import (
@@ -96,9 +96,9 @@ def test_codex_gpt55_autoraise_notice_deduped_across_agent_inits(monkeypatch, tm
 
 # ── per-profile dedupe marker (#54432) ───────────────────────────────────────
 
-def test_marker_lives_under_hermes_home() -> None:
+def test_marker_lives_under_moor_home() -> None:
     marker = _codex_gpt55_autoraise_notice_marker()
-    assert marker.parent == get_hermes_home()
+    assert marker.parent == get_moor_home()
 
 def test_changed_threshold_renotifies_once() -> None:
     _record_codex_gpt55_autoraise_notice(AUTORAISE)

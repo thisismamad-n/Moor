@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getToolsetModels, searchSkillsHub, testMcpServer } from './hermes'
+import { getToolsetModels, searchSkillsHub, testMcpServer } from './moor'
 
 describe('Moor REST parity helpers (hub / mcp / maintenance)', () => {
   let api: ReturnType<typeof vi.fn>

@@ -211,7 +211,7 @@ def _is_self_hosted_provider(provider: str) -> bool:
 
     Normalised here so the main route and the title pin resolve aliases (``ollama``, ``lm-studio``…) the same way.
     """
-    from hermes_cli.providers import normalize_provider
+    from moor_cli.providers import normalize_provider
     provider = normalize_provider(provider)
     return provider in ("custom", "lmstudio", "local") or provider.startswith("custom:")
 
@@ -222,12 +222,12 @@ def _title_pin_may_share_endpoint(pinned_provider: str, main_provider: str, main
     Hosted pins (``openrouter``…) multiplex and never share the slot. A pin to ``custom``/``lmstudio``/``local``/any
     ``custom:<name>`` is assumed to share until the caller compares ``base_url``, and a bare ``<name>`` /
     display-name pin is the same endpoint when it aliases the main ``custom:<name>`` route
-    (``hermes_cli.providers.custom_provider_aliases`` — the resolver's own identity set) or resolves to a
+    (``moor_cli.providers.custom_provider_aliases`` — the resolver's own identity set) or resolves to a
     configured custom entry serving ``main_base_url`` (a keyed ``providers:`` entry's display name does not
     alias its ``custom:<key>`` id).
     """
-    from hermes_cli.config import get_compatible_custom_providers, load_config_readonly
-    from hermes_cli.providers import custom_provider_aliases, resolve_custom_provider
+    from moor_cli.config import get_compatible_custom_providers, load_config_readonly
+    from moor_cli.providers import custom_provider_aliases, resolve_custom_provider
     if _is_self_hosted_provider(pinned_provider):
         return True
     if custom_provider_aliases(pinned_provider) & custom_provider_aliases(main_provider):
@@ -665,7 +665,7 @@ def _session_is_untitled(session_db, session_id: str) -> bool:
 def _kanban_task_title() -> Optional[str]:
     """Kanban worker: the card's title, or ``Kanban task <id>`` when the board can't be read; None elsewhere
     (including delegate_task children of the worker, which inherit the env var but are not the card)."""
-    task_id = (os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+    task_id = (os.environ.get("MOOR_KANBAN_TASK") or "").strip()
     if not task_id or not is_dispatcher_owned_worker_context():
         return None
     try:

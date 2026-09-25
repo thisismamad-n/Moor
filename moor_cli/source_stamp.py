@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import tempfile
 
-from hermes_cli.version_info import _git_version_info, _reset_version_info_cache
+from moor_cli.version_info import _git_version_info, _reset_version_info_cache
 
 
 def write_source_stamp(root: Path) -> dict | None:
@@ -66,7 +66,7 @@ def write_source_stamp(root: Path) -> dict | None:
     return stamp
 
 
-BOOTSTRAP_RECEIPT = ".hermes-bootstrap-complete"
+BOOTSTRAP_RECEIPT = ".moor-bootstrap-complete"
 
 
 def refresh_bootstrap_receipt(root: Path, stamp: dict) -> None:
@@ -95,7 +95,7 @@ def refresh_bootstrap_receipt(root: Path, stamp: dict) -> None:
         "pinnedBranch": stamp["branch"] or previous.get("pinnedBranch"),
         "completedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
     }
-    fd, tmp_name = tempfile.mkstemp(dir=root, prefix=".hermes-bootstrap-complete.", suffix=".tmp")
+    fd, tmp_name = tempfile.mkstemp(dir=root, prefix=".moor-bootstrap-complete.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(json.dumps(receipt, indent=2) + "\n")

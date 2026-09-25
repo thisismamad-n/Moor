@@ -116,7 +116,7 @@ class TestCheckFnTransientFailureSuppression:
 
 
     def test_core_tool_drop_after_success_warns_once_never_configured_stays_info(self, monkeypatch, caplog):
-        """A check_fn that drops a ``_HERMES_CORE_TOOLS`` member it had previously admitted logs at
+        """A check_fn that drops a ``_MOOR_CORE_TOOLS`` member it had previously admitted logs at
         WARNING naming the tool (#112649 atom 4): core tools are non-deferrable, so a dropped one
         leaves neither the schema nor the tool_search catalog and the model's "no such tool" is
         accurate. A core tool whose probe never succeeded (unconfigured browser/image_gen/HA on a
@@ -138,8 +138,8 @@ class TestCheckFnTransientFailureSuppression:
 
         clock = {"now": 1000.0}
         monkeypatch.setattr(reg.time, "monotonic", lambda: clock["now"])
-        monkeypatch.setattr(toolsets, "_HERMES_CORE_TOOLS",
-                            [*toolsets._HERMES_CORE_TOOLS, "core_probe_tool", "never_probe_tool"])
+        monkeypatch.setattr(toolsets, "_MOOR_CORE_TOOLS",
+                            [*toolsets._MOOR_CORE_TOOLS, "core_probe_tool", "never_probe_tool"])
         for name, gate in (("core_probe_tool", core_gate), ("never_probe_tool", never_gate)):
             reg.registry.register(name=name, toolset=name, schema={"name": name},
                                   handler=lambda **kw: None, check_fn=gate)

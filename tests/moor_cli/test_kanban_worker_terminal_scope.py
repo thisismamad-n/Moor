@@ -9,7 +9,7 @@ dispatcher's declared ``terminal.env_passthrough`` names.
 """
 import pytest
 
-from hermes_cli import kanban_db_dispatch
+from moor_cli import kanban_db_dispatch
 from tools.terminal_scope import get_terminal_scope
 
 
@@ -19,14 +19,14 @@ class _StopSpawn(Exception):
 
 @pytest.fixture
 def profile_b(tmp_path, monkeypatch):
-    """A fake HOME so ``profiles/`` never resolves to the live install (see hermes-agent-dev)."""
-    launch = tmp_path / "fakehome" / ".hermes"
+    """A fake HOME so ``profiles/`` never resolves to the live install (see moor-agent-dev)."""
+    launch = tmp_path / "fakehome" / ".moor"
     served = launch / "profiles" / "b"
     served.mkdir(parents=True)
     (served / "config.yaml").write_text(
         "terminal:\n  backend: docker\n  docker_image: b-image\n", encoding="utf-8")
     monkeypatch.setenv("HOME", str(tmp_path / "fakehome"))
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     monkeypatch.setenv("TERMINAL_ENV", "local")  # ambient launch-profile policy
     monkeypatch.setenv("TERMINAL_DOCKER_IMAGE", "launch-image")
     return served
@@ -43,7 +43,7 @@ def test_worker_profile_scope_installs_the_assigned_profiles_terminal_policy(pro
 
 def _spawn_env_for_profile_b(monkeypatch, tmp_path):
     """Run ``_default_spawn`` far enough to capture the worker env, never spawning anything."""
-    from hermes_cli.kanban_db import Task
+    from moor_cli.kanban_db import Task
     from tools import process_registry
 
     captured: list[dict] = []
@@ -76,13 +76,13 @@ def test_worker_for_another_profile_never_inherits_the_dispatchers_credentials(
 
 def test_launch_profiles_own_worker_keeps_its_credentials(tmp_path, monkeypatch):
     """Control: a worker for the LAUNCH profile is not acting for another tenant."""
-    launch = tmp_path / "fakehome" / ".hermes"
+    launch = tmp_path / "fakehome" / ".moor"
     (launch / "profiles").mkdir(parents=True)
     monkeypatch.setenv("HOME", str(tmp_path / "fakehome"))
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     monkeypatch.setenv("OPENAI_API_KEY", "dispatcher-launch-key")
 
-    from hermes_cli.kanban_db import Task
+    from moor_cli.kanban_db import Task
     from tools import process_registry
 
     captured: list[dict] = []

@@ -242,9 +242,9 @@ class SSHEnvironment(BaseEnvironment):
     def _ssh_bulk_download(self, dest: Path) -> None:
         """Download remote .moor/ as a tar archive."""
         # Tar from / with the full path so archive entries keep absolute paths
-        # (home/user/.hermes/skills/f.py), matching _pushed_hashes keys.
-        rel_base = f"{self._remote_home}/.hermes".lstrip("/")
-        # Live sockets inside .hermes (gateway.sock and friends) cannot be archived: tar prints
+        # (home/user/.moor/skills/f.py), matching _pushed_hashes keys.
+        rel_base = f"{self._remote_home}/.moor".lstrip("/")
+        # Live sockets inside .moor (gateway.sock and friends) cannot be archived: tar prints
         # "socket ignored" and some builds exit 2, which failed every sync-back and left a
         # multi-GB temp tar behind on each retry. Exclude them up front.
         ssh_cmd = self._build_ssh_command() + [

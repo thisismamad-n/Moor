@@ -7,7 +7,7 @@ description: "在 CLI、Telegram、Discord 及 Discord 语音频道中设置和�
 # 在 Moor 中使用语音模式
 
 本页的 Python 依赖命令使用 [PM 准备的源码环境](../reference/package-management.md#developer-workflow)。
-依赖变更后，请重新激活该 checkout 并重启 Hermes。
+依赖变更后，请重新激活该 checkout 并重启 Moor。
 
 本指南是[语音模式功能参考](../user-guide/features/voice-mode.md)的实用配套文档。
 
@@ -60,25 +60,25 @@ What tools do you have available?
 ### CLI 麦克风 + 播放
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['voice'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['voice'], explicit=True)"
 ```
 
 ### 消息平台
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['messaging'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['messaging'], explicit=True)"
 ```
 
 ### 高级 ElevenLabs TTS
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['tts-premium'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['tts-premium'], explicit=True)"
 ```
 
 ### 本地 NeuTTS（可选）
 
-声明的 `neutts` 依赖要求 Python 低于 3.14，而 Hermes 运行时要求 Python 3.14。
-因此该 extra 不会在 Hermes 运行时安装 NeuTTS。请选择兼容的提供商。
+声明的 `neutts` 依赖要求 Python 低于 3.14，而 Moor 运行时要求 Python 3.14。
+因此该 extra 不会在 Moor 运行时安装 NeuTTS。请选择兼容的提供商。
 独立的 NeuTTS 命令提供商需要自行管理兼容的 Python 环境。
 
 ### 同时启用语音和消息平台
@@ -156,8 +156,8 @@ ELEVENLABS_API_KEY=***
 
 设置向导通过 PM 请求声明的 Python extras，不能绕过版本或平台限制：
 
-声明的 `neutts` 依赖要求 Python 低于 3.14，而 Hermes 运行时要求 Python 3.14。
-因此该 extra 不会在 Hermes 运行时安装 NeuTTS。请选择兼容的提供商。
+声明的 `neutts` 依赖要求 Python 低于 3.14，而 Moor 运行时要求 Python 3.14。
+因此该 extra 不会在 Moor 运行时安装 NeuTTS。请选择兼容的提供商。
 独立的 NeuTTS 命令提供商需要自行管理兼容的 Python 环境。
 
 如果依赖不支持当前平台，请选择其他提供商。

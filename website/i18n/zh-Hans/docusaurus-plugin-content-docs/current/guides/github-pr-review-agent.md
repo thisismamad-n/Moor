@@ -34,7 +34,7 @@ description: "构建一个自动化 AI 代码审查器，监控你的仓库、�
 
 ## 前提条件
 
-- **已安装 Hermes Agent** — 参见[安装指南](../getting-started/installation.md)
+- **已安装 Moor Agent** — 参见[安装指南](../getting-started/installation.md)
 - **Gateway 已运行**（用于 cron 任务）：
   ```bash
   moor gateway install   # Install as a service

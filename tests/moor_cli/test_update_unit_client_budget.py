@@ -52,7 +52,7 @@ def test_fleet_restart_budget_preserves_user_scope_and_verifies_health(monkeypat
     scope = ["systemctl", "--user"]
     manage = [*scope, "--no-ask-password"]
     calls, health_checks = [], []
-    name = "hermes-serve-test"
+    name = "moor-serve-test"
 
     def systemctl(cmd, *, timeout):
         calls.append((cmd, timeout))
@@ -73,8 +73,8 @@ def test_fleet_restart_budget_preserves_user_scope_and_verifies_health(monkeypat
     monkeypatch.setattr(fleet, "_systemctl", systemctl)
     monkeypatch.setattr(fleet, "_SYSTEMD_SCOPES", (("user", scope),))
     monkeypatch.setattr(fleet, "_wait_for_service_active", check_health)
-    monkeypatch.setattr("hermes_cli.gateway.supports_systemd_services", lambda: True)
-    monkeypatch.setattr("hermes_cli.gateway._ensure_user_systemd_env", lambda: None)
+    monkeypatch.setattr("moor_cli.gateway.supports_systemd_services", lambda: True)
+    monkeypatch.setattr("moor_cli.gateway._ensure_user_systemd_env", lambda: None)
     restarted, failed, scoped = [], [], set()
     fleet._restart_systemd_gateway_units(restarted, failed, scoped, drain_budget=45)
 
@@ -114,16 +114,16 @@ def test_fleet_restart_repairs_a_system_unit_that_cannot_park_on_exit_78(monkeyp
     """A ``Restart=on-failure`` system unit predating ``RestartPreventExitStatus=78`` crash-looped ~180x on
     a permanent refusal while the user units parked (#118282). The update-time fleet restart is the only
     contact with that unit: as root it rewrites it, otherwise it names the repair. A parked unit is left alone."""
-    from hermes_cli import gateway as gateway_cli
+    from moor_cli import gateway as gateway_cli
 
     unit_dir = tmp_path / "system"
     unit_dir.mkdir()
-    stale = unit_dir / "hermes-gateway.service"
+    stale = unit_dir / "moor-gateway.service"
     stale.write_text("[Service]\nRestart=on-failure\nRestartSec=10\n", encoding="utf-8")
-    current = unit_dir / "hermes-gateway-ops.service"
+    current = unit_dir / "moor-gateway-ops.service"
     current.write_text(f"[Service]\nRestart=always\nRestartPreventExitStatus={gateway_cli.GATEWAY_FATAL_CONFIG_EXIT_CODE}\n", encoding="utf-8")
     monkeypatch.setattr(gateway_cli, "_SYSTEM_UNIT_DIR", unit_dir)
-    monkeypatch.setattr(gateway_cli, "get_service_name", lambda: "hermes-gateway")
+    monkeypatch.setattr(gateway_cli, "get_service_name", lambda: "moor-gateway")
     monkeypatch.setattr(fleet, "_needs_sudo", lambda scope: not root)
     refreshed = []
     monkeypatch.setattr(gateway_cli, "refresh_systemd_unit_if_needed", lambda system=False: refreshed.append(system))
@@ -131,7 +131,7 @@ def test_fleet_restart_repairs_a_system_unit_that_cannot_park_on_exit_78(monkeyp
     monkeypatch.setattr(fleet, "_drain_or_signal_gateway_for_update", lambda *a, **kw: True)
     monkeypatch.setattr(fleet, "_wait_for_service_active", lambda *a, **kw: True)
 
-    for name in ("hermes-gateway", "hermes-gateway-ops"):
+    for name in ("moor-gateway", "moor-gateway-ops"):
         fleet._restart_one_systemd_gateway_unit(
             name, scope="system", scope_cmd=["systemctl"], drain_budget=5,
             _manage_cmd_cache={"system": ["systemctl"]}, restarted_services=[], failed_or_stale_units=[],
@@ -143,5 +143,5 @@ def test_fleet_restart_repairs_a_system_unit_that_cannot_park_on_exit_78(monkeyp
         assert "RestartPreventExitStatus" not in out
     else:
         assert refreshed == []
-        assert out.count("RestartPreventExitStatus=78") == 1 and "hermes-gateway lacks" in out
-        assert "sudo hermes gateway install --system" in out
+        assert out.count("RestartPreventExitStatus=78") == 1 and "moor-gateway lacks" in out
+        assert "sudo moor gateway install --system" in out

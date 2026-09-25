@@ -118,7 +118,7 @@ def pop_relay_scope(relay: Any, handle: Any, *, output: Any = None, metadata: An
 def pop_relay_scope_if_top(relay: Any, handle: Any, *, output: Any = None, metadata: Any = None) -> bool:
     """Pop ``handle`` only while it is the top of the scope stack; return whether it was popped.
 
-    Two concurrent Hermes turns in one session share a physical stack, so the first turn to
+    Two concurrent Moor turns in one session share a physical stack, so the first turn to
     finish may find the sibling's live scope above its own. Popping through it would close the
     sibling's scope and letting the binding raise ("scope handle is not at the top of the
     stack") logs a traceback per overlap (#115471). The skipped scope is reclaimed by the
@@ -183,10 +183,10 @@ def _load_segments_config() -> dict[str, Any]:
     on_compaction = False
     max_turns = 0
     try:
-        # Never import gateway.run here: its import-time env setup (_HERMES_GATEWAY, HERMES_QUIET,
-        # TERMINAL_CWD := home) rebinds a CLI/TUI/cron host — hung approvals (#87183), `hermes -z`
+        # Never import gateway.run here: its import-time env setup (_MOOR_GATEWAY, MOOR_QUIET,
+        # TERMINAL_CWD := home) rebinds a CLI/TUI/cron host — hung approvals (#87183), `moor -z`
         # running in $HOME without the launch dir's AGENTS.md (#95577). Same reader it delegates to.
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
 
         telemetry = (load_user_config_effective().get("gateway") or {}).get("telemetry") or {}
         segments = telemetry.get("session_segments") or {}
@@ -971,7 +971,7 @@ class RelaySessionCoordinator:
     def _open_conversation_session(self, host: RelayRuntime, context: dict[str, Any]) -> RelaySession | None:
         self._prepare_session(host, context)
         session_id, parent_session_id = context["session_id"], context["parent_session_id"]
-        metadata = {"hermes.execution_surface": context["platform"] or "unknown"}
+        metadata = {"moor.execution_surface": context["platform"] or "unknown"}
         cwd = context.get("cwd")
         if parent_session_id and parent_session_id != session_id:
             event = {"parent_session_id": parent_session_id, "child_session_id": session_id}

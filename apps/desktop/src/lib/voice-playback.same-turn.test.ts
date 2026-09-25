@@ -10,7 +10,7 @@ vi.mock('@/lib/voice-client-direct', () => ({
   synthesizeSpeechClientDirect: vi.fn()
 }))
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   getApiRequestConnection: () => null,
   getApiRequestProfile: () => null,
   speakText: vi.fn(async () => {

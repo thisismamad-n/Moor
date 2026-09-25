@@ -39,12 +39,12 @@ def two_homes(tmp_path, monkeypatch):
     b = root / "profiles" / "b"
     b.mkdir(parents=True)
     (root / ".env").write_text(
-        f"A_ONLY_TOKEN={A_VAL}\nHERMES_API_KEY={A_API_KEY}\nHERMES_BASE_URL={A_BASE_URL}\n"
-        f"HERMES_CODEX_BASE_URL={A_CODEX_URL}\n",
+        f"A_ONLY_TOKEN={A_VAL}\nMOOR_API_KEY={A_API_KEY}\nMOOR_BASE_URL={A_BASE_URL}\n"
+        f"MOOR_CODEX_BASE_URL={A_CODEX_URL}\n",
         encoding="utf-8")
     (b / ".env").write_text(
-        f"B_ONLY_TOKEN={B_VAL}\nHERMES_API_KEY={B_API_KEY}\nHERMES_BASE_URL={B_BASE_URL}\n"
-        f"HERMES_CODEX_BASE_URL={B_CODEX_URL}\n",
+        f"B_ONLY_TOKEN={B_VAL}\nMOOR_API_KEY={B_API_KEY}\nMOOR_BASE_URL={B_BASE_URL}\n"
+        f"MOOR_CODEX_BASE_URL={B_CODEX_URL}\n",
         encoding="utf-8")
     for home in (root, b):
         (home / "config.yaml").write_text(
@@ -52,9 +52,9 @@ def two_homes(tmp_path, monkeypatch):
             encoding="utf-8")
     monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setenv("A_ONLY_TOKEN", A_VAL)  # the launch process loaded its own .env
-    monkeypatch.setenv("HERMES_API_KEY", A_API_KEY)
-    monkeypatch.setenv("HERMES_BASE_URL", A_BASE_URL)
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", A_CODEX_URL)
+    monkeypatch.setenv("MOOR_API_KEY", A_API_KEY)
+    monkeypatch.setenv("MOOR_BASE_URL", A_BASE_URL)
+    monkeypatch.setenv("MOOR_CODEX_BASE_URL", A_CODEX_URL)
     monkeypatch.setenv("INJECTED_TOKEN", ENV_VAL)  # systemd / op run credential injection
     monkeypatch.setattr(server, "_moor_home", root)
     monkeypatch.setattr(server, "_served_profile_homes", set())
@@ -144,13 +144,13 @@ def test_rpc_scope_reaches_llm_oneshot_and_model_options(two_homes, monkeypatch)
 def test_manual_compress_routes_bind_the_sessions_full_runtime_scope(two_homes, monkeypatch, route):
     """Manual compression must resolve secrets from its session across an A→B→A sequence."""
     from agent.secret_scope import get_secret
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     root, b = two_homes
     seen = []
 
     def observe_scope():
-        seen.append((Path(get_hermes_home()), get_secret("A_ONLY_TOKEN"), get_secret("B_ONLY_TOKEN")))
+        seen.append((Path(get_moor_home()), get_secret("A_ONLY_TOKEN"), get_secret("B_ONLY_TOKEN")))
 
     def invoke(profile_home):
         sid = f"compress-{len(seen)}"
@@ -207,7 +207,7 @@ def test_manual_compress_routes_bind_the_sessions_full_runtime_scope(two_homes, 
 def test_live_review_binds_runtime_scope_under_multiplex(two_homes, monkeypatch):
     """Desktop /review is off-turn; start_review must still see the session's secrets (#117544)."""
     from agent.secret_scope import UnscopedSecretError, get_secret
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     from tui_gateway.transport import StdioTransport
 
     root, b = two_homes
@@ -215,10 +215,10 @@ def test_live_review_binds_runtime_scope_under_multiplex(two_homes, monkeypatch)
 
     def fake_start_review(agent, snapshot, prompt):
         seen.append((
-            Path(get_hermes_home()),
+            Path(get_moor_home()),
             get_secret("A_ONLY_TOKEN"),
             get_secret("B_ONLY_TOKEN"),
-            get_secret("HERMES_CODEX_BASE_URL"),
+            get_secret("MOOR_CODEX_BASE_URL"),
         ))
         return {"status": "dispatched", "delegation_id": "deleg_x"}
 
@@ -253,7 +253,7 @@ def test_live_review_binds_runtime_scope_under_multiplex(two_homes, monkeypatch)
     invoke(None)
     _probe("b")
     with pytest.raises(UnscopedSecretError):
-        get_secret("HERMES_CODEX_BASE_URL")
+        get_secret("MOOR_CODEX_BASE_URL")
     invoke(b)
     invoke(None)
 
@@ -262,7 +262,7 @@ def test_live_review_binds_runtime_scope_under_multiplex(two_homes, monkeypatch)
         (b, None, B_VAL, B_CODEX_URL),
         (root, A_VAL, None, A_CODEX_URL),
     ]
-    assert os.environ["HERMES_CODEX_BASE_URL"] == A_CODEX_URL
+    assert os.environ["MOOR_CODEX_BASE_URL"] == A_CODEX_URL
 
 
 def test_config_show_keeps_each_profiles_values_after_multiplex_activation(two_homes):
@@ -313,8 +313,8 @@ class _MemoryManager:
     """Stands in for an external memory provider: ``system_prompt_block()`` reads its credential via get_secret."""
     def build_system_prompt(self):
         from agent.secret_scope import get_secret
-        from hermes_constants import get_hermes_home
-        return f"{get_hermes_home()}|{get_secret('MEM_PROVIDER_KEY')}"
+        from moor_constants import get_moor_home
+        return f"{get_moor_home()}|{get_secret('MEM_PROVIDER_KEY')}"
 
 
 def _prompt_building_session(profile_home, key):

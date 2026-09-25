@@ -34,7 +34,7 @@ from moor_cli.update_lock import (
 )
 
 # Repo root: the -I -S -B subprocesses insert it on sys.path to import the
-# real hermes_cli without site-packages.
+# real moor_cli without site-packages.
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # A pid no live process owns. os.kill(pid, 0) must report it dead so a crashed
@@ -61,7 +61,7 @@ def _claim(marker, pid, started_at=None):
     marker.write_text(f"{pid}\n{int(time.time() if started_at is None else started_at)}\n", encoding="utf-8")
 
 
-def test_marker_path_follows_process_hermes_home(tmp_path, monkeypatch):
+def test_marker_path_follows_process_moor_home(tmp_path, monkeypatch):
     """The lock must land where the Rust updater and Electron gate look.
 
     All three resolve the *process* MOOR_HOME; a profile-scoped path would
@@ -292,13 +292,13 @@ class TestAncestryHandoff:
     def test_grandchild_adopts_orchestrator_marker_without_psutil(self, marker, tmp_path):
         """Regression: the desktop hand-off's grandchild refused its own orchestrator.
 
-        The posix shim (grandparent) holds the marker and spawns ``hermes update``
+        The posix shim (grandparent) holds the marker and spawns ``moor update``
         (direct child — adopts via getppid). An old-updater update into a PM tree
         then hands off again: ``_old_updater._run_child`` spawns
         ``_update_takeover.py`` as ``python -I -S -B``, where psutil cannot import
         (-S skips site-packages). The psutil-only ancestry walk returned False for
         the two-hops-up shim, and the takeover child refused with exit 2 —
-        "Another Hermes update is already running (PID <the shim itself>)" —
+        "Another Moor update is already running (PID <the shim itself>)" —
         observed live on a macOS rehearsal install, then again on Windows, where
         the stdlib walk had no /proc and no ps. Marked for every lane: the Windows
         lane only imports files carrying a platforms marker, which is how the
@@ -317,7 +317,7 @@ class TestAncestryHandoff:
             import sys
             from pathlib import Path
             sys.path.insert(0, %(root)r)
-            from hermes_cli.update_lock import UpdateLock
+            from moor_cli.update_lock import UpdateLock
             lock = UpdateLock(path=Path(%(marker)r))
             if not lock.acquire():
                 print("REFUSED", lock.holder.pid)
@@ -368,7 +368,7 @@ class TestAncestryHandoff:
                 import sys
                 from pathlib import Path
                 sys.path.insert(0, %(root)r)
-                from hermes_cli.update_lock import UpdateLock
+                from moor_cli.update_lock import UpdateLock
                 lock = UpdateLock(path=Path(%(marker)r))
                 print("ADOPTED" if lock.acquire() else "REFUSED")
                 """

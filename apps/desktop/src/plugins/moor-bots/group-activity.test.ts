@@ -195,7 +195,7 @@ describe('turn arc', () => {
       turn: ({ profile }) => {
         if (profile === 'builder') {
           throw new Error(
-            'Error invoking remote method \'hermes:api\': Local backend start for "builder" timed out while waiting for a free slot.'
+            'Error invoking remote method \'moor:api\': Local backend start for "builder" timed out while waiting for a free slot.'
           )
         }
 

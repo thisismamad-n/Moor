@@ -43,7 +43,7 @@ export function registerFsIpc({
   // `showItemInFolder` silently no-ops on a missing item, and a remote
   // backend's paths are missing here by construction — answer `false` so
   // the renderer can say so instead of reporting a click that showed nothing.
-  ipcMain.handle('hermes:fs:reveal', async (_event, targetPath) => {
+  ipcMain.handle('moor:fs:reveal', async (_event, targetPath) => {
     const target = String(targetPath || '').trim()
 
     if (!target) {
@@ -163,8 +163,8 @@ export function registerFsIpc({
 
   // Uninstall a standalone desktop plugin by FOLDER NAME under the app-level
   // root. The renderer never passes a path; containment is re-checked inside.
-  ipcMain.handle('hermes:plugin:removeDesktop', async (_event, payload) =>
-    removeDesktopPlugin(path.join(hermesHome, DESKTOP_PLUGINS_DIR), payload?.name)
+  ipcMain.handle('moor:plugin:removeDesktop', async (_event, payload) =>
+    removeDesktopPlugin(path.join(moorHome, DESKTOP_PLUGINS_DIR), payload?.name)
   )
 
   // Rename a file/folder in place. The renderer passes the existing path + a new

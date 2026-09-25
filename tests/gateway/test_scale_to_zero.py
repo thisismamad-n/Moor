@@ -71,7 +71,7 @@ def test_scale_to_zero_gate_accounts_for_secondary_profile_direct_adapter(monkey
     from gateway.config import GatewayConfig, Platform, PlatformConfig
     from gateway.run_shutdown import GatewayShutdownMixin
 
-    monkeypatch.setenv("HERMES_SCALE_TO_ZERO", "1")
+    monkeypatch.setenv("MOOR_SCALE_TO_ZERO", "1")
     monkeypatch.setenv("GATEWAY_RELAY_WAKE_URL", "https://wake.example.test/instance")
     runner = object.__new__(GatewayShutdownMixin)
     runner.config = GatewayConfig(platforms={Platform.RELAY: PlatformConfig(enabled=True)})

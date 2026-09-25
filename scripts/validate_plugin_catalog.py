@@ -1,10 +1,10 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_hermes-python" "$0" "$@"'
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_moor-python" "$0" "$@"'
 """Standalone structural validator for plugin-catalog entry files.
 
 Validates ``plugin-catalog/*.yaml`` catalog entries and
 ``plugin-catalog/removed.yaml`` against the catalog contract schema, using
 only stdlib + ruamel.yaml so the admission CI (and third-party repos) can run it
-WITHOUT installing hermes-agent.
+WITHOUT installing moor-agent.
 
 NOTE: this script intentionally duplicates the schema rules instead of
 importing ``moor_cli`` — the whole point is the no-install requirement for
@@ -121,7 +121,7 @@ def _check_page_fields(data: dict, errors: list[str]) -> None:
             errors.append(f"readme: true needs a repo on {list(README_REPO_HOSTS)} (the site fetches it from the pinned commit); omit it for other forges")
 
 
-def _check_requires_hermes(spec: object, errors: list[str]) -> None:
+def _check_requires_moor(spec: object, errors: list[str]) -> None:
     if not isinstance(spec, str):
         errors.append(f"requires_moor must be a string, got {type(spec).__name__}")
         return

@@ -54,8 +54,8 @@ def test_pytest_style_dash_p_is_still_ignored(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["pytest", "-p", "no:xdist", "tests/"])
     assert _main._scan_profile_flag(sys.argv[1:]) == (None, 0, None)
 
-def test_option_looking_dash_p_value_is_a_silent_skip_even_under_hermes(monkeypatch):
-    from hermes_cli import main as _main
+def test_option_looking_dash_p_value_is_a_silent_skip_even_under_moor(monkeypatch):
+    from moor_cli import main as _main
 
     # `-p no:xdist` reaching us through a differently named runner (tox, nox, python -m) must not exit.
     monkeypatch.setattr(sys, "argv", ["moor", "-p", "no:xdist", "tests/"])

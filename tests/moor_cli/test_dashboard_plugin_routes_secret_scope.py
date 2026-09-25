@@ -18,19 +18,19 @@ import pytest
 
 
 @pytest.fixture
-def client(monkeypatch, _isolate_hermes_home):
+def client(monkeypatch, _isolate_moor_home):
     try:
         from starlette.testclient import TestClient
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import hermes_state
-    from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
-    from hermes_constants import get_hermes_home
+    import moor_state
+    from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+    from moor_constants import get_moor_home
 
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", get_moor_home() / "state.db")
     # The launch profile's own credential source: what a scoped read must return.
-    (get_hermes_home() / ".env").write_text("GITHUB_TOKEN=ghp_launch_token\n", encoding="utf-8")
+    (get_moor_home() / ".env").write_text("GITHUB_TOKEN=ghp_launch_token\n", encoding="utf-8")
     return TestClient(app, raise_server_exceptions=False,
                       headers={_SESSION_HEADER_NAME: _SESSION_TOKEN})
 
@@ -49,7 +49,7 @@ def multiplexed():
 
 def _stub_action(monkeypatch, name: str, seen: dict, result: dict | None = None):
     """Stand in for the plugin action: read the credential like the git path does, note the thread."""
-    import hermes_cli.plugins_cmd as plugins_cmd
+    import moor_cli.plugins_cmd as plugins_cmd
     from agent.secret_scope import get_secret
 
     def _stub(*_args, **_kwargs):

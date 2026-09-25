@@ -26,7 +26,7 @@ except ImportError:
 def _ensure_google_auth() -> bool:
     """Bind ``google.auth`` on first use, installing the [vertex] extra through PM if needed.
 
-    The extra left [all] under the lazy-install policy (2026-05-12) so a plain ``hermes-agent``
+    The extra left [all] under the lazy-install policy (2026-05-12) so a plain ``moor-agent``
     install still reaches Vertex after selecting a Gemini model. This runs at the first
     credential request, never at import: an import-time sync would rebuild the dependency
     environment of whatever process happens to import this module.

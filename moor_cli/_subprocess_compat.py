@@ -31,7 +31,7 @@ __all__ = [
     "noninteractive_git_env",
     "NO_DRIVER_DIFF_FLAGS",
     "NO_LAZY_FETCH_ENV",
-    "pid_is_hermes",
+    "pid_is_moor",
 ]
 
 # Flags that neutralize *attribute-scoped* diff drivers on any diff-rendering git command. A
@@ -54,7 +54,7 @@ _GIT_VALUE_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exe
 
 def run(cmd, **kwargs) -> NoReturn:
     # Shim to suppress old updater work until relaunch. Do not start its installer.
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
 
     stop_for_relaunch()
 
@@ -123,10 +123,10 @@ def restore_ambient_pythonpath(env: Mapping[str, str]) -> dict:
 
     No-boot-through-venv: the boot interpreter is the pm STORE python, whose
     imports arrive via ``PYTHONPATH=<repo>;<venv>/site-packages`` (it has no
-    editable install). The subprocess-env factories strip Hermes-owned
+    editable install). The subprocess-env factories strip moor-owned
     PYTHONPATH entries so agent-run children on DIFFERENT interpreter
     versions never load the backend's C extensions — but a child that
-    re-execs THIS interpreter (``sys.executable -m hermes_cli.main``) runs
+    re-execs THIS interpreter (``sys.executable -m moor_cli.main``) runs
     on the same version and needs those entries back. Prepending keeps the
     launcher's repo-first ordering intact.
     """
@@ -583,7 +583,7 @@ def bounded_probe_run(
         # Cygwin/MSYS `exec` lets the forked stub exit once the new image runs, so a Git Bash grandchild
         # (`sleep`, `cat`) has a dead parent and survives the tree-kill holding our pipes (#73403, proven
         # on windows-latest). KILL_ON_JOB_CLOSE reaches it regardless of ancestry.
-        from hermes_cli.local_runtime.processes import spawn_server
+        from moor_cli.local_runtime.processes import spawn_server
 
         proc, job = spawn_server(
             list(argv), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL,

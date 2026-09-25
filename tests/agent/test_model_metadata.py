@@ -13,7 +13,7 @@ Coverage levels:
 import time
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 from unittest.mock import patch, MagicMock
 
 from agent.model_metadata import (
@@ -504,7 +504,7 @@ class TestCodexOAuthContextLength:
         base_url = "https://chatgpt.com/backend-api/codex"
         stale_key = f"gpt-5.5@{base_url}"
         other_key = "other-model@https://api.openai.com/v1/"
-        import hermes_yaml as _yaml
+        import moor_yaml as _yaml
         cache_file.write_text(_yaml.safe_dump({"context_lengths": {
             stale_key: stale_context,
             other_key: 128_000,
@@ -1120,7 +1120,7 @@ class TestGetModelContextLength:
         "provider, custom_providers",
         [
             ("custom:codex-proxy", [{"name": "codex-proxy", "base_url": "http://127.0.0.1:8317/v1", "api_mode": "codex_responses"}]),
-            ("openai-codex", None),  # HERMES_CODEX_BASE_URL / model.base_url proxy per #115902
+            ("openai-codex", None),  # MOOR_CODEX_BASE_URL / model.base_url proxy per #115902
         ],
     )
     def test_codex_route_behind_proxy_resolves_codex_oauth_window(self, provider, custom_providers):

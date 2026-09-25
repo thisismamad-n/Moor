@@ -12,8 +12,8 @@ here (they're stdin-driven curses prompts).
 
 from __future__ import annotations
 
-from hermes_cli.config import load_config
-from hermes_cli.main_provider_setup import _DELEGATION_TASK_KEY, _delegation_cfg_as_task, _format_aux_current, _reset_aux_to_auto, _save_aux_choice
+from moor_cli.config import load_config
+from moor_cli.main_provider_setup import _DELEGATION_TASK_KEY, _delegation_cfg_as_task, _format_aux_current, _reset_aux_to_auto, _save_aux_choice
 
 # ── Default config ──────────────────────────────────────────────────────────
 

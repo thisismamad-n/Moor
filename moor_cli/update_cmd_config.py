@@ -14,17 +14,17 @@ logger = logging.getLogger("moor_cli.update_cmd")
 
 def _reload_config_modules() -> None:
     """Historical updater hook; migration now belongs to fresh completion Python."""
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
     stop_for_relaunch(incomplete=True)
 
 
 def _run_config_check_fresh() -> tuple:
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
     stop_for_relaunch(incomplete=True)
 
 
 def _run_migrate_config_fresh(*, interactive: bool = False, quiet: bool = False) -> dict:
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
     stop_for_relaunch(incomplete=True)
 
 
@@ -38,7 +38,7 @@ def _migrate_sibling_profile_configs() -> list[tuple[str, int, int]]:
     profile, but ``moor update`` historically migrated only the active profile's config — siblings drifted
     versions until their gateway hit a config the new code couldn't read.
     """
-    from hermes_cli.config import check_config_version, migrate_config
+    from moor_cli.config import check_config_version, migrate_config
     migrated: list[tuple[str, int, int]] = []
     with _best_effort('Sibling profile enumeration failed: %s'):
         from moor_constants import (
@@ -150,14 +150,14 @@ def _check_and_apply_config_migration(
 
     See #91360.
     """
-    from hermes_cli.update_cmd import _migrate_sibling_profile_configs
-    from hermes_cli.config import check_config_version, migrate_config
+    from moor_cli.update_cmd import _migrate_sibling_profile_configs
+    from moor_cli.config import check_config_version, migrate_config
     print()
     print("→ Checking configuration for new options...")
-    from hermes_cli.config import get_missing_env_vars, get_missing_config_fields
+    from moor_cli.config import get_missing_env_vars, get_missing_config_fields
     # A config-check failure must not break an otherwise-successful update.
     try:
-        from hermes_cli.config import get_missing_env_vars, get_missing_config_fields
+        from moor_cli.config import get_missing_env_vars, get_missing_config_fields
         # Log, point at the manual command, and return. See #91360.
         missing_env = get_missing_env_vars(required_only=True)
         missing_config = get_missing_config_fields()

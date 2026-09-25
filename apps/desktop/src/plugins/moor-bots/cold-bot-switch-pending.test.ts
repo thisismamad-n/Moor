@@ -1,6 +1,6 @@
 /**
  * Cold bot switch acknowledges the clicked row before the backend answers
- * (hermes-agent#120277).
+ * (moor-agent#120277).
  *
  * The mark is published only after the fronted-tab check misses, and before
  * prepareBotSource. It is not chat ownership: highlight, routing, drafts, and
@@ -25,7 +25,7 @@ vi.mock('./canonical-chat', () => ({
   PROFILE_SESSION_LIST_LIMIT: 200
 }))
 
-const { host } = await import('@hermes/plugin-sdk')
+const { host } = await import('@moor/plugin-sdk')
 const { $openBotChat, $pendingBotOpen } = await import('./bot-state')
 const { $groupChats, $groupChatWorkspace } = await import('./group-chat')
 const { openGroupChat } = await import('./group-chat-view')

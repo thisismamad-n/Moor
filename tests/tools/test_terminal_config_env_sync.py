@@ -126,7 +126,7 @@ def test_cli_and_gateway_env_maps_agree():
 
 
 def test_save_config_set_bridges_every_cli_terminal_key():
-    """``hermes config set terminal.X`` must propagate every key the CLI
+    """``moor config set terminal.X`` must propagate every key the CLI
     startup path bridges, so a config-set value takes effect without restart.
     """
     save_keys = _save_config_env_sync_keys()
@@ -134,7 +134,7 @@ def test_save_config_set_bridges_every_cli_terminal_key():
     exempt = _CLI_ONLY_OK | {"cwd", "home_mode"}
     missing = (_cli_env_map_keys() - exempt) - save_keys
     assert not missing, (
-        f"`hermes config set terminal.X` doesn't sync these keys to .env: "
+        f"`moor config set terminal.X` doesn't sync these keys to .env: "
         f"{sorted(missing)}.  Add them to TERMINAL_CONFIG_ENV_MAP in "
-        f"hermes_cli/config.py (set_config_value bridges through it)."
+        f"moor_cli/config.py (set_config_value bridges through it)."
     )

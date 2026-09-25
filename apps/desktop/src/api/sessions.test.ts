@@ -8,7 +8,7 @@ vi.mock('./client', () => ({
   capabilityScoped: vi.fn(),
   getApiRequestConnection: vi.fn(() => 'prometheus'),
   getApiRequestProfile: vi.fn(() => null),
-  hermesApi: vi.fn(),
+  moorApi: vi.fn(),
   profileScoped: vi.fn(() => ({}))
 }))
 
@@ -100,13 +100,13 @@ describe('getSession dial priority', () => {
     // The scope helper tags every explicit scope foreground (#111651); the
     // cross-profile probe loop in resolveStoredSession would otherwise cold-start
     // every other profile on the reserved slot during a boot-time resume.
-    hermesApi.mockResolvedValue({ id: 'sess-5' } as never)
+    moorApi.mockResolvedValue({ id: 'sess-5' } as never)
     vi.mocked(client.capabilityScoped).mockReturnValue({ priority: 'foreground', profile: 'tommy' })
 
     await getSession('sess-5', { connectionId: 'local', profile: 'tommy' })
 
-    expect(hermesApi.mock.calls[0][0]).toMatchObject({ profile: 'tommy', connectionId: 'local' })
-    expect(hermesApi.mock.calls[0][0]).not.toHaveProperty('priority')
+    expect(moorApi.mock.calls[0][0]).toMatchObject({ profile: 'tommy', connectionId: 'local' })
+    expect(moorApi.mock.calls[0][0]).not.toHaveProperty('priority')
   })
 })
 
@@ -130,16 +130,16 @@ describe('setSessionArchived profile scoping', () => {
 
   it('falls back to the ACTIVE profile in the body when no owner is given', async () => {
     // Multiplex-only: the PATCH handler resolves its state.db from
-    // `body.profile` and there is no per-profile backend whose HERMES_HOME
+    // `body.profile` and there is no per-profile backend whose MOOR_HOME
     // could stand in. An unnamed owner therefore has to mean "the profile I am
     // looking at" — otherwise the archive lands on the shared backend's own
     // state.db and silently no-ops.
-    hermesApi.mockResolvedValue({ ok: true } as never)
+    moorApi.mockResolvedValue({ ok: true } as never)
     vi.mocked(client.getApiRequestProfile).mockReturnValue('beta')
 
     await setSessionArchived('sess-b', false)
 
-    expect(hermesApi.mock.calls[0][0]).toMatchObject({
+    expect(moorApi.mock.calls[0][0]).toMatchObject({
       method: 'PATCH',
       profile: 'beta',
       body: { archived: false, profile: 'beta' }
@@ -147,11 +147,11 @@ describe('setSessionArchived profile scoping', () => {
   })
 
   it('omits the profile from the body only when there is no active profile at all', async () => {
-    hermesApi.mockResolvedValue({ ok: true } as never)
+    moorApi.mockResolvedValue({ ok: true } as never)
 
     await setSessionArchived('sess-b2', false)
 
-    const req = hermesApi.mock.calls[0][0] as { body: Record<string, unknown> }
+    const req = moorApi.mock.calls[0][0] as { body: Record<string, unknown> }
     expect(req).toMatchObject({ method: 'PATCH', body: { archived: false } })
     expect(req.body).not.toHaveProperty('profile')
   })
@@ -185,12 +185,12 @@ describe('setSessionPinnedRemote / setSessionUnreadRemote profile scoping', () =
   })
 
   it('falls back to the ACTIVE profile in the body when no owner is given', async () => {
-    hermesApi.mockResolvedValue({ ok: true } as never)
+    moorApi.mockResolvedValue({ ok: true } as never)
     vi.mocked(client.getApiRequestProfile).mockReturnValue('beta')
 
     await setSessionPinnedRemote('sess-p2', false)
 
-    expect(hermesApi.mock.calls[0][0]).toMatchObject({
+    expect(moorApi.mock.calls[0][0]).toMatchObject({
       method: 'PATCH',
       profile: 'beta',
       body: { pinned: false, profile: 'beta' }
@@ -231,9 +231,9 @@ describe('listSidebarSessions storage health', () => {
       storage: { default: 'corrupt' }
     } satisfies SidebarSessionsResponse
 
-    // SAFETY: vi cannot infer a concrete return from the generic hermesApi signature;
+    // SAFETY: vi cannot infer a concrete return from the generic moorApi signature;
     // `satisfies` above checks the exact endpoint contract before it crosses the mock boundary.
-    hermesApi.mockResolvedValue(response as never)
+    moorApi.mockResolvedValue(response as never)
 
     const result = await listSidebarSessions({
       recentsProfile: 'all',

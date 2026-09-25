@@ -61,9 +61,9 @@ into chat.
 Use `/compress` when a session gets long, `/new` for a fresh thread, and
 `moor sessions prune` only when you want to delete old ended sessions from
 storage. If `state.db` has simply grown large, start with the non-destructive
-option first: `hermes sessions optimize` merges FTS5 index segments and
+option first: `moor sessions optimize` merges FTS5 index segments and
 VACUUMs the database without touching any session data. Both `optimize` and `prune` refuse
-while another Hermes process (gateway, Desktop, dashboard, cron) holds `state.db` — stop it
+while another Moor process (gateway, Desktop, dashboard, cron) holds `state.db` — stop it
 first, or pass `--force`; see [Session storage recovery](session-storage-recovery.md).
 Compression reduces the active context; it is not a privacy delete.
 Pass a name to `/new` (e.g. `/new payments-refactor`) to set the new session's
@@ -77,8 +77,8 @@ Each session is tagged with its source platform:
 
 | Source | Description |
 |--------|-------------|
-| `cli` | Interactive CLI (`hermes` or `hermes chat`) |
-| `oneshot` | Finite non-interactive runs: `hermes chat --oneshot -q`, `-Q`, `hermes -z`, and `-q` on non-TTY stdio. Hidden from the TUI, Desktop and dashboard session pickers (like `kanban` and `tool`), even when launched from inside a TUI or Desktop session — the run inherits that transport's environment but is not that conversation. Still counts as CLI history: `hermes -c` / `--resume latest` continue the last one-shot, and `hermes sessions list` shows it. An explicit `--source <tag>` always wins (`hermes chat -q --source tui` is stored as `tui`). |
+| `cli` | Interactive CLI (`moor` or `moor chat`) |
+| `oneshot` | Finite non-interactive runs: `moor chat --oneshot -q`, `-Q`, `moor -z`, and `-q` on non-TTY stdio. Hidden from the TUI, Desktop and dashboard session pickers (like `kanban` and `tool`), even when launched from inside a TUI or Desktop session — the run inherits that transport's environment but is not that conversation. Still counts as CLI history: `moor -c` / `--resume latest` continue the last one-shot, and `moor sessions list` shows it. An explicit `--source <tag>` always wins (`moor chat -q --source tui` is stored as `tui`). |
 | `telegram` | Telegram messenger |
 | `discord` | Discord server/DM |
 | `slack` | Slack workspace |
@@ -587,12 +587,12 @@ moor sessions archive --title "dry run" --dry-run
 moor sessions archive --title "dry run" --yes
 ```
 
-At least one filter is required — a bare `hermes sessions archive` refuses to
+At least one filter is required — a bare `moor sessions archive` refuses to
 archive your entire history. A compacted conversation is archived as a unit
 through its live tip: an old compression segment never matches on its own age,
 so a chat that is still active is never hidden because its history is long.
 Archived sessions are hidden from
-`hermes sessions list` and `/resume` but remain in the database and can be
+`moor sessions list` and `/resume` but remain in the database and can be
 unarchived from the Desktop/Dashboard session list.
 
 ### Session Statistics
@@ -612,7 +612,7 @@ Total messages: 3847
 Database size: 12.4 MB
 ```
 
-For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`hermes insights`](../reference/cli-commands.md#hermes-insights).
+For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`moor insights`](../reference/cli-commands.md#moor-insights).
 
 ### Repair Stranded Gateway Sessions
 
@@ -664,18 +664,18 @@ profile that owns the conversation (`agent:main:…` for the default profile,
 disagreeing — a named profile's rows written into the default store, a child
 session inheriting from another profile's row, a routing row copied into the
 wrong store, a Telegram topic or `/voice` setting saved without the bot's
-profile. Current versions put new state in the right place; `hermes sessions
+profile. Current versions put new state in the right place; `moor sessions
 repair-profiles` settles what is already crossed.
 
 ```bash
 # Report only — every store is scanned, nothing is written
-hermes sessions repair-profiles
+moor sessions repair-profiles
 
 # Perform the repairs (stop the gateway first; a snapshot of every store is taken)
-hermes sessions repair-profiles --apply
+moor sessions repair-profiles --apply
 
 # Machine-readable report
-hermes sessions repair-profiles --json
+moor sessions repair-profiles --json
 ```
 
 What it finds and does:
@@ -691,7 +691,7 @@ What it finds and does:
 
 Two cases are reported but never repaired without being told what they are:
 rows keyed to a profile that does not exist (create the profile, or
-`hermes profile migrate-identity <old> <new>`), and `agent:main:…` rows inside
+`moor profile migrate-identity <old> <new>`), and `agent:main:…` rows inside
 a named profile's store. The latter are either the history of a gateway that
 used to run standalone for that profile (`--legacy-main rekey` gives them the
 profile's namespace) or default-profile chats that leaked in under a scoped
@@ -705,18 +705,18 @@ finds nothing.
 
 ### Convert the Store Between WAL and DELETE Journal Mode
 
-`database.journal_mode: delete` only applies to databases Hermes creates. An
+`database.journal_mode: delete` only applies to databases Moor creates. An
 existing `state.db` that is already in WAL mode is **never** live-downgraded at
 open — other gateway, dashboard or cron processes may hold uncheckpointed WAL
-commits, and a downgrade underneath them destroys those commits — so Hermes
+commits, and a downgrade underneath them destroys those commits — so Moor
 keeps WAL and logs one `ERROR` per process telling you the configured `delete`
 did not apply. The self-service conversion is:
 
 ```bash
 # stop every process using the profile's store first (gateway, dashboard, CLIs, cron)
-hermes sessions set-journal-mode delete     # WAL -> rollback journal
-hermes sessions set-journal-mode wal        # back to WAL
-hermes sessions set-journal-mode delete --db ~/.hermes/kanban.db   # another Hermes store
+moor sessions set-journal-mode delete     # WAL -> rollback journal
+moor sessions set-journal-mode wal        # back to WAL
+moor sessions set-journal-mode delete --db ~/.moor/kanban.db   # another Moor store
 ```
 
 The command refuses — naming each PID and command — while any process still
@@ -728,7 +728,7 @@ because the next open re-applies the configured mode. The holder scan is local
 (open-file tables on Linux/macOS, the Restart Manager on Windows), so it
 cannot see a process in another container or VM sharing the volume. If the
 scan itself fails the command refuses because it cannot prove the store is
-quiet; `--force` waives only that case after you have stopped every Hermes
+quiet; `--force` waives only that case after you have stopped every Moor
 process yourself — a process the scan does find is always refused. Enabling
 WAL is also refused when the store sits on a cross-VM filesystem (virtiofs/9p),
 where WAL shared memory corrupts silently.
@@ -1035,7 +1035,7 @@ session ended, and pruning only deletes *ended* rows. To keep those from
 accumulating forever, each auto-prune pass also *closes* open sessions from
 those state-owned sources (`cli`, `cron`, `kanban`, `acp`, `api_server`,
 `subagent`, `tool`, plus the `recovered` placeholders that
-`hermes sessions recover` synthesizes for orphaned messages) whose last
+`moor sessions recover` synthesizes for orphaned messages) whose last
 activity is older than `retention_days`
 (`end_reason: startup_orphan_reap`). Closing is non-destructive — the
 session stays resumable — and the row is aged from its close, so it is only

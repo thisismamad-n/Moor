@@ -186,7 +186,7 @@ class TestNamedProviderDeclaredWire:
         fbs = [{"provider": "custom:ai-proxy", "model": "claude-4.7-opus"}]
         agent = _make_agent(fallback_model=fbs)
         with patch(
-            "hermes_cli.runtime_provider._get_named_custom_provider",
+            "moor_cli.runtime_provider._get_named_custom_provider",
             return_value={"name": "ai-proxy", "base_url": "https://ai-proxy.example.com",
                           "api_key": "k", "api_mode": "anthropic_messages"},
         ):

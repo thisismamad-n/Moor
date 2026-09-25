@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { deleteWebhook } from './hermes'
+import { deleteWebhook } from './moor'
 
 describe('Webhook REST parity helpers', () => {
   let api: ReturnType<typeof vi.fn>

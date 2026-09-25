@@ -188,7 +188,7 @@ dos2unix path/to/script.sh
 
 在 WSL 内 clone。始终如此，除非有特殊原因。典型的 Moor 工作流（`moor chat`、调用 `rg`/`ripgrep` 搜索仓库的工具、文件监听器、后台 gateway）在 `~/code/myrepo` 下会比在 `/mnt/c/Users/you/myrepo` 下快得多，也更可靠。
 
-一个例外：**启动 Windows 二进制文件的 MCP bridge。** 如果你通过 `cmd.exe` 使用 `chrome-devtools-mcp`（参见 [MCP 指南：WSL → Windows Chrome](../guides/use-mcp-with-hermes.md#wsl2-bridge-hermes-in-wsl-to-windows-chrome)），当 Hermes 的当前工作目录是 `~` 时，Windows 可能会报 `UNC` 警告。此时请从 `/mnt/c/` 下的某个目录启动 Hermes，以便 Windows 进程拥有一个带盘符的工作目录。
+一个例外：**启动 Windows 二进制文件的 MCP bridge。** 如果你通过 `cmd.exe` 使用 `chrome-devtools-mcp`（参见 [MCP 指南：WSL → Windows Chrome](../guides/use-mcp-with-moor.md#wsl2-bridge-moor-in-wsl-to-windows-chrome)），当 Moor 的当前工作目录是 `~` 时，Windows 可能会报 `UNC` 警告。此时请从 `/mnt/c/` 下的某个目录启动 Moor，以便 Windows 进程拥有一个带盘符的工作目录。
 
 ## 网络：WSL ↔ Windows
 
@@ -213,8 +213,8 @@ WSL2 在轻量级虚拟机中运行，拥有独立的网络栈。这意味着 WS
 
 这是反向情况，其他地方较少记录，但以下场景需要用到：
 
-- 从 Windows 浏览器使用 Hermes **Web Dashboard**。
-- 从 Windows 侧工具使用 **OpenAI 兼容 API 服务器**（当 `API_SERVER_ENABLED=true` 时由 `hermes gateway` 暴露）。参见 [API Server 功能页](./features/api-server.md)。
+- 从 Windows 浏览器使用 Moor **Web Dashboard**。
+- 从 Windows 侧工具使用 **OpenAI 兼容 API 服务器**（当 `API_SERVER_ENABLED=true` 时由 `moor gateway` 暴露）。参见 [API Server 功能页](./features/api-server.md)。
 - 测试**消息 gateway**（Telegram、Discord 等），平台会向本地 webhook URL 发送请求 —— 通常建议使用 `cloudflared`/`ngrok` 而非原始端口转发。
 
 #### 子情况 2a：从 Windows 宿主机本身访问
@@ -258,7 +258,7 @@ WSL2 在轻量级虚拟机中运行，拥有独立的网络栈。这意味着 WS
 
 ## 在 Windows 上长期运行 Moor 服务
 
-Hermes 的 [Tool Gateway](./features/tool-gateway.md) 和 API 服务器都是长期运行的进程。在 WSL2 中，有以下几种方式保持它们持续运行。
+Moor 的 [Tool Gateway](./features/tool-gateway.md) 和 API 服务器都是长期运行的进程。在 WSL2 中，有以下几种方式保持它们持续运行。
 
 ### 在 WSL 内使用 systemd（推荐）
 
@@ -328,5 +328,5 @@ WSL2 将虚拟机磁盘存储为 `%LOCALAPPDATA%\Packages\...` 下的稀疏 VHDX
 
 - **[安装说明](../getting-started/installation.md)** —— 实际安装步骤（Linux/WSL2 使用同一安装程序）。
 - **[集成 → Providers → WSL2 网络配置](../integrations/providers.md#wsl2-networking-windows-users)** —— 本地模型服务器网络配置的权威深度说明。
-- **[MCP 指南 → WSL → Windows Chrome](../guides/use-mcp-with-hermes.md#wsl2-bridge-hermes-in-wsl-to-windows-chrome)** —— 从 WSL 中的 Hermes 控制你已登录的 Windows Chrome。
+- **[MCP 指南 → WSL → Windows Chrome](../guides/use-mcp-with-moor.md#wsl2-bridge-moor-in-wsl-to-windows-chrome)** —— 从 WSL 中的 Moor 控制你已登录的 Windows Chrome。
 - **[Tool Gateway](./features/tool-gateway.md)** 和 **[Web Dashboard](./features/web-dashboard.md)** —— 你最常需要从 WSL 暴露到网络其他部分的长期运行服务。

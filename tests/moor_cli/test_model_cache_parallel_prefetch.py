@@ -193,15 +193,15 @@ class TestPrefetchProviderModelsParallel:
         is far longer than ``_PROVIDER_MODELS_CACHE_TTL``, so this is the
         state every picker open a TTL after the previous one lands in.
         """
-        import hermes_cli.models as models_mod
-        from hermes_cli.model_switch_providers import _prefetch_provider_models_parallel
+        import moor_cli.models as models_mod
+        from moor_cli.model_switch_providers import _prefetch_provider_models_parallel
 
         expired = time.time() - models_mod._PROVIDER_MODELS_CACHE_TTL - 60
         cache = {"openrouter": {"fp": "fp", "at": expired, "models": ["m1"]}}
 
-        with patch("hermes_cli.models._load_provider_models_cache", return_value=cache), \
-             patch("hermes_cli.models._credential_fingerprint", return_value="fp"), \
-             patch("hermes_cli.models.cached_provider_model_ids") as fetch:
+        with patch("moor_cli.models._load_provider_models_cache", return_value=cache), \
+             patch("moor_cli.models._credential_fingerprint", return_value="fp"), \
+             patch("moor_cli.models.cached_provider_model_ids") as fetch:
             _prefetch_provider_models_parallel(["openrouter"])
 
         fetch.assert_not_called()
@@ -210,7 +210,7 @@ class TestPrefetchProviderModelsParallel:
         """A curated-fallback row is served only for ``_PROVIDER_MODELS_FALLBACK_TTL``
         and never through the stale window, so the serial call blocks on it and the
         parallel prefetch must fetch it."""
-        from hermes_cli.model_switch_providers import _prefetch_provider_models_parallel
+        from moor_cli.model_switch_providers import _prefetch_provider_models_parallel
 
         cache = {"openrouter": {"fp": "fp", "at": time.time() - 7200, "models": ["m1"],
                                 "fallback": True}}
@@ -220,10 +220,10 @@ class TestPrefetchProviderModelsParallel:
             fetched.append(slug)
             return ["m1"]
 
-        with patch("hermes_cli.models._load_provider_models_cache", return_value=cache), \
-             patch("hermes_cli.models._credential_fingerprint", return_value="fp"), \
-             patch("hermes_cli.models.cached_provider_model_ids", side_effect=mock_fetch), \
-             patch("hermes_cli.models.update_provider_cache_entry"):
+        with patch("moor_cli.models._load_provider_models_cache", return_value=cache), \
+             patch("moor_cli.models._credential_fingerprint", return_value="fp"), \
+             patch("moor_cli.models.cached_provider_model_ids", side_effect=mock_fetch), \
+             patch("moor_cli.models.update_provider_cache_entry"):
             _prefetch_provider_models_parallel(["openrouter"])
 
         assert fetched == ["openrouter"]

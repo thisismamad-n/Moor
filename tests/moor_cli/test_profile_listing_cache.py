@@ -4,7 +4,7 @@ The listing is the shared body of ``GET /api/profiles`` and JSON-RPC ``profiles.
 Bots roster polls every 5s per connection, and it parsed three YAML files per profile every time —
 including an installer-seeded ``config.yaml`` (the annotated template, ~119KB) for two strings.
 
-The memo must be invisible: every edit has to show up on the very next read, or `hermes profile
+The memo must be invisible: every edit has to show up on the very next read, or `moor profile
 list` and the roster paint stale names and models. Only derived values are cached — the raw
 readers keep their uncached contract, because callers write those documents back.
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.profiles as profiles
+import moor_cli.profiles as profiles
 
 
 @pytest.fixture(autouse=True)
@@ -76,7 +76,7 @@ def test_an_unchanged_file_is_parsed_once_across_repeated_reads(profile_dir, mon
 
 def test_the_raw_config_reader_keeps_its_uncached_contract(profile_dir):
     """``read_user_config_raw`` feeds write-back round-trips, so it must NOT be memoised here."""
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
 
     config_path = profile_dir / "config.yaml"
     assert read_user_config_raw(config_path)["model"]["provider"] == "openai"

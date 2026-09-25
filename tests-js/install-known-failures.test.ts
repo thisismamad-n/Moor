@@ -10,7 +10,7 @@ const { matchKnownFailure, rules } = createRequire(import.meta.url)('../tests/in
 const classifier = path.resolve(import.meta.dirname, '../tests/install/e2e-assets/known-failures.cjs')
 
 const lockedLog = [
-  'error: failed to remove file `C:/install/venv/Lib/site-packages/../../Scripts/hermes.exe`: Access is denied. (os error 5)',
+  'error: failed to remove file `C:/install/venv/Lib/site-packages/../../Scripts/moor.exe`: Access is denied. (os error 5)',
   "⚠ Git update failed: Command '['uv', 'pip', 'install', '-e', '.', '--quiet']' returned non-zero exit status 2.",
 ].join('\n')
 

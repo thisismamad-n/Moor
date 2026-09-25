@@ -358,7 +358,7 @@ def test_recursion_cap_terminates(caplog):
 
 def test_manifest_parse_reads_emits_listens(tmp_path):
     """parse_manifest_file picks up optional emits/listens from plugin.yaml."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     plugin_dir = tmp_path / "myplug"
     plugin_dir.mkdir()
@@ -386,8 +386,8 @@ def test_manifest_parse_reads_emits_listens(tmp_path):
 
 
 def test_plugins_show_includes_emits_listens(tmp_path, monkeypatch, capsys):
-    import hermes_yaml as yaml
-    from hermes_cli import plugins_cmd
+    import moor_yaml as yaml
+    from moor_cli import plugins_cmd
 
     plugin_dir = tmp_path / "showplug"
     plugin_dir.mkdir()
@@ -420,7 +420,7 @@ def test_plugins_show_includes_emits_listens(tmp_path, monkeypatch, capsys):
 
 
 def test_plugins_show_not_found_exits(monkeypatch):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
 
     monkeypatch.setattr(plugins_cmd, "_discover_all_plugins", lambda: [])
     with pytest.raises(SystemExit) as exc:

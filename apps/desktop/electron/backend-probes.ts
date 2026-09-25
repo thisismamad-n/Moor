@@ -102,7 +102,7 @@ async function execProbe(
 }
 
 /** Probe the checkout at cwd with the same dependency activation as launch. */
-async function canImportHermesCli(
+async function canImportMoorCli(
   pythonPath: string,
   opts: { env?: NodeJS.ProcessEnv; cwd?: string } = {}
 ): Promise<boolean> {
@@ -116,7 +116,7 @@ async function canImportHermesCli(
     // Bootstrap selects the committed generation before any dependency import.
     await execProbe(
       pythonPath,
-      ['-c', 'import hermes_bootstrap; import hermes_yaml; import dotenv; import hermes_cli.config'],
+      ['-c', 'import moor_bootstrap; import moor_yaml; import dotenv; import moor_cli.config'],
       {
         cwd: opts.cwd,
         env: { ...env, ...buildDesktopBackendEnv({ currentEnv: env }) },

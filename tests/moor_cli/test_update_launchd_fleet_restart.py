@@ -226,7 +226,7 @@ def _fleet(monkeypatch, tmp_path, *, current, labels, located,
            registered=None, plist_exists=True,
            drain_results=None, kick_errors=None, wait_results=None,
            current_supervised=True, legacy_labels=()):
-    """Wire a fake launchd fleet through hermes_cli.gateway seams.
+    """Wire a fake launchd fleet through moor_cli.gateway seams.
 
     ``located`` maps label -> (domain, pid) as ``_locate_launchd_gateway_service``
     would return it (values may also be exceptions to raise). ``registered``
@@ -596,7 +596,7 @@ class TestRestartMacosLaunchdGateways:
         assert failed == ["ai.moor.gateway-zombie"]
 
 
-def _write_launchd_plist(agents_dir: Path, label: str, *, argv=(), hermes_home=None, raw=None):
+def _write_launchd_plist(agents_dir: Path, label: str, *, argv=(), moor_home=None, raw=None):
     """One gateway LaunchAgent plist under a fake account's LaunchAgents dir."""
     import plistlib
 
@@ -606,8 +606,8 @@ def _write_launchd_plist(agents_dir: Path, label: str, *, argv=(), hermes_home=N
         path.write_text(raw)
         return path
     data: dict = {"Label": label, "ProgramArguments": list(argv)}
-    if hermes_home is not None:
-        data["EnvironmentVariables"] = {"HERMES_HOME": str(hermes_home)}
+    if moor_home is not None:
+        data["EnvironmentVariables"] = {"MOOR_HOME": str(moor_home)}
     path.write_bytes(plistlib.dumps(data))
     return path
 
@@ -625,24 +625,24 @@ def _fake_launchd_account(monkeypatch, tmp_path) -> Path:
 
 class TestLegacyLaunchdLabelsForInstall:
     """#115254 — hash-suffixed labels of THIS install join the restart pass; ownership is judged
-    from the plist's pinned HERMES_HOME, fail-closed, so another install's fleet stays untouched
-    (the #41403 boundary) and a sandboxed HERMES_HOME never enumerates the account's real units."""
+    from the plist's pinned MOOR_HOME, fail-closed, so another install's fleet stays untouched
+    (the #41403 boundary) and a sandboxed MOOR_HOME never enumerates the account's real units."""
 
     def test_only_units_pinned_to_this_installs_homes_are_credited(self, monkeypatch, tmp_path):
         agents = _fake_launchd_account(monkeypatch, tmp_path)
-        root = tmp_path / "hermes-root"
-        import hermes_constants
-        monkeypatch.setattr(hermes_constants, "get_default_hermes_root", lambda: root)
+        root = tmp_path / "moor-root"
+        import moor_constants
+        monkeypatch.setattr(moor_constants, "get_default_moor_root", lambda: root)
         venv_python = str(root.parent / "install" / ".venv" / "bin" / "python")
-        _write_launchd_plist(agents, "ai.hermes.gateway-398559f7", argv=[venv_python], hermes_home=root / "profiles" / "gopod")
-        _write_launchd_plist(agents, "ai.hermes.gateway-1a2b3c4d", argv=[venv_python], hermes_home=root)
-        _write_launchd_plist(agents, "ai.hermes.gateway-gopod", argv=[venv_python], hermes_home=root / "profiles" / "gopod")
+        _write_launchd_plist(agents, "ai.moor.gateway-398559f7", argv=[venv_python], moor_home=root / "profiles" / "gopod")
+        _write_launchd_plist(agents, "ai.moor.gateway-1a2b3c4d", argv=[venv_python], moor_home=root)
+        _write_launchd_plist(agents, "ai.moor.gateway-gopod", argv=[venv_python], moor_home=root / "profiles" / "gopod")
         # Another install's unit: same venv on disk, but its home lives under a different root.
-        _write_launchd_plist(agents, "ai.hermes.gateway-5db8084b", argv=[venv_python], hermes_home=tmp_path / "other-root" / "profiles" / "gopod")
-        _write_launchd_plist(agents, "ai.hermes.gateway-nohome", argv=[venv_python])  # no pinned home: unattributable
-        _write_launchd_plist(agents, "ai.hermes.gateway-broken", raw="not a plist at all")
-        assert gw.legacy_launchd_labels_for_install(exclude={"ai.hermes.gateway-gopod", "ai.hermes.gateway"}) == [
-            "ai.hermes.gateway-1a2b3c4d", "ai.hermes.gateway-398559f7",
+        _write_launchd_plist(agents, "ai.moor.gateway-5db8084b", argv=[venv_python], moor_home=tmp_path / "other-root" / "profiles" / "gopod")
+        _write_launchd_plist(agents, "ai.moor.gateway-nohome", argv=[venv_python])  # no pinned home: unattributable
+        _write_launchd_plist(agents, "ai.moor.gateway-broken", raw="not a plist at all")
+        assert gw.legacy_launchd_labels_for_install(exclude={"ai.moor.gateway-gopod", "ai.moor.gateway"}) == [
+            "ai.moor.gateway-1a2b3c4d", "ai.moor.gateway-398559f7",
         ]
 
 
@@ -651,17 +651,17 @@ class TestRestartMacosLaunchdGatewaysLegacyUnits:
         """The update restart pass iterates the derivation PLUS the install's
         legacy-labelled units (#115254): the hash-suffixed sibling is drained,
         kickstarted and verified in its own domain."""
-        current = "ai.hermes.gateway"
-        legacy = "ai.hermes.gateway-398559f7"
+        current = "ai.moor.gateway"
+        legacy = "ai.moor.gateway-398559f7"
         rec = _fleet(
             monkeypatch,
             tmp_path,
             current=current,
-            labels=[current, "ai.hermes.gateway-gopod"],
+            labels=[current, "ai.moor.gateway-gopod"],
             legacy_labels=[legacy],
             located={
                 current: (f"gui/{UID}", 100),
-                "ai.hermes.gateway-gopod": (f"gui/{UID}", 200),
+                "ai.moor.gateway-gopod": (f"gui/{UID}", 200),
                 legacy: (f"user/{UID}", 300),
             },
         )
@@ -671,10 +671,10 @@ class TestRestartMacosLaunchdGatewaysLegacyUnits:
         _restart_macos_launchd_gateways(restarted, failed, drain_budget=0.0)
 
         assert rec.kickstarts == [
-            f"gui/{UID}/ai.hermes.gateway-gopod",
+            f"gui/{UID}/ai.moor.gateway-gopod",
             f"user/{UID}/{legacy}",
         ]
-        assert restarted == [current, "ai.hermes.gateway-gopod", legacy]
+        assert restarted == [current, "ai.moor.gateway-gopod", legacy]
         assert failed == []
         assert set(rec.drains) == {200, 300}
         out = capsys.readouterr().out

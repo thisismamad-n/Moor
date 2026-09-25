@@ -1,7 +1,7 @@
 """An open classic-CLI chat adopts a ``fallback_providers`` chain added after it started (#95066).
 
-``HermesCLI`` holds one long-lived agent and read the chain once in ``__init__``; ``hermes fallback
-add`` from another terminal never reached the open chat. The turn loop (``HermesCLI.chat``) now
+``MoorCLI`` holds one long-lived agent and read the chain once in ``__init__``; ``moor fallback
+add`` from another terminal never reached the open chat. The turn loop (``MoorCLI.chat``) now
 re-reads the chain fail-closed, so a torn config.yaml keeps the last known-good chain.
 """
 
@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 import cli
-from hermes_cli.config import get_config_path
+from moor_cli.config import get_config_path
 
 FALLBACK = [{"provider": "xai-oauth", "model": "grok-4.6"}]
 
@@ -22,7 +22,7 @@ class _StopAfterSync(Exception):
 
 
 def _chat_turn(monkeypatch, shell, config_text: str) -> None:
-    """Drive ``HermesCLI.chat`` past the fallback sync against ``config_text`` as the live config.yaml."""
+    """Drive ``MoorCLI.chat`` past the fallback sync against ``config_text`` as the live config.yaml."""
     path = get_config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(config_text, encoding="utf-8")
@@ -40,7 +40,7 @@ def _chat_turn(monkeypatch, shell, config_text: str) -> None:
 
 
 def test_chat_turn_adopts_chain_added_after_the_cli_opened_and_keeps_it_on_torn_config(monkeypatch):
-    shell = cli.HermesCLI(compact=True, max_turns=1)
+    shell = cli.MoorCLI(compact=True, max_turns=1)
     shell.agent = SimpleNamespace(
         _fallback_chain=[], _fallback_model=None, _fallback_index=0,
         _fallback_activated=False, _rate_limited_until=0, _unavailable_fallback_keys=set(),

@@ -24,7 +24,7 @@ from agent.secret_sources.base import (
     SECRET_SOURCE_API_VERSION, ErrorKind, FetchResult, SecretSource, is_valid_env_name,
     reset_source_environment, set_source_environment,
 )
-from hermes_constants import hermes_home_key, normalize_scope
+from moor_constants import moor_home_key, normalize_scope
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ def register_source(source: SecretSource, *, replace: bool = False, builtin: boo
 def _merged(scope: Optional[str]) -> Dict[str, SecretSource]:
     """Global sources overlaid with the scope's (default: current home) registrations."""
     merged = dict(_SOURCES)
-    merged.update(_SCOPED_SOURCES.get(hermes_home_key(scope), {}))
+    merged.update(_SCOPED_SOURCES.get(moor_home_key(scope), {}))
     return merged
 
 

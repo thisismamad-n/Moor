@@ -3,9 +3,9 @@
 
 # Must be the very first import (UTF-8 stdio on Windows). Missing only mid-``moor update``.
 try:
-    import hermes_bootstrap  # noqa: F401
+    import moor_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
-    if exc.name != "hermes_bootstrap":
+    if exc.name != "moor_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import logging
@@ -29,24 +29,24 @@ logger = logging.getLogger(__name__)
 os.environ["MOOR_QUIET"] = "1"  # suppress our modules' startup chatter
 
 
-from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
-from hermes_cli.cli_commands_mixin import CLICommandsMixin
-from hermes_cli.cli_billing_mixin import CLIBillingMixin
-from hermes_cli.cli_loops_mixin import CLILoopsMixin
-from hermes_cli.cli_info_mixin import CLIInfoMixin
-from hermes_cli.cli_terminal_mixin import CLITerminalMixin
-from hermes_cli.cli_modal_mixin import CLIModalMixin
-from hermes_cli.cli_stream_mixin import CLIStreamMixin
-from hermes_cli.cli_session_mixin import CLISessionMixin
-from hermes_cli.cli_model_switch_mixin import CLIModelSwitchMixin
-from hermes_cli.cli_voice_mixin import CLIVoiceMixin
-from hermes_cli.cli_status_bar_mixin import CLIStatusBarMixin
-from hermes_cli.cli_tui_mixin import CLITuiMixin
-from hermes_cli.cli_process_notifications import CLIProcessNotificationsMixin
-from hermes_cli.cli_init_mixin import CLIInitMixin
-from hermes_cli.cli_tui_runtime_mixin import CLITuiRuntimeMixin
+from moor_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
+from moor_cli.cli_commands_mixin import CLICommandsMixin
+from moor_cli.cli_billing_mixin import CLIBillingMixin
+from moor_cli.cli_loops_mixin import CLILoopsMixin
+from moor_cli.cli_info_mixin import CLIInfoMixin
+from moor_cli.cli_terminal_mixin import CLITerminalMixin
+from moor_cli.cli_modal_mixin import CLIModalMixin
+from moor_cli.cli_stream_mixin import CLIStreamMixin
+from moor_cli.cli_session_mixin import CLISessionMixin
+from moor_cli.cli_model_switch_mixin import CLIModelSwitchMixin
+from moor_cli.cli_voice_mixin import CLIVoiceMixin
+from moor_cli.cli_status_bar_mixin import CLIStatusBarMixin
+from moor_cli.cli_tui_mixin import CLITuiMixin
+from moor_cli.cli_process_notifications import CLIProcessNotificationsMixin
+from moor_cli.cli_init_mixin import CLIInitMixin
+from moor_cli.cli_tui_runtime_mixin import CLITuiRuntimeMixin
 # Extracted clusters (mechanical split, #116911); re-exported here so `cli.<name>` stays the seam.
-from hermes_cli.cli_shutdown import (  # noqa: F401,E402
+from moor_cli.cli_shutdown import (  # noqa: F401,E402
     _CLEANUP_STEPS,
     _arm_exit_watchdog,
     _emit_interrupted_session_end,
@@ -68,11 +68,11 @@ from hermes_cli.cli_shutdown import (  # noqa: F401,E402
     _sync_process_session_id,
     _wait_for_oneshot_background_completions,
 )
-from hermes_cli.cli_auto_maintenance import (  # noqa: F401,E402
+from moor_cli.cli_auto_maintenance import (  # noqa: F401,E402
     _run_checkpoint_auto_maintenance,
     _run_state_db_auto_maintenance,
 )
-from hermes_cli.cli_render import (  # noqa: F401,E402
+from moor_cli.cli_render import (  # noqa: F401,E402
     ChatConsole,
     _ACCENT,
     _ACCENT_ANSI_DEFAULT,
@@ -139,7 +139,7 @@ from hermes_cli.cli_render import (  # noqa: F401,E402
     _wrap_panel_text,
     _wrap_panel_text_keep_ws,
 )
-from hermes_cli.cli_config_load import (  # noqa: F401,E402
+from moor_cli.cli_config_load import (  # noqa: F401,E402
     _AUXILIARY_TASK_ENV,
     _CWD_PLACEHOLDERS,
     _TERMINAL_ENV_MAPPINGS,
@@ -153,7 +153,7 @@ from hermes_cli.cli_config_load import (  # noqa: F401,E402
     _resolve_prefill_messages_file,
     load_cli_config,
 )
-from hermes_cli.cli_terminal_input import (  # noqa: F401,E402
+from moor_cli.cli_terminal_input import (  # noqa: F401,E402
     _BACKSLASH_LINE_CONTINUATION_RE,
     _DSR_CPR_ESC_RE,
     _DSR_CPR_VISIBLE_RE,
@@ -177,7 +177,7 @@ from hermes_cli.cli_terminal_input import (  # noqa: F401,E402
     _estimate_tui_input_height,
     _file_drop_result,
     _format_image_attachment_badges,
-    _hermes_call_output_screen_diff,
+    _moor_call_output_screen_diff,
     _is_backslash_line_continuation,
     _is_ghostty_terminal,
     _preserve_ctrl_enter_newline,
@@ -191,7 +191,7 @@ from hermes_cli.cli_terminal_input import (  # noqa: F401,E402
     _terminal_supports_extended_enter_keys,
     _termux_example_image_path,
 )
-from hermes_cli.cli_single_query import (  # noqa: F401,E402
+from moor_cli.cli_single_query import (  # noqa: F401,E402
     _TERMINAL_PROVIDER_REASONS,
     _TRANSIENT_PROVIDER_REASONS,
     _collect_kanban_task_images,
@@ -325,9 +325,9 @@ realign_markdown_tables = _lazy_shim("agent.markdown_tables", "realign_markdown_
 _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
 
 
-# ~/.hermes/.env first, project .env as dev fallback; user env files override stale shell exports.
-from hermes_constants import get_hermes_home
-from hermes_cli.env_loader import load_hermes_dotenv
+# ~/.moor/.env first, project .env as dev fallback; user env files override stale shell exports.
+from moor_constants import get_moor_home
+from moor_cli.env_loader import load_moor_dotenv
 
 _moor_home = get_moor_home()
 _project_env = Path(__file__).parent / '.env'
@@ -880,8 +880,8 @@ from moor_cli.cli_chat_turn_mixin import CLIChatTurnMixin
 _PASTE_REF_RE = re.compile(r'\[Pasted text #\d+: \d+ lines \u2192 (.+?)\]')
 
 
-class HermesCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
-    """Interactive REPL for the Hermes Agent."""
+class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
+    """Interactive REPL for the Moor Agent."""
 
     # Seeded -q first message (see _should_seed_interactive); run() re-creates
     # _pending_input, so it is enqueued only after the fresh queue exists.
@@ -1733,8 +1733,8 @@ def main(
         return
 
     if not (list_tools or list_toolsets):
-        from hermes_cli.process_identity import register_self
-        from hermes_cli.shared_profile_warning import shared_profile_warning
+        from moor_cli.process_identity import register_self
+        from moor_cli.shared_profile_warning import shared_profile_warning
 
         register_self("cli")
         warning = shared_profile_warning()

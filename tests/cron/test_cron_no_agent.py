@@ -82,7 +82,7 @@ def test_run_job_no_agent_success_returns_script_stdout(moor_env):
     from cron.jobs import create_job
     from cron.scheduler import run_job
 
-    script_path = hermes_env / "scripts" / "alert.sh"
+    script_path = moor_env / "scripts" / "alert.sh"
     script_path.write_text("#!/usr/bin/env bash\necho 'RAM 92% on host'\n")
 
     job = create_job(
@@ -112,7 +112,7 @@ def test_run_job_no_agent_reloads_dotenv_before_script(moor_env, monkeypatch):
 
     monkeypatch.setattr(env_loader, "load_moor_dotenv", fake_load)
 
-    script_path = hermes_env / "scripts" / "probe.sh"
+    script_path = moor_env / "scripts" / "probe.sh"
     script_path.write_text('#!/usr/bin/env bash\necho "ok"\n')
 
     job = create_job(
@@ -132,7 +132,7 @@ _PRESENCE_PROBE = (
 
 
 def test_no_agent_script_gets_owning_profiles_declared_secret_never_launch_residue(
-    hermes_env, monkeypatch, tmp_path,
+    moor_env, monkeypatch, tmp_path,
 ):
     """Routed profile B declares JOB_SVC_TOKEN in terminal.env_passthrough and defines it only in
     its own .env (never in the process env); the launch profile A's .env credential is in the
@@ -140,10 +140,10 @@ def test_no_agent_script_gets_owning_profiles_declared_secret_never_launch_resid
     from agent.secret_scope import (
         build_profile_secret_scope, reset_secret_scope, set_multiplex_active, set_secret_scope)
     from cron.scheduler_script import _run_job_script
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
-    (hermes_env / ".env").write_text("LAUNCH_ONLY_TOKEN=launch-secret\n", encoding="utf-8")
-    monkeypatch.setenv("LAUNCH_ONLY_TOKEN", "launch-secret")  # what load_hermes_dotenv() did at startup
+    (moor_env / ".env").write_text("LAUNCH_ONLY_TOKEN=launch-secret\n", encoding="utf-8")
+    monkeypatch.setenv("LAUNCH_ONLY_TOKEN", "launch-secret")  # what load_moor_dotenv() did at startup
     monkeypatch.delenv("JOB_SVC_TOKEN", raising=False)
     routed = tmp_path / "routed"
     (routed / "scripts").mkdir(parents=True)
@@ -152,28 +152,28 @@ def test_no_agent_script_gets_owning_profiles_declared_secret_never_launch_resid
     (routed / "scripts" / "probe.sh").write_text(_PRESENCE_PROBE, encoding="utf-8")
 
     set_multiplex_active(True)
-    home_token = set_hermes_home_override(str(routed))
+    home_token = set_moor_home_override(str(routed))
     scope_token = set_secret_scope(build_profile_secret_scope(routed))
     try:
         ok, output = _run_job_script("probe.sh")
     finally:
         reset_secret_scope(scope_token)
-        reset_hermes_home_override(home_token)
+        reset_moor_home_override(home_token)
         set_multiplex_active(False)
 
     assert ok is True
     assert output.splitlines() == ["JOB_SVC_TOKEN=set", "LAUNCH_ONLY_TOKEN=MISSING"]
 
 
-def test_no_agent_script_of_launch_profile_keeps_its_own_env_credential(hermes_env, monkeypatch):
+def test_no_agent_script_of_launch_profile_keeps_its_own_env_credential(moor_env, monkeypatch):
     """Single-profile documented flow: the launch profile's own script still inherits the
     credential its .env put in the process env — nothing is stripped for a non-routed job."""
     from cron.scheduler_script import _run_job_script
 
-    (hermes_env / ".env").write_text("LAUNCH_ONLY_TOKEN=launch-secret\n", encoding="utf-8")
+    (moor_env / ".env").write_text("LAUNCH_ONLY_TOKEN=launch-secret\n", encoding="utf-8")
     monkeypatch.setenv("LAUNCH_ONLY_TOKEN", "launch-secret")
     monkeypatch.delenv("JOB_SVC_TOKEN", raising=False)
-    (hermes_env / "scripts" / "probe.sh").write_text(_PRESENCE_PROBE, encoding="utf-8")
+    (moor_env / "scripts" / "probe.sh").write_text(_PRESENCE_PROBE, encoding="utf-8")
 
     ok, output = _run_job_script("probe.sh")
 

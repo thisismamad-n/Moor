@@ -142,7 +142,7 @@ def _cmd_sources(args) -> None:
     """Show the detected password managers; `--disable`/`--enable` flip the opt-out (`vault.<name>.enabled`)."""
     from agent.vault_backends import enabled_backends
     from agent.vault_backends.base import external_backend_classes, is_installed
-    from hermes_cli.config import _ensure_dict, load_config, save_config
+    from moor_cli.config import _ensure_dict, load_config, save_config
 
     c = _console()
     classes = {cls.name: cls for cls in external_backend_classes()}

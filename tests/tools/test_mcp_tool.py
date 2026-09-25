@@ -156,9 +156,9 @@ class TestLoadMCPConfig:
         self, tmp_path, monkeypatch
     ):
         import json
-        import hermes_yaml as yaml
-        from hermes_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
-        from hermes_cli import plugins as plugins_mod
+        import moor_yaml as yaml
+        from moor_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
+        from moor_cli import plugins as plugins_mod
 
         home = tmp_path / "home"
         plugin = home / "plugins" / "portable"
@@ -1139,7 +1139,7 @@ class TestMCPServerTask:
         """A pinned session working directory becomes the stdio default cwd.
 
         Hosted/multiplexed sessions (ACP, gateway) pin their logical cwd; a stdio
-        server spawned there inherits the Hermes process dir instead, so
+        server spawned there inherits the Moor process dir instead, so
         relative-path servers resolve against the wrong tree.
         """
         from agent.runtime_cwd import clear_session_cwd, set_session_cwd
@@ -2528,7 +2528,7 @@ class TestDiscoveryConnectConcurrency:
             return []
 
         with patch("tools.mcp_tool_config._load_mcp_config", return_value=server_names), \
-             patch("hermes_cli.config.load_config", return_value={"mcp": {"discovery_concurrency": cap}}), \
+             patch("moor_cli.config.load_config", return_value={"mcp": {"discovery_concurrency": cap}}), \
              patch("tools.mcp_tool_discovery._discover_and_register_server", side_effect=tracked_register), \
              patch("tools.mcp_tool._MCP_AVAILABLE", True), \
              patch("tools.mcp_tool_registration._existing_tool_names", return_value=[]):

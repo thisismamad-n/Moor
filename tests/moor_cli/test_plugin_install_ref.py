@@ -8,11 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from tests.hermes_cli.plugin_worker_support import (
+from tests.moor_cli.plugin_worker_support import (
     isolated_python as isolated_python,
     plugin_world as plugin_world,
 )
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.subcommands.plugins import build_plugins_parser
 
@@ -183,13 +183,13 @@ def test_subdir_pin_records_source_identity_and_installs_requested_tree(
 
 
 def test_clone_timeout_applies_to_every_network_step_of_a_pinned_install(monkeypatch, tmp_path):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     (home / "config.yaml").write_text("plugins:\n  clone_timeout_seconds: 137\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     run_git = plugins_cmd._run_plugin_git
     calls = []
 
@@ -210,10 +210,10 @@ def test_clone_timeout_applies_to_every_network_step_of_a_pinned_install(monkeyp
 
 @pytest.mark.parametrize("pinned", [False, True])
 def test_subdir_install_downloads_only_that_subdirectory(monkeypatch, tmp_path, pinned):
-    from hermes_cli.plugins_cmd import _install_plugin_core
+    from moor_cli.plugins_cmd import _install_plugin_core
 
     repo = tmp_path / "monorepo"
-    plugin = repo / "integrations" / "hermes"
+    plugin = repo / "integrations" / "moor"
     plugin.mkdir(parents=True)
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "fixture@example.com")
@@ -225,7 +225,7 @@ def test_subdir_install_downloads_only_that_subdirectory(monkeypatch, tmp_path, 
     _git(repo, "commit", "-qm", "init")
     sha = _git(repo, "rev-parse", "HEAD")
     unrelated_blob = _git(repo, "rev-parse", "HEAD:unrelated.bin")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     seen = {}
 
     def inspect_clone(_manifest, tree):
@@ -234,7 +234,7 @@ def test_subdir_install_downloads_only_that_subdirectory(monkeypatch, tmp_path, 
         seen["missing"] = _git(clone, "rev-list", "--objects", "--missing=print", "HEAD")
 
     target, _manifest, _name = _install_plugin_core(
-        f"{repo.as_uri()}#integrations/hermes", force=False,
+        f"{repo.as_uri()}#integrations/moor", force=False,
         ref=sha if pinned else None, before_swap=inspect_clone)
 
     assert (target / "plugin.yaml").is_file()
@@ -243,18 +243,18 @@ def test_subdir_install_downloads_only_that_subdirectory(monkeypatch, tmp_path, 
 
 
 def test_clone_timeout_uses_active_profile_and_bounds_invalid_values(monkeypatch, tmp_path):
-    from hermes_cli.plugins_cmd import _clone_timeout_seconds
+    from moor_cli.plugins_cmd import _clone_timeout_seconds
 
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     config = home / "config.yaml"
     config.write_text("plugins:\n  clone_timeout_seconds: 137\n", encoding="utf-8")
     assert _clone_timeout_seconds() == 137
 
     other = tmp_path / "other"
     other.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(other))
+    monkeypatch.setenv("MOOR_HOME", str(other))
     assert _clone_timeout_seconds() == 300
     other_config = other / "config.yaml"
     other_config.write_text("plugins:\n  clone_timeout_seconds: 0\n", encoding="utf-8")
@@ -389,13 +389,13 @@ def test_checkout_mismatch_is_rejected(monkeypatch, tmp_path):
 
 
 def test_metadata_write_failure_rolls_back_new_install(monkeypatch, tmp_path, isolated_python):
-    from hermes_cli.plugins_cmd import _install_plugin_core, PluginOperationError
+    from moor_cli.plugins_cmd import _install_plugin_core, PluginOperationError
     from pm import client
     from tests.pm._fixtures import worker_toolchain
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     metadata = home / "plugins" / ".install-metadata.json"
     # The PM worker process publishes the plugin; fail its metadata write there.
     worker_toolchain(client, monkeypatch, isolated_python,
@@ -439,7 +439,7 @@ def test_metadata_write_failure_rolls_back_removal(monkeypatch, tmp_path):
 
 
 def test_reinstall_after_manual_directory_removal_retains_pin(monkeypatch, tmp_path):
-    from hermes_cli.plugins_cmd import _install_plugin_core
+    from moor_cli.plugins_cmd import _install_plugin_core
     from utils import rmtree_readonly
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
@@ -464,7 +464,7 @@ def test_annotated_tag_pin_installs_at_its_commit(monkeypatch, tmp_path):
     `git rev-parse <tag>`; git detaches at the tag's commit, so the guard has
     to peel before comparing or the entry is uninstallable.
     """
-    from hermes_cli.plugins_cmd import _install_plugin_core
+    from moor_cli.plugins_cmd import _install_plugin_core
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     _git(repo, "tag", "-a", "v1.0.2", old_sha, "-m", "v1.0.2")
@@ -475,7 +475,7 @@ def test_annotated_tag_pin_installs_at_its_commit(monkeypatch, tmp_path):
     assert _git(repo, "cat-file", "-t", tag_object_sha) == "tag"
 
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     target, _manifest, _name = _install_plugin_core(
         repo.as_uri(), force=False, ref=tag_object_sha
@@ -491,7 +491,7 @@ def test_annotated_tag_pin_installs_at_its_commit(monkeypatch, tmp_path):
 def test_checkout_that_lands_on_another_commit_is_still_rejected(monkeypatch, tmp_path):
     """Peeling must not weaken the guard: an annotated tag pin whose checkout
     ends somewhere else is still a mismatch."""
-    from hermes_cli.plugins_cmd import PluginOperationError, _checkout_exact_revision
+    from moor_cli.plugins_cmd import PluginOperationError, _checkout_exact_revision
 
     repo, old_sha, new_sha = _plugin_repo(tmp_path)
     _git(repo, "tag", "-a", "v1.0.2", old_sha, "-m", "v1.0.2")
@@ -499,7 +499,7 @@ def test_checkout_that_lands_on_another_commit_is_still_rejected(monkeypatch, tm
     clone = tmp_path / "clone"
     subprocess.run(["git", "clone", "-q", repo.as_uri(), str(clone)], check=True)
     monkeypatch.setattr(
-        "hermes_cli.plugins_cmd._git_head_revision", lambda _repo, _git: new_sha
+        "moor_cli.plugins_cmd._git_head_revision", lambda _repo, _git: new_sha
     )
 
     with pytest.raises(PluginOperationError, match="does not match requested"):
@@ -511,14 +511,14 @@ def test_install_refuses_a_non_https_update_url(monkeypatch, tmp_path, update_ur
     """The saved update_url is fetched unattended by the gateway and picks which origin commit
     gets installed; anything a network peer can rewrite (http/ftp) or a local path must not
     become the feed. Refused before any install state exists."""
-    from hermes_cli.plugins_cmd import PluginOperationError, _install_plugin_core
+    from moor_cli.plugins_cmd import PluginOperationError, _install_plugin_core
 
     repo, _old, _new = _plugin_repo(tmp_path)
     (repo / "plugin.yaml").write_text(
         yaml.safe_dump({"name": "demo", "version": "1.0.0", "update_url": update_url}), encoding="utf-8")
     _commit(repo, "feed", "feed")
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     with pytest.raises(PluginOperationError, match="https://"):
         _install_plugin_core(repo.as_uri(), force=False)
@@ -528,7 +528,7 @@ def test_install_refuses_a_non_https_update_url(monkeypatch, tmp_path, update_ur
 
 
 def test_install_saves_an_https_update_url_tag(monkeypatch, tmp_path):
-    from hermes_cli.plugins_cmd import _install_plugin_core
+    from moor_cli.plugins_cmd import _install_plugin_core
 
     repo, _old, sha = _plugin_repo(tmp_path)
     (repo / "plugin.yaml").write_text(
@@ -536,7 +536,7 @@ def test_install_saves_an_https_update_url_tag(monkeypatch, tmp_path):
         encoding="utf-8")
     sha = _commit(repo, "feed", "feed")
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     _install_plugin_core(repo.as_uri(), force=False)
 

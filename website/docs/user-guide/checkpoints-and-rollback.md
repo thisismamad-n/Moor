@@ -236,7 +236,7 @@ Restore just one file from a checkpoint without affecting the rest of the direct
 
 ### Container Backends
 
-With a container terminal backend (`docker`, `singularity`, `modal`, `daytona`, `vercel_sandbox`, or a container plugin), file paths belong to the sandbox rather than the host. Hermes therefore does not take checkpoints or record the agent-write ledger for those paths, and `/rollback` explains the limitation: it still lists existing host checkpoints but refuses diff and restore, on the CLI and in messaging-gateway chats alike; `/diff session` answers with the same reason. The TUI and Desktop behave the same: `/rollback list` still works while `/rollback diff` and `/rollback <N>` are refused with that reason. Local and SSH backends are unaffected. To point `terminal.cwd` at the container-side view of a mounted directory see [`terminal.docker_mount_cwd_to_workspace`](./configuration.md).
+With a container terminal backend (`docker`, `singularity`, `modal`, `daytona`, `vercel_sandbox`, or a container plugin), file paths belong to the sandbox rather than the host. Moor therefore does not take checkpoints or record the agent-write ledger for those paths, and `/rollback` explains the limitation: it still lists existing host checkpoints but refuses diff and restore, on the CLI and in messaging-gateway chats alike; `/diff session` answers with the same reason. The TUI and Desktop behave the same: `/rollback list` still works while `/rollback diff` and `/rollback <N>` are refused with that reason. Local and SSH backends are unaffected. To point `terminal.cwd` at the container-side view of a mounted directory see [`terminal.docker_mount_cwd_to_workspace`](./configuration.md).
 
 - **Git availability** — if `git` is not found on `PATH`, checkpoints are transparently disabled.
 - **Directory scope** — Moor skips overly broad directories (root `/`, home `$HOME`).
@@ -265,7 +265,7 @@ With a container terminal backend (`docker`, `singularity`, `modal`, `daytona`, 
 
 Each `<hash>` is derived from the absolute path of the working directory. You normally never need to touch these manually — use `moor checkpoints status` / `prune` / `clear` instead.
 
-The sibling `.checkpoints.lock` coordinates processes and survives a store clear. Do not remove it while Hermes is running.
+The sibling `.checkpoints.lock` coordinates processes and survives a store clear. Do not remove it while Moor is running.
 
 ### Migration from v1
 

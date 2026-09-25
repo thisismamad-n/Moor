@@ -285,8 +285,8 @@ describe('host.composer draft facade', () => {
 
     const onFocus = (event: Event) => seen.push(`focus:${(event as CustomEvent<{ target: string }>).detail.target}`)
 
-    window.addEventListener('hermes:composer-insert', onInsert)
-    window.addEventListener('hermes:composer-focus', onFocus)
+    window.addEventListener('moor:composer-insert', onInsert)
+    window.addEventListener('moor:composer-focus', onFocus)
 
     const [tileOk, activeOk] = await Promise.all([
       host.composer.insertText('sess-1', ' snippet ', { mode: 'inline' }),
@@ -298,8 +298,8 @@ describe('host.composer draft facade', () => {
     // requestComposerFocus defers a plain focus request one macrotask.
     await new Promise(resolve => window.setTimeout(resolve, 0))
 
-    window.removeEventListener('hermes:composer-insert', onInsert)
-    window.removeEventListener('hermes:composer-focus', onFocus)
+    window.removeEventListener('moor:composer-insert', onInsert)
+    window.removeEventListener('moor:composer-focus', onFocus)
 
     expect([tileOk, activeOk]).toEqual([true, true])
     // A session id never resolves to the primary unless the primary shows it —
@@ -319,8 +319,8 @@ describe('host.composer draft facade', () => {
 
     const onFocus = (event: Event) => seen.push(`focus:${(event as CustomEvent<{ target: string }>).detail.target}`)
 
-    window.addEventListener('hermes:composer-insert', onInsert)
-    window.addEventListener('hermes:composer-focus', onFocus)
+    window.addEventListener('moor:composer-insert', onInsert)
+    window.addEventListener('moor:composer-focus', onFocus)
 
     // The primary shows a session → nothing hosts the new draft; the verbs
     // fail closed instead of landing in whatever composer the bus routes to.
@@ -339,8 +339,8 @@ describe('host.composer draft facade', () => {
     host.composer.focus('new')
     await new Promise(resolve => window.setTimeout(resolve, 5))
 
-    window.removeEventListener('hermes:composer-insert', onInsert)
-    window.removeEventListener('hermes:composer-focus', onFocus)
+    window.removeEventListener('moor:composer-insert', onInsert)
+    window.removeEventListener('moor:composer-focus', onFocus)
 
     expect(seen).toEqual(['insert:main', 'focus:main'])
   })

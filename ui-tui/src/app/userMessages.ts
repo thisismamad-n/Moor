@@ -142,7 +142,7 @@ const RPC_ERROR_ROWS: RpcErrorRow[] = [
   [
     (_code, text) => TIMED_OUT_RE.exec(text),
     m =>
-      `Hermes did not answer within ${m?.[1] ?? '?'}s. Try again; if it keeps happening, type /logs and report the last lines.`
+      `Moor did not answer within ${m?.[1] ?? '?'}s. Try again; if it keeps happening, type /logs and report the last lines.`
   ]
 ]
 

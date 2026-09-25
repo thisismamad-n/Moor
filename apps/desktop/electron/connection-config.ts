@@ -40,7 +40,7 @@ import { sharesHostBackend } from './host-backend-singleton'
 const AT_COOKIE_VARIANTS = ['__Host-moor_session_at', '__Secure-moor_session_at', 'moor_session_at']
 const RT_COOKIE_VARIANTS = ['__Host-moor_session_rt', '__Secure-moor_session_rt', 'moor_session_rt']
 
-// Keep this aligned with hermes_cli.profiles.validate_profile_name(). `default`
+// Keep this aligned with moor_cli.profiles.validate_profile_name(). `default`
 // is the built-in root alias; these names cannot be created as profiles.
 const RESERVED_REMOTE_PROFILES = new Set(['moor', 'test', 'tmp', 'root', 'sudo'])
 
@@ -577,7 +577,7 @@ export interface ProfileRouteOptions {
   primaryRemoteActive?: boolean
   /** A stored per-profile entry exists for this profile (local or remote). */
   ownEntry?: boolean
-  /** `HERMES_DESKTOP_ISOLATED_BACKEND=1`: opt out of the host singleton. */
+  /** `MOOR_DESKTOP_ISOLATED_BACKEND=1`: opt out of the host singleton. */
   isolatedBackend?: boolean
   requestMethod?: null | string
   requestPath?: null | string
@@ -648,7 +648,7 @@ const LOCAL_PRIMARY_SCOPED_ROUTES = new Set([
   'POST /api/curator/run',
   'GET /api/logs',
   'GET /api/portal',
-  'GET /api/hermes/update/check',
+  'GET /api/moor/update/check',
   'POST /api/local-models/activate',
   'GET /api/dashboard/themes',
   'PUT /api/dashboard/theme',
@@ -741,7 +741,7 @@ const SAFE_REQUEST_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
  * `?profile=`, no `body.profile`, no target named in the path).
  *
  * Such a route has exactly one scope left — the backend process's own
- * `HERMES_HOME` — so it keeps a pooled, profile-scoped backend even though every
+ * `MOOR_HOME` — so it keeps a pooled, profile-scoped backend even though every
  * other local request now shares the host one. Mechanical on purpose: the day a
  * handler learns to read `profile` it joins `LOCAL_PRIMARY_SCOPED_ROUTES` (or a
  * family above), `localPrimaryRequestScope` stops returning null, and this
@@ -779,15 +779,15 @@ export function unscopableMutatingRequest(opts: ProfileRouteOptions = {}): boole
  *     backend, with `?profile=` when the handler reads the query (handlers that
  *     name their target in the path or `body.profile` get no query).
  *  6. Every other LOCAL profile also shares the one host backend
- *     (multiplex-only: one `hermes serve` per HOST). The descriptor carries
+ *     (multiplex-only: one `moor serve` per HOST). The descriptor carries
  *     `sharedPrimary: true`, and the renderer honours it on BOTH request paths
  *     (`requestGatewayForProfile` and the session-owner
  *     `requestGatewayForAgent` family): the profile's calls ride the primary
  *     socket with a `profile` param, never a second socket to the same
  *     process (#120005). The two ways out are
- *     `HERMES_DESKTOP_ISOLATED_BACKEND=1`, which gives this app a private
+ *     `MOOR_DESKTOP_ISOLATED_BACKEND=1`, which gives this app a private
  *     backend, and a MUTATING request the server cannot scope at all — that
- *     one keeps a pooled backend whose HERMES_HOME does the scoping, so a
+ *     one keeps a pooled backend whose MOOR_HOME does the scoping, so a
  *     destructive call can never fall through to the primary's home.
  *
  * Routing used to be spread across three overlapping predicates that each
@@ -811,7 +811,7 @@ function resolveProfileBackendRoute(profile, opts: ProfileRouteOptions = {}): Pr
       return { backend: 'primary', descriptorProfile: scopedProfile, scopePath: true }
     }
 
-    // The same holds for the LOCAL host backend: with one `hermes serve` per
+    // The same holds for the LOCAL host backend: with one `moor serve` per
     // host the app attaches to whatever backend is running, and that process
     // was launched under some OTHER profile's home whenever another app (or an
     // earlier boot) registered it. A bare request the server can scope then
@@ -858,9 +858,9 @@ function resolveProfileBackendRoute(profile, opts: ProfileRouteOptions = {}): Pr
 
   // 6. Multiplex-only: every other LOCAL profile shares the one host backend
   //    too, carrying `?profile=` / the `profile` RPC param instead of getting
-  //    a `hermes serve` child of its own — UNLESS this request mutates state
+  //    a `moor serve` child of its own — UNLESS this request mutates state
   //    the server cannot scope, in which case the pooled backend's own
-  //    HERMES_HOME is the only scope left and it keeps one.
+  //    MOOR_HOME is the only scope left and it keeps one.
   if (sharesHostBackend({ isolated: opts.isolatedBackend, unscopableRequest: unscopableMutatingRequest(opts) })) {
     return { backend: 'primary', descriptorProfile: scopedProfile, scopePath: true }
   }

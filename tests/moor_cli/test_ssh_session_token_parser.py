@@ -3,7 +3,7 @@ import os
 import pytest
 from moor_constants import set_moor_home_override, reset_moor_home_override
 
-from hermes_cli.main_dashboard import _read_ssh_session_token_file
+from moor_cli.main_dashboard import _read_ssh_session_token_file
 
 
 @pytest.mark.platforms("posix")  # POSIX fixture uses mode bits; Windows read_token requires protected DACLs

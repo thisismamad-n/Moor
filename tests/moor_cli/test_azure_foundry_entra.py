@@ -146,7 +146,7 @@ class TestResolveAzureFoundryRuntimeEntra:
     def test_forwarded_entra_callable_preserves_identity_and_metadata(self, fake_azure_identity):
         """A live provider re-resolution must not stringify its token source or
         relabel Entra authentication as a static-key override."""
-        from hermes_cli.runtime_provider import _resolve_azure_foundry_runtime
+        from moor_cli.runtime_provider import _resolve_azure_foundry_runtime
 
         token_provider = lambda: "forwarded-jwt"
         runtime = _resolve_azure_foundry_runtime(
@@ -227,7 +227,7 @@ class TestAzureFoundryAuthStatus:
     @pytest.mark.parametrize("installed", [True, False])
     def test_entra_status_does_not_mint_token(self, monkeypatch, installed):
         """Status checks availability and gives an explicit PM command for missing dependencies."""
-        from hermes_cli import auth as _auth
+        from moor_cli import auth as _auth
         # Force load_config to return our entra config.
         monkeypatch.setattr(
             "moor_cli.config.load_config",

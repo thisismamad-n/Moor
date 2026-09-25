@@ -18,15 +18,15 @@ def _run_state_db_auto_maintenance(session_db) -> None:
     if session_db is None:
         return
     try:
-        from hermes_cli.config import load_config as _load_full_config
-        from hermes_constants import get_hermes_home as _get_hermes_home  # lazy: tests patch it
-        _hermes_home_maint = _get_hermes_home()
+        from moor_cli.config import load_config as _load_full_config
+        from moor_constants import get_moor_home as _get_moor_home  # lazy: tests patch it
+        _moor_home_maint = _get_moor_home()
 
         # One-time repairs, each latched in state_meta once it has run.
         for meta_key, repair, done_msg, skip_msg in (
             (
                 "ghost_session_prune_v1",
-                lambda: session_db.prune_empty_ghost_sessions(sessions_dir=_hermes_home_maint / "sessions"),
+                lambda: session_db.prune_empty_ghost_sessions(sessions_dir=_moor_home_maint / "sessions"),
                 "Pruned %d empty TUI ghost sessions", "Ghost session prune skipped: %s",
             ),
             (
@@ -60,7 +60,7 @@ def _run_state_db_auto_maintenance(session_db) -> None:
             min_interval_hours=int(cfg.get("min_interval_hours", 24)),
             min_vacuum_interval_days=int(cfg.get("min_vacuum_interval_days", 30)),
             vacuum=bool(cfg.get("vacuum_after_prune", True)),
-            sessions_dir=_hermes_home_maint / "sessions",
+            sessions_dir=_moor_home_maint / "sessions",
         )
     except Exception as exc:
         logger.debug("state.db auto-maintenance skipped: %s", exc)

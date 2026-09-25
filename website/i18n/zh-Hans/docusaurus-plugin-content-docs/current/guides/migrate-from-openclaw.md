@@ -162,11 +162,11 @@ TTS 设置从 OpenClaw 配置的**两个**位置读取，优先级如下：
 | `TOOLS.md` | `archive/workspace/TOOLS.md` | Moor 内置工具说明 |
 | `HEARTBEAT.md` | `archive/workspace/HEARTBEAT.md` | 使用 cron 作业执行周期性任务 |
 | `BOOTSTRAP.md` | `archive/workspace/BOOTSTRAP.md` | 使用上下文文件或 skills |
-| Cron 作业 | `archive/cron-config.json` | 通过 `hermes cron create` 重建 |
+| Cron 作业 | `archive/cron-config.json` | 通过 `moor cron create` 重建 |
 | 插件 | `archive/plugins-config.json` | 参见 [插件指南](../user-guide/features/hooks.md) |
-| Hooks/webhooks | `archive/hooks-config.json` | 使用 `hermes webhook` 或 gateway hooks |
-| 记忆后端 | `archive/memory-backend-config.json` | 通过 `hermes honcho` 配置 |
-| Skills 注册表 | `archive/skills-registry-config.json` | 使用 `hermes skills config` |
+| Hooks/webhooks | `archive/hooks-config.json` | 使用 `moor webhook` 或 gateway hooks |
+| 记忆后端 | `archive/memory-backend-config.json` | 通过 `moor honcho` 配置 |
+| Skills 注册表 | `archive/skills-registry-config.json` | 使用 `moor skills config` |
 | UI/身份 | `archive/ui-identity-config.json` | 使用 `/skin` 命令 |
 | 日志 | `archive/logging-diagnostics-config.json` | 在 `config.yaml` 日志部分设置 |
 | 多 Agent 列表 | `archive/agents-list.json` | 使用 Moor profiles |

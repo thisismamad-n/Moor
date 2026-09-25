@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli._launchers import runtime_command
+from moor_cli._launchers import runtime_command
 
 
 @pytest.fixture
@@ -53,9 +53,9 @@ def _spawn(tmp_path, subcommand, *, sudo_ok: bool, targeted_only: bool = False, 
     with patch.object(web_server_gateway, "_ACTION_LOG_DIR", tmp_path / "logs"), patch.object(
         web_server_gateway.subprocess, "run", side_effect=run
     ), patch.object(web_server_gateway.subprocess, "Popen", return_value=child) as popen, patch(
-        "hermes_cli.web_server.PROJECT_ROOT", tmp_path
+        "moor_cli.web_server.PROJECT_ROOT", tmp_path
     ):
-        web_server_gateway._spawn_hermes_action(subcommand, "probe")
+        web_server_gateway._spawn_moor_action(subcommand, "probe")
     return popen.call_args.args[0]
 
 

@@ -32,9 +32,9 @@ ALL_TARGETS = (
 def _native_machine() -> str:
     """Native host arch; PM also runs alone before the app is importable."""
     try:
-        from hermes_platform.host.facts import native_arch
+        from moor_platform.host.facts import native_arch
     except ModuleNotFoundError as exc:
-        if exc.name != "hermes_platform":
+        if exc.name != "moor_platform":
             raise
     else:
         return native_arch()
@@ -83,7 +83,7 @@ def _is_bionic_libc() -> bool:
     The libc flavor is part of the target triple, not a platform runtime
     branch: a linux-arm64 glibc artifact cannot exec under bionic and vice
     versa, so the resolver must pick the right row of the lock table. This
-    is the ONE place hermes probes for bionic; nothing downstream of
+    is the ONE place moor probes for bionic; nothing downstream of
     current_target() needs to know how it was decided.
     """
     if sys.platform == "android":
@@ -398,7 +398,7 @@ class Store:
         lock = self.root / ".install.lock"
         fd = os.open(lock, os.O_CREAT | os.O_RDWR, 0o600)
         try:
-            # A second `hermes pm install` behind an sdist build otherwise sits
+            # A second `moor pm install` behind an sdist build otherwise sits
             # silent for minutes; say what it is waiting on.
             if not lock_fd(fd, wait=True, timeout=2):
                 print(f"waiting for {lock} (another PM operation holds it)", file=sys.stderr, flush=True)

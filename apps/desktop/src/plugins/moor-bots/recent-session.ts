@@ -1,5 +1,5 @@
 /**
- * "Open recent session" (hermes-agent#93054): a bot row's left click always
+ * "Open recent session" (moor-agent#93054): a bot row's left click always
  * lands on the canonical Bot Chat — that is the bot's stable identity and
  * stays so. Multi-task users also want the freshest ORDINARY conversation
  * (a cron run, a delegated job, a `+` side thread) one gesture away, so the
@@ -12,8 +12,8 @@
  * canonical open uses, in the bot's own workspace and connection route.
  */
 
-import * as sdk from '@hermes/plugin-sdk'
-import { haptic, host } from '@hermes/plugin-sdk'
+import * as sdk from '@moor/plugin-sdk'
+import { haptic, host } from '@moor/plugin-sdk'
 
 import { saveSelectedRosterBot } from './bot-state'
 import { prepareBotSource } from './canonical-chat'

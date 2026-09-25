@@ -26,7 +26,7 @@ import {
   setVisibleModels
 } from '@/store/model-visibility'
 import { $defaultReasoningEffort } from '@/store/session'
-import type { LocalRuntimeJob } from '@/types/hermes'
+import type { LocalRuntimeJob } from '@/types/moor'
 
 import { ModelCatalogMenu, type ModelMenuController } from './model-catalog-menu'
 

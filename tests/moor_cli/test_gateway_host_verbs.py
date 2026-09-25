@@ -25,7 +25,7 @@ import pytest
 
 from gateway import host_attach
 from gateway import host_rendezvous as hr
-from hermes_cli import gateway as gw
+from moor_cli import gateway as gw
 
 
 def _reset_probe_memo() -> None:
@@ -60,13 +60,13 @@ def _write_record(pid: int, home: Path, profiles: tuple[str, ...]) -> None:
 @pytest.fixture
 def host_owner(tmp_path, monkeypatch):
     """A REAL live process published as the host gateway, answering identify for three profiles."""
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     home = tmp_path / "root"
     _write_record(child.pid, home, ("default", "ops", "coder"))
     monkeypatch.setattr(
         "gateway.control_socket.identify_gateway",
-        lambda dialled, **kw: {"pid": child.pid, "hermes_home": str(home),
+        lambda dialled, **kw: {"pid": child.pid, "moor_home": str(home),
                                "served_profiles": ["default", "ops", "coder"]})
     try:
         yield SimpleNamespace(pid=child.pid, home=home, proc=child)
@@ -101,7 +101,7 @@ def test_restart_all_refuses_to_sweep_a_host_multiplexer_owned_by_another_profil
 
     monkeypatch.setattr(gw, "kill_gateway_processes", _never)
     monkeypatch.setattr(gw, "_stop_installed_service", lambda system: False)
-    monkeypatch.setattr("gateway.status._get_process_hermes_home",
+    monkeypatch.setattr("gateway.status._get_process_moor_home",
                         lambda: Path(tmp_path / "root" / "profiles" / "ops"))
 
     with pytest.raises(SystemExit) as exc:
@@ -116,7 +116,7 @@ def test_restart_all_does_not_attach_to_the_process_it_just_stopped(
     Without both, the re-entered ``gateway run`` read the corpse's record, decided ATTACH and
     exited 0 — a restart that silently left the host with no gateway at all.
     """
-    monkeypatch.setattr("gateway.status._get_process_hermes_home", lambda: host_owner.home)
+    monkeypatch.setattr("gateway.status._get_process_moor_home", lambda: host_owner.home)
     monkeypatch.setattr(gw, "_stop_installed_service", lambda system: False)
     monkeypatch.setattr(gw, "kill_gateway_processes", lambda **k: 1)
     monkeypatch.setattr(gw, "_wait_for_api_server_port_free", lambda *a, **k: None)
@@ -177,9 +177,9 @@ def test_a_refusal_lands_in_the_profile_logs_not_only_on_stdout(monkeypatch, cap
     monkeypatch.setattr(
         "gateway.host_attach.decide",
         lambda home, replace=False: host_attach.HostAttachDecision(
-            host_attach.REFUSE, host_attach._refuse_message(owner, "nous"), owner))
+            host_attach.REFUSE, host_attach._refuse_message(owner, "moor"), owner))
 
-    with caplog.at_level("WARNING", logger="hermes_cli.gateway"), pytest.raises(SystemExit) as exc:
+    with caplog.at_level("WARNING", logger="moor_cli.gateway"), pytest.raises(SystemExit) as exc:
         gw._attach_to_host_gateway_or_guard(force=False)
 
     assert exc.value.code == gw.GATEWAY_FATAL_CONFIG_EXIT_CODE

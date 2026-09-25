@@ -7,7 +7,7 @@ httpx tries to encode the Authorization header as ASCII.
 
 import os
 
-from hermes_cli.config import _check_non_ascii_credential
+from moor_cli.config import _check_non_ascii_credential
 
 class TestCheckNonAsciiCredential:
     """Tests for _check_non_ascii_credential()."""

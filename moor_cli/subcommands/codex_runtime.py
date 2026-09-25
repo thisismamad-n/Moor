@@ -1,9 +1,9 @@
-"""``hermes codex-runtime`` — noninteractive counterpart of the ``/codex-runtime`` slash command.
+"""``moor codex-runtime`` — noninteractive counterpart of the ``/codex-runtime`` slash command.
 
-``hermes codex-runtime migrate [--dry-run] [--json]`` runs the same ``~/.codex/config.toml``
+``moor codex-runtime migrate [--dry-run] [--json]`` runs the same ``~/.codex/config.toml``
 migration the slash command triggers when the codex app-server runtime is enabled, on the
-selected profile home (``hermes -p NAME codex-runtime migrate``), so automation no longer has to
-import ``hermes_cli.codex_runtime_plugin_migration`` directly (issue #79023).
+selected profile home (``moor -p NAME codex-runtime migrate``), so automation no longer has to
+import ``moor_cli.codex_runtime_plugin_migration`` directly (issue #79023).
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ import json
 
 
 def cmd_codex_runtime_migrate(args: argparse.Namespace) -> int:
-    """Project Hermes MCP servers (+ codex plugins) into ~/.codex/config.toml; 1 on any error."""
-    from hermes_cli.codex_runtime_plugin_migration import migrate
-    from hermes_cli.config import load_config
+    """Project Moor MCP servers (+ codex plugins) into ~/.codex/config.toml; 1 on any error."""
+    from moor_cli.codex_runtime_plugin_migration import migrate
+    from moor_cli.config import load_config
 
     report = migrate(load_config(), dry_run=args.dry_run)
     if args.json:
@@ -34,12 +34,12 @@ def build_codex_runtime_parser(subparsers) -> None:
         "codex-runtime", help="Manage the optional codex app-server runtime (migrate MCP config)",
         description="Noninteractive counterpart of the /codex-runtime slash command. Toggling the "
             "runtime itself stays in the chat command (`/codex-runtime on|off`); `migrate` "
-            "re-projects Hermes' mcp_servers + installed codex plugins into the managed block of "
+            "re-projects Moor' mcp_servers + installed codex plugins into the managed block of "
             "~/.codex/config.toml for the selected profile.")
     actions = parser.add_subparsers(dest="codex_runtime_action")
     migrate_parser = actions.add_parser(
-        "migrate", help="Regenerate the hermes-managed block in codex's config.toml",
-        description="Idempotent: replaces the managed block, keeps user text verbatim, skips Hermes "
+        "migrate", help="Regenerate the moor-managed block in codex's config.toml",
+        description="Idempotent: replaces the managed block, keeps user text verbatim, skips Moor "
             "servers whose name the user already declares outside the block, validates the result "
             "as TOML before writing atomically.")
     migrate_parser.add_argument(
@@ -48,7 +48,7 @@ def build_codex_runtime_parser(subparsers) -> None:
         "--json", action="store_true", help="Print the migration report as JSON (for automation)")
     migrate_parser.set_defaults(func=cmd_codex_runtime_migrate)
 
-    def _print_help(args):  # noqa: ANN001 — bare `hermes codex-runtime` lists the actions
+    def _print_help(args):  # noqa: ANN001 — bare `moor codex-runtime` lists the actions
         parser.print_help()
         return 0
 

@@ -117,7 +117,7 @@ def plan_retry(job: Dict[str, Any]) -> bool:
     # late: jobs imports this module's helpers
     from cron.jobs import _instant_at_or_before, _parse_aware, _seconds_after
 
-    retry_dt = _seconds_after(_hermes_now(), delay)
+    retry_dt = _seconds_after(_moor_now(), delay)
     natural_next = _parse_aware(job.get("next_run_at"))
     if natural_next is not None and _instant_at_or_before(natural_next, retry_dt):
         # The schedule fires again sooner than the ladder would — no point consuming an

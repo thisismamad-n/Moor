@@ -365,14 +365,14 @@ def _(rid, params: dict) -> dict:
     # Save the key to ~/.moor/.env via the unified credential lifecycle so any stale config.yaml mirror of
     # the previous key (model.api_key, custom_providers[*].api_key) is rotated in the same action (#62269).
     env_var = pconfig.api_key_env_vars[0]
-    from hermes_cli.credential_lifecycle import save_provider_env_credential  # also rotates stale config.yaml mirrors
+    from moor_cli.credential_lifecycle import save_provider_env_credential  # also rotates stale config.yaml mirrors
     # Under the profile scope the save publishes into the addressed profile's secret scope (and the
     # shared os.environ only for the launch profile), so the refreshed inventory below sees it.
     save_provider_env_credential(env_var, api_key)
     # The launch profile's boot record may still say "nothing configured"; the gated picker's own chat
     # waits on setup.status, so the fresh key must move the record (+ setup.ready). reconcile_record
     # leaves it alone when the bound home is another profile's.
-    from hermes_cli.free_tier_bootstrap import reconcile_record
+    from moor_cli.free_tier_bootstrap import reconcile_record
     reconcile_record()
     # Shared inventory builder (lock-step with model.options / dashboard); picker_hints carries `authenticated`.
     from moor_cli.inventory import build_models_payload

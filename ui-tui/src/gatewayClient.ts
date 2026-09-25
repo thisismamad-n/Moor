@@ -67,14 +67,14 @@ const resolveSidecarUrl = () => {
 }
 
 const resolvePython = () => {
-  // Trust HERMES_PYTHON only. The launcher guarantees it: hermes_cli/main.py
+  // Trust MOOR_PYTHON only. The launcher guarantees it: moor_cli/main.py
   // validates it and falls back to its own sys.executable, and the Nix
   // wrapper sets it too. So a TUI started the normal way already knows its
   // interpreter, and scanning VIRTUAL_ENV / .venv here can only find a
   // DIFFERENT python than the parent process runs on — with the pm store,
   // a stale venv path is actively dangerous (the interpreter a gateway
   // child gets must match the one that spawned it).
-  const configured = process.env.HERMES_PYTHON?.trim()
+  const configured = process.env.MOOR_PYTHON?.trim()
 
   if (configured) {
     return configured
@@ -440,7 +440,7 @@ export class GatewayClient extends EventEmitter {
 
   private startSpawnedGateway(root: string) {
     const python = resolvePython()
-    const cwd = process.env.HERMES_CWD || root
+    const cwd = process.env.MOOR_CWD || root
     const env = { ...process.env }
     const pyPath = env.PYTHONPATH?.trim()
 

@@ -85,7 +85,7 @@ def build_models_payload(
     in process caches (normal picker opens, while a background worker warms cold endpoints).
     ``non_blocking_catalogs``: provider catalogs come from the disk cache only — a degraded provider
     cannot stall the response (GUI picker opens)."""
-    from hermes_cli.model_switch import list_authenticated_providers
+    from moor_cli.model_switch import list_authenticated_providers
 
     rows = list_authenticated_providers(
         current_provider=ctx.current_provider, current_base_url=ctx.current_base_url,
@@ -141,14 +141,14 @@ def build_models_payload(
     if canonical_order:
         rows = _reorder_canonical(rows)
     if pricing:
-        _apply_pricing(rows, force_fresh_nous_tier=force_fresh_nous_tier, cached_only=pricing_cache_only)
+        _apply_pricing(rows, force_fresh_moor_tier=force_fresh_moor_tier, cached_only=pricing_cache_only)
     # Both metadata decorators consult ``model_overrides``.  Snapshot the
     # read-only config once for this payload rather than letting each model
     # lookup reopen config.yaml through models_dev._cfg_get().
     metadata_config = None
     if capabilities or featured:
         try:
-            from hermes_cli.config import load_config_readonly
+            from moor_cli.config import load_config_readonly
 
             metadata_config = load_config_readonly()
         except Exception:
@@ -158,7 +158,7 @@ def build_models_payload(
     if featured:
         _apply_featured(rows, metadata_config=metadata_config)
     _apply_custom_aliases(rows)
-    from hermes_cli.models_validate import drop_unofferable_model_ids
+    from moor_cli.models_validate import drop_unofferable_model_ids
 
     drop_unofferable_model_ids(rows)
 
@@ -532,15 +532,26 @@ def _filter_explicit_provider_rows(rows: list[dict], ctx: ConfigContext) -> list
             # wrote an enabled preset into RAW config (the DEFAULT_CONFIG preset must not show MoA).
             return _raw_config_has_enabled_moa_preset()
         return (
+            _provider_is_keyless(slug)
             # Anthropic OAuth (device flow / Claude Code) and external-process CLIs (copilot-acp) are
             # deliberate sign-ins that leave no trace in config/env; keep the rows discovery accepted.
-            (slug == "anthropic" and _anthropic_oauth_credentials_present())
+            or (slug == "anthropic" and _anthropic_oauth_credentials_present())
             or _external_process_signed_in(slug)
             or is_provider_explicitly_configured(slug)
         )
 
     return [row for row in rows
             if (slug := str(row.get("slug", "")).strip().lower()) and _is_explicit(row, slug)]
+
+
+def _provider_is_keyless(slug: str) -> bool:
+    """True when the provider's Moor overlay declares it keyless."""
+    try:
+        from moor_cli.providers import MOOR_OVERLAYS
+        overlay = MOOR_OVERLAYS.get(slug)
+        return bool(overlay is not None and getattr(overlay, "keyless", False))
+    except Exception:
+        return False
 
 
 def _external_process_signed_in(slug: str) -> bool:
@@ -708,8 +719,8 @@ def _local_runtime_row(ctx: "ConfigContext") -> dict | None:
     the provider registry's own definition, never a local literal: a row the resolver can't resolve is
     the bug this row's offline-first contract depends on not having."""
     try:
-        from hermes_cli.local_runtime.bootstrap import staged_model_ids
-        from hermes_cli.providers import LLAMACPP_ALIASES, LLAMACPP_PROVIDER_ID
+        from moor_cli.local_runtime.bootstrap import staged_model_ids
+        from moor_cli.providers import LLAMACPP_ALIASES, LLAMACPP_PROVIDER_ID
 
         staged = staged_model_ids()
         if not staged:

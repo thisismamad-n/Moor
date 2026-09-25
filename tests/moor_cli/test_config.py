@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.config import (
     DEFAULT_CONFIG,
@@ -35,11 +35,11 @@ from moor_cli.config import (
 
 class TestGetMoorHome:
     def test_default_path(self):
-        from hermes_constants import _get_platform_default_hermes_home
+        from moor_constants import _get_platform_default_moor_home
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_HOME", None)
-            home = get_hermes_home()
-            assert home == _get_platform_default_hermes_home()
+            os.environ.pop("MOOR_HOME", None)
+            home = get_moor_home()
+            assert home == _get_platform_default_moor_home()
 
 
 class TestEnsureMoorHome:
@@ -157,7 +157,7 @@ class TestLoadConfigParseFailure:
         Ported from google-gemini/gemini-cli#21541 (policy-file TOML recovery),
         adapted: we back up but deliberately do NOT reset config.yaml.
         """
-        from hermes_cli.config_read_errors import _CONFIG_PARSE_WARNED
+        from moor_cli.config_read_errors import _CONFIG_PARSE_WARNED
         _CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}):
@@ -190,7 +190,7 @@ class TestLoadConfigParseFailure:
         parses again.
         """
         import time
-        from hermes_cli.config_read_errors import _CONFIG_PARSE_WARNED
+        from moor_cli.config_read_errors import _CONFIG_PARSE_WARNED
         _CONFIG_PARSE_WARNED.clear()
 
         with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}):
@@ -847,7 +847,7 @@ class TestConfigSupportFloor:
         assert f"{display_moor_home()}/config.yaml" in msg
 
     def test_registry_has_no_targets_below_floor(self):
-        from hermes_cli.config_migrations import (
+        from moor_cli.config_migrations import (
             LEGACY_KEY_STEPS,
             MIGRATIONS,
             SUPPORT_FLOOR_VERSION,
@@ -914,7 +914,7 @@ class TestConfigSupportFloor:
         # v31 writes verify_on_stop=False, but False now equals the schema
         # default (opt-in) so the write invariant strips it, and the emptied
         # section goes with it (it survived only as the phantom `agent: {}`).
-        "model": {"default": "anthropic/claude-fable-5", "provider": "nous"},
+        "model": {"default": "anthropic/claude-fable-5", "provider": "moor"},
         "model_catalog": {},
         "plugins": {"disabled": ["foo"], "enabled": []},
     }
@@ -1381,7 +1381,7 @@ class TestEnvWriteDenylist:
     def test_windows_policy_denies_mixed_case_exec_names(self, protected_key, monkeypatch):
         """Windows env names are case-insensitive, so the writer must refuse the mixed-case
         spelling of a denied exec-influence name too."""
-        import hermes_cli.config as config_mod
+        import moor_cli.config as config_mod
 
         monkeypatch.setattr(config_mod, "_IS_WINDOWS", True)
         with pytest.raises(ValueError, match="denylist"):
@@ -1593,7 +1593,7 @@ feishu:
 
 
     def test_persist_migration_writes_full_read_raw_config(self, tmp_path):
-        from hermes_cli.config import _persist_migration
+        from moor_cli.config import _persist_migration
 
         body = """_config_version: 30
 model:
@@ -1908,8 +1908,8 @@ class TestConfigCommandFailClosedSurface:
 def test_gateway_multiplex_keys_are_recognized_config_keys():
     """``moor config set gateway.multiplex_profiles true`` used to warn 'not a recognized config
     key' although gateway/config.py reads it; the key (and profile_routes) live in DEFAULT_CONFIG."""
-    from hermes_cli.config import _validate_config_key
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.config import _validate_config_key
+    from moor_cli.config_defaults import DEFAULT_CONFIG
     assert "auto_migrate" not in DEFAULT_CONFIG["gateway"]
     assert _validate_config_key("gateway.multiplex_profiles") == (True, None)
     assert _validate_config_key("gateway.profile_routes") == (True, None)
@@ -1938,8 +1938,8 @@ def test_empty_dict_default_sections_are_open_containers():
 
 def test_lsp_root_policy_keys_are_recognized_and_off_by_default():
     """``lsp.warmup_timeout`` / ``broken_retry_seconds`` / ``exclude_roots`` (#116446) must be settable via
-    ``hermes config set`` and must default to today's behaviour (no grace, lifetime broken set, no exclusion)."""
-    from hermes_cli.config import _validate_config_key
+    ``moor config set`` and must default to today's behaviour (no grace, lifetime broken set, no exclusion)."""
+    from moor_cli.config import _validate_config_key
     for key in ("lsp.warmup_timeout", "lsp.broken_retry_seconds", "lsp.exclude_roots"):
         assert _validate_config_key(key) == (True, None)
 
@@ -1954,7 +1954,7 @@ class TestSaveConfigExplicitPathAuthority:
         config_path = tmp_path / "config.yaml"
         config_path.write_text("model:\n  provider: test/p\nskills:\n  write_approval: true\n", encoding="utf-8")
 
-        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}):
             config = load_config()
             config["model"] = "test/other"
             save_config(config)
@@ -1979,8 +1979,8 @@ class TestSaveConfigExplicitPathAuthority:
         config_path = tmp_path / "config.yaml"
         config_path.write_text(yaml.safe_dump(chosen), encoding="utf-8")
 
-        with (patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}),
-              patch("hermes_cli.config.read_raw_config", return_value={})):
+        with (patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}),
+              patch("moor_cli.config.read_raw_config", return_value={})):
             save_config(load_config())
 
         saved = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -1991,23 +1991,23 @@ class TestCompatibleProvidersMalformedLegacyKey:
     """A non-list ``custom_providers`` must not wipe the merged view (#114605)."""
 
     def test_string_custom_providers_keeps_providers_view_and_warns(self, caplog):
-        from hermes_cli.config_providers import get_compatible_custom_providers
+        from moor_cli.config_providers import get_compatible_custom_providers
 
         config = {
             "custom_providers": "- name: broken",
             "providers": {"exl3": {"api": "http://127.0.0.1:8290/v1", "default_model": "m"}},
         }
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.config"):
+        with caplog.at_level(logging.WARNING, logger="moor_cli.config"):
             names = [e.get("name") for e in get_compatible_custom_providers(config)]
 
         assert names == ["exl3"]
         assert any("custom_providers is a str" in r.getMessage() for r in caplog.records)
 
     def test_list_custom_providers_is_silent(self, caplog):
-        from hermes_cli.config_providers import get_compatible_custom_providers
+        from moor_cli.config_providers import get_compatible_custom_providers
 
         config = {"custom_providers": [{"name": "legacy", "base_url": "http://h/v1"}], "providers": {}}
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.config"):
+        with caplog.at_level(logging.WARNING, logger="moor_cli.config"):
             names = [e.get("name") for e in get_compatible_custom_providers(config)]
 
         assert names == ["legacy"]

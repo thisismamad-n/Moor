@@ -181,7 +181,7 @@ def _warn_if_gateway_running(auto_yes: bool) -> None:
     if liveness.running:
         profile = None
         with contextlib.suppress(Exception):
-            from hermes_cli.profiles import get_active_profile_name
+            from moor_cli.profiles import get_active_profile_name
             profile = get_active_profile_name()
         if liveness.source == "multiplexer" and profile and profile != "default":
             # Served profile: its platforms live under `<profile>:<platform>` in the host record.
@@ -195,7 +195,7 @@ def _warn_if_gateway_running(auto_yes: bool) -> None:
         ("Migrating bot tokens while the gateway is active will cause "
          "conflicts (Telegram, Discord, and Slack only allow one active "
          "session per token).",
-         "Recommendation: stop the host gateway first with 'hermes gateway stop'."),
+         "Recommendation: stop the host gateway first with 'moor gateway stop'."),
         "Continue anyway?", declined="Migration cancelled. Stop the gateway and try again.",
     ) is False:
         sys.exit(0)

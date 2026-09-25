@@ -11,7 +11,7 @@ Covers the three Phase 0 deliverables:
 import pytest
 from datetime import datetime
 from unittest.mock import patch
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_constants import reset_moor_home_override, set_moor_home_override
 from gateway.config import GatewayConfig, Platform

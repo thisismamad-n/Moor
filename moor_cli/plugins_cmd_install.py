@@ -1,7 +1,7 @@
-"""``hermes plugins install``: dependency/env consent, the atomic clone-scan-publish installer core, and
+"""``moor plugins install``: dependency/env consent, the atomic clone-scan-publish installer core, and
 the dashboard/TUI non-interactive install.
 
-Sibling of :mod:`hermes_cli.plugins_cmd` (the facade re-exports the names other modules use and is
+Sibling of :mod:`moor_cli.plugins_cmd` (the facade re-exports the names other modules use and is
 imported late here, never at module level).
 """
 
@@ -14,14 +14,14 @@ import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_cli.cli_output import line_input
+from moor_cli.cli_output import line_input
 
 logger = logging.getLogger(__name__)
 
 
 def _pc():
     """The facade, read at call time: tests patch ``plugins_cmd.<name>`` and sibling calls must see it."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     return plugins_cmd
 
 
@@ -74,7 +74,7 @@ def _install_plugin_python_deps(
             if node_reason:
                 console.print(f"[yellow]⚠[/yellow] Node deps: {node_reason}")
         else:
-            console.print("[dim]Skipped Node deps — run `hermes plugins install` again to retry.[/dim]\n")
+            console.print("[dim]Skipped Node deps — run `moor plugins install` again to retry.[/dim]\n")
 
     if not has_python:
         return True, None
@@ -98,18 +98,18 @@ def _consent_python_deps(plugin_name: str, deps: tuple[str, ...], console) -> tu
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         console.print(
             "[dim]Non-interactive install — skipping dependency install. "
-            "Run `hermes plugins enable` when ready to prepare them.[/dim]\n"
+            "Run `moor plugins enable` when ready to prepare them.[/dim]\n"
         )
         return False, "dependency install skipped (non-interactive)"
     try:
         answer = input(
-            "  Prepare these with Hermes through PM now? [y/N]: "
+            "  Prepare these with Moor through PM now? [y/N]: "
         ).strip().lower()
     except (EOFError, KeyboardInterrupt):
         answer = ""
     if answer not in {"y", "yes"}:
         console.print(
-            "[dim]Skipped — run `hermes plugins enable` when ready "
+            "[dim]Skipped — run `moor plugins enable` when ready "
             "to prepare them.[/dim]\n"
         )
         return False, "dependency install declined"
@@ -136,8 +136,8 @@ def _prompt_plugin_env_vars(manifest: dict, console) -> None:
     missing = _pc()._missing_env_specs(manifest)
     if not missing:
         return
-    from hermes_cli.config import save_env_value
-    from hermes_constants import display_hermes_home
+    from moor_cli.config import save_env_value
+    from moor_constants import display_moor_home
     plugin_name = manifest.get("name", "this plugin")
     console.print(f"\n[bold]{plugin_name}[/bold] requires the following environment variables:\n")
     for spec in missing:
@@ -150,15 +150,15 @@ def _prompt_plugin_env_vars(manifest: dict, console) -> None:
         try:
             value = (_pc().masked_secret_prompt if spec.get("secret", False) else line_input)(f"  {name}: ").strip()
         except (EOFError, KeyboardInterrupt):
-            console.print(f"\n[dim]  Skipped (you can set these later in {display_hermes_home()}/.env)[/dim]")
+            console.print(f"\n[dim]  Skipped (you can set these later in {display_moor_home()}/.env)[/dim]")
             return
 
         if value:
             save_env_value(name, value)
             os.environ[name] = value
-            console.print(f"  [green]✓[/green] Saved to {display_hermes_home()}/.env")
+            console.print(f"  [green]✓[/green] Saved to {display_moor_home()}/.env")
         else:
-            console.print(f"  [dim]  Skipped (set {name} in {display_hermes_home()}/.env later)[/dim]")
+            console.print(f"  [dim]  Skipped (set {name} in {display_moor_home()}/.env later)[/dim]")
 
     console.print()
 
@@ -185,8 +185,8 @@ def _check_manifest_version(manifest: dict, plugin_name: str) -> None:
 
     reason = manifest_version_error(manifest, plugin_name)
     if reason:
-        from hermes_cli.config import recommended_update_command
-        raise _pc().PluginOperationError(f"{reason} Run {recommended_update_command()} to update Hermes.")
+        from moor_cli.config import recommended_update_command
+        raise _pc().PluginOperationError(f"{reason} Run {recommended_update_command()} to update Moor.")
 
 
 def _read_manifest_for_install(plugin_dir: Path) -> dict:
@@ -203,7 +203,7 @@ def _read_manifest_for_install(plugin_dir: Path) -> dict:
     if not _pc()._has_portable_manifest(plugin_dir):
         return {}
     try:
-        from hermes_cli.agent_plugins import read_agent_plugin_manifest
+        from moor_cli.agent_plugins import read_agent_plugin_manifest
         manifest, diagnostics = read_agent_plugin_manifest(plugin_dir)
     except Exception as exc:
         raise _pc().PluginOperationError(f"Portable plugin manifest validation failed: {exc}") from exc
@@ -222,7 +222,7 @@ def _probe_readable(path: Path) -> None:
 
 
 def _ensure_tree_readable(root: Path, plugins_dir: Path) -> None:
-    """Refuse to ship a tree Hermes cannot read back. A clone can land unreadable (Windows ACL
+    """Refuse to ship a tree Moor cannot read back. A clone can land unreadable (Windows ACL
     inheritance -> WinError 5, a mode-000 file) and discovery would then skip the plugin forever
     (#111804); repair ``u+rX`` where the OS supports it, otherwise fail before anything moves."""
     paths = [root]
@@ -252,11 +252,11 @@ def _ensure_tree_readable(root: Path, plugins_dir: Path) -> None:
 def _refuse_unavailable_portable_plugin(plugin_name: str, tree: Path) -> None:
     if not (tree / "plugin.json").is_file():
         return
-    from hermes_cli.agent_plugins import load_agent_plugin
-    from hermes_platform.resolver.availability import availability
+    from moor_cli.agent_plugins import load_agent_plugin
+    from moor_platform.resolver.availability import availability
 
     try:
-        package = load_agent_plugin(tree, tree.parent / ".hermes-install-data")
+        package = load_agent_plugin(tree, tree.parent / ".moor-install-data")
     except ValueError as exc:
         raise _pc().PluginOperationError(f"Plugin '{plugin_name}' is unavailable: {exc}.") from exc
     for server_name, server_decl in package.server_declarations.items():
@@ -343,7 +343,7 @@ def _install_plugin_core(
         if target.exists() and not force:
             raise _pc().PluginOperationError(
                 f"Plugin '{plugin_name}' already exists. Use force reinstall "
-                f"or run `hermes plugins update {plugin_name}`.")
+                f"or run `moor plugins update {plugin_name}`.")
         prior = old_metadata.get(plugin_name)
         if target.exists() and requested_revision is None and isinstance(prior, dict) and prior.get("pinned") is True:
             raise _pc().PluginOperationError(
@@ -358,9 +358,9 @@ def _install_plugin_core(
         # Saved update_url tag (settled: claims vs provenance): the
         # manifest's update_url is COPIED into the row at install. Check
         # time compares manifest vs tag; a mismatch is needs-fixing and
-        # only `hermes plugins trust-update-url` moves the tag.
+        # only `moor plugins trust-update-url` moves the tag.
         if manifest.get("update_url"):
-            from hermes_cli.plugins_updates import https_update_url
+            from moor_cli.plugins_updates import https_update_url
             try:
                 record["update_url"] = https_update_url(manifest["update_url"])
             except ValueError as exc:
@@ -373,12 +373,12 @@ def _install_plugin_core(
                 "sha": installed_revision,
                 "pin": reviewed_pin if at_reviewed_pin else "",
             }
-            from hermes_cli.plugins_cmd_catalog import write_catalog_sidecar_record
+            from moor_cli.plugins_cmd_catalog import write_catalog_sidecar_record
             write_catalog_sidecar_record(tmp_target, catalog, installed_revision)
         if allow_removed:
             record["allow_removed"] = True
         new_metadata = {**old_metadata, plugin_name: record}
-        from hermes_cli.plugins_transaction import publish_plugin
+        from moor_cli.plugins_transaction import publish_plugin
 
         try:
             publish_plugin(tmp_target, target, old_metadata, new_metadata, require_consent=True)
@@ -407,7 +407,7 @@ def cmd_install(
     install is checked against the catalog kill list unless *allow_removed*.
     *enable* None prompts "Enable now? [y/N]"; True/False skip the prompt.
     """
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     console = _pc()._console()
     entry = None
     if catalog.looks_like_catalog_name(identifier):
@@ -416,7 +416,7 @@ def cmd_install(
         console.print(f"[bold]{entry.name}[/bold] [cyan]\\[{entry.tier}][/cyan] [dim]pinned @ {entry.sha[:8]}[/dim]")
         console.print(catalog.entry_capability_summary(entry))
     else:
-        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Hermes catalog.")
+        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Moor catalog.")
     if allow_removed:
         console.print(
             "[bold red]WARNING:[/bold red] [red]--allow-removed set — skipping the catalog kill-list check. "
@@ -457,7 +457,7 @@ def cmd_install(
     if not _pc()._looks_like_plugin_dir(target):
         console.print(
             f"[yellow]Warning:[/yellow] {installed_name} doesn't contain plugin.yaml, "
-            f"plugin.json, or __init__.py. It may not be a valid Hermes plugin.")
+            f"plugin.json, or __init__.py. It may not be a valid Moor plugin.")
     _prompt_plugin_env_vars(installed_manifest, console)
 
     from pm.workspace import enabled_plugin_dirs
@@ -496,7 +496,7 @@ def cmd_install(
     if already_active:
         console.print("[dim]Replacement installed; plugin selection was not changed.[/dim]")
     elif should_enable:
-        from hermes_cli.plugins_admission import AdmissionRefused
+        from moor_cli.plugins_admission import AdmissionRefused
 
         try:
             _pc()._set_plugin_enabled(installed_name, enable=True, console=console)
@@ -512,7 +512,7 @@ def cmd_install(
     else:
         console.print(
             f"[dim]Plugin installed but not enabled. "
-            f"Run `hermes plugins enable {installed_name}` to activate.[/dim]")
+            f"Run `moor plugins enable {installed_name}` to activate.[/dim]")
 
     # Non-interactive installs and declines leave declared capabilities ungranted (fail closed).
     declared_caps = _pc()._declared_capabilities_from_manifest(installed_manifest, installed_name)
@@ -520,7 +520,7 @@ def cmd_install(
         _pc()._run_capability_consent(console, installed_name, declared_caps, context="install")
     if enable:
         # Loads it into the running gateway now (handlers live) or says what needs a restart (#87770).
-        from hermes_cli.plugins_activation import activate_plugin_now, activation_hint
+        from moor_cli.plugins_activation import activate_plugin_now, activation_hint
         console.print(f"[dim]{activation_hint(activate_plugin_now(installed_name, in_process=False))}[/dim]")
     console.print()
 
@@ -532,16 +532,16 @@ def dashboard_install_plugin(
     """Non-interactive install for the dashboard/TUI. *catalog_name* installs a curated entry at its
     pinned SHA (identifier may be empty); *ref* pins a custom source to one full commit SHA (same
     contract as ``--ref``); every path enforces the kill list (no GUI bypass)."""
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     warnings: list[str] = []
     entry = None
     if catalog_name:
         entry = catalog.get_live_catalog_entry(catalog_name)
         if entry is None:
-            return {"ok": False, "error": f"'{catalog_name}' is not in the Hermes plugin catalog."}
+            return {"ok": False, "error": f"'{catalog_name}' is not in the Moor plugin catalog."}
         identifier = entry.install_identifier
     else:
-        warnings.append("Custom (unreviewed) source — not from the Hermes catalog.")
+        warnings.append("Custom (unreviewed) source — not from the Moor catalog.")
     try:
         git_url = _pc()._resolve_git_url(identifier)[0]
         if git_url.startswith(("http://", "file://")):
@@ -572,7 +572,7 @@ def dashboard_install_plugin(
         return {"ok": False, "error": str(exc)}
 
     if enable:
-        from hermes_cli.plugins_admission import AdmissionRefused
+        from moor_cli.plugins_admission import AdmissionRefused
 
         try:
             _pc()._set_plugin_enabled(installed_name, enable=True)
@@ -585,7 +585,7 @@ def dashboard_install_plugin(
     ap = target / "after-install.md"
     # Deps first, then load: the plugin activates in this process (TUI/Desktop server subscribers see it)
     # and in the running gateway; ``activation`` says what is live now vs next session (#87770).
-    from hermes_cli.plugins_activation import activate_plugin_now
+    from moor_cli.plugins_activation import activate_plugin_now
     activated = activate_plugin_now(installed_name) if enable else {
         "gateway_reloaded": False, "activation": None, "restart_required": False}
     return {

@@ -26,7 +26,7 @@ import base64
 import json
 from unittest.mock import MagicMock, patch
 
-from hermes_cli.version_info import get_version_info
+from moor_cli.version_info import get_version_info
 
 
 # ---------------------------------------------------------------------------
@@ -70,7 +70,7 @@ class TestCodexCloudflareHeaders:
         from agent.auxiliary_client import _codex_cloudflare_headers
         headers = _codex_cloudflare_headers(_make_codex_jwt())
         assert headers["User-Agent"] == f"HermesAgent/{get_version_info().base_version}"
-        assert headers["originator"] == "hermes-agent"
+        assert headers["originator"] == "moor-agent"
 
 
 
@@ -98,7 +98,7 @@ class TestCodexCloudflareHeaders:
 
         from agent import model_metadata
         from agent.auxiliary_client import _codex_cloudflare_headers
-        from hermes_cli import codex_models
+        from moor_cli import codex_models
 
         both = _make_codex_jwt(data_residency="us", compute_residency="eu")
         assert _codex_cloudflare_headers(both)["x-openai-internal-codex-residency"] == "us"
@@ -139,7 +139,7 @@ class TestCodexCloudflareHeaders:
         for token in [_make_codex_jwt(), "not-a-jwt", "", "only.one", "  ", "...."]:
             headers = _codex_cloudflare_headers(token)
             assert "x-openai-internal-codex-residency" not in headers
-            assert headers["originator"] == "hermes-agent"
+            assert headers["originator"] == "moor-agent"
 
 
 # ---------------------------------------------------------------------------

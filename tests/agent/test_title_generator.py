@@ -45,7 +45,7 @@ class TestGenerateTitle:
         """The titler receives the opener AFTER @-reference expansion: the generated ref carries a
         `--- Context Warnings ---` (or `--- Attached Context ---`) footer, which must not turn a
         paste-only opener into "instruction + trailing preview" (live wire finding on #114984)."""
-        ref = "@file:/home/u/.hermes/attachments/pasted_content_2026-09-18_14-09-43-735_d0ee85.txt"
+        ref = "@file:/home/u/.moor/attachments/pasted_content_2026-09-18_14-09-43-735_d0ee85.txt"
         preview = "Quarterly incident analysis for the database cluster"
         for footer in (f"\n\n--- Context Warnings ---\n- {ref}: path is outside the allowed workspace",
                        "\n\n--- Attached Context ---\n\n### file: pasted_content.txt\n" + preview):
@@ -432,7 +432,7 @@ class TestMaybeAutoTitle:
             ("custom:gptoss-local", {"provider": "custom:other", "base_url": "http://10.0.0.2:8080/v1"}, False),
             ("custom:gptoss-local", {"provider": "gptoss-local", "base_url": "http://10.0.0.2:8080/v1"}, False),
             ("custom:gptoss-local", {"provider": "openrouter"}, False),
-            ("custom:gptoss-local", {"provider": "nous"}, False),
+            ("custom:gptoss-local", {"provider": "moor"}, False),
             ("custom", {"provider": "ollama"}, True),  # alias of custom
             ("custom", {"provider": "vllm"}, True),  # normalises to `local`: the same local server
             ("lmstudio", {"provider": "lm-studio"}, True),
@@ -449,7 +449,7 @@ class TestMaybeAutoTitle:
         main_runtime = {"provider": main_provider, "base_url": "http://127.0.0.1:8080/v1"}
         keyed = {"providers": {"gptoss": {"name": "GPTOSS Local", "base_url": "http://127.0.0.1:8080/v1"}}}
         with patch.object(tg, "_title_config", return_value=title_cfg), \
-                patch("hermes_cli.config.load_config_readonly", return_value=keyed):
+                patch("moor_cli.config.load_config_readonly", return_value=keyed):
             assert tg.title_upgrade_must_wait_for_turn(main_runtime) is deferred
 
     def test_kanban_worker_is_named_after_its_card_without_the_llm_thread(self, tmp_path, monkeypatch):
@@ -503,11 +503,11 @@ class TestMaybeAutoTitle:
         mock_auto.assert_not_called()
 
     def test_delegated_child_of_a_worker_is_not_named_after_the_card(self, tmp_path, monkeypatch):
-        """A delegate_task child inherits ``HERMES_KANBAN_TASK`` but is not the card's session;
+        """A delegate_task child inherits ``MOOR_KANBAN_TASK`` but is not the card's session;
         it takes the ordinary title path instead of the parent's card title (#112817)."""
         from agent.delegation_context import delegated_child_context
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_parent")
+        monkeypatch.setenv("MOOR_KANBAN_TASK", "t_parent")
         db = SessionDB(tmp_path / "state.db")
         db.create_session(session_id="child-1", source="kanban")
 
@@ -536,7 +536,7 @@ class TestMaybeAutoTitle:
                 "enabled": True, "model_upgrade_enabled": False,
             }}
         }
-        with patch("hermes_cli.config.load_config_readonly", return_value=config), \
+        with patch("moor_cli.config.load_config_readonly", return_value=config), \
              patch("agent.memory_provider.spawn_context_thread") as thread, \
              patch("agent.title_generator.call_llm") as call_llm:
             maybe_auto_title(db, "sess-1", "repair startup memory routing", [])
@@ -545,11 +545,11 @@ class TestMaybeAutoTitle:
         thread.assert_not_called()
         call_llm.assert_not_called()
         # The toggle only silences the automatic upgrade: an explicit ``generate_title`` call
-        # (``hermes sessions retitle-skills``) still asks the model.
+        # (``moor sessions retitle-skills``) still asks the model.
         resp = MagicMock()
         resp.choices = [MagicMock()]
         resp.choices[0].message.content = '{"title": "Repair startup memory routing"}'
-        with patch("hermes_cli.config.load_config_readonly", return_value=config), \
+        with patch("moor_cli.config.load_config_readonly", return_value=config), \
              patch("agent.title_generator.call_llm", return_value=resp):
             assert generate_title("repair startup memory routing") == "Repair startup memory routing"
 
@@ -561,7 +561,7 @@ class TestMaybeAutoTitle:
                 "enabled": False, "model_upgrade_enabled": True,
             }}
         }
-        with patch("hermes_cli.config.load_config_readonly", return_value=config), \
+        with patch("moor_cli.config.load_config_readonly", return_value=config), \
              patch("agent.memory_provider.spawn_context_thread") as thread, \
              patch("agent.title_generator.call_llm") as call_llm:
             maybe_auto_title(db, "sess-1", "repair startup memory routing", [])

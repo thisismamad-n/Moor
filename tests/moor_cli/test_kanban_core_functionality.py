@@ -16,11 +16,11 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_notify as kbn
-from hermes_cli import kanban_db_dispatch as kbd
-from hermes_cli import kanban_db_workspace as kbw
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_notify as kbn
+from moor_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_db_workspace as kbw
 
 
 # ---------------------------------------------------------------------------
@@ -953,9 +953,9 @@ def test_gateway_dispatcher_disables_corrupt_board_without_traceback(
     import sqlite3
 
     from gateway.run import GatewayRunner
-    import hermes_cli.config as _cfg_mod
-    import hermes_cli.kanban_db as _kb
-    from hermes_cli import kanban_db_connect as _kbc
+    import moor_cli.config as _cfg_mod
+    import moor_cli.kanban_db as _kb
+    from moor_cli import kanban_db_connect as _kbc
 
     runner = object.__new__(GatewayRunner)
     runner._running = True
@@ -1248,7 +1248,7 @@ def test_protocol_violation_budget_not_consumed_by_other_failures(kanban_home):
     retries, and below-budget violations must leave the unified counter
     untouched (so the two budgets stay independent).
     """
-    from hermes_cli import kanban_db_dispatch as _kbd
+    from moor_cli import kanban_db_dispatch as _kbd
     conn = kbc.connect()
     try:
         tid = kb.create_task(conn, title="mixed", assignee="worker")

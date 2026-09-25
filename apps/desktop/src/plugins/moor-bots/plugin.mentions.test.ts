@@ -152,8 +152,8 @@ async function contributions({
   // null `profiles` leaves the cache COLD, as a launch that never mounted the
   // Bots pane does.
   if (profiles) {
-    cache.set(JSON.stringify(['hermes-bots', 'roster', cacheKeyConnection]), {
-      key: ['hermes-bots', 'roster', cacheKeyConnection],
+    cache.set(JSON.stringify(['moor-bots', 'roster', cacheKeyConnection]), {
+      key: ['moor-bots', 'roster', cacheKeyConnection],
       value: { profiles }
     })
   }
@@ -307,7 +307,7 @@ describe('@-mention completions', () => {
 
   /** Local default plus two remote defaults, each titled on its own host
    *  (#103731). Order-flipped so a Map-last-wins slip in the resolver or the
-   *  picker would surface as a retargeted local @hermes. */
+   *  picker would surface as a retargeted local @moor. */
   const REMOTE_DEFAULTS: Array<Record<string, unknown>> = [
     {
       connectionId: 'vps',
@@ -316,7 +316,7 @@ describe('@-mention completions', () => {
       name: 'default',
       remoteSource: true,
       sourceScoped: true,
-      ui_meta: { 'hermes-bots': { title: 'CoS Bot' } }
+      ui_meta: { 'moor-bots': { title: 'CoS Bot' } }
     },
     {
       connectionId: 'wsl',
@@ -325,7 +325,7 @@ describe('@-mention completions', () => {
       name: 'default',
       remoteSource: true,
       sourceScoped: true,
-      ui_meta: { 'hermes-bots': { title: 'CoS Bot' } }
+      ui_meta: { 'moor-bots': { title: 'CoS Bot' } }
     }
   ]
 
@@ -336,24 +336,24 @@ describe('@-mention completions', () => {
       profiles: [...REMOTE_DEFAULTS].reverse().concat([{ name: 'researcher' }, { name: 'default' }])
     }
   ])(
-    'lists titled remote defaults under their slug, qualified on collision, and keeps @hermes local ($label)',
+    'lists titled remote defaults under their slug, qualified on collision, and keeps @moor local ($label)',
     async ({ profiles }) => {
       const { handler, provide } = await contributions({ focused: 'researcher', profiles })
       const inserts = provide('').map(item => item.insert)
 
       // Both remote defaults tag as "CoS Bot" — the bare slug names neither, so
-      // the picker pins each to its connection; the local default stays @hermes.
-      expect(inserts).toEqual(expect.arrayContaining(['@hermes', '@cos-bot@vps', '@cos-bot@wsl']))
+      // the picker pins each to its connection; the local default stays @moor.
+      expect(inserts).toEqual(expect.arrayContaining(['@moor', '@cos-bot@vps', '@cos-bot@wsl']))
       expect(inserts).not.toContain('@cos-bot')
-      expect(inserts.filter(insert => insert === '@hermes')).toHaveLength(1)
+      expect(inserts.filter(insert => insert === '@moor')).toHaveLength(1)
 
       const qualified = await handler({ text: 'ask @cos-bot@wsl for the plan' })
       expect(qualified.text).toMatch(/message_agent target: "default@wsl"/)
       expect(qualified.text).not.toMatch(/default@vps/)
 
-      // A bare @hermes is this machine's default in either roster order.
-      const local = await handler({ text: '@hermes summarize' })
-      expect(local.text).toMatch(/@hermes = agent profile "default"/)
+      // A bare @moor is this machine's default in either roster order.
+      const local = await handler({ text: '@moor summarize' })
+      expect(local.text).toMatch(/@moor = agent profile "default"/)
       expect(local.text).not.toMatch(/message_agent target: "default@/)
     }
   )
@@ -470,7 +470,7 @@ describe('the mention middleware', () => {
           connectionLabel: 'VPS',
           handle: 'default-vps',
           profile: 'default',
-          profileMetadata: { ui_meta: { 'hermes-bots': { title: 'CoS Bot' } } }
+          profileMetadata: { ui_meta: { 'moor-bots': { title: 'CoS Bot' } } }
         }
       ],
       sources: [

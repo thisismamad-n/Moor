@@ -1,8 +1,8 @@
-"""Send ``hermes update`` back to the install whose interpreter it is running on.
+"""Send ``moor update`` back to the install whose interpreter it is running on.
 
 An install's in-tree venv can end up importing another checkout's code: an editable
 install recorded against a dev tree (what ``project_venv_dir`` used to cause when a dev
-checkout ran on the app install's interpreter) turns ``<install>/venv/bin/hermes`` into
+checkout ran on the app install's interpreter) turns ``<install>/venv/bin/moor`` into
 the dev tree's CLI. Every update the Desktop hands to that launcher then pulls the dev
 tree, the install never moves, and the app keeps relaunching its stale build.
 
@@ -32,7 +32,7 @@ def owning_install_root(project_root: Path) -> Path | None:
     root = Path(project_root).resolve()
     if venv.name not in ("venv", ".venv") or owner == root:
         return None
-    if not (owner / "hermes_cli" / "main.py").is_file():
+    if not (owner / "moor_cli" / "main.py").is_file():
         return None
     chosen = (Path(p).resolve() for p in os.environ.get("PYTHONPATH", "").split(os.pathsep) if p)
     if root in chosen:
@@ -49,7 +49,7 @@ def retarget_to_owning_install(project_root: Path) -> None:
     print(f"→ Updating {owner} with its own updater; this also points its venv back at it.")
     sys.stdout.flush()
     # PYTHONPATH entries resolve before the editable finder on sys.meta_path, so the
-    # owner's hermes_cli wins; in the child, project_root == owner and this is a no-op.
+    # owner's moor_cli wins; in the child, project_root == owner and this is a no-op.
     env = dict(os.environ, PYTHONPATH=str(owner))
-    code = subprocess.call([sys.executable, "-m", "hermes_cli.main", *sys.argv[1:]], cwd=owner, env=env)
+    code = subprocess.call([sys.executable, "-m", "moor_cli.main", *sys.argv[1:]], cwd=owner, env=env)
     raise SystemExit(code)

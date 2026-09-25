@@ -143,7 +143,7 @@ describe('bounded direct history runtime', () => {
   })
 
   it('keeps the edit composer available after a rail jump selects a history page', async () => {
-    vi.spyOn(window.hermesDesktop, 'api').mockResolvedValue(page(40))
+    vi.spyOn(window.moorDesktop, 'api').mockResolvedValue(page(40))
     const mounted = mount()
     await act(async () => {
       await mounted.window.revealRow(40, new AbortController().signal)
@@ -201,7 +201,7 @@ describe('bounded direct history runtime', () => {
 
   it.each(['abort', 'latest', 'session', 'unmount'] as const)('discards pending reads on %s', async action => {
     let resolve!: (value: ReturnType<typeof page>) => void
-    vi.spyOn(window.hermesDesktop, 'api').mockImplementation(
+    vi.spyOn(window.moorDesktop, 'api').mockImplementation(
       () =>
         new Promise(done => {
           resolve = done
@@ -277,7 +277,7 @@ const index = (rowIds: number[]) => ({
 describe('paging earlier from an open history window', () => {
   it('keeps earlier messages reachable after a jump to an older mark', async () => {
     const api = vi
-      .spyOn(window.hermesDesktop, 'api')
+      .spyOn(window.moorDesktop, 'api')
       .mockResolvedValueOnce(page(4000))
       .mockResolvedValueOnce(index([3880, 4000]))
       .mockResolvedValueOnce({ ...page(3880), pagination: { ...page(3880).pagination, has_older: false } })
@@ -315,7 +315,7 @@ describe('paging earlier from an open history window', () => {
   })
 
   it('shows the older page on its own when a turn longer than the page limit separates it from the anchor', async () => {
-    vi.spyOn(window.hermesDesktop, 'api')
+    vi.spyOn(window.moorDesktop, 'api')
       // 300 display rows precede the anchor; the previous prompt's forward
       // page (offset 40, 120 rows) ends 140 rows short of it.
       .mockResolvedValueOnce({ ...page(4000), pagination: { ...page(4000).pagination, offset: 300 } })
@@ -341,7 +341,7 @@ describe('paging earlier from an open history window', () => {
 
   it('retires the entry point when the complete index lists no prompt before the window', async () => {
     const api = vi
-      .spyOn(window.hermesDesktop, 'api')
+      .spyOn(window.moorDesktop, 'api')
       // The backend counts rows before this page, but none of them is a prompt mark.
       .mockResolvedValueOnce(page(4000))
       .mockResolvedValueOnce(index([4000]))

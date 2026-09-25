@@ -156,8 +156,8 @@ def test_validate_moa_payload_agrees_with_clean_slot():
 
 def test_print_config_marks_aggregator_as_billed_and_warns_on_provider_mismatch(capsys):
     """#112359: the aggregator is the acting model billed for the run; when it sits on a
-    different provider than the main model, ``hermes moa list``/``configure`` say so."""
-    from hermes_cli import moa_cmd
+    different provider than the main model, ``moor moa list``/``configure`` say so."""
+    from moor_cli import moa_cmd
 
     moa_cmd._print_config({"model": {"provider": "openai-codex"}})
 
@@ -169,7 +169,7 @@ def test_print_config_marks_aggregator_as_billed_and_warns_on_provider_mismatch(
 
 @pytest.mark.parametrize("cfg", [{"model": {"provider": "openrouter"}}, {}])
 def test_billing_notice_silent_when_providers_match_or_main_unknown(cfg, capsys):
-    from hermes_cli import moa_cmd
+    from moor_cli import moa_cmd
 
     moa_cmd._print_config(cfg)
 

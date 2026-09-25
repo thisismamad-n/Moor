@@ -162,7 +162,7 @@ For long-lived processes: Moor gateway, tui_gateway, a daemon, a process that's 
 
 ### Setup
 
-For Hermes, use a separate development checkout and data home, not a live
+For Moor, use a separate development checkout and data home, not a live
 production generation. Follow the
 [PM developer workflow](https://hermes-agent.nousresearch.com/docs/reference/package-management#developer-workflow)
 and activate that checkout — PowerShell: `. .\activate.ps1`. The declared `dev`
@@ -178,7 +178,7 @@ python -m pm.build_env --source . --out .venv --group dev --group test
 
 The output must not already exist. Stop its processes and intentionally remove
 only that disposable environment before rebuilding. Keep the same isolated
-`HERMES_HOME` for the debug target. `.venv/bin/python` is this explicitly built
+`MOOR_HOME` for the debug target. `.venv/bin/python` is this explicitly built
 debug environment, not a guessed application venv, and the patterns below run
 through it. Do not add debugpy to a running production environment; reproduce
 there only with an already-prepared debug target or arrange a restart in the
@@ -231,7 +231,7 @@ The easiest terminal-side DAP client is VS Code CLI or a small script. From insi
 **Option 1: `debugpy`'s own CLI REPL** — not an official feature, but a tiny DAP client script:
 
 ```python
-# ~/.hermes/cache/scratch/dap_client.py
+# ~/.moor/cache/scratch/dap_client.py
 import socket, json, itertools, time, sys
 
 HOST, PORT = "127.0.0.1", 5678
@@ -286,8 +286,8 @@ This is fine for one-off automation but painful as an interactive UX.
 
 For an independently owned Python project, declare `remote-pdb` in that
 project's development dependencies and prepare its debug environment through
-the project's package manager. This is not a Hermes SDK install recipe. For
-Hermes, prefer the declared debugpy dependency; the remote-pdb examples below
+the project's package manager. This is not a Moor SDK install recipe. For
+Moor, prefer the declared debugpy dependency; the remote-pdb examples below
 require a separately declared, freshly built debug environment, never an
 in-place pip install into the selected application generation.
 
@@ -312,7 +312,7 @@ See Recipe 3. The wrapper captures subprocess output, so run pytest directly for
 
 ### `run_agent.py` / CLI — one-shot
 In the prepared debug checkout, add `breakpoint()` near the suspect line, then
-run `python hermes`. Control returns to your terminal at the pause point.
+run `python moor`. Control returns to your terminal at the pause point.
 
 ### `tui_gateway` subprocess (spawned by `moor --tui`)
 The gateway runs as a child of the Node TUI. Options:
@@ -324,7 +324,7 @@ import debugpy
 debugpy.listen(("127.0.0.1", 5678))
 debugpy.wait_for_client()
 ```
-Start `python hermes --tui` from the prepared debug checkout. The TUI will appear frozen (its backend is waiting). Attach a client; execution resumes when you `continue`. Check the child's interpreter and imports before assuming it inherited the debug environment.
+Start `python moor --tui` from the prepared debug checkout. The TUI will appear frozen (its backend is waiting). Attach a client; execution resumes when you `continue`. Check the child's interpreter and imports before assuming it inherited the debug environment.
 
 **B. Use `remote-pdb` at a specific handler:**
 ```python

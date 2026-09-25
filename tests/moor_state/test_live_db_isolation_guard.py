@@ -27,7 +27,7 @@ from moor_state import SessionDB
 # These probe the live-DB guard against the real root on purpose.
 pytestmark = pytest.mark.allow_real_home_io
 
-# Must match the root the guard itself computes.  Hardcoding ``~/.hermes``
+# Must match the root the guard itself computes.  Hardcoding ``~/.moor``
 # silently disarmed every assertion below on Windows, where the real root is
 # ``%LOCALAPPDATA%\moor``: the paths under test were then *correctly*
 # classified as non-production, so the guard never raised and the whole

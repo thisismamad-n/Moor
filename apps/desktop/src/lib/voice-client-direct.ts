@@ -1,5 +1,5 @@
 import { type OwnerScope, ownerScoped } from '@/api/client'
-import { getApiRequestConnection, getApiRequestProfile, hermesApi } from '@/hermes'
+import { getApiRequestConnection, getApiRequestProfile, moorApi } from '@/moor'
 
 /**
  * Client-direct voice: call the active profile's STT/TTS providers straight
@@ -98,7 +98,7 @@ export async function fetchVoiceClientConfig(owner?: OwnerScope): Promise<null |
       // moorApi carries connectionScoped(); profileScoped() adds the
       // profile — the same routing every relay audio call uses, so the
       // config comes from the backend the user is actually talking to.
-      const response = await hermesApi<{ ok: boolean } & VoiceClientConfig>({
+      const response = await moorApi<{ ok: boolean } & VoiceClientConfig>({
         ...ownerScoped(owner),
         path: '/api/audio/voice-config'
       })

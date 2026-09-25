@@ -7,7 +7,7 @@ import { cleanPath, comparisonPath } from '@/lib/path-compare'
 
 import { showsIgnoredFiles } from './prefs'
 
-export type ProjectTreeEntry = HermesReadDirEntry
+export type ProjectTreeEntry = MoorReadDirEntry
 
 interface GitignoreRule {
   base: string
@@ -118,7 +118,7 @@ function ignoredBy(rules: GitignoreRule[], entry: MoorReadDirEntry) {
   })
 }
 
-async function filterIgnored(entries: HermesReadDirEntry[], rootPath: string, dirPath: string) {
+async function filterIgnored(entries: MoorReadDirEntry[], rootPath: string, dirPath: string) {
   // Opting a project into its ignored files skips the gitignore pass entirely —
   // no git-root probe, no .gitignore reads. ALWAYS_EXCLUDED still applies: `.git`
   // internals and dependency/build dirs are never worth browsing, in any repo.

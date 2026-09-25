@@ -102,4 +102,4 @@ class TestServeGuard:
             main_mod.cmd_dashboard(args)
 
         assert exc_info.value.code == 2
-        assert "Hermes stopped because your settings file" in capsys.readouterr().err
+        assert "Moor stopped because your settings file" in capsys.readouterr().err

@@ -18,8 +18,8 @@ try {
   renameSync(original, moved)
   relocated = true
   const manifest = JSON.parse(readFileSync(join(moved, 'manifest.json'), 'utf8'))
-  const command = manifest.runtime.commands.hermes
-  if (!command) throw new Error('manifest has no hermes command')
+  const command = manifest.runtime.commands.moor
+  if (!command) throw new Error('manifest has no moor command')
   const executable = realpathSync(resolve(moved, command))
   const inside = relative(realpathSync(moved), executable)
   if (isAbsolute(command) || isAbsolute(inside) || inside === '..' || inside.startsWith(`..${sep}`)) {
@@ -27,8 +27,8 @@ try {
   }
   const home = join(scratch, 'home')
   mkdirSync(home)
-  const env = { HOME: home, USERPROFILE: home, HERMES_HOME: join(home, '.hermes'),
-    PYTHONUTF8: '1', PYTHONDONTWRITEBYTECODE: '1', HERMES_DISABLE_LAZY_INSTALLS: '1',
+  const env = { HOME: home, USERPROFILE: home, MOOR_HOME: join(home, '.moor'),
+    PYTHONUTF8: '1', PYTHONDONTWRITEBYTECODE: '1', MOOR_DISABLE_LAZY_INSTALLS: '1',
     UV_OFFLINE: '1', npm_config_offline: 'true' }
   // Keep OS process necessities only; no checkout, Python, PM, or Node overrides.
   for (const [key, value] of Object.entries(process.env)) {
@@ -37,12 +37,12 @@ try {
   // tools list crosses the real application/config/registry imports, unlike
   // version/help and PM's stdlib bootstrap fast paths.
   for (const args of [['--version'], ['--help'], ['tools', 'list'], ['pm', 'doctor']]) {
-    console.log(`— published hermes ${args.join(' ')} (relocated) —`)
+    console.log(`— published moor ${args.join(' ')} (relocated) —`)
     const child = spawnSync(executable, args, {
       cwd: home, env, stdio: 'inherit', timeout: 120000,
     })
     if (child.error) throw child.error
-    if (child.status !== 0) throw new Error(`hermes ${args.join(' ')} failed: ${child.status ?? child.signal}`)
+    if (child.status !== 0) throw new Error(`moor ${args.join(' ')} failed: ${child.status ?? child.signal}`)
   }
   console.log('SMOKE OK')
 } finally {

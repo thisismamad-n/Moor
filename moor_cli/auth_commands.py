@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from pm import install_hint
-from hermes_cli.cli_output import line_input
+from moor_cli.cli_output import line_input
 
 import math
 import sys
@@ -18,12 +18,12 @@ from agent.credential_pool import (
     STRATEGY_RANDOM, STRATEGY_LEAST_USED, PooledCredential, _codex_principal_identity,
     _exhausted_until, _normalize_custom_pool_name, get_pool_strategy, label_from_token, list_custom_pool_providers,
     load_pool)
-import hermes_cli.auth as auth_mod
-from hermes_cli.auth import PROVIDER_REGISTRY
-from hermes_cli.auth_plugin_providers import (
+import moor_cli.auth as auth_mod
+from moor_cli.auth import PROVIDER_REGISTRY
+from moor_cli.auth_plugin_providers import (
     dispatch_plugin_auth, is_refreshable_oauth_provider, plugin_missing_auth_handler_error)
-from hermes_constants import OPENROUTER_BASE_URL
-from hermes_cli.secret_prompt import masked_secret_prompt
+from moor_constants import OPENROUTER_BASE_URL
+from moor_cli.secret_prompt import masked_secret_prompt
 
 
 # Providers that support OAuth login in addition to API keys.
@@ -31,7 +31,7 @@ _OAUTH_CAPABLE_PROVIDERS = {"anthropic", "moor", "openai-codex", "xai-oauth", "q
 # ...and default to it when ``--type`` is omitted. OpenRouter stays API-key-first: the documented
 # ``moor auth add openrouter --api-key sk-or-...`` must keep working with no ``--type``.
 _OAUTH_DEFAULT_PROVIDERS = _OAUTH_CAPABLE_PROVIDERS - {"openrouter"}
-# Providers whose sibling CLI login Hermes may borrow (``auth.adopt_external_logins``).
+# Providers whose sibling CLI login Moor may borrow (``auth.adopt_external_logins``).
 EXTERNAL_LOGIN_PROVIDERS = {"anthropic", "openai-codex"}
 
 
@@ -232,7 +232,7 @@ class _OAuthAddSpec:
 
 
 def _codex_login(args) -> dict:
-    from hermes_cli.auth_codex_browser import codex_oauth_login
+    from moor_cli.auth_codex_browser import codex_oauth_login
     return codex_oauth_login(args)
 
 
@@ -459,7 +459,7 @@ def _warn_same_codex_account(token: str, existing: list[PooledCredential]) -> No
             print(f'warning: this login is the same OpenAI account as openai-codex credential #{position} '
                   f'("{sibling.label}"). Both logins share one token family, so OpenAI will revoke the older one '
                   "and you gain no extra quota. Log into a different account instead, or keep just one "
-                  f"(`hermes auth remove openai-codex {position}`).", file=sys.stderr)
+                  f"(`moor auth remove openai-codex {position}`).", file=sys.stderr)
             return
 
 
@@ -665,7 +665,7 @@ def auth_refresh_command(args) -> None:
 def auth_status_command(args) -> None:
     provider = _normalize_provider(getattr(args, "provider", "") or "")
     if not provider:
-        raise SystemExit("Provider is required. Example: `hermes auth status spotify`.")
+        raise SystemExit("Provider is required. Example: `moor auth status spotify`.")
     if dispatch_plugin_auth("status", args, provider):
         return
     if provider in auth_mod.SINGLE_USE_REFRESH_POOL_PROVIDERS:
@@ -753,9 +753,9 @@ def _print_azure_entra_status() -> None:
         print(f"  Scope: {scope}")
         if not has_azure_identity_installed():
             print("  Status: ⚠ azure-identity not installed")
-            print("  From the Hermes environment, run: "
+            print("  From the Moor environment, run: "
                   f"{install_hint('azure-identity')}")
-            print("  Then restart Hermes.")
+            print("  Then restart Moor.")
         else:
             info = describe_active_credential(config=EntraIdentityConfig(scope=scope), timeout_seconds=10.0)
             env_sources = info.get("env_sources") or []

@@ -358,13 +358,13 @@ class TestSendMessageTool:
             force_document=False,
         )
 
-    def test_missing_media_is_reported_to_the_caller_and_hermes_send_exits_nonzero(self, tmp_path, monkeypatch):
+    def test_missing_media_is_reported_to_the_caller_and_moor_send_exits_nonzero(self, tmp_path, monkeypatch):
         """#115908: a MEDIA path that does not exist on the host was dropped with only a host-side
-        warning while ``hermes send`` printed success:true and exited 0. The surviving attachment is
+        warning while ``moor send`` printed success:true and exited 0. The surviving attachment is
         still sent; the payload names the drop and the CLI exit code follows it."""
-        from hermes_cli.send_cmd import _emit_result
+        from moor_cli.send_cmd import _emit_result
 
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "0")
+        monkeypatch.setenv("MOOR_MEDIA_DELIVERY_STRICT", "0")
         config, telegram_cfg = _make_config()
         report = tmp_path / "report.pdf"
         report.write_bytes(b"%PDF report")
@@ -1621,26 +1621,26 @@ class TestSendTelegramThreadNotFoundRetry:
 
 def test_not_configured_error_names_resolved_home_and_consulted_sources(tmp_path, monkeypatch):
     """The 'not configured' error names the files this process actually read (resolved home, not a
-    hardcoded ``~/.hermes``) and what each source held, so a Windows/profile home user can fix the right file."""
+    hardcoded ``~/.moor``) and what each source held, so a Windows/profile home user can fix the right file."""
     from gateway.config import GatewayConfig
     from tools.send_message_tool import _resolve_platform_config
 
-    home = tmp_path / "AppData" / "Local" / "hermes"
+    home = tmp_path / "AppData" / "Local" / "moor"
     home.mkdir(parents=True)
     (home / ".env").write_text("FIRECRAWL_API_KEY=x\n", encoding="utf-8")
     (home / "config.yaml").write_text("platforms:\n  discord:\n    enabled: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.delenv("DISCORD_BOT_TOKEN", raising=False)
 
     _, _, _, err = _resolve_platform_config("discord", GatewayConfig())
 
-    assert "~/.hermes" not in err
+    assert "~/.moor" not in err
     assert str(home / ".env") in err
     assert str(home / "config.yaml") in err
 
 
 def test_not_configured_error_names_default_root_gateway_and_secret_sources(tmp_path, monkeypatch):
-    """Under ``HERMES_HOME=<root>/profiles/<p>`` the error says a live gateway from the default root has the
+    """Under ``MOOR_HOME=<root>/profiles/<p>`` the error says a live gateway from the default root has the
     platform connected (its credentials never came from this profile's ``.env``) and lists external secret
     sources by name only (#114272 step 5)."""
     import json
@@ -1649,7 +1649,7 @@ def test_not_configured_error_names_default_root_gateway_and_secret_sources(tmp_
     from gateway.config import GatewayConfig
     from tools.send_message_tool import _resolve_platform_config
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     profile = root / "profiles" / "coder"
     profile.mkdir(parents=True)
     (root / "gateway_state.json").write_text(
@@ -1657,7 +1657,7 @@ def test_not_configured_error_names_default_root_gateway_and_secret_sources(tmp_
     (profile / ".env").write_text("FIRECRAWL_API_KEY=x\n", encoding="utf-8")
     (profile / "config.yaml").write_text(
         "secrets:\n  bitwarden:\n    enabled: false\n    session_token: SECRET-VALUE\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(profile))
+    monkeypatch.setenv("MOOR_HOME", str(profile))
     monkeypatch.delenv("DISCORD_BOT_TOKEN", raising=False)
 
     _, _, _, err = _resolve_platform_config("discord", GatewayConfig())

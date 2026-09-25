@@ -21,7 +21,7 @@ description: "通过 WebSocket gateway 将 Moor Agent 连接到元宝企业消�
 安装所需依赖：
 
 ```bash
-hermes pm repair
+moor pm repair
 ```
 
 ## 配置

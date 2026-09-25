@@ -5,10 +5,10 @@ Hermetic-test invariants enforced here (see AGENTS.md for rationale):
 1. **No credential env vars.** All provider/credential-shaped env vars
    (ending in _API_KEY, _TOKEN, _SECRET, _PASSWORD, _CREDENTIALS, etc.)
    are unset before every test. Local developer keys cannot leak in.
-2. **Isolated Hermes homes.** HERMES_HOME and the platform-default root
+2. **Isolated Moor homes.** MOOR_HOME and the platform-default root
    resolve inside a per-test tempdir. Profile/root resolution can inspect
    both without probing production state. HOME and Path.home() stay intact
-   for subprocesses and non-Hermes paths. Explicit test overrides still win.
+   for subprocesses and non-Moor paths. Explicit test overrides still win.
 3. **Deterministic runtime.** TZ=UTC, LANG=C.UTF-8, PYTHONHASHSEED=0.
 4. **No MOOR_SESSION_* inheritance** — the agent's current gateway
    session must not leak into tests.
@@ -60,9 +60,9 @@ _PRE_SANDBOX_KANBAN_OVERRIDE = os.environ.get("MOOR_KANBAN_HOME", "").strip()
 _PRE_SANDBOX_MOOR_HOME = os.environ.get("MOOR_HOME", "")
 
 # Capture before any test fixture can override Path.home()/LOCALAPPDATA.
-from hermes_constants import _get_platform_default_hermes_home
+from moor_constants import _get_platform_default_moor_home
 
-_NATIVE_HERMES_PARENT = _get_platform_default_hermes_home().parent
+_NATIVE_MOOR_PARENT = _get_platform_default_moor_home().parent
 
 
 def _moor_home_points_at_production(value: str) -> bool:
@@ -81,14 +81,14 @@ def _moor_home_points_at_production(value: str) -> bool:
     if not value:
         return True
     try:
-        # The platform-default root, not a hardcoded ``~/.hermes``: Windows installs live under
-        # ``%LOCALAPPDATA%\hermes``, and a dev shell exporting that path used to be honored as
-        # "custom", pinning import-time paths (``tui_gateway.server._hermes_home``) to the live
+        # The platform-default root, not a hardcoded ``~/.moor``: Windows installs live under
+        # ``%LOCALAPPDATA%\moor``, and a dev shell exporting that path used to be honored as
+        # "custom", pinning import-time paths (``tui_gateway.server._moor_home``) to the live
         # install so the state.db guard tripped on every store-touching test (#112692).
-        from hermes_state_guard import _real_platform_state_root
+        from moor_state_guard import _real_platform_state_root
 
         resolved = Path(value).expanduser().resolve()
-        real_root = _real_platform_state_root() or (Path.home() / ".hermes").resolve()
+        real_root = _real_platform_state_root() or (Path.home() / ".moor").resolve()
     except Exception:
         return True
     if resolved == real_root:
@@ -97,32 +97,32 @@ def _moor_home_points_at_production(value: str) -> bool:
     return resolved.parent.name == "profiles" and resolved.parent.parent == real_root
 
 
-# ``import hermes_bootstrap`` (transitively: any entry-point module) runs
+# ``import moor_bootstrap`` (transitively: any entry-point module) runs
 # ``export_scratch_tmp_env()``, which points TMPDIR/TMP/TEMP at
-# ``<HERMES_HOME>/cache/scratch`` unless a temp var is already set — and a
-# Hermes-launched shell (agent terminal, ``hermes`` child) arrives with that
-# redirect already applied, tagged by HERMES_SCRATCH_DIR. Either way the tmp
+# ``<MOOR_HOME>/cache/scratch`` unless a temp var is already set — and a
+# moor-launched shell (agent terminal, ``moor`` child) arrives with that
+# redirect already applied, tagged by MOOR_SCRATCH_DIR. Either way the tmp
 # root ends up INSIDE a guarded real home (the operator's, or a custom one
 # honored below), so the session sandbox, pytest's basetemp and every
 # ``tempfile`` default in the code under test trip the real-home guard. Strip
-# Hermes' own export (the marker tells it apart from a user-set var), and
+# Moor' own export (the marker tells it apart from a user-set var), and
 # relocate even user-set temp directories inside a guarded home. Pin the
 # system default so the import-time hook stays a no-op. The parallel runner
 # exports its own disk-backed TMPDIR anyway.
-from hermes_constants import SCRATCH_DIR_MARKER_ENV, SCRATCH_TMP_ENV_VARS
+from moor_constants import SCRATCH_DIR_MARKER_ENV, SCRATCH_TMP_ENV_VARS
 
-_HERMES_EXPORTED_TMP = os.environ.get(SCRATCH_DIR_MARKER_ENV, "")
-if _HERMES_EXPORTED_TMP:
+_MOOR_EXPORTED_TMP = os.environ.get(SCRATCH_DIR_MARKER_ENV, "")
+if _MOOR_EXPORTED_TMP:
     for _key in SCRATCH_TMP_ENV_VARS:
-        if os.environ.get(_key, "").strip() == _HERMES_EXPORTED_TMP:
+        if os.environ.get(_key, "").strip() == _MOOR_EXPORTED_TMP:
             del os.environ[_key]
     del os.environ[SCRATCH_DIR_MARKER_ENV]
 
-from hermes_state_guard import _real_platform_state_root
+from moor_state_guard import _real_platform_state_root
 
-_real_test_root = _real_platform_state_root() or (Path.home() / ".hermes").resolve()
+_real_test_root = _real_platform_state_root() or (Path.home() / ".moor").resolve()
 _guarded_tmp_roots = [_real_test_root]
-_custom_test_home = os.environ.get("HERMES_HOME")
+_custom_test_home = os.environ.get("MOOR_HOME")
 if _custom_test_home:
     _guarded_tmp_roots.append(Path(_custom_test_home).expanduser().resolve())
 for _key in SCRATCH_TMP_ENV_VARS:
@@ -134,20 +134,20 @@ for _key in SCRATCH_TMP_ENV_VARS:
 tempfile.tempdir = None  # re-resolve after stripping guarded temp directories
 os.environ.setdefault("TMPDIR", tempfile.gettempdir())
 
-if _hermes_home_points_at_production(os.environ.get("HERMES_HOME", "")):
-    _SESSION_HERMES_HOME = tempfile.mkdtemp(prefix="hermes-test-home-")
-    os.environ["HERMES_HOME"] = _SESSION_HERMES_HOME
+if _moor_home_points_at_production(os.environ.get("MOOR_HOME", "")):
+    _SESSION_MOOR_HOME = tempfile.mkdtemp(prefix="moor-test-home-")
+    os.environ["MOOR_HOME"] = _SESSION_MOOR_HOME
     # Marker for re-imported conftest module bodies (xdist workers exec this
     # file more than once): the second import sees the already-redirected
     # sandbox in the env and must not register it as a guarded "real" root.
-    os.environ["HERMES_TEST_SANDBOX_HOME"] = _SESSION_HERMES_HOME
-    atexit.register(shutil.rmtree, _SESSION_HERMES_HOME, True)
+    os.environ["MOOR_TEST_SANDBOX_HOME"] = _SESSION_MOOR_HOME
+    atexit.register(shutil.rmtree, _SESSION_MOOR_HOME, True)
 
 # PYTHONPYCACHEPREFIX is a bytecode-mirror escape hatch: when set (the
-# bundled desktop app exports it as %LOCALAPPDATA%\hermes\pycache),
+# bundled desktop app exports it as %LOCALAPPDATA%\moor\pycache),
 # importlib/pytest write .pyc files to <prefix>/<absolute source path>
 # instead of next to the sources. Un-scrubbed, that mirror lands under
-# the REAL hermes home and trips the real-home tripwire on any module
+# the REAL moor home and trips the real-home tripwire on any module
 # imported after sandboxing (test_find_shell was the first to bite).
 # Clear it so bytecode goes back beside the (already sandboxed) sources.
 os.environ.pop("PYTHONPYCACHEPREFIX", None)
@@ -175,9 +175,9 @@ os.environ["MOOR_TEST_ISOLATION"] = os.environ.get("MOOR_HOME", "") or "1"
 # calls lazy_deps.ensure() at import time, so collecting a file that imports it
 # ran a real `uv pip install boto3` into the shared venv while other files raced
 # on whether botocore was importable yet.
-os.environ["HERMES_DISABLE_LAZY_INSTALLS"] = "1"
+os.environ["MOOR_DISABLE_LAZY_INSTALLS"] = "1"
 
-#: HERMES_HOME as it stood when conftest was imported - i.e. before any test
+#: MOOR_HOME as it stood when conftest was imported - i.e. before any test
 #: module could import code that configures logging. Recorded so the guard in
 #: tests/test_log_isolation.py can assert the sandbox existed AT THAT MOMENT.
 #: Reading os.environ from inside a test is useless here: the per-test
@@ -187,8 +187,8 @@ MOOR_HOME_AT_CONFTEST_IMPORT = os.environ.get("MOOR_HOME", "")
 
 # ── Host-rendezvous isolation ───────────────────────────────────────────────
 # ``gateway/host_rendezvous.py`` publishes ONE record per role per OS USER, in
-# ``$HERMES_GATEWAY_LOCK_DIR`` else ``$XDG_STATE_HOME/hermes/gateway-locks`` —
-# deliberately outside HERMES_HOME, because the host singleton spans profiles.
+# ``$MOOR_GATEWAY_LOCK_DIR`` else ``$XDG_STATE_HOME/moor/gateway-locks`` —
+# deliberately outside MOOR_HOME, because the host singleton spans profiles.
 # Under the per-file parallel runner that directory is shared by ~40 pytest
 # subprocesses: one test that boots a real gateway publishes a record, and every
 # other file's lifecycle code then correctly attaches to a gateway that has
@@ -196,12 +196,12 @@ MOOR_HOME_AT_CONFTEST_IMPORT = os.environ.get("MOOR_HOME", "")
 #
 # A caller-supplied value always wins (both here and in the per-test fixture
 # below) — otherwise the documented override is a silent no-op.
-HOST_LOCK_DIR_AT_CONFTEST_IMPORT = os.environ.get("HERMES_GATEWAY_LOCK_DIR", "")
+HOST_LOCK_DIR_AT_CONFTEST_IMPORT = os.environ.get("MOOR_GATEWAY_LOCK_DIR", "")
 if not HOST_LOCK_DIR_AT_CONFTEST_IMPORT:
     # Deterministic per-PID name, not mkdtemp: the parallel runner SIGKILLs a worker on timeout,
     # which never runs atexit, so a random dir per run leaked one directory per killed worker.
     # A fixed name is reused by the next process with that PID, and dead siblings are swept here.
-    _LOCK_DIR_PREFIX = "hermes-test-gateway-locks-"
+    _LOCK_DIR_PREFIX = "moor-test-gateway-locks-"
     _LOCK_DIR_ROOT = Path(tempfile.gettempdir())
     for _stale in _LOCK_DIR_ROOT.glob(f"{_LOCK_DIR_PREFIX}*"):
         try:
@@ -214,7 +214,7 @@ if not HOST_LOCK_DIR_AT_CONFTEST_IMPORT:
             shutil.rmtree(_stale, ignore_errors=True)
     _SESSION_LOCK_DIR = str(_LOCK_DIR_ROOT / f"{_LOCK_DIR_PREFIX}{os.getpid()}")
     shutil.rmtree(_SESSION_LOCK_DIR, ignore_errors=True)
-    os.environ["HERMES_GATEWAY_LOCK_DIR"] = _SESSION_LOCK_DIR
+    os.environ["MOOR_GATEWAY_LOCK_DIR"] = _SESSION_LOCK_DIR
     atexit.register(shutil.rmtree, _SESSION_LOCK_DIR, True)
 
 
@@ -235,7 +235,7 @@ if not HOST_LOCK_DIR_AT_CONFTEST_IMPORT:
 # conftest (that is the repo root), and pytest fails a run that loads a
 # non-root conftest carrying ``pytest_plugins`` after startup (e.g. ``pytest .``).
 # Fixtures imported here register exactly as if they were defined here.
-from tests._fixtures.env_filter import _HERMES_BEHAVIORAL_VARS, _looks_like_credential
+from tests._fixtures.env_filter import _MOOR_BEHAVIORAL_VARS, _looks_like_credential
 from tests._fixtures.live_system_guard import (  # noqa: F401 — _live_system_guard registers here
     _GATEWAY_LOOKALIKE_MARK,
     _LIVE_SYSTEM_GUARD_BYPASS_MARK,
@@ -268,48 +268,48 @@ def _hermetic_environment(tmp_path, monkeypatch):
     # custom host resolution override/delete this explicitly.
     monkeypatch.setenv("MOOR_HONCHO_HOST", "moor")
 
-    # 3. Isolate both inputs to profile/root resolution. HERMES_HOME alone
-    #    is insufficient: get_default_hermes_root() resolves the native root
+    # 3. Isolate both inputs to profile/root resolution. MOOR_HOME alone
+    #    is insufficient: get_default_moor_root() resolves the native root
     #    too, to distinguish standard profiles from custom deployments.
-    #    Patch only the Hermes default, not HOME/Path.home(). Subprocesses need
+    #    Patch only the Moor default, not HOME/Path.home(). Subprocesses need
     #    a stable HOME. Hardcoded real-home I/O must still trip the guard.
-    import hermes_constants
+    import moor_constants
 
-    platform_default = hermes_constants._get_platform_default_hermes_home
+    platform_default = moor_constants._get_platform_default_moor_home
 
     def isolated_platform_default() -> Path:
         root = platform_default()
         # Explicit Path.home()/LOCALAPPDATA overrides in individual tests
         # still select their own layout. Suffix changes retain their name.
-        return tmp_path / root.name if root.parent == _NATIVE_HERMES_PARENT else root
+        return tmp_path / root.name if root.parent == _NATIVE_MOOR_PARENT else root
 
     monkeypatch.setattr(
-        hermes_constants, "_get_platform_default_hermes_home", isolated_platform_default
+        moor_constants, "_get_platform_default_moor_home", isolated_platform_default
     )
-    fake_hermes_home = tmp_path / "hermes_test"
-    fake_hermes_home.mkdir()
-    (fake_hermes_home / "sessions").mkdir()
-    (fake_hermes_home / "cron").mkdir()
-    (fake_hermes_home / "memories").mkdir()
-    (fake_hermes_home / "skills").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(fake_hermes_home))
-    # A test that pins the process home (hermes_constants.pin_process_hermes_home) must not
+    fake_moor_home = tmp_path / "moor_test"
+    fake_moor_home.mkdir()
+    (fake_moor_home / "sessions").mkdir()
+    (fake_moor_home / "cron").mkdir()
+    (fake_moor_home / "memories").mkdir()
+    (fake_moor_home / "skills").mkdir()
+    monkeypatch.setenv("MOOR_HOME", str(fake_moor_home))
+    # A test that pins the process home (moor_constants.pin_process_moor_home) must not
     # leak that module-global into the next test's routed-profile decisions.
     try:
-        import hermes_constants as _hc
-        monkeypatch.setattr(_hc, "_PINNED_PROCESS_HERMES_HOME", None, raising=False)
+        import moor_constants as _hc
+        monkeypatch.setattr(_hc, "_PINNED_PROCESS_MOOR_HOME", None, raising=False)
     except Exception:
         pass
     # Per-TEST host-rendezvous dir (see the session-level block at the top): the
     # host gateway/serve record is shared per OS user by design, so without this
     # one test's published owner makes the next test's lifecycle code attach to it.
     # HOME is deliberately NOT redirected above, so an unpinned run would read and
-    # write the developer's live ~/.local/state/hermes/gateway-locks.
+    # write the developer's live ~/.local/state/moor/gateway-locks.
     # Skipped when the caller supplied the variable, so an explicit override still
     # works (tests of the resolution rule itself rely on that).
     if not HOST_LOCK_DIR_AT_CONFTEST_IMPORT:
         monkeypatch.delenv("XDG_STATE_HOME", raising=False)
-        monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
+        monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
     # Keep the subprocess-surviving isolation marker pointed at THIS test's
     # home (#82770): children spawned by the test inherit it by default, so
     # moor_state's live-DB guard stays armed in them even when the test
@@ -376,7 +376,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
     # suite timeout under tests that set fake proxy env vars. The kill-switch
     # makes ensure() raise FeatureUnavailable immediately instead.
     # extras tests override this var in both directions.
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("MOOR_DISABLE_LAZY_INSTALLS", "1")
 
     # 5. Reset plugin singleton so tests don't leak plugins from
     #    ~/.moor/plugins/ (which, per step 3, is now empty — but the
@@ -1005,10 +1005,10 @@ def _relocate_basetemp_outside_operator_home(config) -> None:
     if not candidate.resolve().is_relative_to(native):
         return
     # The system temp dir may itself be inside the home (Windows TEMP under the
-    # Hermes home). The repo is no escape either: the default install checks it
-    # out *inside* the home (~/.hermes/hermes-agent). The relocated basetemp goes
+    # Moor home). The repo is no escape either: the default install checks it
+    # out *inside* the home (~/.moor/moor-agent). The relocated basetemp goes
     # into ONE prunable root outside the home, never loose into the operator's
-    # $HOME (123 ``hermes-pytest-basetemp-*`` dirs piled up there in a day, one per
+    # $HOME (123 ``moor-pytest-basetemp-*`` dirs piled up there in a day, one per
     # test file the per-file runner spawned). It is removed when this pytest exits
     # and, for runs that were killed before that, swept once it is 24h idle.
     safe = Path(tempfile.mkdtemp(prefix="b-", dir=_pytest_disk_temp_root(native)))
@@ -1018,7 +1018,7 @@ def _relocate_basetemp_outside_operator_home(config) -> None:
     )
     factory._given_basetemp = safe
     config.option.basetemp = str(safe)
-    config._hermes_relocated_basetemp = safe
+    config._moor_relocated_basetemp = safe
 
 
 def _pytest_disk_temp_root(native: Path) -> Path:
@@ -1026,19 +1026,19 @@ def _pytest_disk_temp_root(native: Path) -> Path:
     one (``scripts/run_tests_parallel.py::_runner_scratch_root``), else a plain (not
     dot-prefixed — hidden-dir search tests would see every fixture as hidden) sibling of
     the native home. Entries idle for a day are swept on the way in."""
-    from hermes_constants_scratch import prune_idle_entries
+    from moor_constants_scratch import prune_idle_entries
 
     if os.name != "nt" and os.path.isdir("/var/tmp"):  # no-tmp: ok — disk-backed FHS root
-        root = Path("/var/tmp/hermes-pytest")  # no-tmp: ok — /var/tmp is disk-backed by FHS, never tmpfs
+        root = Path("/var/tmp/moor-pytest")  # no-tmp: ok — /var/tmp is disk-backed by FHS, never tmpfs
     else:
-        root = native.parent / "hermes-pytest"
+        root = native.parent / "moor-pytest"
     root.mkdir(parents=True, exist_ok=True)
     prune_idle_entries(root, 24, frozenset())
     return root
 
 
 def _remove_relocated_basetemp(config) -> None:
-    safe = getattr(config, "_hermes_relocated_basetemp", None)
+    safe = getattr(config, "_moor_relocated_basetemp", None)
     if safe is not None:
         shutil.rmtree(safe, ignore_errors=True)
 
@@ -1330,26 +1330,26 @@ def _moa_caches_isolated():
 
 
 # ── Real-home tripwire (universal read/write guard) ──────────────────────────
-# The hermetic sandbox redirects get_hermes_home(), but TWO escape classes
-# remain: (a) code hardcoding Path.home()/".hermes" (the exact restatement
-# class AGENTS.md bans — the Path.home()/.hermes/profiles bug the 2026-09-03
+# The hermetic sandbox redirects get_moor_home(), but TWO escape classes
+# remain: (a) code hardcoding Path.home()/".moor" (the exact restatement
+# class AGENTS.md bans — the Path.home()/.moor/profiles bug the 2026-09-03
 # deployment review caught in pm/plugins_state.py), and (b) imports freezing
 # real-home paths before fixtures run. The kanban guard (#69283) covers one
 # subsystem; this covers EVERY file operation: any open()/mkdir/stat-family
-# call resolving under the REAL hermes root fails the test immediately
+# call resolving under the REAL moor root fails the test immediately
 # with a message naming the path — reads AND writes (a read of production
 # state is as much a leak as a write: it drags fixture rows and real config
 # into test assertions).
 #
 # The real root is captured at conftest import (pre-sandbox), honoring a
-# genuinely-custom pre-set HERMES_HOME exactly like the kanban deny-list
-# (_hermes_home_points_at_production governs which values count).
-_REAL_HERMES_ROOT_CANDIDATES: list[Path] = []
+# genuinely-custom pre-set MOOR_HOME exactly like the kanban deny-list
+# (_moor_home_points_at_production governs which values count).
+_REAL_MOOR_ROOT_CANDIDATES: list[Path] = []
 
 
-def _capture_real_hermes_root() -> list[Path]:
-    """The real root(s) to refuse: the default ~/.hermes plus a pre-sandbox
-    custom HERMES_HOME when one was set. Both are guarded — the default
+def _capture_real_moor_root() -> list[Path]:
+    """The real root(s) to refuse: the default ~/.moor plus a pre-sandbox
+    custom MOOR_HOME when one was set. Both are guarded — the default
     because hardcoded restatements hit it; the custom one because
     deployment-shaped tests (Docker /opt/data) must not touch the operator's
     real custom root either."""
@@ -1357,28 +1357,28 @@ def _capture_real_hermes_root() -> list[Path]:
 
     roots: list[Path] = []
     try:
-        default_root = (Path.home() / ".hermes").resolve()
+        default_root = (Path.home() / ".moor").resolve()
         roots.append(default_root)
     except Exception:
         pass
-    # native-Windows default: %LOCALAPPDATA%\hermes (get_hermes_home's
+    # native-Windows default: %LOCALAPPDATA%\moor (get_moor_home's
     # platform-native path) — guard it too
     localappdata = os.environ.get("LOCALAPPDATA", "")
     if localappdata:
         try:
-            win_root = (Path(localappdata) / "hermes").resolve()
+            win_root = (Path(localappdata) / "moor").resolve()
             if win_root not in roots:
                 roots.append(win_root)
         except Exception:
             pass
-    if _PRE_SANDBOX_HERMES_HOME and not _hermes_home_points_at_production(
-        _PRE_SANDBOX_HERMES_HOME
+    if _PRE_SANDBOX_MOOR_HOME and not _moor_home_points_at_production(
+        _PRE_SANDBOX_MOOR_HOME
     ):
         try:
-            custom = Path(_PRE_SANDBOX_HERMES_HOME).expanduser().resolve()
+            custom = Path(_PRE_SANDBOX_MOOR_HOME).expanduser().resolve()
             # The live session sandbox is test-owned, never a guarded root
-            # (a re-imported conftest body sees it as _PRE_SANDBOX_HERMES_HOME).
-            sandbox = os.environ.get("HERMES_TEST_SANDBOX_HOME", "")
+            # (a re-imported conftest body sees it as _PRE_SANDBOX_MOOR_HOME).
+            sandbox = os.environ.get("MOOR_TEST_SANDBOX_HOME", "")
             if sandbox and custom == Path(sandbox).expanduser().resolve():
                 return roots
             if custom not in roots:
@@ -1388,11 +1388,11 @@ def _capture_real_hermes_root() -> list[Path]:
     return roots
 
 
-_REAL_HERMES_ROOT_CANDIDATES = _capture_real_hermes_root()
+_REAL_MOOR_ROOT_CANDIDATES = _capture_real_moor_root()
 
 
 @pytest.fixture(autouse=True)
-def _forbid_real_hermes_home_io(monkeypatch, request):
+def _forbid_real_moor_home_io(monkeypatch, request):
     """Guard Python file/metadata/deletion calls and SQLite against real state.
 
     Native libraries and subprocesses still need their own temporary-home
@@ -1402,7 +1402,7 @@ def _forbid_real_hermes_home_io(monkeypatch, request):
         return
     from tests.home_io_guard import HomeIOGuard
 
-    HomeIOGuard(lambda: _REAL_HERMES_ROOT_CANDIDATES).install(monkeypatch)
+    HomeIOGuard(lambda: _REAL_MOOR_ROOT_CANDIDATES).install(monkeypatch)
 
 
 @pytest.fixture

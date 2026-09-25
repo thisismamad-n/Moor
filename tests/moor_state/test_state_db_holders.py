@@ -27,7 +27,7 @@ def test_foreign_holder_uses_device_and_inode_not_path(
     # pytest's home guard and pathlib while they inspect these same symlinks.
     projected_os = SimpleNamespace(**vars(os))
     projected_os.getpid = lambda: 111
-    monkeypatch.setattr(hermes_state_holders, "os", projected_os)
+    monkeypatch.setattr(moor_state_holders, "os", projected_os)
     real_listdir = os.listdir
 
     def _listdir(path):
@@ -56,7 +56,7 @@ def test_foreign_holder_uses_device_and_inode_not_path(
 
     monkeypatch.setattr(moor_state_holders.os, "stat", _stat)
 
-    assert hermes_state_holders.foreign_state_db_holders(db_path) == (
+    assert moor_state_holders.foreign_state_db_holders(db_path) == (
         [(222, str(alias_path))] if identity == "alias" else []
     )
 
@@ -102,7 +102,7 @@ def test_windows_restart_manager_scan_sizes_then_excludes_self(monkeypatch, tmp_
 
     monkeypatch.setattr(ctypes, "WinDLL", lambda *a, **k: _Api(), raising=False)
 
-    holders = hermes_state_holders._windows_restart_manager_holders(db_path)
+    holders = moor_state_holders._windows_restart_manager_holders(db_path)
 
     assert [pid for pid, _ in holders] == [4242]
     assert calls[0] == ("register", 2, sorted(str(p) for p in (db_path, tmp_path / "state.db-wal")))
@@ -110,4 +110,4 @@ def test_windows_restart_manager_scan_sizes_then_excludes_self(monkeypatch, tmp_
 
     _Api.RmStartSession = _Fn(lambda *_args: 5)
     with pytest.raises(OSError):
-        hermes_state_holders._windows_restart_manager_holders(db_path)
+        moor_state_holders._windows_restart_manager_holders(db_path)

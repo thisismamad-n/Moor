@@ -448,7 +448,7 @@ def _persist_session_row_for_submit(rid, session, text=None, display_kind=None):
     """Lazily persist the DB row now that the user sent a message (a branch becomes real
     here), then the message itself (#111868: a freeze during the first build must leave a
     resumable transcript); the error reply is the only user-visible signal (desktop maps it to a toast)."""
-    from hermes_state_user_copy import describe_storage_failure
+    from moor_state_user_copy import describe_storage_failure
     try:
         if _ensure_session_db_row(session) is False:
             failure = describe_storage_failure(_db_error)
@@ -1185,14 +1185,14 @@ def _side_agent_args(rid, params, prefix):
 
 
 _PREVIEW_RESTART_RULES = (
-    "Restart exactly the app intended for the Preview URL, not Hermes Desktop itself.",
+    "Restart exactly the app intended for the Preview URL, not Moor Desktop itself.",
     "The Preview URL and port are the target. Preserve that target unless you conclude it is impossible.",
     "If the prior conversation shows a specific command that bound this URL/port, prefer re-running THAT exact command (in the same cwd) over guessing a new one.",
-    "First inspect what process, if any, owns the Preview URL port. If a stale server exists, inspect its cwd and prefer that cwd over the Hermes/Desktop process cwd.",
+    "First inspect what process, if any, owns the Preview URL port. If a stale server exists, inspect its cwd and prefer that cwd over the Moor/Desktop process cwd.",
     "The Current working directory is only a hint. Do not assume it is the preview app root when the port owner or files indicate another root.",
     "If the console shows a module-script MIME error for src/main.tsx or similar, a static server is serving source files. Do not restart python -m http.server or any dumb static server for that app.",
     "For module-script MIME failures, inspect package.json/vite config in the candidate app root and start the real dev server/bundler (for example npm/pnpm/yarn dev) so module transforms happen.",
-    "Before declaring success, verify the Preview URL responds with the intended app, not Hermes Desktop. If it serves Hermes/Desktop UI or another unrelated app, stop that process and report failure.",
+    "Before declaring success, verify the Preview URL responds with the intended app, not Moor Desktop. If it serves Moor/Desktop UI or another unrelated app, stop that process and report failure.",
     "Do not modify files. Do not ask the user unless blocked.",
     "Prefer existing project scripts or commands when they are clear.",
     "If a stale process owns the needed port, handle it safely.",

@@ -92,7 +92,7 @@ def test_create_registers_scheduler_inside_target_profile(
     """Dashboard create must resolve and register under the selected profile."""
     from cron import jobs as cron_jobs
     from cron.scheduler_provider import CronScheduler
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     worker_home = isolated_profiles["worker_alpha"]
     captured = {}

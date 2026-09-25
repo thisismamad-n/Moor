@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from hermes_cli import main, update_cmd, update_cmd_zip
+from moor_cli import main, update_cmd, update_cmd_zip
 
 
 @pytest.mark.parametrize("route", ["zip", "git-error"])

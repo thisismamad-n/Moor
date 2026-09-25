@@ -43,7 +43,7 @@ _OAUTH_TOKEN_URLS = [
 _OAUTH_TOKEN_USER_AGENT = "axios/1.7.9"
 _OAUTH_REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback"
 _OAUTH_SCOPES = "org:create_api_key user:profile user:inference"
-# Claude Code's macOS Keychain entry (generic password). Hermes reads it
+# Claude Code's macOS Keychain entry (generic password). Moor reads it
 # (_read_claude_code_credentials_from_keychain) and, since #98334, mirrors the
 # refresh write into it so the two stores stop diverging on a single-use rotation.
 _CLAUDE_CODE_KEYCHAIN_SERVICE = "Claude Code-credentials"
@@ -336,7 +336,7 @@ def _read_claude_code_credentials_from_keychain() -> Optional[Dict[str, Any]]:
 
 def claude_code_credentials_path() -> Path:
     """Claude Code's shared OAuth file; every profile reads/writes this same path. Honours ``CLAUDE_CONFIG_DIR``
-    like the Claude CLI itself (blank = unset, as in ``hermes_cli.foreign_sessions``). The supported opt-out of
+    like the Claude CLI itself (blank = unset, as in ``moor_cli.foreign_sessions``). The supported opt-out of
     borrowing the login is ``auth.adopt_external_logins: false`` in config.yaml."""
     override = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
     root = Path(override).expanduser() if override else Path.home() / ".claude"
@@ -488,7 +488,7 @@ def _refresh_oauth_token(creds: Dict[str, Any]) -> Optional[str]:
             # Another process may have spent this token and lost the commit; its sidecar verdict is authoritative.
             if is_rotation_consumed_uncommitted(refresh_token, source_path=cred_path):
                 logger.debug("Refresh token was already consumed by an uncommitted rotation "
-                             "- refusing to replay it; run 'hermes auth add anthropic'")
+                             "- refusing to replay it; run 'moor auth add anthropic'")
                 return None
             fingerprint = hashlib.sha256(refresh_token.encode("utf-8")).hexdigest()[:32]
             if fingerprint in _DEAD_REFRESH_TOKEN_FINGERPRINTS:
@@ -500,8 +500,8 @@ def _refresh_oauth_token(creds: Dict[str, Any]) -> Optional[str]:
                 if is_terminal_anthropic_refresh_error(e):
                     _DEAD_REFRESH_TOKEN_FINGERPRINTS.add(fingerprint)
                     logger.warning(
-                        "Claude Code OAuth refresh token is terminally invalid (%s); Hermes cannot use this "
-                        "login. Run 'hermes auth add anthropic' to give Hermes its own login.", e)
+                        "Claude Code OAuth refresh token is terminally invalid (%s); Moor cannot use this "
+                        "login. Run 'moor auth add anthropic' to give Moor its own login.", e)
                 else:
                     logger.debug("Failed to refresh Claude Code token: %s", e)
                 return None
@@ -516,7 +516,7 @@ def _refresh_oauth_token(creds: Dict[str, Any]) -> Optional[str]:
                 logger.error(
                     "Anthropic OAuth refresh rotated the single-use token but could not "
                     "commit it to %s (%s) — treating the refresh as failed; "
-                    "run 'hermes auth add anthropic' to give Hermes its own login",
+                    "run 'moor auth add anthropic' to give Moor its own login",
                     cred_path, e,
                 )
                 mark_rotation_consumed_uncommitted(
@@ -574,7 +574,7 @@ def _merge_keychain_credential_payload(
 def _mirror_claude_code_credentials_to_keychain(
     access_token: str, refresh_token: str, expires_at_ms: int, *, spent_refresh_token: str
 ) -> None:
-    """After a Hermes refresh, write the rotated pair into the Claude Code Keychain item too (#98334).
+    """After a Moor refresh, write the rotated pair into the Claude Code Keychain item too (#98334).
 
     Claude Code on macOS reads the login Keychain first. Refresh tokens are single-use, so a refresh
     that only updates the file leaves the Keychain holding a spent token and Claude Code logs itself
@@ -623,7 +623,7 @@ def _resolve_claude_code_token_from_credentials(creds: Optional[Dict[str, Any]] 
     logger.debug("Claude Code credentials expired — attempting refresh")
     refreshed = _refresh_oauth_token(creds)
     if not refreshed:
-        logger.debug("Token refresh failed — run 'hermes auth add anthropic' to give Hermes its own login")
+        logger.debug("Token refresh failed — run 'moor auth add anthropic' to give Moor its own login")
     return refreshed or None
 
 

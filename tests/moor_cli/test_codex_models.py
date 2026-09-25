@@ -1,7 +1,7 @@
 import json
 from unittest.mock import patch
 
-from hermes_cli.codex_models import (
+from moor_cli.codex_models import (
     _FORWARD_COMPAT_TEMPLATE_MODELS,
     DEFAULT_CODEX_MODELS,
     get_codex_model_ids,
@@ -25,7 +25,7 @@ def test_codex_catalog_never_offers_chatgpt_rejected_pro_slugs(monkeypatch, tmp_
     # synthesis rule; none of what it adds may be -pro.
     templates = list(dict.fromkeys(t for _, ts in _FORWARD_COMPAT_TEMPLATE_MODELS for t in ts))
     monkeypatch.setattr(
-        "hermes_cli.codex_models._fetch_models_from_api", lambda access_token: templates
+        "moor_cli.codex_models._fetch_models_from_api", lambda access_token: templates
     )
     live = get_codex_model_ids(access_token="codex-access-token")
     assert {synthetic for synthetic, _ in _FORWARD_COMPAT_TEMPLATE_MODELS} <= set(live)
@@ -163,7 +163,7 @@ def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypa
 
     monkeypatch.setattr("moor_cli.auth._login_openai_codex", _fake_login)
     monkeypatch.setattr(
-        "hermes_cli.codex_models.get_codex_model_ids",
+        "moor_cli.codex_models.get_codex_model_ids",
         lambda access_token=None: ["gpt-5.4", "gpt-5.5"],
     )
     monkeypatch.setattr(
@@ -253,7 +253,7 @@ class TestNormalizeModelForProvider:
 
         assert cli._model_is_default is True
         with patch(
-            "hermes_cli.codex_models.get_codex_model_ids",
+            "moor_cli.codex_models.get_codex_model_ids",
             return_value=["gpt-5.5", "gpt-5.4"],
         ):
             changed = cli._normalize_model_for_provider("openai-codex")

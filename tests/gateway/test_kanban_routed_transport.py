@@ -257,7 +257,7 @@ def test_pinned_profile_without_this_platform_delivers_via_primary(tmp_path, mon
 
     # An owner stamped with the invoking shell's profile (#76483) instead of the route's
     # is a permanent dead-end and must surface once at WARNING.
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(tmp_path / "stamped-owner.db"))
+    monkeypatch.setenv("MOOR_KANBAN_DB", str(tmp_path / "stamped-owner.db"))
     stamped = completion(profile="default")
     with caplog.at_level(logging.WARNING, logger=notifier.logger.name):
         assert not collect(runner)

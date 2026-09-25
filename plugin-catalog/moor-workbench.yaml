@@ -1,0 +1,20 @@
+name: moor-workbench
+repo: https://github.com/sxuff/moor-workbench
+sha: f07fb5c90e24c1a396604758feb0fd4ae077760b
+description: The Moor desktop app in your browser. `moor workbench` serves the desktop interface through the Moor dashboard, for headless servers, VPSes and tablets. Disclosure — community plugin, not a Moor product. On the first `moor workbench` run and again after each Moor update it runs `npm install --ignore-scripts` (guided by Moor's lockfile) and Vite against your Moor checkout's desktop sources, writing only under ~/.moor/moor-workbench and its own plugin dir (the checkout is only read), and starts `moor dashboard` on loopback when none is running.
+maintainer: sxuff
+tier: community
+category: desktop
+requires_moor: ">=0.21"
+docs_url: https://github.com/sxuff/moor-workbench#readme
+version: "0.2.1"
+image: https://raw.githubusercontent.com/sxuff/moor-workbench/f07fb5c90e24c1a396604758feb0fd4ae077760b/docs/media/banner.png
+screenshots:
+  - https://raw.githubusercontent.com/sxuff/moor-workbench/f07fb5c90e24c1a396604758feb0fd4ae077760b/docs/media/session.png
+  - https://raw.githubusercontent.com/sxuff/moor-workbench/f07fb5c90e24c1a396604758feb0fd4ae077760b/docs/media/slash-commands.png
+  - https://raw.githubusercontent.com/sxuff/moor-workbench/f07fb5c90e24c1a396604758feb0fd4ae077760b/docs/media/model-picker.png
+capabilities:
+  provides_tools: []
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []

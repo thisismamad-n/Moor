@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 from fastapi.testclient import TestClient
 
 from moor_cli.web_server import _SESSION_TOKEN, app
@@ -142,7 +142,7 @@ def test_catalog_accepts_declared_credential(
     catalog_env: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    import hermes_cli.mcp_config as mcp_config
+    import moor_cli.mcp_config as mcp_config
     from agent.secret_scope import get_secret
     from tools.connectors.mcp import _CatalogBackend
 
@@ -175,9 +175,9 @@ def test_catalog_non_secret_env_never_lands_in_env_file(
 ):
     """Non-secret declared env vars (e.g. a base URL) are not written to .env:
     install_entry inlines them into the server config instead."""
-    import hermes_cli.mcp_catalog as mcp_catalog
+    import moor_cli.mcp_catalog as mcp_catalog
 
-    catalog_root = Path(os.environ["HERMES_OPTIONAL_MCPS"])
+    catalog_root = Path(os.environ["MOOR_OPTIONAL_MCPS"])
     manifest_path = catalog_root / "demo" / "manifest.yaml"
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     manifest["auth"]["env"].append(
@@ -223,7 +223,7 @@ def test_catalog_non_secret_env_never_lands_in_env_file(
     assert "https://demo.example.test" not in env_text
     # The non-secret is inlined into config.yaml (server config carries the
     # literal; the raw file never stores it and never keeps a ${VAR} ref).
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
 
     server = load_config()["mcp_servers"]["demo"]
     assert server["url"] == "https://demo.example.test"
@@ -329,10 +329,10 @@ def test_connection_card_install_keeps_env_file_secrets_only(
 ):
     """The connector-card backend (Desktop/TUI/CLI setup card) makes the same secrets-only split
     as the terminal install: a declared non-secret lands in the server block, never in .env."""
-    import hermes_cli.mcp_config as mcp_config
+    import moor_cli.mcp_config as mcp_config
     from tools.connectors.mcp import _CatalogBackend
 
-    catalog_root = Path(os.environ["HERMES_OPTIONAL_MCPS"])
+    catalog_root = Path(os.environ["MOOR_OPTIONAL_MCPS"])
     manifest_path = catalog_root / "demo" / "manifest.yaml"
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     manifest["transport"]["env"] = {"DEMO_BASE_URL": "${DEMO_BASE_URL}"}

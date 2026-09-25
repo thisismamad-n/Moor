@@ -223,8 +223,8 @@ TIPS = [
     "Trajectory saving (--save-trajectories) captures full tool-use traces for model training.",
     # --- Plugins ---
     "Three plugin types: general (tools/hooks), memory providers, and context engines.",
-    "hermes plugins install owner/repo installs plugins directly from GitHub.",
-    "External memory providers: Honcho, OpenViking, Mem0 bundled; Hindsight and more via hermes plugins install.",
+    "moor plugins install owner/repo installs plugins directly from GitHub.",
+    "External memory providers: Honcho, OpenViking, Mem0 bundled; Hindsight and more via moor plugins install.",
     "Plugin hooks include pre/post_tool_call, pre/post_llm_call, and transform_terminal_output for output canonicalization.",
     # --- Miscellaneous ---
     "Prompt caching (Anthropic) reduces costs by reusing cached system prompt prefixes.",

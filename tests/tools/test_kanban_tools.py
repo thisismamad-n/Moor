@@ -64,10 +64,10 @@ def worker_env(monkeypatch, tmp_path):
         run_id = kb._current_run_id(conn, tid)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", tid)
+    monkeypatch.setenv("MOOR_KANBAN_TASK", tid)
     # A real dispatcher always pins the worker's run id; simulate that so the
     # run-lifecycle tools can prove ownership (see test_unbound_worker_cannot_mutate_card).
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run_id))
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(run_id))
     return tid
 
 
@@ -171,9 +171,9 @@ def test_complete_reports_registered_attachments(worker_env):
     workers narrated "registered at completion: none" even when the rows landed.
     The completion result must report the card's durable attachment set, in the
     same shape the readback tool returns."""
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
-    from hermes_cli import kanban_db_workspace as kbw
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db_workspace as kbw
     from tools import kanban_tools as kt
 
     with kbc.connect() as conn:
@@ -204,8 +204,8 @@ def test_request_review_rejects_unknown_reviewer_without_mutation(monkeypatch, w
     from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    (tmp_path / ".hermes" / "profiles" / "verifier").mkdir(parents=True)
-    (tmp_path / ".hermes" / "profiles" / "verifier" / "config.yaml").write_text("{}\n")  # identity marker
+    (tmp_path / ".moor" / "profiles" / "verifier").mkdir(parents=True)
+    (tmp_path / ".moor" / "profiles" / "verifier" / "config.yaml").write_text("{}\n")  # identity marker
     with kbc.connect() as conn:
         before = kb.get_task(conn, worker_env)
         before_events = kb.list_events(conn, worker_env)
@@ -225,8 +225,8 @@ def test_request_review_accepts_installed_profile(monkeypatch, worker_env, tmp_p
     from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    (tmp_path / ".hermes" / "profiles" / "verifier").mkdir(parents=True)
-    (tmp_path / ".hermes" / "profiles" / "verifier" / "config.yaml").write_text("{}\n")  # identity marker
+    (tmp_path / ".moor" / "profiles" / "verifier").mkdir(parents=True)
+    (tmp_path / ".moor" / "profiles" / "verifier" / "config.yaml").write_text("{}\n")  # identity marker
     with kbc.connect() as conn:
         monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(kb.get_task(conn, worker_env).current_run_id))
 
@@ -243,13 +243,13 @@ def test_unbound_worker_cannot_mutate_card(monkeypatch, worker_env):
     on every run-lifecycle mutation. ``expected_run_id=None`` would silently skip
     the run-ownership CAS in kanban_db, so an unbound stale worker could complete
     a card a live successor owns (regression for #116239)."""
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    # Worker is scoped to the task (HERMES_KANBAN_TASK set by the fixture) but
+    # Worker is scoped to the task (MOOR_KANBAN_TASK set by the fixture) but
     # has NO run id — the unbound state the dispatcher never produces.
-    monkeypatch.delenv("HERMES_KANBAN_RUN_ID", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_RUN_ID", raising=False)
 
     for handler, args in [
         (kt._handle_complete, {"summary": "stale worker says done"}),
@@ -270,7 +270,7 @@ def test_unbound_worker_cannot_mutate_card(monkeypatch, worker_env):
     # fires on the unbound state, never on the legitimate dispatcher path.
     with kbc.connect() as conn:
         run_id = kb.get_task(conn, worker_env).current_run_id
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run_id))
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(run_id))
     out = json.loads(kt._handle_complete({"summary": "bound worker done"}))
     assert out.get("ok") is True
     with kbc.connect() as conn:
@@ -278,14 +278,14 @@ def test_unbound_worker_cannot_mutate_card(monkeypatch, worker_env):
 
 
 def test_malformed_run_id_refused_but_nonlifecycle_allowed(monkeypatch, worker_env):
-    """A malformed (non-integer) HERMES_KANBAN_RUN_ID is treated as unbound and
+    """A malformed (non-integer) MOOR_KANBAN_RUN_ID is treated as unbound and
     refuses run-lifecycle mutations, while non-lifecycle tools (heartbeat /
     attach) that do not terminate a run stay available to the worker."""
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", "not-an-int")
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", "not-an-int")
 
     # Run-lifecycle mutations are refused on a malformed run id.
     out = json.loads(kt._handle_complete({"summary": "stale worker says done"}))
@@ -326,8 +326,8 @@ def test_complete_goal_mode_rejected_by_judge(monkeypatch, tmp_path):
         run_id = kb._current_run_id(conn, goal_task_id)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", goal_task_id)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run_id))
+    monkeypatch.setenv("MOOR_KANBAN_TASK", goal_task_id)
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(run_id))
 
     # Mock the judge to reject the completion. The gate only runs when a
     # judge is reachable, so force the availability probe True as well.
@@ -396,8 +396,8 @@ def _make_goal_mode_worker_env(monkeypatch, tmp_path):
         run_id = kb._current_run_id(conn, goal_task_id)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", goal_task_id)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run_id))
+    monkeypatch.setenv("MOOR_KANBAN_TASK", goal_task_id)
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(run_id))
     return goal_task_id
 
 
@@ -516,8 +516,8 @@ def test_comment_rejects_caller_supplied_author(worker_env):
         "task_id": worker_env, "body": "hi", "author": "moor-system",
     })
     assert "author" in json.loads(out)["error"]
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     conn = kbc.connect()
     try:
         assert kb.list_comments(conn, worker_env) == []
@@ -581,8 +581,8 @@ def test_create_explicit_scratch_ignores_ambient_board_project(
 
 
 def test_link_running_child_allows_owner_but_rejects_foreign(monkeypatch, worker_env):
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
     with kbc.connect() as conn:
@@ -592,7 +592,7 @@ def test_link_running_child_allows_owner_but_rejects_foreign(monkeypatch, worker
         foreign_child = kb.create_task(conn, title="foreign worker")
         assert kb.claim_task(conn, foreign_child, claimer="other") is not None
 
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(own_run_id))
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(own_run_id))
     own = json.loads(kt._handle_link({"parent_id": own_parent, "child_id": worker_env}))
     foreign = json.loads(kt._handle_link(
         {"parent_id": foreign_parent, "child_id": foreign_child},
@@ -884,8 +884,8 @@ def test_orchestrator_complete_any_task_allowed(monkeypatch, tmp_path):
 # ---------------------------------------------------------------------------
 
 def _list_subs_for_task(task_id):
-    from hermes_cli import kanban_db_connect as kbc
-    from hermes_cli import kanban_db_notify as kbn
+    from moor_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db_notify as kbn
     conn = kbc.connect()
     try:
         return list(kbn.list_notify_subs(conn, task_id))
@@ -1034,7 +1034,7 @@ def test_maybe_auto_subscribe_swallows_add_notify_sub_failure(monkeypatch, worke
     monkeypatch.setenv("MOOR_SESSION_PLATFORM", "telegram")
     monkeypatch.setenv("MOOR_SESSION_CHAT_ID", "chat-42")
 
-    from hermes_cli import kanban_db_notify as kbn
+    from moor_cli import kanban_db_notify as kbn
 
     def _boom(*a, **kw):
         raise RuntimeError("simulated DB failure")

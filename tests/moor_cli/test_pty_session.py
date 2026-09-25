@@ -334,7 +334,7 @@ async def test_concurrent_attach_on_one_token_forks_one_pty():
     out of the registry (never reaped) and a reattach landed on the wrong
     terminal (#115304).
     """
-    from hermes_cli.pty_session import WS_CLOSE_SUPERSEDED
+    from moor_cli.pty_session import WS_CLOSE_SUPERSEDED
 
     reg = make_registry()
     spawned = []

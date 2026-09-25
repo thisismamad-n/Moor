@@ -1,6 +1,6 @@
 """Tests for ${ENV_VAR} substitution in config.yaml values."""
 
-from hermes_cli.config import _expand_env_vars, load_config
+from moor_cli.config import _expand_env_vars, load_config
 
 
 class TestExpandEnvVars:

@@ -44,7 +44,7 @@ _SHM_DMS_BYTE = 128
 # platform FIRST: some Windows installs have a third-party module importable as `fcntl` (stock
 # CPython for Windows ships none), and letting the import decide would arm the guard on a
 # lookalike. Off Windows a partial module is equally fatal at import time — every importer of
-# hermes_state dies before supported() can say "no" (#118026) — so tolerate a missing attribute
+# moor_state dies before supported() can say "no" (#118026) — so tolerate a missing attribute
 # the same way as a missing module and fall back to the no-op.
 if os.name == "nt":
     fcntl = None  # type: ignore[assignment]

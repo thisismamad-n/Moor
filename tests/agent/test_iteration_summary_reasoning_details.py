@@ -1,7 +1,7 @@
 """The max-iterations summary call treats ``reasoning_details`` per api_mode: the
 anthropic_messages converter rebuilds signed thinking blocks from it, so the summary messages
 must keep it; a strict chat-completions route drops it on the wire via the same kwargs
-builder the main loop uses (hermes-agent#70233)."""
+builder the main loop uses (moor-agent#70233)."""
 
 import pytest
 
@@ -18,7 +18,7 @@ _HISTORY = [
 
 @pytest.fixture
 def make_agent(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
 
     def _make(base_url, provider):
         agent = AIAgent(api_key="k", base_url=base_url, provider=provider, model="m", quiet_mode=True,

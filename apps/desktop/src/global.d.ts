@@ -1,11 +1,11 @@
-import type { GatewayWsUrlResult } from '@hermes/shared'
-import type { HermesSkin } from '@hermes/shared/skin'
-import type { TranslucencyState } from '@hermes/shared/translucency'
+import type { GatewayWsUrlResult } from '@moor/shared'
+import type { MoorSkin } from '@moor/shared/skin'
+import type { TranslucencyState } from '@moor/shared/translucency'
 
 import type { ScreenshotApi } from '../electron/command-screenshot-types'
 import type { HudModifierApi } from '../electron/hud-modifier-types'
 import type { MachineProfile } from '../electron/machine-profile'
-import type { HermesNotification } from '../electron/notification-types'
+import type { MoorNotification } from '../electron/notification-types'
 import type { PoolLimits } from '../electron/pool-limits'
 import type { GrowRequest } from '../electron/window-growth'
 
@@ -100,7 +100,7 @@ declare global {
       // peers — so N open windows don't all fire the same cue.
       claimAmbientCue: (key: string) => Promise<boolean>
       // Renderer-drawn min/max/close for WSLg (`custom` true there only), sent
-      // over hermes:window-control; Electron/OS chrome owns them elsewhere.
+      // over moor:window-control; Electron/OS chrome owns them elsewhere.
       windowControls: {
         custom: boolean
         minimize: () => void
@@ -361,9 +361,9 @@ declare global {
       /** Launch flag shared with every backend the app starts. */
       guestOnboardingEnabled?: boolean
       /** Sanitized local `display.skin`, available before any gateway connects. */
-      localSkin?: { profile: string; skin: HermesSkin } | null
-      /** Launch flag: skip the first-run film (HERMES_SKIP_INTRO=1 or
-       *  --skip-intro) so a fresh HERMES_HOME lands on the guided chat. */
+      localSkin?: { profile: string; skin: MoorSkin } | null
+      /** Launch flag: skip the first-run film (MOOR_SKIP_INTRO=1 or
+       *  --skip-intro) so a fresh MOOR_HOME lands on the guided chat. */
       skipIntro?: boolean
       setTranslucency?: (payload: TranslucencyState) => void
       setKeepAwake?: (on: boolean) => void
@@ -429,7 +429,7 @@ declare global {
       }) => void
       /** Append one raw line to desktop.log (fire-and-forget, notifyError path). */
       logLine?: (line: string) => void
-      readDir: (path: string) => Promise<HermesReadDirResult>
+      readDir: (path: string) => Promise<MoorReadDirResult>
       gitRoot?: (path: string) => Promise<string | null>
       // Reveal a path in the OS file manager (Finder / Explorer).
       revealPath?: (path: string) => Promise<boolean>
@@ -441,9 +441,9 @@ declare global {
       desktopPluginsRoot?: () => Promise<string>
       /** Refresh unified packages' desktop halves and return the touched paths. */
       reconcileDesktopPlugins?: () => Promise<string[]>
-      /** LOCAL `<HERMES_HOME>/logs` (profile-aware) — error card "Open Logs". */
+      /** LOCAL `<MOOR_HOME>/logs` (profile-aware) — error card "Open Logs". */
       logsRoot?: () => Promise<string>
-      // Local AGENT-plugin root (<HERMES_HOME>/plugins), same Electron-local
+      // Local AGENT-plugin root (<MOOR_HOME>/plugins), same Electron-local
       // resolution. The disk door also scans it for `<name>/desktop/plugin.js`
       // so one agent-plugin package can ship a desktop UI half. Optional:
       // older Electron shells predate it — the scanner then skips this root.
@@ -504,7 +504,7 @@ declare global {
           // The PR on each of the given branches — plus any known only by
           // number — for badging a list of sessions in one request instead of
           // one `pr view` per checkout.
-          prList: (repoPath: string, branches: string[], numbers?: number[]) => Promise<HermesRepoPullRequests>
+          prList: (repoPath: string, branches: string[], numbers?: number[]) => Promise<MoorRepoPullRequests>
           createPr: (repoPath: string) => Promise<{ url: string }>
         }
         // Repo-first discovery: scan bounded roots for git repos (depth-capped).
@@ -560,7 +560,7 @@ declare global {
       /** Delete a STANDALONE desktop plugin folder (`<desktop-plugins root>/<name>`);
        *  Electron re-checks containment and refuses unified-package halves. */
       removeDesktopPlugin?: (payload: { name: string }) => Promise<{ ok: boolean; path?: string; error?: string }>
-      onWindowStateChanged?: (callback: (payload: HermesWindowState) => void) => () => void
+      onWindowStateChanged?: (callback: (payload: MoorWindowState) => void) => () => void
       onFocusSession?: (callback: (sessionId: string) => void) => () => void
       onNotificationAction?: (callback: (payload: { actionId: string; sessionId?: string }) => void) => () => void
       /** Plugin (and other session-less) notification body/action activation. */
@@ -730,38 +730,38 @@ export interface DesktopVersionInfo {
    *  a managed checkout; the Distribution label keys on it. */
   payload?: 'bootstrap' | 'bundled' | 'light'
   /** True when the runtime checkout carries the bootstrap installers'
-   *  `.hermes-bootstrap-complete` receipt — install.sh / install.ps1 (or the
+   *  `.moor-bootstrap-complete` receipt — install.sh / install.ps1 (or the
    *  desktop first-launch bootstrap) created it, a manual clone did not. */
   installedByScript?: boolean
   /** sha16 of the canonical install-root path — the per-install channel key and
-   *  the shape `hermes update --install-id` prints. */
+   *  the shape `moor update --install-id` prints. */
   installId?: string
   /** What this build carries (embedded / light / external) and where an
    *  external backend resolved from. Bundled artifacts run their payload; light
    *  artifacts have no runtime and only reach remote backends. */
-  hermesRuntime?: { type: 'embedded' } | { type: 'light' } | { type: 'external'; source?: RuntimeSource }
+  moorRuntime?: { type: 'embedded' } | { type: 'light' } | { type: 'external'; source?: RuntimeSource }
   /** True when the bundle on disk is newer than the running process — a plain
    *  app restart (no rebuild, no installer) is enough to load it. */
   bundleSwapPending?: boolean
 }
 
 /** Where an external build's backend came from. Mirrors the resolution ladder
- *  in `resolveHermesBackend()`: `git` / `source` / sealed stewards are the
+ *  in `resolveMoorBackend()`: `git` / `source` / sealed stewards are the
  *  Python install methods from `installation.tree.install_method()`; the
- *  Electron-only rungs (`hermes-root`, `path`, `system-python`, `bootstrap`)
+ *  Electron-only rungs (`moor-root`, `path`, `system-python`, `bootstrap`)
  *  are resolution facts the backend cannot see. Each variant carries the
  *  location it resolved from, when there is one. */
 export type RuntimeSource =
-  | { type: 'hermes-root'; root: string } // HERMES_DESKTOP_HERMES_ROOT — explicit developer override
-  | { type: 'git'; root: string } // checkout at a managed install root, $HERMES_HOME/hermes-agent
+  | { type: 'moor-root'; root: string } // MOOR_DESKTOP_MOOR_ROOT — explicit developer override
+  | { type: 'git'; root: string } // checkout at a managed install root, $MOOR_HOME/moor-agent
   | { type: 'source'; root: string } // a git checkout anywhere else
   | { type: 'docker'; root: string | null } // sealed tree stewarded by Docker
   | { type: 'nix'; root: string | null } // sealed tree stewarded by Nix
   | { type: 'desktop-app'; root: string | null } // sealed tree stewarded by the desktop bundle
   | { type: 'desktop-bootstrap'; root: string } // canonical install created by the desktop first-launch bootstrap
   | { type: 'unknown' } // no stamp, no .git — provenance cannot be told
-  | { type: 'path'; command: string } // an existing `hermes` CLI found on PATH
-  | { type: 'system-python'; command: string } // pip-installed hermes_cli on system Python
+  | { type: 'path'; command: string } // an existing `moor` CLI found on PATH
+  | { type: 'system-python'; command: string } // pip-installed moor_cli on system Python
   | { type: 'bootstrap' } // nothing usable yet; the first-launch installer runs
 
 export type DesktopUninstallMode = 'full' | 'gui' | 'lite'
@@ -769,7 +769,7 @@ export type DesktopUninstallMode = 'full' | 'gui' | 'lite'
 export interface DesktopUninstallSummary {
   /** Local package ownership, resolved by Electron before offering removal. */
   code_removal_allowed: boolean
-  hermes_home: string
+  moor_home: string
   agent_installed: boolean
   gui_installed: boolean
   source_built_artifacts: string[]
@@ -975,7 +975,7 @@ export interface MoorActiveWork {
   titles: string[]
 }
 
-export interface HermesWindowState {
+export interface MoorWindowState {
   customWindowControls?: boolean
   darwinMajor?: number
   isFullscreen: boolean

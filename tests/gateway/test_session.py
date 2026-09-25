@@ -6,7 +6,7 @@ import pytest
 from dataclasses import replace
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
-from hermes_state import SessionDB
+from moor_state import SessionDB
 from gateway.config import Platform, GatewayConfig, PlatformConfig
 from gateway.platforms.event import MessageEvent
 from gateway.session import (
@@ -118,8 +118,8 @@ class TestBuildSessionContextPrompt:
         token = ss.set_secret_scope(_ExplodingScope())
         try:
             with patch("tools.mcp_tool_discovery.get_registered_mcp_server_names", return_value=[]), \
-                    patch("hermes_cli.config.load_config", return_value={}), \
-                    patch("hermes_cli.tools_config._get_platform_tools", return_value=["slack"]):
+                    patch("moor_cli.config.load_config", return_value={}), \
+                    patch("moor_cli.tools_config._get_platform_tools", return_value=["slack"]):
                 assert _slack_tools_loaded() is False
         finally:
             ss.reset_secret_scope(token)
@@ -1448,10 +1448,10 @@ class TestGatewaySessionDbRecovery:
         to disk (long before the 200-message cap) and replayed in order on recovery."""
         import threading
         from types import SimpleNamespace
-        import hermes_constants
+        import moor_constants
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+        monkeypatch.setattr(moor_constants, "get_moor_home", lambda: tmp_path)
         store = object.__new__(SessionStore)
         store._db = None
         store._transcript_retry_lock = threading.Lock()

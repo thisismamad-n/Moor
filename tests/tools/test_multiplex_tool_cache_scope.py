@@ -9,7 +9,7 @@ import threading
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
 from moor_constants import reset_moor_home_override, set_moor_home_override

@@ -966,10 +966,10 @@ class TestSpawnEnvSanitization:
                 "/path with spaces/moor_bg.exit",
             )
 
-        assert "'/path with spaces/hermes_bg.log'" in env.commands[0][0]
-        assert "cat '/path with spaces/hermes_bg.log'" not in env.commands[0][0]
-        assert "'/path with spaces/hermes_bg.pid'" in env.commands[1][0]
-        assert "'/path with spaces/hermes_bg.exit'" in env.commands[2][0]
+        assert "'/path with spaces/moor_bg.log'" in env.commands[0][0]
+        assert "cat '/path with spaces/moor_bg.log'" not in env.commands[0][0]
+        assert "'/path with spaces/moor_bg.pid'" in env.commands[1][0]
+        assert "'/path with spaces/moor_bg.exit'" in env.commands[2][0]
 
 
 class TestEnvPollerIncrementalRead:
@@ -1989,7 +1989,7 @@ class TestHandleProcessTransformHook:
     def _setup(self, monkeypatch, output, *, hook):
         import agent.redact as _r
         monkeypatch.setattr(_r, "_REDACT_ENABLED", True)
-        monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", hook)
+        monkeypatch.setattr("moor_cli.lifecycle.invoke_hook", hook)
         from tools import process_registry as pr
         reg = ProcessRegistry()
         sess = _make_session(sid="proc_xform1", command="python app.py")

@@ -72,7 +72,7 @@ def chrome_cdp(tmp_path):
     Always launches with ``--site-per-process`` so cross-origin iframes
     become real OOPIFs (needed by the iframe interaction tests).
     """
-    profile = tempfile.mkdtemp(prefix="hermes-supervisor-test-")
+    profile = tempfile.mkdtemp(prefix="moor-supervisor-test-")
     stderr = (tmp_path / "chrome.stderr").open("w+b")
     proc = subprocess.Popen(
         [

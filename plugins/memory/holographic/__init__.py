@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Expanded by initialize() against the profile that opens it. A concrete path is copied by a profile clone
 # and outlives a rename, so it keeps naming the old profile's DB.
-_DEFAULT_DB_PATH = "$HERMES_HOME/memory_store.db"
+_DEFAULT_DB_PATH = "$MOOR_HOME/memory_store.db"
 
 
 FACT_STORE_SCHEMA = {
@@ -118,15 +118,15 @@ class HolographicMemoryProvider(MemoryProvider):
     def save_config(self, values, moor_home):
         """Write config to config.yaml under plugins.moor-memory-store."""
         # The canonical writer: config lock, managed-mode refusal, default stripping, atomic replace.
-        # ``merge_existing`` keeps every other section; *hermes_home* is the active profile already.
-        from hermes_cli.config import save_config
+        # ``merge_existing`` keeps every other section; *moor_home* is the active profile already.
+        from moor_cli.config import save_config
         values = dict(values)
         # This profile's own DB spelled out (older setups wrote it; the dashboard form re-submits what it
         # read) pins every clone and rename of the profile to this file, so it is stored as the placeholder.
         db_path = values.get("db_path")
-        if isinstance(db_path, str) and Path(db_path).expanduser() == Path(hermes_home) / "memory_store.db":
+        if isinstance(db_path, str) and Path(db_path).expanduser() == Path(moor_home) / "memory_store.db":
             values["db_path"] = _DEFAULT_DB_PATH
-        save_config({"plugins": {"hermes-memory-store": values}}, merge_existing=True)
+        save_config({"plugins": {"moor-memory-store": values}}, merge_existing=True)
 
     def get_config_schema(self):
         return [

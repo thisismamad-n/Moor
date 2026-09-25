@@ -343,12 +343,12 @@ def test_codex_compaction_releases_the_live_sessions_read_dedup(tmp_path, entry,
         "default": {"dedup_generation_reads": {"/other/file.py"}},
     }
     monkeypatch.setattr(tracking, "_read_tracker", tracker)
-    agent = LiveCodexAgent(mode="hermes")
+    agent = LiveCodexAgent(mode="moor")
 
     if entry == "hygiene":
         gw, _db = _gateway(tmp_path, "tg:123", agent)
         outcome = asyncio.run(run_codex_hygiene_compaction(
-            gw, "tg:123", agent.session_id, auto_mode="hermes", history=_history(),
+            gw, "tg:123", agent.session_id, auto_mode="moor", history=_history(),
             approx_tokens=345_000, timeout_seconds=30.0))
         assert outcome == "compacted"
     else:

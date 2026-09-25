@@ -13,7 +13,7 @@ import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
-from hermes_cli.config import DEFAULT_CONFIG, cfg_get
+from moor_cli.config import DEFAULT_CONFIG, cfg_get
 from tools import browser_tool_lifecycle as bt_lifecycle
 
 def _make_runner():

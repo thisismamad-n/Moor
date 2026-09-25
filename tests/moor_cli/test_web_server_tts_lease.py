@@ -81,7 +81,7 @@ def test_active_acquires_and_warms(client, monkeypatch):
 
 
 def _write_tts_config(home, tts):
-    from hermes_cli.config import atomic_config_write
+    from moor_cli.config import atomic_config_write
 
     atomic_config_write(home / "config.yaml", {"tts": tts})
 
@@ -194,7 +194,7 @@ def test_active_default_true(client, monkeypatch):
 
 def test_acquire_resolves_provider_inside_target_profile(client, isolated_profiles, monkeypatch):
     """Warm-up must read the REQUESTING profile's tts config, like /api/audio/speak."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
     from tools import tts_tool, tts_tool_lifecycle
 
     (isolated_profiles["worker_beta"] / "config.yaml").write_text(

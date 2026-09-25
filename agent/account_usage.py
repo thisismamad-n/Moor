@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 import httpx
 
 from agent.anthropic_credentials import _is_oauth_token, resolve_anthropic_token
-from hermes_cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
-from hermes_cli.runtime_provider import resolve_runtime_provider
-from hermes_time import safe_strftime
+from moor_cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
+from moor_cli.runtime_provider import resolve_runtime_provider
+from moor_time import safe_strftime
 
 if TYPE_CHECKING:
     from typing import TypeGuard
@@ -44,7 +44,7 @@ class AccountUsageSnapshot:
     details: tuple[str, ...] = ()
     unavailable_reason: Optional[str] = None
     # Exact decoded provider response body (no headers/credentials) for integrations that need
-    # fields Hermes does not normalize yet. Only populated by providers that fetch a JSON body.
+    # fields Moor does not normalize yet. Only populated by providers that fetch a JSON body.
     raw: Optional[dict] = None
 
     @property
@@ -197,12 +197,12 @@ def _fetch_portal_account(timeout: float):
     and never blocks the caller or process exit; its eventual exception is
     drained so GC never logs "exception was never retrieved"."""
     import contextvars
-    from hermes_cli.nous_account import get_nous_portal_account_info
+    from moor_cli.moor_account import get_moor_portal_account_info
     from tools.daemon_pool import DaemonThreadPoolExecutor
 
     context = contextvars.copy_context()
     pool = DaemonThreadPoolExecutor(max_workers=1)
-    future = pool.submit(context.run, get_nous_portal_account_info, force_fresh=True)
+    future = pool.submit(context.run, get_moor_portal_account_info, force_fresh=True)
     try:
         return future.result(timeout=timeout)
     except BaseException:

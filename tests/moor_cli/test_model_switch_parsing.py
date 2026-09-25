@@ -1,7 +1,7 @@
-"""Single-owner /model argument parsing (hermes_cli.model_switch.parse_model_switch_args)."""
+"""Single-owner /model argument parsing (moor_cli.model_switch.parse_model_switch_args)."""
 
 
-from hermes_cli.model_switch import (
+from moor_cli.model_switch import (
     MODEL_SWITCH_ERR_ONCE_WITH_GLOBAL,
     MODEL_SWITCH_ERROR_TEXT,
     parse_model_switch_args,

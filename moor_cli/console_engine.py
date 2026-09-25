@@ -599,7 +599,7 @@ def _sessions_list(_engine: MoorConsoleEngine, args: list[str]) -> str:
     ns = _parse("sessions list", args, (("--limit",), dict(type=int, default=20)))
     if ns.limit < 1 or ns.limit > 200:
         raise ConsoleCommandError("sessions list --limit must be between 1 and 200")
-    from hermes_state_sessions import INTERNAL_LISTING_SOURCES
+    from moor_state_sessions import INTERNAL_LISTING_SOURCES
     with _session_db() as db:
         sessions = db.list_sessions_rich(
             exclude_sources=list(INTERNAL_LISTING_SOURCES), limit=ns.limit, order_by_last_active=True)
@@ -608,7 +608,7 @@ def _sessions_list(_engine: MoorConsoleEngine, args: list[str]) -> str:
 
 def _sessions_stats(_engine: MoorConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "sessions stats")
-    from hermes_state_sessions import INTERNAL_LISTING_SOURCES
+    from moor_state_sessions import INTERNAL_LISTING_SOURCES
     with _session_db() as db:
         total = db.session_count()
         listable = db.session_count(exclude_children=True, exclude_sources=list(INTERNAL_LISTING_SOURCES))
@@ -705,12 +705,12 @@ def _sessions_rename(_engine: MoorConsoleEngine, args: list[str]) -> None:
 
 
 @_captured
-def _sessions_optimize(_engine: HermesConsoleEngine, args: list[str]) -> None:
+def _sessions_optimize(_engine: MoorConsoleEngine, args: list[str]) -> None:
     # --force is parsed HERE: the refusal below points at it, and a hint the surface cannot
     # accept would make this command refuse forever whenever a gateway is running.
     ns = _parse("sessions optimize", args, (("--force",), dict(action="store_true")))
     with _session_db(read_only=False) as db:
-        from hermes_state_holders import held_store_refusal
+        from moor_state_holders import held_store_refusal
         refusal = None if ns.force else held_store_refusal(
             db.db_path, command="optimize", force_hint="`sessions optimize --force`")
         if refusal:

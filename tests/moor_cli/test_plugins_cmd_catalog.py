@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import plugin_catalog as pc_cat
-from hermes_cli import plugins_cmd as pc
-from hermes_cli import plugins_cmd_catalog as cat
+from moor_cli import plugin_catalog as pc_cat
+from moor_cli import plugins_cmd as pc
+from moor_cli import plugins_cmd_catalog as cat
 from tests.pm._fixtures import client, isolated_python  # noqa: F401
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
@@ -44,13 +44,13 @@ def world(client, tmp_path, monkeypatch):
     home = tmp_path / "home"
     plugins_dir = home / "plugins"
     plugins_dir.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(pc, "_plugins_dir", lambda: plugins_dir)
     monkeypatch.setattr(pc, "_scan_on_install_enabled", lambda: False)
     monkeypatch.setattr(pc, "_console", lambda: type("C", (), {"print": lambda *a, **k: None})())
 
     def publish_without_environment(*_args, plugins=None, **_kwargs):
-        from hermes_cli.runtime_state import finish_publication
+        from moor_cli.runtime_state import finish_publication
         from pm import paths
         from pm.plugin_inputs import Selection, StagedUpdate
         from pm.publication import PluginSelection, StagedPlugin
@@ -85,7 +85,7 @@ def _head(path: Path) -> str:
 
 
 def test_catalog_platform_mismatch_refuses_before_install(world):
-    from hermes_platform.host.facts import os_family
+    from moor_platform.host.facts import os_family
     host = os_family()
     other = "linux" if host == "windows" else "windows"
     entry = pc_cat.PluginCatalogEntry(
@@ -137,9 +137,9 @@ def test_kill_list_blocks_cli_dashboard_and_tui_paths(world, monkeypatch):
 
 
 def test_owner_repo_hash_subdir_shorthand_resolves_like_the_catalog_spelling():
-    from hermes_cli.plugins_cmd import _resolve_git_url
-    assert _resolve_git_url("plastic-labs/honcho#hermes-plugin-honcho") == (
-        "https://github.com/plastic-labs/honcho.git", "hermes-plugin-honcho")
+    from moor_cli.plugins_cmd import _resolve_git_url
+    assert _resolve_git_url("plastic-labs/honcho#moor-plugin-honcho") == (
+        "https://github.com/plastic-labs/honcho.git", "moor-plugin-honcho")
     assert _resolve_git_url("owner/repo") == ("https://github.com/owner/repo.git", None)
 
 
@@ -157,7 +157,7 @@ def _install_url(repo: Path, name: str, files: dict) -> Path:
 
 def test_in_tree_sidecar_cannot_forge_catalog_provenance(world, tmp_path):
     """Provenance is the installer's metadata record, never a file the repo ships: a URL install carrying
-    its own .hermes-catalog.json is not a catalog install and does not mark the real entry installed."""
+    its own .moor-catalog.json is not a catalog install and does not mark the real entry installed."""
     forged = json.dumps({"catalog_name": "cat-plugin", "tier": "official", "sha": "0" * 40, "repo": "x"})
     target = _install_url(tmp_path / "evil", "evil-plugin", {cat.CATALOG_SIDECAR: forged})
     assert (target / cat.CATALOG_SIDECAR).exists()  # the file is there, and inert
@@ -207,8 +207,8 @@ def test_repin_keeps_local_files_backs_up_edits_and_follows_manifest_rename(worl
 def test_kill_list_covers_update_enable_and_load_of_an_installed_plugin(world, tmp_path, monkeypatch):
     """A URL install whose name lands on the kill list AFTER install must stop pulling, cannot be enabled
     and is refused at load; an install made with --allow-removed keeps working."""
-    from hermes_cli.plugins_discovery import gate_manifest
-    from hermes_cli.plugins_manifest import PluginManifest
+    from moor_cli.plugins_discovery import gate_manifest
+    from moor_cli.plugins_manifest import PluginManifest
     target = _install_url(tmp_path / "later-killed", "killed", {})
     world["state"]["removed"].append(pc_cat.RemovedEntry(name="killed", reason="backdoor"))
     monkeypatch.setattr(pc_cat, "_live_cache_path", lambda: tmp_path / "no-cache.json")

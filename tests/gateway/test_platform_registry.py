@@ -656,7 +656,7 @@ class TestMigratedPlatformWiring:
     )
 
     def test_lazy_installable_platforms_have_split_wiring(self):
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
 
         discover_plugins()
         from gateway.platform_registry import platform_registry

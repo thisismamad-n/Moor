@@ -5,7 +5,7 @@ vi.mock('@/moor', () => ({
   saveMoorConfig: vi.fn(async () => undefined)
 }))
 
-import { saveHermesConfig } from '@/hermes'
+import { saveMoorConfig } from '@/moor'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
 
 import {
@@ -85,11 +85,11 @@ describe('applyVoiceStopPhraseFromConfig', () => {
   })
 
   it('uses the first configured phrase so a custom phrase renders correctly', () => {
-    applyVoiceStopPhraseFromConfig({ voice: { stop_phrases: ['goodbye hermes', 'stop'] } })
-    expect($voiceStopPhrase.get()).toBe('goodbye hermes')
+    applyVoiceStopPhraseFromConfig({ voice: { stop_phrases: ['goodbye moor', 'stop'] } })
+    expect($voiceStopPhrase.get()).toBe('goodbye moor')
     expect($voiceStopPhraseConfig.get()).toEqual({
       mode: 'custom',
-      phrases: ['goodbye hermes', 'stop']
+      phrases: ['goodbye moor', 'stop']
     })
   })
 
@@ -113,7 +113,7 @@ describe('applyVoiceStopPhraseFromConfig', () => {
 })
 
 // The live matcher reads the atoms these seed, so drive it through them the way
-// `useHermesConfig` does: `/api/config` (defaults merged in) + `/api/config/defaults`.
+// `useMoorConfig` does: `/api/config` (defaults merged in) + `/api/config/defaults`.
 describe('spoken stop follows the loaded voice.stop_phrases (#117801)', () => {
   const defaults = { voice: { stop_phrases: ['stop'] } }
 

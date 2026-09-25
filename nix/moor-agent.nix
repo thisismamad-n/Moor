@@ -2,8 +2,8 @@
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
-#   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
-#   pkgs.hermes-agent.override { extraDependencyGroups = [ "honcho" ]; }
+#   pkgs.moor-agent.override { extraPythonPackages = [...]; }
+#   pkgs.moor-agent.override { extraDependencyGroups = [ "honcho" ]; }
 {
   lib,
   stdenv,
@@ -61,7 +61,7 @@ let
       version;
 
   # CLI and Electron consume the same provenance and update owner.
-  installStampFile = writeText "hermes-install-stamp.json" (builtins.toJSON {
+  installStampFile = writeText "moor-install-stamp.json" (builtins.toJSON {
     schemaVersion = 2;
     commit = rev;
     commitDate = lastModified;
@@ -78,7 +78,7 @@ let
     tag = null;
   });
 
-  mkHermesVenv =
+  mkMoorVenv =
     extraDependencyGroups:
     callPackage ./python.nix {
       inherit uv2nix pyproject-nix pyproject-build-systems;
@@ -94,10 +94,10 @@ let
 
   # Icons render on the runtime venv: Pillow and resvg-py are core dependencies.
   generatedIcons = callPackage ./icons.nix {
-    inherit (mkHermesVenv [ ]) venv;
+    inherit (mkMoorVenv [ ]) venv;
   };
 
-  hermesNpmLib = callPackage ./lib.nix {
+  moorNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix;
   };
 
@@ -105,8 +105,8 @@ let
     inherit moorNpmLib;
   };
 
-  hermesWeb = callPackage ./web.nix {
-    inherit hermesNpmLib generatedIcons;
+  moorWeb = callPackage ./web.nix {
+    inherit moorNpmLib generatedIcons;
   };
 
   bundledSkills = lib.cleanSourceWith {
@@ -171,19 +171,19 @@ let
     ];
   };
 
-  agentInputsFile = writeText "hermes-agent-inputs.json" (builtins.toJSON {
+  agentInputsFile = writeText "moor-agent-inputs.json" (builtins.toJSON {
     project = "${../pyproject.toml}";
-    code = "${hermesVenv}/${sitePackagesPath}";
-    repo = "share/hermes-agent";
+    code = "${moorVenv}/${sitePackagesPath}";
+    repo = "share/moor-agent";
     placement = "references";
     target = "${if stdenv.hostPlatform.isDarwin then "darwin" else "linux"}-${
       if stdenv.hostPlatform.isAarch64 then "arm64" else "x64"
     }";
-    python = "${hermesVenv}/bin/python3";
-    site_packages = "${hermesVenv}/${sitePackagesPath}";
-    environment = toString hermesVenv;
+    python = "${moorVenv}/bin/python3";
+    site_packages = "${moorVenv}/${sitePackagesPath}";
+    environment = toString moorVenv;
     pm_runtime = toString pmRuntime;
-    command_dir = "${hermesVenv}/bin";
+    command_dir = "${moorVenv}/bin";
     resources = {
       skills = toString bundledSkills;
       optional-skills = toString bundledOptionalSkills;
@@ -192,15 +192,15 @@ let
       optional-mcps = toString bundledOptionalMcps;
     };
     frontends = {
-      tui = "${hermesTui}/lib/hermes-tui";
-      web = toString hermesWeb;
+      tui = "${moorTui}/lib/moor-tui";
+      web = toString moorWeb;
     };
     ref = if dirty then null else rev;
     stamp = toString installStampFile;
     env = {
-      HERMES_NODE = lib.getExe hermesNpmLib.nodejs;
+      MOOR_NODE = lib.getExe moorNpmLib.nodejs;
     } // lib.optionalAttrs (rev != null && !dirty) {
-      HERMES_REVISION = rev;
+      MOOR_REVISION = rev;
     };
   });
 
@@ -252,7 +252,7 @@ let
   '';
 in
 stdenv.mkDerivation (finalAttrs: {
-  pname = "hermes-agent";
+  pname = "moor-agent";
   inherit version;
 
   dontUnpack = true;
@@ -274,7 +274,7 @@ stdenv.mkDerivation (finalAttrs: {
       shift 2
       makeWrapper "$source" "$out/$destination" "$@" \
         --suffix PATH : "${runtimePath}" \
-        --set-default HERMES_BIN "$out/bin/hermes"${
+        --set-default MOOR_BIN "$out/bin/moor"${
           lib.optionalString (extraPythonPackages != [ ])
             " \\\n        --suffix PYTHONPATH : \"${pythonPath}\""
         }
@@ -306,10 +306,10 @@ stdenv.mkDerivation (finalAttrs: {
     in
     {
       inherit
-        hermesTui
-        hermesWeb
-        hermesNpmLib
-        hermesVenv
+        moorTui
+        moorWeb
+        moorNpmLib
+        moorVenv
         agentBuilderSrc
         agentInputsFile
         installStampFile
@@ -319,15 +319,15 @@ stdenv.mkDerivation (finalAttrs: {
 
       # `moorDesktop` references `finalAttrs.finalPackage` (this whole
       # derivation, after all overrides are applied) so the desktop wrapper
-      # can pin its `hermes` command via HERMES_DESKTOP_HERMES. The
+      # can pin its `moor` command via MOOR_DESKTOP_MOOR. The
       # deployment override then picks up the fully wrapped
-      # `hermes` binary — venv with all deps, bundled skills/plugins,
+      # `moor` binary — venv with all deps, bundled skills/plugins,
       # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
       # of the agent resolution in the desktop wrapper.
-      hermesDesktop = callPackage ./desktop.nix {
-        inherit hermesNpmLib electron installStampFile generatedIcons;
+      moorDesktop = callPackage ./desktop.nix {
+        inherit moorNpmLib electron installStampFile generatedIcons;
         python3 = python;
-        hermesAgent = finalAttrs.finalPackage;
+        moorAgent = finalAttrs.finalPackage;
       };
 
       devShellHook = ''
@@ -346,7 +346,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   meta = with lib; {
     description = "AI agent with advanced tool-calling capabilities";
-    homepage = "https://github.com/NousResearch/hermes-agent";
+    homepage = "https://github.com/thisismamad-n/Moor";
     mainProgram = "moor";
     license = licenses.mit;
     platforms = platforms.unix;

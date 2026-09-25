@@ -23,7 +23,7 @@ def _image_to_data_url(ref: str, cap: int):
             if not is_safe_url(ref):
                 return None
             with create_ssrf_safe_client(timeout=60, follow_redirects=True) as client, \
-                    client.stream("GET", ref, headers={"User-Agent": "hermes-agent"}) as resp:
+                    client.stream("GET", ref, headers={"User-Agent": "moor-agent"}) as resp:
                 resp.raise_for_status()
                 if resp.headers.get("content-length") and int(resp.headers["content-length"]) > cap:
                     return None

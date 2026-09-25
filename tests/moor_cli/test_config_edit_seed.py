@@ -10,7 +10,7 @@ from tests.gateway.test_display_config import assert_keeps_platform_display_defa
 
 
 def _config_edit(tmp_path, monkeypatch, cfg, *, template):
-    """`hermes config edit` on a home with no config.yaml (seeds via seed_config_file, like `doctor --fix`)."""
+    """`moor config edit` on a home with no config.yaml (seeds via seed_config_file, like `doctor --fix`)."""
     monkeypatch.setenv("EDITOR", "true")
     monkeypatch.setattr(cfg.subprocess, "run", lambda *a, **k: None)
     if not template:
@@ -19,8 +19,8 @@ def _config_edit(tmp_path, monkeypatch, cfg, *, template):
 
 
 def _setup_agent_enter(tmp_path, monkeypatch, cfg):
-    """`hermes setup agent` on a fresh home, pressing Enter (the offered default) on every prompt."""
-    import hermes_cli.setup as setup
+    """`moor setup agent` on a fresh home, pressing Enter (the offered default) on every prompt."""
+    import moor_cli.setup as setup
 
     monkeypatch.setattr(setup, "prompt", lambda question, default=None, *a, **k: default or "")
     monkeypatch.setattr(setup, "prompt_yes_no", lambda *a, **k: False)
@@ -29,13 +29,13 @@ def _setup_agent_enter(tmp_path, monkeypatch, cfg):
 
 def _apply_default_agent_settings(tmp_path, monkeypatch, cfg):
     """Quick and full first-time setup."""
-    from hermes_cli.setup import _apply_default_agent_settings
+    from moor_cli.setup import _apply_default_agent_settings
 
     _apply_default_agent_settings(cfg.load_config())
 
 
 def _blank_slate(tmp_path, monkeypatch, cfg):
-    from hermes_cli.setup_quick import _blank_slate_minimize_config
+    from moor_cli.setup_quick import _blank_slate_minimize_config
 
     config = cfg.load_config()
     _blank_slate_minimize_config(config)
@@ -43,15 +43,15 @@ def _blank_slate(tmp_path, monkeypatch, cfg):
 
 
 def _doctor_fix(tmp_path, monkeypatch, cfg):
-    """`hermes doctor --fix` on a home with no config.yaml: the real config-file check, fix enabled."""
-    import hermes_cli.doctor as doctor
-    from hermes_cli.doctor_config import _check_config_file
+    """`moor doctor --fix` on a home with no config.yaml: the real config-file check, fix enabled."""
+    import moor_cli.doctor as doctor
+    from moor_cli.doctor_config import _check_config_file
 
     root = tmp_path / "checkout"  # only the template, so a stray cli-config.yaml cannot short-circuit the seed
     root.mkdir()
     shutil.copy2(cfg.get_project_root() / "cli-config.yaml.example", root / "cli-config.yaml.example")
-    home = cfg.get_hermes_home()
-    monkeypatch.setattr(doctor, "HERMES_HOME", home)
+    home = cfg.get_moor_home()
+    monkeypatch.setattr(doctor, "MOOR_HOME", home)
     monkeypatch.setattr(doctor, "PROJECT_ROOT", root)
     assert _check_config_file(True).fixed == 1
     if os.name == "posix":
@@ -70,12 +70,12 @@ SEEDERS = {
 
 @pytest.mark.parametrize("seeder", list(SEEDERS))
 def test_every_seeder_keeps_every_platform_display_default(tmp_path, monkeypatch, seeder):
-    import hermes_cli.config as cfg
+    import moor_cli.config as cfg
     from gateway.run import _load_gateway_config
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     SEEDERS[seeder](tmp_path, monkeypatch, cfg)
 

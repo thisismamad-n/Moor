@@ -45,7 +45,7 @@ function sessionScoped(scope?: ProfileScope): { connectionId?: string; profile?:
 /**
  * The profile a session WRITE must name in its body. The PATCH handler reads
  * its target DB from `body.profile` alone (`_with_db(body.profile, ...)`), and
- * under multiplex-only there is no per-profile backend whose HERMES_HOME could
+ * under multiplex-only there is no per-profile backend whose MOOR_HOME could
  * stand in for it: an unnamed owner lands the rename/pin/archive/mark-read on
  * the shared backend's own state.db. "Unnamed" therefore means "the profile I
  * am looking at", not "whatever home the backend was launched in".
@@ -370,7 +370,7 @@ export function setSessionArchived(id: string, archived: boolean, profile?: stri
   // state silently fails to stick — the same class as the unscoped DELETE.
   const owner = sessionWriteProfile(profile)
 
-  return hermesApi<{ ok: boolean }>({
+  return moorApi<{ ok: boolean }>({
     ...(owner ? { profile: owner } : {}),
     path: `/api/sessions/${encodeURIComponent(id)}`,
     method: 'PATCH',
@@ -388,7 +388,7 @@ export function setSessionPinnedRemote(id: string, pinned: boolean, profile?: st
   // profile's pin must travel in the body or it no-ops on the wrong state.db.
   const owner = sessionWriteProfile(profile)
 
-  return hermesApi<{ ok: boolean }>({
+  return moorApi<{ ok: boolean }>({
     ...(owner ? { profile: owner } : {}),
     path: `/api/sessions/${encodeURIComponent(id)}`,
     method: 'PATCH',
@@ -407,7 +407,7 @@ export function setSessionUnreadRemote(id: string, unread: boolean, profile?: st
   // state.db.
   const owner = sessionWriteProfile(profile)
 
-  return hermesApi<{ ok: boolean }>({
+  return moorApi<{ ok: boolean }>({
     ...(owner ? { profile: owner } : {}),
     path: `/api/sessions/${encodeURIComponent(id)}`,
     method: 'PATCH',
@@ -665,7 +665,7 @@ export function renameSession(
 ): Promise<{ ok: boolean; title: string }> {
   const owner = sessionWriteProfile(profile)
 
-  return hermesApi<{ ok: boolean; title: string }>({
+  return moorApi<{ ok: boolean; title: string }>({
     ...(owner ? { profile: owner } : {}),
     path: `/api/sessions/${encodeURIComponent(id)}`,
     method: 'PATCH',

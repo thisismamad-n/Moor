@@ -1042,8 +1042,8 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         self._voice_clients: Dict[int, Any] = {}  # guild_id -> VoiceClient
         self._voice_locks: Dict[int, asyncio.Lock] = {}  # guild_id -> serialize join/leave
         # Text batching: merge rapid successive messages (Telegram-style)
-        self._text_batch_delay_seconds = env_float("HERMES_DISCORD_TEXT_BATCH_DELAY_SECONDS", 0.6)
-        self._text_batch_split_delay_seconds = env_float("HERMES_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
+        self._text_batch_delay_seconds = env_float("MOOR_DISCORD_TEXT_BATCH_DELAY_SECONDS", 0.6)
+        self._text_batch_split_delay_seconds = env_float("MOOR_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
         # A tagged bot may emit one logical response as several Discord
         # messages. Keep its unmentioned continuation chunks eligible for the
         # existing text batcher during this short, sender-scoped window.
@@ -4136,7 +4136,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         try:
             if profile:
                 from gateway.run import _async_profile_runtime_scope
-                from hermes_cli.profiles import get_profile_dir
+                from moor_cli.profiles import get_profile_dir
                 async with _async_profile_runtime_scope(get_profile_dir(profile)):
                     await self._deliver_unauthorized_slash_alert(
                         runner, profile, user_name, user_id, chan_id, guild_id, command_text, reason)
@@ -5593,7 +5593,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         def _build(_channel):
             # Header-only card (same rule as the exec approval prompt): the question and hint live
             # in content only, so embed-rendering clients don't see them twice (#114693).
-            embed = discord.Embed(title="❓ Hermes needs your input", color=discord.Color.orange())
+            embed = discord.Embed(title="❓ Moor needs your input", color=discord.Color.orange())
             # 5 buttons × 5 rows = 25; one slot is reserved for "Other".
             clean_choices = [s for s in (_flatten_choice(c) for c in (choices or [])) if s][:24]
             if clean_choices:
@@ -6026,7 +6026,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
                         # recovers, and skip agent invocation for this message. See #20243.
                         await message.channel.send(
                             self.warning_text(
-                                "⚠️ Hermes could not create a Discord thread for "
+                                "⚠️ Moor could not create a Discord thread for "
                                 "this message, so the request was not processed. Please retry.",
                                 "The request was not processed. Please retry.")
                         )

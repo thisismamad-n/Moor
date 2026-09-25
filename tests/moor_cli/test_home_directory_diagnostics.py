@@ -8,7 +8,7 @@ from moor_cli import config
 
 
 @pytest.mark.platforms("linux")
-@pytest.mark.parametrize("subdir", (".", *config._HERMES_HOME_SUBDIRS))
+@pytest.mark.parametrize("subdir", (".", *config._MOOR_HOME_SUBDIRS))
 def test_unavailable_directory_links_are_diagnosed_without_creating_targets(tmp_path, monkeypatch, subdir):
     home = tmp_path / "moor"
     link = home / subdir

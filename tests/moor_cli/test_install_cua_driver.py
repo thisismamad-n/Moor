@@ -32,7 +32,7 @@ def _runtime_manifest(version="0.20.0", *, omit=()):
     ("0.20.0", ("--approve-capability-manifest",), False),
 ])
 def test_runtime_contract(version, omit, ready, tmp_path):
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
     result = SimpleNamespace(returncode=0, stderr="",
                              stdout=json.dumps(_runtime_manifest(version, omit=omit)))
@@ -49,9 +49,9 @@ def test_runtime_contract(version, omit, ready, tmp_path):
 @pytest.mark.parametrize("upgrade", [False, True])
 def test_pm_failure_is_reported_without_vendor_fallback(monkeypatch, capsys, upgrade):
     import pm
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
-    monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
+    monkeypatch.delenv("MOOR_CUA_DRIVER_CMD", raising=False)
     monkeypatch.setattr(cua, "_resolved_cua_driver_cmd", lambda: None)
     with patch.object(pm, "ensure", side_effect=pm.InstallError("cua-driver", "offline")) as ensure, \
          patch.object(cua.subprocess, "Popen", side_effect=AssertionError("vendor installer")):
@@ -63,9 +63,9 @@ def test_pm_failure_is_reported_without_vendor_fallback(monkeypatch, capsys, upg
 @pytest.mark.parametrize("upgrade", [False, True])
 def test_broken_override_never_acquires_standard_driver(tmp_path, monkeypatch, upgrade):
     import pm
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
-    monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", str(tmp_path / "missing-driver"))
+    monkeypatch.setenv("MOOR_CUA_DRIVER_CMD", str(tmp_path / "missing-driver"))
     with patch.object(pm, "ensure", side_effect=AssertionError("override was replaced")):
         assert not cua.install_cua_driver(upgrade=upgrade)
 
@@ -73,7 +73,7 @@ def test_broken_override_never_acquires_standard_driver(tmp_path, monkeypatch, u
 @pytest.mark.platforms("windows")
 @pytest.mark.parametrize("old_target", [False, True])
 def test_autostart_uses_selected_binary_and_verifies_registration(tmp_path, monkeypatch, old_target):
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
     binary = str(tmp_path / "User's driver directory" / "cua-driver.exe")
     selected = str(tmp_path / "old-cua-driver.exe") if old_target else binary
@@ -102,7 +102,7 @@ def test_autostart_uses_selected_binary_and_verifies_registration(tmp_path, monk
 
 @pytest.mark.platforms("windows")
 def test_autostart_does_not_claim_success_without_registered_task(monkeypatch):
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
     monkeypatch.setattr(cua, "_cua_driver_autostart_registered_windows", lambda binary=None: False)
     monkeypatch.setattr(cua.shutil, "which", lambda command: command)
@@ -114,9 +114,9 @@ def test_autostart_does_not_claim_success_without_registered_task(monkeypatch):
 @pytest.mark.parametrize("registered", [False, True])
 def test_setup_preserves_host_registration_failure(monkeypatch, registered):
     import pm
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
-    monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
+    monkeypatch.delenv("MOOR_CUA_DRIVER_CMD", raising=False)
     monkeypatch.setattr(pm, "ensure", lambda *a, **kw: None)
     monkeypatch.setattr(cua, "_resolved_cua_driver_cmd", lambda: "cua-driver.exe")
     monkeypatch.setattr(cua, "_cua_driver_contract_status", lambda *a: {"ready": True})
@@ -127,19 +127,19 @@ def test_setup_preserves_host_registration_failure(monkeypatch, registered):
 
 @pytest.mark.platforms("macos")
 def test_setup_refuses_bare_binary_without_required_signed_app(monkeypatch, tmp_path):
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
     driver = tmp_path / "cua-driver"
     driver.write_text("#!/bin/sh\nexit 0\n")
     driver.chmod(0o755)
-    monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", str(driver))
+    monkeypatch.setenv("MOOR_CUA_DRIVER_CMD", str(driver))
     monkeypatch.setattr(cua, "_cua_driver_contract_status", lambda *a: {"ready": True})
     assert not cua.install_cua_driver(show_installer_progress=False)
 
 
 @pytest.mark.platforms("macos")
 def test_setup_registers_only_the_validated_selected_app(monkeypatch, tmp_path):
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
     from tools.computer_use import cua_backend_daemon as daemon
 
     app = tmp_path / "CuaDriver.app"
@@ -147,7 +147,7 @@ def test_setup_registers_only_the_validated_selected_app(monkeypatch, tmp_path):
     driver.parent.mkdir(parents=True)
     driver.write_text("#!/bin/sh\nexit 0\n")
     driver.chmod(0o755)
-    monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", str(driver))
+    monkeypatch.setenv("MOOR_CUA_DRIVER_CMD", str(driver))
     monkeypatch.setattr(cua, "_cua_driver_contract_status", lambda *a: {"ready": True})
     with patch.object(daemon, "_validate_cua_driver_app_signature") as validate, \
          patch.object(cua, "_run_text", return_value=SimpleNamespace(returncode=0)) as register:
@@ -158,7 +158,7 @@ def test_setup_registers_only_the_validated_selected_app(monkeypatch, tmp_path):
 
 @pytest.mark.platforms("macos")
 def test_setup_keeps_permission_guidance(capsys):
-    from hermes_cli.tools_config_cua import _print_cua_platform_notes
+    from moor_cli.tools_config_cua import _print_cua_platform_notes
 
     _print_cua_platform_notes(False, False, fresh_install=True)
     output = capsys.readouterr().out
@@ -175,6 +175,6 @@ def test_setup_keeps_permission_guidance(capsys):
     ("   \n \n", ""),
 ])
 def test_version_summary(raw, expected):
-    from hermes_cli.tools_config_cua import _cua_version_summary
+    from moor_cli.tools_config_cua import _cua_version_summary
 
     assert _cua_version_summary(raw) == expected

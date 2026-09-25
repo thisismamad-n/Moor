@@ -30,21 +30,21 @@ def _put(root, name, content):
 
 @pytest.fixture
 def completion(tmp_path, monkeypatch):
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.config_defaults import DEFAULT_CONFIG
     from pm.environments import install_state_dir, runtime_facts_path, site_packages
 
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(home / ".hermes"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "store"))
+    monkeypatch.setenv("MOOR_HOME", str(home / ".moor"))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(tmp_path / "store"))
     source = tmp_path / "selected source"
     source.mkdir()
     # Copies give bootstrap/main a genuine selected checkout identity. No file
     # in the working checkout is modified, even by import-time self-heals.
     for path in ROOT.glob("*.py"):
         shutil.copy2(path, source / path.name)
-    for name in ("hermes_cli", "hermes_platform", "pm", "agent", "gateway", "tools", "cron"):
+    for name in ("moor_cli", "moor_platform", "pm", "agent", "gateway", "tools", "cron"):
         shutil.copytree(ROOT / name, source / name,
                         ignore=shutil.ignore_patterns("__pycache__", "web_dist", "tui_dist"))
     shutil.copytree(ROOT / "scripts/build", source / "scripts/build",
@@ -77,12 +77,12 @@ def completion(tmp_path, monkeypatch):
     _put(site, "selected_dependency.py", "VALUE = 'selected generation'\n")
     _put(runtime_facts_path(source).parent, "facts.json", json.dumps({
         "packages": {"venv": {"environment": str(generation)}}}))
-    _put(home / ".hermes", "config.yaml",
+    _put(home / ".moor", "config.yaml",
          f"_config_version: {DEFAULT_CONFIG['_config_version'] - 1}\nmodel:\n  default: retained-model\n")
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "PYTEST_", "VIRTUAL_ENV", "npm_", "NPM_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home / ".hermes"),
-               HERMES_RUNTIME_DIR=str(tmp_path / "store"),
+           if not key.startswith(("MOOR_", "PYTHON", "PYTEST_", "VIRTUAL_ENV", "npm_", "NPM_"))}
+    env.update(HOME=str(home), MOOR_HOME=str(home / ".moor"),
+               MOOR_RUNTIME_DIR=str(tmp_path / "store"),
                PYTHONPATH="/obsolete/pre-pm/site-packages", PYTHONHOME="/obsolete/python",
                NPM_CONFIG_OFFLINE="true", NPM_CONFIG_CACHE=str(tmp_path / "npm-cache"))
     probe = subprocess.run([str(python), "-I", "-c",
@@ -139,7 +139,7 @@ def completion(tmp_path, monkeypatch):
                     spec.loader.exec_module = execute
                     return spec
 
-                if fullname != 'hermes_cli.main':
+                if fullname != 'moor_cli.main':
                     return None
                 import selected_dependency
                 assert selected_dependency.VALUE == 'selected generation'
@@ -151,13 +151,13 @@ def completion(tmp_path, monkeypatch):
                     original(module)
                     # Install only service/machine boundaries after REAL CLI
                     # startup; all dependencies must be available by now.
-                    from hermes_cli import update_cmd as update
-                    from hermes_cli import update_cmd_maint as maint
-                    from hermes_cli import update_cmd_fleet as fleet
-                    from hermes_cli import gateway_migrate
-                    from hermes_cli import macos_tcc_anchor
-                    from hermes_cli import source_build
-                    from hermes_cli.update_inventory import UpdatePlan, RuntimeRecord
+                    from moor_cli import update_cmd as update
+                    from moor_cli import update_cmd_maint as maint
+                    from moor_cli import update_cmd_fleet as fleet
+                    from moor_cli import gateway_migrate
+                    from moor_cli import macos_tcc_anchor
+                    from moor_cli import source_build
+                    from moor_cli.update_inventory import UpdatePlan, RuntimeRecord
                     from pm.package import Runner
                     import pm
                     import os
@@ -169,10 +169,10 @@ def completion(tmp_path, monkeypatch):
                         assert name == 'npm' and explicit
                         assert shutil.which('node', path=base_env['PATH'])
                         assert shutil.which('npm', path=base_env['PATH'])
-                        assert base_env['HERMES_PYTHON'] == str(project_python(root))
-                        assert base_env['PYTHON'] == base_env['HERMES_PYTHON']
+                        assert base_env['MOOR_PYTHON'] == str(project_python(root))
+                        assert base_env['PYTHON'] == base_env['MOOR_PYTHON']
                         (root / 'build-environment.json').write_text(json.dumps({
-                            'python': base_env['HERMES_PYTHON'], 'selected': selected_dependency.__file__,
+                            'python': base_env['MOOR_PYTHON'], 'selected': selected_dependency.__file__,
                             'argv': sys.argv, 'old_module': 'pre_pm_only' in sys.modules,
                             'pid': os.getpid(), 'parent': os.getppid(),
                         }))
@@ -205,7 +205,7 @@ def completion(tmp_path, monkeypatch):
                         assert isinstance(plan, UpdatePlan)
                         assert isinstance(plan.runtimes[0], RuntimeRecord)
                         assert plan.to_dict() == request['plan'] | {
-                            'updatable_in_place': True, 'update_mechanism': 'hermes update'}
+                            'updatable_in_place': True, 'update_mechanism': 'moor update'}
                         (root / 'restarted-plan.json').write_text(json.dumps(plan.to_dict()))
                         return fleet._GatewayRestartOutcome(
                             incomplete=False, phase_errors=[], pre_restart_gateway_pids=[],
@@ -221,13 +221,13 @@ def completion(tmp_path, monkeypatch):
                 spec.loader.exec_module = execute
                 return spec
         sys.meta_path.insert(0, CompletionImports())
-        sys.argv = [str(root / 'hermes_cli/update_finish.py'), context, result]
+        sys.argv = [str(root / 'moor_cli/update_finish.py'), context, result]
         runpy.run_path(sys.argv[0], run_name='__main__')
     '''))
     def run(fault=""):
         return subprocess.run([str(python), "-I", "-B", str(runner), str(context), str(result), fault],
                               cwd=tmp_path, env=env, capture_output=True, text=True, timeout=90)
-    return source, home / ".hermes", request, context, result, run
+    return source, home / ".moor", request, context, result, run
 
 
 @pytest.mark.platforms("posix")
@@ -284,8 +284,8 @@ def test_missing_desktop_observation_uses_installed_products(completion, capture
     if installed == "renderer":
         _put(source, "apps/desktop/dist/index.html", "old renderer")
     elif installed == "packaged":
-        executable = ("mac-arm64/Hermes.app/Contents/MacOS/Hermes" if sys.platform == "darwin"
-                      else "linux-unpacked/hermes")
+        executable = ("mac-arm64/Moor.app/Contents/MacOS/Moor" if sys.platform == "darwin"
+                      else "linux-unpacked/moor")
         _put(source, f"apps/desktop/release/{executable}", "old packaged app")
     before = context.read_bytes()
     child = run()
@@ -337,7 +337,7 @@ def _npm_graph(source):
           symlinkSync(target, workspace + '/node_modules/' + name, 'dir');
         }}
         // A real npm lifecycle child, not an assertion about a constructed env.
-        writeFileSync('npm-python.json', execFileSync(process.env.HERMES_PYTHON,
+        writeFileSync('npm-python.json', execFileSync(process.env.MOOR_PYTHON,
           ['-I', '-c', 'import json, os, sys, selected_dependency; print(json.dumps(dict(python=sys.executable, configured=os.environ["PYTHON"])))']));
     '''))
     _put(source, "packages/value/index.js", "export const value = 'compiled local graph';\n")
@@ -355,9 +355,9 @@ def _npm_graph(source):
 
 @pytest.mark.platforms("posix")
 def test_selected_child_builds_and_finalizes_under_parent_lock(completion):
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
-    from hermes_cli.update_lock import UpdateLock
-    import hermes_yaml
+    from moor_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.update_lock import UpdateLock
+    import moor_yaml
 
     source, home, request, context, result, run = completion
     node = _npm_graph(source)
@@ -371,20 +371,20 @@ def test_selected_child_builds_and_finalizes_under_parent_lock(completion):
     built = subprocess.run([node, str(source / "ui-tui/dist/entry.js")],
                            capture_output=True, text=True, check=True)
     assert built.stdout.strip() == "compiled local graph"
-    assert (source / "hermes_cli/web_dist/index.html").is_file()
-    assert any("compiled local graph" in p.read_text() for p in (source / "hermes_cli/web_dist/assets").glob("*.js"))
-    assert (source / "node_modules/.hermes-node-deps").is_file()
+    assert (source / "moor_cli/web_dist/index.html").is_file()
+    assert any("compiled local graph" in p.read_text() for p in (source / "moor_cli/web_dist/assets").glob("*.js"))
+    assert (source / "node_modules/.moor-node-deps").is_file()
     environment = json.loads((source / "build-environment.json").read_text())
     assert "repairing the recorded dependency environment" not in child.stderr
     npm_python = json.loads((source / "npm-python.json").read_text())
     assert npm_python["python"] == npm_python["configured"] == environment["python"]
     assert environment["parent"] == os.getpid()
     assert environment["old_module"] is False
-    assert environment["argv"] == [str(source / "hermes"), "update"]
+    assert environment["argv"] == [str(source / "moor"), "update"]
     assert context.read_bytes() == before
     assert json.loads((source / "restarted-plan.json").read_text())["expected_sha"] == "old-sha"
     assert json.loads((source / "resumed-token.json").read_text()) == request["windows_resume"]
-    config = hermes_yaml.safe_load((home / "config.yaml").read_text())
+    config = moor_yaml.safe_load((home / "config.yaml").read_text())
     assert config["_config_version"] == DEFAULT_CONFIG["_config_version"], child.stdout + child.stderr
     assert config["model"]["default"] == "retained-model"
     receipt = json.loads((home / "logs/update_receipts/latest.json").read_text())
@@ -413,7 +413,7 @@ def test_real_compiler_failure_retains_receipt_and_skips_completion(completion):
     assert "TypeScript build failed" in child.stdout + child.stderr
     assert (source / "npm-python.json").is_file()
     assert (source / "ui-tui/dist/entry.js").is_file()
-    assert not (source / "hermes_cli/web_dist/index.html").exists()
+    assert not (source / "moor_cli/web_dist/index.html").exists()
     assert not (source / "restarted-plan.json").exists()
     assert (home / "config.yaml").read_bytes() == config_before
     assert context.read_bytes() == context_before
@@ -432,7 +432,7 @@ def test_pre_pull_restart_enters_current_cli_with_original_arguments(completion,
     source, home, request, context, result, run = completion
     # Exercise the REAL parser without contacting a repository or supervisor.
     # The full update command's apply path is covered by its own tests.
-    request.update(restart_update=True, argv=[str(source / "hermes"), "update", argument])
+    request.update(restart_update=True, argv=[str(source / "moor"), "update", argument])
     context.write_text(json.dumps(request), encoding="utf-8")
     child = run()
     assert child.returncode == code, child.stdout + child.stderr

@@ -143,8 +143,8 @@ def test_desktop_ticker_serves_every_profile_and_yields_to_owning_gateway(monkey
     or the live default multiplexer that already ticks it — such a satellite has no gateway.pid
     of its own, so the per-home liveness check alone lets both tickers race for its fires
     (#107485, #108428)."""
-    import hermes_cli.profiles as profiles_mod
-    import hermes_yaml as yaml
+    import moor_cli.profiles as profiles_mod
+    import moor_yaml as yaml
 
     _sp, builtin = _providers
     root = tmp_path / ".moor"

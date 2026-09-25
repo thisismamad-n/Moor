@@ -1,7 +1,7 @@
 import { atom } from 'nanostores'
 
 import { translateNow } from '@/i18n'
-import { type HermesOpenTarget, resolveHermesOpenPath } from '@/lib/hermes-open-target'
+import { type MoorOpenTarget, resolveMoorOpenPath } from '@/lib/moor-open-target'
 import { persistString, storedString } from '@/lib/storage'
 
 import { $gateway } from './gateway'
@@ -241,7 +241,7 @@ export function dispatchNativeNotification(input: NativeNotificationInput): bool
   const namedKey = input.sessionId ? NAMED_TITLE_KEYS[input.kind] : undefined
   const title = namedKey && input.sessionId ? withSessionLabel(namedKey, input.sessionId) : input.title
 
-  void window.hermesDesktop?.notify({
+  void window.moorDesktop?.notify({
     actions: input.actions,
     activate: input.activate,
     body: input.body,

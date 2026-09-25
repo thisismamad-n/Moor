@@ -177,7 +177,7 @@ async function locateMoor(ssh, remoteMoorPath) {
     //   - version checking: `<python> --version` printed "Python x.y.z" instead of
     //     the Moor version, and
     //   - capability probing: `<python> serve --help` failed entirely.
-    // See https://github.com/NousResearch/hermes-agent/issues/74411
+    // See https://github.com/thisismamad-n/Moor/issues/74411
     return candidate
   }
 
@@ -390,19 +390,19 @@ async function listRemoteMoorProfiles(ssh) {
 }
 
 async function readRemoteInstallId(ssh) {
-  // The stable backend identity the roster collapses on (`hermes_cli/install_identity.py`:
+  // The stable backend identity the roster collapses on (`moor_cli/install_identity.py`:
   // `<install root>/install_id`, opaque hex). Read from the INSTALL root, so an ssh connection
   // pinned to `<root>/profiles/<name>` reports the same id as one pointed at the root — they are
   // one backend. Read-only: a missing file is left missing (minting identity is the install's job,
   // never a visiting client's) and simply means "no id", exactly as an older backend reports.
-  const root = remoteInstallRoot(assertSafeRemoteHome(await probeRemoteHermesHome(ssh)))
+  const root = remoteInstallRoot(assertSafeRemoteHome(await probeRemoteMoorHome(ssh)))
   const file = expandRemotePath(`${root}/install_id`)
   let out = ''
 
   try {
     out = await ssh.exec(`if [ -f ${file} ]; then cat ${file}; fi`)
   } catch (cause) {
-    const error: any = new Error('Could not read the remote Hermes install id.')
+    const error: any = new Error('Could not read the remote Moor install id.')
     error.kind = 'transient-transport-error'
     error.cause = cause
     throw error
@@ -658,15 +658,15 @@ async function pidIsOurDashboard(
   const script =
     'import os,shlex,subprocess,sys\n' +
     `pid=${Number(pid)}\n` +
-    `expected=os.path.expanduser(${shq(hermesPath)})\n` +
+    `expected=os.path.expanduser(${shq(moorPath)})\n` +
     // The installer-facing launcher is intentionally preserved for invocation
-    // (#74411), but it may `exec python <install-dir>/hermes`, leaving neither
-    // launcher nor HERMES_HOME-derived entrypoint in argv. The ownership-scoped
+    // (#74411), but it may `exec python <install-dir>/moor`, leaving neither
+    // launcher nor MOOR_HOME-derived entrypoint in argv. The ownership-scoped
     // token path + random nonce + exact profile below are the alternative proof.
-    `hermes_home=os.path.expanduser(${shq(hermesHome)}) if ${shq(hermesHome)} else ""\n` +
+    `moor_home=os.path.expanduser(${shq(moorHome)}) if ${shq(moorHome)} else ""\n` +
     'expected_entries={expected}\n' +
-    'if hermes_home:\n' +
-    ' expected_entries.add(os.path.join(hermes_home,"hermes-agent","venv","bin","hermes"))\n' +
+    'if moor_home:\n' +
+    ' expected_entries.add(os.path.join(moor_home,"moor-agent","venv","bin","moor"))\n' +
     `expected_token=os.path.expanduser(${shq(ownershipId ? spawnTokenPath(ownershipId, spawnNonce) : '')})\n` +
     `expected_profile=${shq(profile)}\n` +
     `nonce=${shq(spawnNonce)}\n` +
@@ -1136,9 +1136,9 @@ function buildSpawnCommand(moorPath, profile, opts: any = {}) {
     `exec env MOOR_DESKTOP=1${opts.guestOnboarding === true ? ' MOOR_GUEST_ONBOARDING=1' : ''} ${moor} ${profileArgs}${subCmd}`
 
   const detachedShell: string = `eval "exec $1>&-"; ${dashCmd} </dev/null >> ${logPath} 2>&1 & echo $!`
-  // The inner shell backgrounds Hermes and reports its PID; backgrounding the
+  // The inner shell backgrounds Moor and reports its PID; backgrounding the
   // launcher too adds its unrelated PID to the value published in the lock.
-  const detachedSpawn: string = `child=$("$(command -v setsid || echo nohup)" sh -c ${shq(detachedShell)} hermes-update-child "$1")`
+  const detachedSpawn: string = `child=$("$(command -v setsid || echo nohup)" sh -c ${shq(detachedShell)} moor-update-child "$1")`
 
   if (!opts.ownershipId || !opts.lockMetadata) {
     return withRemoteUpdateMutex(

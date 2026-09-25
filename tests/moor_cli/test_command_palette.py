@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from cli import HermesCLI
+from cli import MoorCLI
 
 
 def _bare_cli():

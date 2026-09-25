@@ -74,14 +74,14 @@ def is_dispatcher_owned_worker_context() -> bool:
 
 
 def owned_kanban_task() -> str:
-    """The board task this execution OWNS: ``HERMES_KANBAN_TASK`` for the dispatcher-owned
+    """The board task this execution OWNS: ``MOOR_KANBAN_TASK`` for the dispatcher-owned
     worker, ``""`` otherwise. Tool access is not worker identity — a profile can expose the
     kanban toolset interactively, and children/cron runs inherit the env var — so every
     reader that turns the task id into worker behaviour (guidance, stop nudge, terminal
     outcomes) goes through this one helper."""
     if not is_dispatcher_owned_worker_context():
         return ""
-    return (os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+    return (os.environ.get("MOOR_KANBAN_TASK") or "").strip()
 
 
 def is_delegated_child_process_context() -> bool:

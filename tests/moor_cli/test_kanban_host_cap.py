@@ -250,7 +250,7 @@ def test_unspawnable_review_does_not_reserve_the_only_ready_slot(
     """A review card the review loop would refuse this tick (respawn guard,
     per-profile cap) must not consume the fairness reservation — otherwise the
     ready lane starves every tick while the reserved slot goes unused."""
-    import hermes_cli.config as cfgmod
+    import moor_cli.config as cfgmod
 
     monkeypatch.setattr(
         cfgmod, "load_config",
@@ -271,7 +271,7 @@ def test_unguarded_review_reserves_the_only_ready_slot(
     kanban_home, all_assignees_spawnable, monkeypatch,
 ):
     """A dispatchable review card still receives the single shared slot."""
-    import hermes_cli.config as cfgmod
+    import moor_cli.config as cfgmod
 
     monkeypatch.setattr(
         cfgmod, "load_config",

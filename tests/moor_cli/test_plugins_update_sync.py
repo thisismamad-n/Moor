@@ -5,13 +5,13 @@ import subprocess
 
 import pytest
 
-from tests.hermes_cli.test_plugin_update_transaction import installed, _version  # noqa: F401
+from tests.moor_cli.test_plugin_update_transaction import installed, _version  # noqa: F401
 from tests.pm.test_plugin_survival_contract import admission_env  # noqa: F401
 
 
 @pytest.mark.parametrize("installed", ["catalog", "custom"], indirect=True)
 def test_cli_update_scan_refusal_keeps_the_installed_tree(installed, monkeypatch):
-    from hermes_cli import plugins_cmd as pc
+    from moor_cli import plugins_cmd as pc
 
     _, home, repo, target, state = installed
     old = (target / "__init__.py").read_bytes()
@@ -35,7 +35,7 @@ def test_cli_update_scan_refusal_keeps_the_installed_tree(installed, monkeypatch
 
 @pytest.mark.parametrize("installed", ["catalog", "custom"], indirect=True)
 def test_disabled_update_does_not_change_dependencies_or_enablement(installed, monkeypatch):
-    from hermes_cli import plugins_cmd as pc
+    from moor_cli import plugins_cmd as pc
     from pm import paths
 
     _, home, repo, target, state = installed
@@ -55,7 +55,7 @@ def test_disabled_update_does_not_change_dependencies_or_enablement(installed, m
 @pytest.mark.parametrize("installed", ["catalog", "custom"], indirect=True)
 def test_enablement_before_lock_acquisition_cannot_skip_validation(installed, monkeypatch):
     from contextlib import contextmanager
-    from hermes_cli import plugins_cmd as pc, runtime_state
+    from moor_cli import plugins_cmd as pc, runtime_state
     from pm import paths
 
     _, home, repo, target, state = installed

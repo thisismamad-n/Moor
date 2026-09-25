@@ -39,14 +39,14 @@ def _unusable_invoke_jwt_error(reason: str, *, no_refresh_token: bool = False) -
     """Shared ``relogin=True`` error for an access token that is not a usable inference JWT.
 
     With no refresh token the failure is a state-shape one (nothing to redeem), so it carries the
-    terminal ``nous_auth_missing_refresh_token`` code the pool recognises instead of the JWT
+    terminal ``moor_auth_missing_refresh_token`` code the pool recognises instead of the JWT
     ``reason``, which would bench the row as a transient outage (#113718).
     """
     detail = " and no refresh token is available" if no_refresh_token else ""
     return _moor_err(
         f"Moor Portal access token is not a usable inference JWT ({reason}){detail}. "
         f"{_UNUSABLE_JWT_RELOGIN}",
-        "nous_auth_missing_refresh_token" if no_refresh_token else reason, relogin=True)
+        "moor_auth_missing_refresh_token" if no_refresh_token else reason, relogin=True)
 
 
 def _token_fingerprint(token: Any) -> Optional[str]:
@@ -611,8 +611,8 @@ def _refresh_access_token(
         return payload
     if 500 <= response.status_code <= 599:
         raise AuthError(
-            f"Nous Portal is temporarily unavailable (HTTP {response.status_code}).",
-            provider="nous", code="temporarily_unavailable", retryable=True)
+            f"Moor Portal is temporarily unavailable (HTTP {response.status_code}).",
+            provider="moor", code="temporarily_unavailable", retryable=True)
     # Vercel's Security Checkpoint in front of the Portal answers non-browser clients with a
     # 403 (``x-vercel-mitigated: deny``) or 429 (``challenge``) page (#120602). That is the edge
     # refusing the request, not the token endpoint rejecting the grant, so keep the credentials
@@ -621,11 +621,11 @@ def _refresh_access_token(
     if mitigated:
         from agent.retry_utils import parse_retry_after_seconds
         raise AuthError(
-            f"Nous Portal's edge firewall challenged the token refresh (HTTP {response.status_code}, "
+            f"Moor Portal's edge firewall challenged the token refresh (HTTP {response.status_code}, "
             f"x-vercel-mitigated={mitigated}). Credentials kept; try again shortly.",
-            provider="nous", code="upstream_blocked", retryable=True,
+            provider="moor", code="upstream_blocked", retryable=True,
             retry_after=parse_retry_after_seconds(response.headers))
-    from hermes_cli.auth import _OAUTH_GRANT_DEAD_CODES
+    from moor_cli.auth import _OAUTH_GRANT_DEAD_CODES
     try:
         error_payload = response.json()
     except Exception:
@@ -817,8 +817,8 @@ def refresh_moor_oauth_from_state(
                 if current_invoke_jwt_status is not None:
                     raise _unusable_invoke_jwt_error(
                         current_invoke_jwt_status, no_refresh_token=True)
-                raise _nous_err(
-                    "No refresh token is available for Nous Portal.", "nous_auth_missing_refresh_token",
+                raise _moor_err(
+                    "No refresh token is available for Moor Portal.", "moor_auth_missing_refresh_token",
                     relogin=True)
             refreshed = _refresh_access_token(
                 client=client, portal_base_url=state["portal_base_url"],
@@ -1029,8 +1029,8 @@ class _MoorRuntimeResolve:
                 if self.merge_shared():
                     self.persist("runtime_shared_merge_missing_access_token")
         if not self.has_access_token():
-            raise _nous_err(
-                "No access token found for Nous Portal login.", "nous_auth_missing_access_token", relogin=True)
+            raise _moor_err(
+                "No access token found for Moor Portal login.", "moor_auth_missing_access_token", relogin=True)
         invoke_jwt_status = self.invoke_jwt_status()
         self.skip_refresh_if_peer_rotated()
         if not (self.force_refresh or invoke_jwt_status is not None):
@@ -1088,8 +1088,8 @@ def _resolve_moor_runtime_credentials(
         _tls_state_from_verify)
     with _provider_state_transaction("moor") as (auth_store, state, state_source_path):
         if not state:
-            raise _nous_err("Hermes is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
-        run = _NousRuntimeResolve(
+            raise _moor_err("Moor is not logged into Moor Portal.", "moor_auth_missing", relogin=True)
+        run = _MoorRuntimeResolve(
             auth_store, state, state_source_path, force_refresh=force_refresh,
             stale_access_token=stale_access_token, timeout_seconds=timeout_seconds)
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
@@ -1449,8 +1449,8 @@ def step_up_moor_billing_scope(
     _raw_scope = prior.get("scope")
     prior_scope = _raw_scope.split() if isinstance(_raw_scope, str) else []
     requested = list(dict.fromkeys([
-        *(prior_scope or [NOUS_INFERENCE_INVOKE_SCOPE]), NOUS_BILLING_MANAGE_SCOPE]))
-    auth_state = _nous_device_code_login(
+        *(prior_scope or [MOOR_INFERENCE_INVOKE_SCOPE]), MOOR_BILLING_MANAGE_SCOPE]))
+    auth_state = _moor_device_code_login(
         portal_base_url=prior.get("portal_base_url") or None,
         inference_base_url=prior.get("inference_base_url") or None,
         client_id=prior.get("client_id") or pconfig.client_id, scope=" ".join(requested),

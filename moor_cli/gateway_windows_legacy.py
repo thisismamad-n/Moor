@@ -1,11 +1,11 @@
 """Pre-suffix Windows gateway launchers: the objects the current per-profile names cannot reach.
 
 Before task/launcher names carried ``_profile_suffix()``, an install wrote the Scheduled Task
-``Hermes_Gateway``, the Startup entry ``Hermes_Gateway.vbs``/``.cmd`` and the launcher pair
-``gateway-service\\Hermes_Gateway.{vbs,cmd}``. Every operation in ``gateway_windows`` is keyed on
-``get_task_name()`` → ``Hermes_Gateway_<suffix>``, so those strays are never queried, rewritten,
+``Moor_Gateway``, the Startup entry ``Moor_Gateway.vbs``/``.cmd`` and the launcher pair
+``gateway-service\\Moor_Gateway.{vbs,cmd}``. Every operation in ``gateway_windows`` is keyed on
+``get_task_name()`` → ``Moor_Gateway_<suffix>``, so those strays are never queried, rewritten,
 reported or removed: they keep launching a second gateway at logon, never pick up launcher
-fixes, and ``hermes gateway status`` prints ✓ while they do (#116157). This module enumerates
+fixes, and ``moor gateway status`` prints ✓ while they do (#116157). This module enumerates
 them once; ``status`` warns, ``uninstall`` and ``install --force`` remove.
 """
 
@@ -15,18 +15,18 @@ from pathlib import Path
 
 
 def _w():
-    import hermes_cli.gateway_windows as gateway_windows  # facade binding is the seam for tests
+    import moor_cli.gateway_windows as gateway_windows  # facade binding is the seam for tests
 
     return gateway_windows
 
 
 def _targets_this_home(text: str) -> bool:
     """A bare-named launcher is OURS only when its action points into THIS home's ``gateway-service``
-    dir. The bare name is also the live identity of the default ``~/.hermes`` profile, so a secondary
-    profile that classified every ``Hermes_Gateway`` object as its own stray would delete the default
+    dir. The bare name is also the live identity of the default ``~/.moor`` profile, so a secondary
+    profile that classified every ``Moor_Gateway`` object as its own stray would delete the default
     profile's gateway autostart on ``uninstall`` / ``install --force``."""
     w = _w()
-    marker = w._normalize_windows_path(str(w._hermes_home() / "gateway-service"))
+    marker = w._normalize_windows_path(str(w._moor_home() / "gateway-service"))
     return marker in w._normalize_windows_path(text)
 
 
@@ -40,7 +40,7 @@ def legacy_launcher_artifacts() -> list[tuple[str, str, Path | str]]:
         return []
     found: list[tuple[str, str, Path | str]] = []
     startup = w._startup_dir()
-    service_dir = w._hermes_home() / "gateway-service"
+    service_dir = w._moor_home() / "gateway-service"
     for path, label in (
         (startup / f"{bare}.vbs", "legacy pre-suffix Windows login item"),
         (startup / f"{bare}.cmd", "legacy pre-suffix Windows login item"),
@@ -63,13 +63,13 @@ def legacy_launcher_artifacts() -> list[tuple[str, str, Path | str]]:
 
 
 def warn_legacy_launchers() -> bool:
-    """``hermes gateway status``: name every stray so nobody has to do file-mtime archaeology."""
+    """``moor gateway status``: name every stray so nobody has to do file-mtime archaeology."""
     artifacts = legacy_launcher_artifacts()
     for _kind, label, target in artifacts:
         print(f"⚠ {label} still installed: {target}")
     if artifacts:
         print("  These predate per-profile launcher names and also start the gateway at logon.")
-        print("  Remove them with: hermes gateway uninstall   (then: hermes gateway install)")
+        print("  Remove them with: moor gateway uninstall   (then: moor gateway install)")
     return bool(artifacts)
 
 

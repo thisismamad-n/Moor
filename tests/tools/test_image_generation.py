@@ -482,15 +482,15 @@ class TestManagedPortalRouting:
 
     def _fake_registry(self, monkeypatch, fake_provider):
         monkeypatch.setattr("agent.image_gen_registry.get_provider", lambda name: fake_provider)
-        monkeypatch.setattr("hermes_cli.plugins._ensure_plugins_discovered", lambda *a, **k: None)
+        monkeypatch.setattr("moor_cli.plugins._ensure_plugins_discovered", lambda *a, **k: None)
 
-    def test_routes_portal_model_to_nous_plugin(self, image_tool, monkeypatch):
+    def test_routes_portal_model_to_moor_plugin(self, image_tool, monkeypatch):
         import json as _json
         from unittest.mock import MagicMock
 
-        monkeypatch.setattr(image_tool, "_read_configured_image_provider", lambda: "nous")
+        monkeypatch.setattr(image_tool, "_read_configured_image_provider", lambda: "moor")
         monkeypatch.setattr(image_tool, "_read_configured_image_model", lambda: "openai/gpt-5.4-image-2")
-        fake_provider = MagicMock(display_name="Nous Portal")
+        fake_provider = MagicMock(display_name="Moor Portal")
         fake_provider.generate.return_value = {"success": True, "image": "/tmp/x.png"}
         self._fake_registry(monkeypatch, fake_provider)
 
@@ -502,7 +502,7 @@ class TestManagedPortalRouting:
     def test_portal_model_without_plugin_errors_instead_of_billing_fal(self, image_tool, monkeypatch):
         import json as _json
 
-        monkeypatch.setattr(image_tool, "_read_configured_image_provider", lambda: "nous")
+        monkeypatch.setattr(image_tool, "_read_configured_image_provider", lambda: "moor")
         monkeypatch.setattr(image_tool, "_read_configured_image_model", lambda: "openai/gpt-5.4-image-2")
         self._fake_registry(monkeypatch, None)
 

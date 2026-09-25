@@ -7,14 +7,14 @@ from __future__ import annotations
 
 
 
-def test_nous_portal_tags_contains_product_and_client():
-    """Every Nous Portal request gets BOTH the product tag and the base-version tag."""
-    from agent.portal_tags import nous_portal_tags
-    from hermes_cli.version_info import get_version_info
+def test_moor_portal_tags_contains_product_and_client():
+    """Every Moor Portal request gets BOTH the product tag and the base-version tag."""
+    from agent.portal_tags import moor_portal_tags
+    from moor_cli.version_info import get_version_info
 
-    tags = nous_portal_tags()
-    assert "product=hermes-agent" in tags
-    assert f"client=hermes-client-v{get_version_info().base_version}" in tags
+    tags = moor_portal_tags()
+    assert "product=moor-agent" in tags
+    assert f"client=moor-client-v{get_version_info().base_version}" in tags
 
 
 
@@ -45,7 +45,7 @@ def test_ambient_context_set_none_clears():
         token = set_conversation_context(empty)
         try:
             assert get_conversation_context() is None
-            assert not any(t.startswith("conversation=") for t in nous_portal_tags())
+            assert not any(t.startswith("conversation=") for t in moor_portal_tags())
         finally:
             reset_conversation_context(token)
 

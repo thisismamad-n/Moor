@@ -67,7 +67,7 @@ class MoorProfile(ProviderProfile):
 
 
 moor = MoorProfile(
-    name="moor", aliases=("moor-portal", "nousresearch", "nous"), env_vars=("MOOR_API_KEY", "NOUS_API_KEY"),  # LEGACY-REBRAND-COMPAT: fallback provider alias
+    name="moor", aliases=("moor-portal", "nousresearch", "moor"), env_vars=("MOOR_API_KEY", "NOUS_API_KEY"),  # LEGACY-REBRAND-COMPAT: fallback provider alias
     display_name="Moor Cloud", description="Moor Cloud — Moor model family",
     signup_url="https://github.com/thisismamad-n/Moor", fallback_models=("hermes-3-405b", "hermes-3-70b"),
     base_url="https://inference-api.nousresearch.com/v1", auth_type="oauth_device_code",

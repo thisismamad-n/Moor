@@ -9,7 +9,7 @@ description: "How to build a web-search/extract/crawl backend plugin for Moor Ag
 Web-search provider plugins register a backend that services `web_search`, `web_extract`, and (optionally) deep-crawl tool calls. Built-in providers — Firecrawl, SearXNG, Tavily, Perplexity, Exa, Parallel, Keenable, Brave Search (free tier), xAI, and DDGS — all ship as plugins under `plugins/web/<name>/`. You can add a new one, or override a bundled one, by dropping a directory next to them.
 
 :::tip
-Web search is one of several **backend plugins** Hermes supports. The others (with their own ABCs) are [Image Generation Provider Plugins](./image-gen-provider-plugin.md), [Video Generation Provider Plugins](./video-gen-provider-plugin.md), [Memory Provider Plugins](./memory-provider-plugin.md), [Context Engine Plugins](./context-engine-plugin.md), and [Model Provider Plugins](./model-provider-plugin.md). General tool/hook/CLI plugins live in [Build a Hermes Plugin](./plugins/index.md).
+Web search is one of several **backend plugins** Moor supports. The others (with their own ABCs) are [Image Generation Provider Plugins](./image-gen-provider-plugin.md), [Video Generation Provider Plugins](./video-gen-provider-plugin.md), [Memory Provider Plugins](./memory-provider-plugin.md), [Context Engine Plugins](./context-engine-plugin.md), and [Model Provider Plugins](./model-provider-plugin.md). General tool/hook/CLI plugins live in [Build a Moor Plugin](./plugins/index.md).
 :::
 
 ## How discovery works
@@ -140,8 +140,8 @@ requires_env:
 | Key | Purpose |
 |---|---|
 | `kind: backend` | Routes the plugin through the backend-loading path |
-| `provides_web_providers` | List of provider `name`s this plugin registers — used by the loader to advertise the plugin in `hermes tools` even before `register()` runs |
-| `requires_env` | Interactive credential prompt during `hermes plugins install` (see [Build a Hermes Plugin](./plugins/index.md#gate-on-environment-variables) for the rich format) |
+| `provides_web_providers` | List of provider `name`s this plugin registers — used by the loader to advertise the plugin in `moor tools` even before `register()` runs |
+| `requires_env` | Interactive credential prompt during `moor plugins install` (see [Build a Moor Plugin](./plugins/index.md#gate-on-environment-variables) for the rich format) |
 
 ## ABC reference
 
@@ -233,14 +233,14 @@ Errors surface as the tool result; the LLM decides how to explain them. If no pr
 
 ## Lazy-installing optional dependencies
 
-Keep availability checks read-only. For an SDK covered by a Hermes extra,
+Keep availability checks read-only. For an SDK covered by a Moor extra,
 use `pm.available("extra-name")` in `is_available()`. Request
 `pm.ensure_import("extra-name")` from the operation that needs it. Report
 `InstallError`, including a required restart, to the caller.
 
 Declare a third-party plugin's own dependencies in its manifest or
-`pyproject.toml` rather than inventing a Hermes extra. See
-[Build a Hermes Plugin → Lazy-install](./plugins/index.md#lazy-install-optional-python-dependencies).
+`pyproject.toml` rather than inventing a Moor extra. See
+[Build a Moor Plugin → Lazy-install](./plugins/index.md#lazy-install-optional-python-dependencies).
 
 ## Reference implementations
 
@@ -264,4 +264,4 @@ my-backend-web = "my_backend_web_package"
 
 - [Web Search](../user-guide/features/web-search.md) — user-facing feature documentation and per-backend configuration
 - [Plugins overview](../user-guide/features/plugins.md) — all plugin types at a glance
-- [Build a Hermes Plugin](./plugins/index.md) — general tools/hooks/slash commands guide
+- [Build a Moor Plugin](./plugins/index.md) — general tools/hooks/slash commands guide

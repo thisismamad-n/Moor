@@ -3,8 +3,8 @@
 
 Refs #90471 / #89614.  The shared Windows ``taskkill`` boundaries:
 
-- ``hermes_cli/_subprocess_compat.pid_is_hermes`` / ``kill_process_tree``
-- ``hermes_cli/dashboard_procs._kill_stale_dashboard_processes`` (win32)
+- ``moor_cli/_subprocess_compat.pid_is_moor`` / ``kill_process_tree``
+- ``moor_cli/dashboard_procs._kill_stale_dashboard_processes`` (win32)
 
 Acceptance from #90471:
 1. missing / unreadable / non-matching identity fails closed -> no taskkill
@@ -16,8 +16,8 @@ from unittest import mock
 
 import pytest
 
-from hermes_cli import _subprocess_compat
-from hermes_cli import dashboard_procs
+from moor_cli import _subprocess_compat
+from moor_cli import dashboard_procs
 
 
 def _probe_stdout(value: str) -> mock.Mock:
@@ -153,7 +153,7 @@ class TestKillStaleDashboardProcesses:
         ]
         run.assert_not_called()
 
-    def test_hermes_pid_killed(self):
+    def test_moor_pid_killed(self):
         with self._patch_find(), mock.patch(
             "gateway.status.get_process_start_time", return_value=123
         ), mock.patch(
@@ -172,17 +172,17 @@ class TestKillStaleDashboardProcesses:
 
 # The POSIX kill path (the Windows class above is host-gated on taskkill).
 @pytest.mark.platforms("posix")
-def test_stop_only_targets_the_invoking_hermes_home(monkeypatch):
+def test_stop_only_targets_the_invoking_moor_home(monkeypatch):
     """An argv match from another profile is never a ``--stop`` target."""
-    own_home = "/tmp/hermes-own"
-    foreign_home = "/tmp/hermes-foreign"
-    monkeypatch.setenv("HERMES_HOME", own_home)
+    own_home = "/tmp/moor-own"
+    foreign_home = "/tmp/moor-foreign"
+    monkeypatch.setenv("MOOR_HOME", own_home)
 
     with mock.patch.object(
         dashboard_procs, "_scan_dashboard_processes",
-        return_value=[(12345, "hermes serve"), (12346, "hermes serve"), (12347, "hermes serve")],
+        return_value=[(12345, "moor serve"), (12346, "moor serve"), (12347, "moor serve")],
     ), mock.patch.object(dashboard_procs, "_caller_ancestor_pids", return_value=set()), mock.patch.object(
-        dashboard_procs, "_hermes_home_for_pid",
+        dashboard_procs, "_moor_home_for_pid",
         side_effect=lambda pid: {
             12345: own_home,
             12346: foreign_home,
@@ -198,70 +198,70 @@ def test_stop_only_targets_the_invoking_hermes_home(monkeypatch):
     assert result["matched"] == [12345]
 
 
-class TestHermesHomeForPid:
+class TestMoorHomeForPid:
     """Tri-state owner resolution: a readable environment always names a home."""
 
-    @pytest.mark.platforms("posix")  # POSIX default home is $HOME/.hermes
+    @pytest.mark.platforms("posix")  # POSIX default home is $HOME/.moor
     def test_readable_env_without_var_resolves_to_that_process_default_home(self, monkeypatch, tmp_path):
-        """The common install shape exports no HERMES_HOME: the backend lives in its user's
+        """The common install shape exports no MOOR_HOME: the backend lives in its user's
         platform default home, and a default-home ``--stop`` must still find it (#113978)."""
         home = str(tmp_path / "alice")
         monkeypatch.setattr(dashboard_procs, "_pid_environ", lambda pid: {"HOME": home})
-        from hermes_cli import main_dashboard
+        from moor_cli import main_dashboard
         monkeypatch.setattr(main_dashboard, "_dashboard_cmdline_for_pid",
-                            lambda pid: ["hermes", "--profile", "work", "serve"] if pid == 2 else ["hermes", "serve"])
+                            lambda pid: ["moor", "--profile", "work", "serve"] if pid == 2 else ["moor", "serve"])
 
-        assert dashboard_procs._hermes_home_for_pid(1) == f"{home}/.hermes"
+        assert dashboard_procs._moor_home_for_pid(1) == f"{home}/.moor"
         # ``-p``/``--profile`` is applied to os.environ after exec, invisible in /proc environ.
-        assert dashboard_procs._hermes_home_for_pid(2) == f"{home}/.hermes/profiles/work"
-        assert dashboard_procs._pids_owned_by_hermes_home([1, 2], f"{home}/.hermes") == [1]
+        assert dashboard_procs._moor_home_for_pid(2) == f"{home}/.moor/profiles/work"
+        assert dashboard_procs._pids_owned_by_moor_home([1, 2], f"{home}/.moor") == [1]
 
     # REGRESSION (#116906): a systemd/launchd unit with a scrubbed environment exports no HOME.
     # The target resolves its own default home from the password database, so attributing it to
-    # the INSPECTING process's home named another user's directory — and `hermes update` /
+    # the INSPECTING process's home named another user's directory — and `moor update` /
     # `--stop` then acted on the wrong profile root.
     def _posix_scrubbed_unit(self, monkeypatch, tmp_path, passwd_home):
-        """A unit whose environment carries neither HOME nor HERMES_HOME, on the POSIX branch."""
+        """A unit whose environment carries neither HOME nor MOOR_HOME, on the POSIX branch."""
         monkeypatch.setattr(dashboard_procs.sys, "platform", "linux")
         monkeypatch.setattr(dashboard_procs, "_pid_environ", lambda pid: {})
         monkeypatch.setattr(dashboard_procs, "_pid_passwd_home", lambda pid: passwd_home)
         monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path / "inspecting-user"))
-        from hermes_cli import main_dashboard
-        monkeypatch.setattr(main_dashboard, "_dashboard_cmdline_for_pid", lambda pid: ["hermes", "serve"])
+        from moor_cli import main_dashboard
+        monkeypatch.setattr(main_dashboard, "_dashboard_cmdline_for_pid", lambda pid: ["moor", "serve"])
 
     def test_scrubbed_unit_env_resolves_to_the_owners_passwd_home(self, monkeypatch, tmp_path):
-        service_home = tmp_path / "hermes-service"
+        service_home = tmp_path / "moor-service"
         self._posix_scrubbed_unit(monkeypatch, tmp_path, str(service_home))
 
-        assert Path(dashboard_procs._hermes_home_for_pid(1)) == service_home / ".hermes"
+        assert Path(dashboard_procs._moor_home_for_pid(1)) == service_home / ".moor"
 
     def test_unreadable_passwd_entry_keeps_the_existing_fallback(self, monkeypatch, tmp_path):
         """No owner, no entry: the previous behaviour stands rather than resolving to nothing."""
         self._posix_scrubbed_unit(monkeypatch, tmp_path, None)
 
-        assert Path(dashboard_procs._hermes_home_for_pid(1)) == tmp_path / "inspecting-user" / ".hermes"
+        assert Path(dashboard_procs._moor_home_for_pid(1)) == tmp_path / "inspecting-user" / ".moor"
 
-    def test_root_shaped_hermes_home_follows_the_flag_and_the_sticky_active_profile(self, monkeypatch, tmp_path):
-        """Mirror ``_apply_profile_override``: an exported root ``HERMES_HOME`` is the root, not the
-        home — ``-p work`` and ``hermes profile use work`` both land in ``<root>/profiles/work``."""
-        root = tmp_path / ".hermes"
+    def test_root_shaped_moor_home_follows_the_flag_and_the_sticky_active_profile(self, monkeypatch, tmp_path):
+        """Mirror ``_apply_profile_override``: an exported root ``MOOR_HOME`` is the root, not the
+        home — ``-p work`` and ``moor profile use work`` both land in ``<root>/profiles/work``."""
+        root = tmp_path / ".moor"
         root.mkdir()
         monkeypatch.setattr(dashboard_procs, "_pid_environ",
-                            lambda pid: {"HOME": str(tmp_path), "HERMES_HOME": str(root)})
-        from hermes_cli import main_dashboard
+                            lambda pid: {"HOME": str(tmp_path), "MOOR_HOME": str(root)})
+        from moor_cli import main_dashboard
         monkeypatch.setattr(main_dashboard, "_dashboard_cmdline_for_pid",
-                            lambda pid: ["hermes", "-p", "work", "serve"] if pid == 2 else ["hermes", "serve"])
+                            lambda pid: ["moor", "-p", "work", "serve"] if pid == 2 else ["moor", "serve"])
 
-        assert dashboard_procs._hermes_home_for_pid(2) == str(root / "profiles" / "work")
-        assert dashboard_procs._hermes_home_for_pid(1) == str(root)  # no flag, no active_profile
+        assert dashboard_procs._moor_home_for_pid(2) == str(root / "profiles" / "work")
+        assert dashboard_procs._moor_home_for_pid(1) == str(root)  # no flag, no active_profile
         (root / "active_profile").write_text("work", encoding="utf-8")
-        assert dashboard_procs._hermes_home_for_pid(1) == str(root / "profiles" / "work")
-        # A profile-shaped HERMES_HOME without a flag is the home itself (root = its grandparent).
+        assert dashboard_procs._moor_home_for_pid(1) == str(root / "profiles" / "work")
+        # A profile-shaped MOOR_HOME without a flag is the home itself (root = its grandparent).
         monkeypatch.setattr(dashboard_procs, "_pid_environ",
-                            lambda pid: {"HERMES_HOME": str(root / "profiles" / "ops")})
-        assert dashboard_procs._hermes_home_for_pid(1) == str(root / "profiles" / "ops")
+                            lambda pid: {"MOOR_HOME": str(root / "profiles" / "ops")})
+        assert dashboard_procs._moor_home_for_pid(1) == str(root / "profiles" / "ops")
 
     def test_unreadable_env_is_none_and_spared(self, monkeypatch):
         monkeypatch.setattr(dashboard_procs, "_pid_environ", lambda pid: None)
-        assert dashboard_procs._hermes_home_for_pid(7) is None
-        assert dashboard_procs._pids_owned_by_hermes_home([7], "/home/alice/.hermes") == []
+        assert dashboard_procs._moor_home_for_pid(7) is None
+        assert dashboard_procs._pids_owned_by_moor_home([7], "/home/alice/.moor") == []

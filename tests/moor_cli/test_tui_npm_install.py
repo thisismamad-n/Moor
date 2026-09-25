@@ -6,8 +6,8 @@ import shutil
 import subprocess
 
 import pytest
-from hermes_cli import main_tui_launch
-from tests.hermes_cli.test_source_build import source_checkout, source_products, _events  # noqa: F401
+from moor_cli import main_tui_launch
+from tests.moor_cli.test_source_build import source_checkout, source_products, _events  # noqa: F401
 
 
 def _touch_tui_entry(root: Path) -> None:
@@ -37,11 +37,11 @@ def test_unreceipted_bundle_is_stale_even_when_newer(tmp_path: Path) -> None:
 
 @pytest.fixture
 def tui_source(source_products, monkeypatch):
-    monkeypatch.delenv("HERMES_TUI_DIR", raising=False)
-    monkeypatch.delenv("HERMES_TUI_FORCE_BUILD", raising=False)
+    monkeypatch.delenv("MOOR_TUI_DIR", raising=False)
+    monkeypatch.delenv("MOOR_TUI_FORCE_BUILD", raising=False)
     monkeypatch.delenv("TERMUX_VERSION", raising=False)
     monkeypatch.setenv("PREFIX", "/usr")
-    monkeypatch.setenv("HERMES_NODE", shutil.which("node"))
+    monkeypatch.setenv("MOOR_NODE", shutil.which("node"))
     monkeypatch.setattr(main_tui_launch, "_find_bundled_tui", lambda: None)
     return source_products
 
@@ -75,7 +75,7 @@ def test_source_compile_failure_stops_launch_without_reinstall(tui_source):
 def test_fresh_bundle_does_not_prepare_or_compile(tui_source, monkeypatch, termux):
     root, acquired = tui_source
     _touch_tui_entry(root / "ui-tui")
-    from tests.hermes_cli.test_source_build import stamp_product
+    from tests.moor_cli.test_source_build import stamp_product
     stamp_product(root, "tui", root / "ui-tui/dist")
     if termux:
         monkeypatch.setenv("TERMUX_VERSION", "test")
@@ -90,8 +90,8 @@ def test_prebuilt_bundle_launch_does_not_touch_missing_source(tmp_path, monkeypa
     bundled = tmp_path / "bundle/entry.js"
     bundled.parent.mkdir()
     bundled.write_text("console.log('prebuilt')")
-    monkeypatch.delenv("HERMES_TUI_DIR", raising=False)
-    monkeypatch.setenv("HERMES_NODE", shutil.which("node"))
+    monkeypatch.delenv("MOOR_TUI_DIR", raising=False)
+    monkeypatch.setenv("MOOR_NODE", shutil.which("node"))
     monkeypatch.setattr(main_tui_launch, "_find_bundled_tui", lambda: bundled)
     argv, cwd = main_tui_launch._make_tui_argv(tmp_path / "missing-source", tui_dev=False)
     result = subprocess.run(argv, cwd=cwd, check=True, capture_output=True, text=True)
@@ -103,14 +103,14 @@ def test_prebuilt_bundle_launch_does_not_touch_missing_source(tmp_path, monkeypa
 @pytest.mark.parametrize("local_tsx", [False, True])
 def test_dev_launch_builds_ink_before_running_source(tui_source, local_tsx):
     root, acquired = tui_source
-    ink = root / "ui-tui/packages/hermes-ink"
+    ink = root / "ui-tui/packages/moor-ink"
     ink.mkdir(parents=True)
     (ink / "package.json").write_text(json.dumps({
         "name": "fixture-ink", "version": "1.0.0", "scripts": {"build": "node build.mjs"},
     }))
     (ink / "build.mjs").write_text("import { writeFileSync } from 'node:fs'; writeFileSync('built', 'ink');")
     manifest = json.loads((root / "package.json").read_text())
-    manifest["workspaces"].append("ui-tui/packages/hermes-ink")
+    manifest["workspaces"].append("ui-tui/packages/moor-ink")
     (root / "package.json").write_text(json.dumps(manifest))
     subprocess.run([shutil.which("npm"), "install", "--package-lock-only", "--ignore-scripts", "--offline"], cwd=root, check=True)
     tsx = root / "ui-tui/node_modules/.bin/tsx"
@@ -136,7 +136,7 @@ def test_runtime_node_comes_from_pm_without_legacy_repair(tmp_path, monkeypatch)
     managed = tmp_path / "bin/node"
     managed.parent.mkdir()
     managed.symlink_to(node)
-    monkeypatch.delenv("HERMES_NODE", raising=False)
+    monkeypatch.delenv("MOOR_NODE", raising=False)
     acquired = []
 
     def acquire(name):
@@ -150,7 +150,7 @@ def test_runtime_node_comes_from_pm_without_legacy_repair(tmp_path, monkeypatch)
 
 @pytest.mark.platforms("linux")
 def test_tui_rebuild_preserves_the_prepared_desktop_and_web_union(tui_source):
-    from hermes_cli.source_build import build_update_products
+    from moor_cli.source_build import build_update_products
 
     root, acquired = tui_source
     build_update_products(root, desktop=True)

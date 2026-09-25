@@ -4,8 +4,8 @@ import subprocess
 
 import pytest
 
-from hermes_cli import main, main_desktop
-from tests.hermes_cli.test_source_build import source_checkout, source_products, _events  # noqa: F401
+from moor_cli import main, main_desktop
+from tests.moor_cli.test_source_build import source_checkout, source_products, _events  # noqa: F401
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def desktop_source(source_products, monkeypatch):
 def test_desktop_build_only_prepares_once_and_keeps_fresh_launch_fast(desktop_source):
     root, acquired = desktop_source
     main_desktop.cmd_gui(Namespace(build_only=True))
-    app = root / "apps/desktop/release/linux-unpacked/hermes"
+    app = root / "apps/desktop/release/linux-unpacked/moor"
     assert app.read_text() == "desktop"
     assert [event["step"] for event in _events(root)] == ["deps", "icons", "desktop"]
     assert acquired == ["npm"]
@@ -37,7 +37,7 @@ def test_desktop_build_only_prepares_once_and_keeps_fresh_launch_fast(desktop_so
 @pytest.mark.platforms("linux")
 def test_failed_pack_exits_without_launching_or_replacing_the_app(desktop_source):
     root, acquired = desktop_source
-    app = root / "apps/desktop/release/linux-unpacked/hermes"
+    app = root / "apps/desktop/release/linux-unpacked/moor"
     app.parent.mkdir(parents=True)
     app.write_text("previous app")
     (root / "fail-desktop").touch()

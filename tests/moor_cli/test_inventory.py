@@ -601,9 +601,9 @@ def test_picker_metadata_uses_one_config_read_for_real_models_dev_lookups(tmp_pa
     path makes the larger payload re-open config.yaml once per lookup.
     """
     from agent import models_dev
-    from hermes_cli import config as config_module
+    from moor_cli import config as config_module
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
     (home / "config.yaml").write_text(
         "providers:\n"
@@ -612,7 +612,7 @@ def test_picker_metadata_uses_one_config_read_for_real_models_dev_lookups(tmp_pa
         "model_overrides: {}\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     config_module._LOAD_CONFIG_CACHE.clear()
     config_module._RAW_CONFIG_CACHE.clear()
 
@@ -677,10 +677,10 @@ def test_picker_metadata_uses_one_config_read_for_real_models_dev_lookups(tmp_pa
 
         with (
             _list_auth_returning(_rows(model_ids)),
-            patch("hermes_cli.inventory._local_runtime_row", return_value=None),
-            patch("hermes_cli.inventory._moa_provider_row", return_value=None),
-            patch("hermes_cli.models.model_supports_fast_mode", return_value=False),
-            patch("hermes_cli.inventory._reasoning_catalog_reader", return_value=None),
+            patch("moor_cli.inventory._local_runtime_row", return_value=None),
+            patch("moor_cli.inventory._moa_provider_row", return_value=None),
+            patch("moor_cli.models.model_supports_fast_mode", return_value=False),
+            patch("moor_cli.inventory._reasoning_catalog_reader", return_value=None),
             patch.object(models_dev, "_cfg_get", side_effect=counted_cfg_get),
             patch.object(
                 config_module, "load_config_readonly",

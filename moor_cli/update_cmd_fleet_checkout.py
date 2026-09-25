@@ -25,8 +25,8 @@ def checkout_contains(sha: str) -> bool:
     image and the pending-restart catch-up printed "every gateway serves the checkout" and "still
     off the checkout code" in the same breath.
     """
-    from hermes_cli.build_info import get_code_identity
-    from hermes_cli.update_cmd import _m
+    from moor_cli.build_info import get_code_identity
+    from moor_cli.update_cmd import _m
     identity = get_code_identity() or {}
     if identity.get("source") == "build-file":
         stamped = str(identity.get("sha") or "")

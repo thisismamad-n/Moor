@@ -1,5 +1,5 @@
 import { type OwnerScope, ownerScoped, profileScoped } from '@/api/client'
-import { hermesApi } from '@/hermes'
+import { moorApi } from '@/moor'
 
 /**
  * GPT-Live voice chat: the full-duplex voice frontend that DELEGATES to Moor.

@@ -437,7 +437,7 @@ async def _pty_fail(ws: WebSocket, exc: BaseException) -> None:
 
 @router.websocket("/api/pty")
 async def pty_ws(ws: WebSocket) -> None:
-    from hermes_cli.web_server_chat import PTY_REGISTRY, PtyBridge, PtyUnavailableError, _PTY_BRIDGE_AVAILABLE, _RESIZE_RE
+    from moor_cli.web_server_chat import PTY_REGISTRY, PtyBridge, PtyUnavailableError, _PTY_BRIDGE_AVAILABLE, _RESIZE_RE
     from pm.package import InstallError
     gate = await _ws_gate(ws, "pty")
     if gate is None:
@@ -487,7 +487,7 @@ async def pty_ws(ws: WebSocket) -> None:
         resolve_kwargs["active_session_file"] = str(active_session_file)
     # A picked workspace only applies to a FRESH chat; a resumed session keeps its own cwd.
     if not resume:
-        from hermes_cli.web_routers.chat_workspaces import resolve_chat_cwd
+        from moor_cli.web_routers.chat_workspaces import resolve_chat_cwd
         try:
             workspace_cwd = resolve_chat_cwd(ws.query_params.get("cwd"))
         except HTTPException as exc:  # dead/relative path: fail closed, never the launch dir
@@ -594,7 +594,7 @@ async def pty_ws(ws: WebSocket) -> None:
 async def gateway_ws(ws: WebSocket) -> None:
     if not await _close_unless_sidecar_allowed(ws):
         return
-    from hermes_cli.mcp_startup import start_deferred_mcp_discovery_now
+    from moor_cli.mcp_startup import start_deferred_mcp_discovery_now
     from tui_gateway.ws import handle_ws
 
     # First chat client of a standalone dashboard: fire the discovery armed at boot (no-op

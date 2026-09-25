@@ -1,4 +1,4 @@
-"""Canonical runtime identity for Hermes.
+"""Canonical runtime identity for Moor.
 
 Resolution order:
 1. Install stamp (``install-stamp.json``) — written at build time by
@@ -18,8 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
 
-from hermes_cli.steward import UPDATE_MECHANISMS
-from hermes_cli.update_channel import STABLE_TAG_RE
+from moor_cli.steward import UPDATE_MECHANISMS
+from moor_cli.update_channel import STABLE_TAG_RE
 
 
 @dataclass(frozen=True)
@@ -73,9 +73,9 @@ def _resolve_repo_dir() -> Path | None:
         return repo_dir
     # The PROCESS home: this is the running code's identity and is cached
     # process-wide, so a profile's context-local override must not pick it.
-    from hermes_constants import get_process_hermes_home
+    from moor_constants import get_process_moor_home
 
-    candidate = get_process_hermes_home() / "hermes-agent"
+    candidate = get_process_moor_home() / "moor-agent"
     if (candidate / ".git").exists():
         return candidate
     return None
@@ -95,7 +95,7 @@ def _calver_release_version(repo_dir: Path) -> tuple[str, int] | None:
     Releases before semver tags existed are tagged ``vYYYY.M.D`` only; the
     version users actually run is in that tag's pyproject. Without this, a
     checkout past such a release would compare as "unknown" against plugins'
-    ``requires_hermes``.
+    ``requires_moor``.
     """
     described = _run_git(repo_dir, "describe", "--tags", "--long", "--match", "v2[0-9][0-9][0-9].*", "HEAD")
     if not described:

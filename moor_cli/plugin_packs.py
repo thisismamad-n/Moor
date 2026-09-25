@@ -140,7 +140,7 @@ def validate_config_seed(plugin_id: str, seed: Any) -> dict[str, Any]:
 
 def parse_pack(text: str, *, source: str = "<pack>") -> PluginPack:
     """Parse and validate a pack YAML document."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
     try:
         raw = yaml.safe_load(text)
     except yaml.YAMLError as exc:
@@ -359,7 +359,7 @@ def install_pack_plugins(
         _run_capability_consent,
         _set_plugin_enabled,
     )
-    from hermes_cli.plugins_admission import AdmissionRefused
+    from moor_cli.plugins_admission import AdmissionRefused
     results: List[PackInstallResult] = []
 
     def _fail(display: str, error: str) -> None:
@@ -450,8 +450,8 @@ def _sanitized_entry_config(plugin_id: str) -> dict[str, Any]:
 def export_pack(*, enabled_only: bool = False, pack_name: str = "my-moor-pack") -> tuple[str, List[str]]:
     """Build pack YAML from the current install; returns ``(yaml_text, warnings)``. Plugins with
     unknown Git provenance (no install metadata) become warnings + YAML comments, never entries."""
-    import hermes_yaml as yaml
-    from hermes_cli.plugins_cmd import _get_enabled_set, _plugins_dir, _read_install_metadata
+    import moor_yaml as yaml
+    from moor_cli.plugins_cmd import _get_enabled_set, _plugins_dir, _read_install_metadata
     metadata = _read_install_metadata()
     enabled = _get_enabled_set()
     installed = sorted(d.name for d in _plugins_dir().iterdir() if d.is_dir() and not d.name.startswith("."))

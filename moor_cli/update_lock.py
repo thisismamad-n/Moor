@@ -54,7 +54,7 @@ def _pid_alive(pid: int) -> bool:
     if pid <= 0:
         return False
     try:
-        from hermes_cli._early_recovery import _pid_is_running
+        from moor_cli._early_recovery import _pid_is_running
         return _pid_is_running(pid)
     except Exception as exc:
         logger.debug("Could not probe pid %s: %s", pid, exc)
@@ -140,7 +140,7 @@ def _windows_parent_pid(pid: int) -> int | None:
 def _stdlib_parent_pid(pid: int) -> int | None:
     """The parent of ``pid`` without psutil, or ``None`` when unresolvable.
 
-    The update-takeover child is spawned ``-I -S -B`` (hermes_cli/_old_updater.py) so
+    The update-takeover child is spawned ``-I -S -B`` (moor_cli/_old_updater.py) so
     psutil cannot import there — and that grandchild is exactly the process that most
     needs the two-hop ancestry walk to adopt the orchestrator's marker. /proc serves
     Linux; macOS keeps /proc absent, so shell out to ps once per hop; Windows has
@@ -247,7 +247,7 @@ def describe_holder(holder: UpdateHolder | None) -> str:
     elapsed = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
     who = f", process {holder.pid}" if holder else ""
     return (
-        f"✗ Another Hermes update is already running (started {elapsed} ago{who}).\n"
+        f"✗ Another Moor update is already running (started {elapsed} ago{who}).\n"
         "\n"
         "  Running two at once would corrupt the install. Wait for it to finish\n"
         "  (watch `moor logs`), or close the Desktop/dashboard window that\n"
@@ -279,7 +279,7 @@ class UpdateLock:
         existing = read_live_update(path=self.path)
         # A live claim naming our own pid is a killed update's marker whose pid this retry
         # inherited (containers restart pid numbering): no other live process has our pid, and
-        # nothing pre-writes a marker for `hermes update` (it always runs under a parent's claim).
+        # nothing pre-writes a marker for `moor update` (it always runs under a parent's claim).
         # It is a new attempt, so it is claimed fresh like a dead holder's. Keeping the old
         # started_at would let the ceiling expire mid-run and admit a second updater.
         if existing is not None and existing.pid != os.getpid():

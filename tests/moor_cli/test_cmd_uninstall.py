@@ -4,9 +4,9 @@ from __future__ import annotations
 import argparse
 import pytest
 
-from hermes_cli import main, uninstall
-from hermes_cli.subcommands.uninstall import build_uninstall_parser
-from tests.hermes_cli.test_data_uninstall import layout  # noqa: F401 — isolated home
+from moor_cli import main, uninstall
+from moor_cli.subcommands.uninstall import build_uninstall_parser
+from tests.moor_cli.test_data_uninstall import layout  # noqa: F401 — isolated home
 
 
 @pytest.mark.parametrize("entry", ["cli", "module", "cli-dry-run"])
@@ -50,10 +50,10 @@ def test_module_subprocess_removes_only_the_disposable_home(layout, tmp_path):
     env = {key: value for key, value in os.environ.items() if key.upper() in {
         "PATH", "SYSTEMROOT", "WINDIR", "SYSTEMDRIVE", "TEMP", "TMP",
     }}
-    env.update(HERMES_HOME=str(home), HERMES_RUNTIME_DIR=str(home / "machine" / "tool-store"),
+    env.update(MOOR_HOME=str(home), MOOR_RUNTIME_DIR=str(home / "machine" / "tool-store"),
                HOME=str(tmp_path), USERPROFILE=str(tmp_path), APPDATA=str(tmp_path),
                LOCALAPPDATA=str(tmp_path), PYTHONPATH=str(root), PYTHONUTF8="1")
-    result = subprocess.run([sys.executable, "-m", "hermes_cli.uninstall", "--mode", "data"],
+    result = subprocess.run([sys.executable, "-m", "moor_cli.uninstall", "--mode", "data"],
                             cwd=tmp_path, env=env, stdin=subprocess.DEVNULL,
                             capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr

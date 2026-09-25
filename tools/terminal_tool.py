@@ -439,10 +439,10 @@ def _routed_home_task_key(profile_scoped: bool) -> Optional[str]:
     Persistent Docker keys the profile name exactly like B's session-bound work, so B keeps ONE
     container instead of a second one per home path.
     """
-    from hermes_constants import get_hermes_home_override, profile_name_for_home
+    from moor_constants import get_moor_home_override, profile_name_for_home
     from tools.environments.local import _is_routed_home
 
-    override = get_hermes_home_override()
+    override = get_moor_home_override()
     if not override or not _is_routed_home(override):
         return None
     profile = profile_name_for_home(override) if profile_scoped else None
@@ -1275,7 +1275,7 @@ def terminal_tool(
     time" event every N seconds so the agent stays current on a long job without polling.
     ``_completion_output_chars`` (internal) sizes the completion notification's output for a
     spawner whose output is the payload (a bot DM's reply); 0 keeps the usual tail.
-    ``_host_local`` forces the local backend for Hermes-owned control-plane
+    ``_host_local`` forces the local backend for moor-owned control-plane
     children (kept in a separate env cache from the configured backend).
     """
     try:

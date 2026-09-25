@@ -32,7 +32,7 @@ mock_start() {
       && kill -0 "$(cat "$MOCK_PIDFILE" 2>/dev/null)" 2>/dev/null; then
     local live_url
     live_url="$(cat "$MOCK_URLFILE")"
-    export HERMES_E2E_MOCK_URL="$live_url"
+    export MOOR_E2E_MOCK_URL="$live_url"
     ok "mock inference server already live: $live_url"
     # The config write is NOT optional: this is what re-points the app at a live
     # endpoint, and callers that only want that (the app-update flow, whose app
@@ -60,15 +60,15 @@ mock_start() {
   fi
   local url
   url="$(cat "$MOCK_URLFILE")"
-  export HERMES_E2E_MOCK_URL="$url"
+  export MOOR_E2E_MOCK_URL="$url"
   ok "mock inference server: $url"
   mock_configure_provider "$url"
 }
 
 mock_configure_provider() {
   local url="${1:?mock_configure_provider needs a url}"
-  node "$ASSETS/../../../tests-js/scripts/mock-provider-config.ts" "$HERMES_HOME" "$url" || fail "mock provider config failed"
-  ok "configured in $HERMES_HOME as an OpenAI-compatible endpoint (api $url/v1)"
+  node "$ASSETS/../../../tests-js/scripts/mock-provider-config.ts" "$MOOR_HOME" "$url" || fail "mock provider config failed"
+  ok "configured in $MOOR_HOME as an OpenAI-compatible endpoint (api $url/v1)"
 }
 
 mock_stop() {

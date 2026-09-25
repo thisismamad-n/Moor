@@ -21,7 +21,7 @@ from moor_cli import main_web_build
 
 @pytest.fixture(autouse=True)
 def _prepared_build_environment(monkeypatch):
-    from hermes_cli import source_build
+    from moor_cli import source_build
     monkeypatch.setattr(source_build, "source_build_env", lambda env=None, **kw: {**os.environ, **(env or {})})
 
 
@@ -179,7 +179,7 @@ def test_source_launch_reads_bom_electron_path_without_provisioning(tmp_path, mo
 def test_packaged_renderer_bom_does_not_bypass_entry_validation(tmp_path):
     import json
     import struct
-    from hermes_cli.desktop_update_verify import _verify_packaged_entry
+    from moor_cli.desktop_update_verify import _verify_packaged_entry
 
     resources = tmp_path / "resources"
     dist = resources / "app.asar.unpacked" / "dist"
@@ -413,7 +413,7 @@ def test_setup_tcc_identity_fails_when_trust_step_fails(tmp_path, monkeypatch, c
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is False
+    assert main_desktop._desktop_macos_setup_tcc_identity("Moor Local Signing") is False
 
 
 @pytest.mark.platforms("macos")
@@ -435,7 +435,7 @@ def test_setup_tcc_identity_fails_when_identity_never_becomes_valid(tmp_path, mo
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is False
+    assert main_desktop._desktop_macos_setup_tcc_identity("Moor Local Signing") is False
 
 
 @pytest.mark.platforms("macos")
@@ -514,8 +514,8 @@ def test_cmd_gui_setup_tcc_identity_exits_before_build(tmp_path, monkeypatch):
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
     _make_packaged_executable(root, monkeypatch)
 
-    with patch("hermes_cli.main_desktop._desktop_macos_setup_tcc_identity", return_value=True) as mock_setup, \
-         patch("hermes_cli.source_build.prepare_source_dependencies") as mock_install, \
+    with patch("moor_cli.main_desktop._desktop_macos_setup_tcc_identity", return_value=True) as mock_setup, \
+         patch("moor_cli.source_build.prepare_source_dependencies") as mock_install, \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns(setup_tcc_identity=True, identity="Moor Local Signing"))
 
@@ -679,9 +679,9 @@ def test_gui_registers_linux_desktop_entry_before_launch(tmp_path, monkeypatch):
 
     launch_ok = subprocess.CompletedProcess([str(packaged_exe)], 0)
 
-    with patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
-         patch("hermes_cli.main.subprocess.run", return_value=launch_ok), \
+    with patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
+         patch("moor_cli.main.subprocess.run", return_value=launch_ok), \
          pytest.raises(SystemExit):
         cli_main.cmd_gui(_ns())
 
@@ -716,9 +716,9 @@ def test_gui_shell_launch_defers_desktop_entry_until_window_reveal(tmp_path, mon
             time.sleep(0.01)
         return subprocess.CompletedProcess(cmd, 0)
 
-    with patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
-         patch("hermes_cli.main.subprocess.run", side_effect=fake_electron), \
+    with patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
+         patch("moor_cli.main.subprocess.run", side_effect=fake_electron), \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns())
 
@@ -742,9 +742,9 @@ def test_gui_launches_even_when_desktop_entry_install_fails(tmp_path, monkeypatc
 
     launch_ok = subprocess.CompletedProcess([str(packaged_exe)], 0)
 
-    with patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
-         patch("hermes_cli.main.subprocess.run", return_value=launch_ok) as mock_run, \
+    with patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
+         patch("moor_cli.main.subprocess.run", return_value=launch_ok) as mock_run, \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns())
 
@@ -860,20 +860,20 @@ def test_gui_linux_packaged_launch_bridges_detected_password_store(tmp_path, mon
 
     ok = subprocess.CompletedProcess([], 0)
 
-    with patch("hermes_cli.main.shutil.which", return_value="/usr/bin/npm"), \
-         patch("hermes_cli.source_build.prepare_source_dependencies", return_value=ok), \
-         patch("hermes_cli.main_desktop._desktop_build_needed", return_value=True), \
-         patch("hermes_cli.main_desktop._desktop_macos_relaunchable_fixup"), \
-         patch("hermes_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
-         patch("hermes_cli.config.load_config", return_value={}), \
-         patch("hermes_cli.linux_desktop_entry.install_desktop_entry", return_value=None), \
-         patch("hermes_cli.main_desktop._detect_linux_password_store", return_value="gnome-libsecret"), \
-         patch("hermes_cli.main.subprocess.run", side_effect=_pack_into_staging(root)) as mock_run, \
+    with patch("moor_cli.main.shutil.which", return_value="/usr/bin/npm"), \
+         patch("moor_cli.source_build.prepare_source_dependencies", return_value=ok), \
+         patch("moor_cli.main_desktop._desktop_build_needed", return_value=True), \
+         patch("moor_cli.main_desktop._desktop_macos_relaunchable_fixup"), \
+         patch("moor_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
+         patch("moor_cli.config.load_config", return_value={}), \
+         patch("moor_cli.linux_desktop_entry.install_desktop_entry", return_value=None), \
+         patch("moor_cli.main_desktop._detect_linux_password_store", return_value="gnome-libsecret"), \
+         patch("moor_cli.main.subprocess.run", side_effect=_pack_into_staging(root)) as mock_run, \
          pytest.raises(SystemExit):
         cli_main.cmd_gui(_ns())
 
     launch_env = mock_run.call_args_list[-1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_PASSWORD_STORE"] == "gnome-libsecret"
+    assert launch_env["MOOR_DESKTOP_PASSWORD_STORE"] == "gnome-libsecret"
 
 
 @pytest.mark.platforms("linux")
@@ -885,16 +885,16 @@ def test_gui_linux_packaged_launch_bridges_detected_password_store(tmp_path, mon
 def test_desktop_environment_precedence(monkeypatch, explicit, configured, detected, expected):
     _clear_keychain_env(monkeypatch)
     monkeypatch.delenv('ELECTRON_OZONE_PLATFORM_HINT', raising=False)
-    monkeypatch.setattr('hermes_cli.config.load_config', lambda: {
+    monkeypatch.setattr('moor_cli.config.load_config', lambda: {
         'desktop': {'password_store': configured, 'ozone_platform_hint': 'x11'}})
     def detect():
         assert configured == 'auto' and explicit is None
         return detected
     monkeypatch.setattr(main_desktop, '_detect_linux_password_store', detect)
     if explicit:
-        monkeypatch.setenv('HERMES_DESKTOP_PASSWORD_STORE', explicit)
+        monkeypatch.setenv('MOOR_DESKTOP_PASSWORD_STORE', explicit)
     env, _ = main_desktop._desktop_launch_env(_ns())
-    assert env['HERMES_DESKTOP_PASSWORD_STORE'] == expected
+    assert env['MOOR_DESKTOP_PASSWORD_STORE'] == expected
     assert env['ELECTRON_OZONE_PLATFORM_HINT'] == 'x11'
     monkeypatch.setenv('ELECTRON_OZONE_PLATFORM_HINT', 'wayland')
     assert main_desktop._desktop_launch_env(_ns())[0]['ELECTRON_OZONE_PLATFORM_HINT'] == 'wayland'
@@ -913,19 +913,19 @@ def test_gui_linux_source_launch_bridges_detected_password_store(tmp_path, monke
 
     ok = subprocess.CompletedProcess([], 0)
 
-    with patch("hermes_cli.main.shutil.which", return_value="/usr/bin/npm"), \
-         patch("hermes_cli.source_build.prepare_source_dependencies", return_value=ok), \
-         patch("hermes_cli.main_desktop._desktop_build_needed", return_value=True), \
-         patch("hermes_cli.config.load_config", return_value={}), \
-         patch("hermes_cli.linux_desktop_entry.install_desktop_entry", return_value=None), \
-         patch("hermes_cli.main_desktop._detect_linux_password_store", return_value="kwallet6"), \
-         patch("hermes_cli.main.subprocess.run", side_effect=_pack_into_staging(root)) as mock_run, \
+    with patch("moor_cli.main.shutil.which", return_value="/usr/bin/npm"), \
+         patch("moor_cli.source_build.prepare_source_dependencies", return_value=ok), \
+         patch("moor_cli.main_desktop._desktop_build_needed", return_value=True), \
+         patch("moor_cli.config.load_config", return_value={}), \
+         patch("moor_cli.linux_desktop_entry.install_desktop_entry", return_value=None), \
+         patch("moor_cli.main_desktop._detect_linux_password_store", return_value="kwallet6"), \
+         patch("moor_cli.main.subprocess.run", side_effect=_pack_into_staging(root)) as mock_run, \
          pytest.raises(SystemExit):
         cli_main.cmd_gui(_ns(source=True))
 
     assert mock_run.call_args_list[-1].args[0] == [str(electron / "dist/electron"), "."]
     launch_env = mock_run.call_args_list[-1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_PASSWORD_STORE"] == "kwallet6"
+    assert launch_env["MOOR_DESKTOP_PASSWORD_STORE"] == "kwallet6"
 
 
 @pytest.mark.platforms("macos")
@@ -937,20 +937,20 @@ def test_gui_password_store_bridge_is_linux_only(tmp_path, monkeypatch):
 
     ok = subprocess.CompletedProcess([], 0)
 
-    with patch("hermes_cli.main.shutil.which", return_value="/usr/bin/npm"), \
-         patch("hermes_cli.source_build.prepare_source_dependencies", return_value=ok), \
-         patch("hermes_cli.main_desktop._desktop_build_needed", return_value=True), \
-         patch("hermes_cli.main_desktop._desktop_macos_relaunchable_fixup"), \
-         patch("hermes_cli.config.load_config", return_value={}), \
-         patch("hermes_cli.linux_desktop_entry.install_desktop_entry", return_value=None), \
-         patch("hermes_cli.main_desktop._detect_linux_password_store") as mock_detect, \
-         patch("hermes_cli.main.subprocess.run", side_effect=_pack_into_staging(root)) as mock_run, \
+    with patch("moor_cli.main.shutil.which", return_value="/usr/bin/npm"), \
+         patch("moor_cli.source_build.prepare_source_dependencies", return_value=ok), \
+         patch("moor_cli.main_desktop._desktop_build_needed", return_value=True), \
+         patch("moor_cli.main_desktop._desktop_macos_relaunchable_fixup"), \
+         patch("moor_cli.config.load_config", return_value={}), \
+         patch("moor_cli.linux_desktop_entry.install_desktop_entry", return_value=None), \
+         patch("moor_cli.main_desktop._detect_linux_password_store") as mock_detect, \
+         patch("moor_cli.main.subprocess.run", side_effect=_pack_into_staging(root)) as mock_run, \
          pytest.raises(SystemExit):
             cli_main.cmd_gui(_ns())
 
     mock_detect.assert_not_called()
     launch_env = mock_run.call_args_list[-1].kwargs["env"]
-    assert "HERMES_DESKTOP_PASSWORD_STORE" not in launch_env
+    assert "MOOR_DESKTOP_PASSWORD_STORE" not in launch_env
 
 
 # ---------------------------------------------------------------------------
@@ -963,16 +963,16 @@ def test_gui_password_store_bridge_is_linux_only(tmp_path, monkeypatch):
 
 def _gui_build_patches(root: Path, run_side_effect):
     return [
-        patch("hermes_cli.main.shutil.which", return_value="/usr/bin/npm"),
+        patch("moor_cli.main.shutil.which", return_value="/usr/bin/npm"),
         # Staging doubles are text; the PE-validation suite owns real binaries.
-        patch("hermes_cli.main_desktop._desktop_exe_integrity_error", return_value=None),
-        patch("hermes_cli.source_build.prepare_source_dependencies",
+        patch("moor_cli.main_desktop._desktop_exe_integrity_error", return_value=None),
+        patch("moor_cli.source_build.prepare_source_dependencies",
               return_value=subprocess.CompletedProcess(["npm", "ci"], 0)),
-        patch("hermes_cli.main_desktop._desktop_build_needed", return_value=True),
-        patch("hermes_cli.main_desktop._desktop_macos_relaunchable_fixup"),
-        patch("hermes_cli.main_desktop._register_linux_desktop_entry"),
-        patch("hermes_cli.main_desktop._stop_desktop_processes_locking_build", return_value=[]),
-        patch("hermes_cli.main.subprocess.run", side_effect=run_side_effect),
+        patch("moor_cli.main_desktop._desktop_build_needed", return_value=True),
+        patch("moor_cli.main_desktop._desktop_macos_relaunchable_fixup"),
+        patch("moor_cli.main_desktop._register_linux_desktop_entry"),
+        patch("moor_cli.main_desktop._stop_desktop_processes_locking_build", return_value=[]),
+        patch("moor_cli.main.subprocess.run", side_effect=run_side_effect),
     ]
 
 
@@ -1050,7 +1050,7 @@ def test_swap_staged_desktop_app_stops_live_renderer_before_rename(tmp_path):
     staged_exe.parent.mkdir(parents=True)
     staged_exe.write_text("new", encoding="utf-8")
 
-    with patch("hermes_cli.main_desktop._stop_desktop_processes_locking_build",
+    with patch("moor_cli.main_desktop._stop_desktop_processes_locking_build",
                return_value=[4321]) as stop:
         promoted = main_desktop._swap_staged_desktop_app(desktop_dir, staging)
 
@@ -1095,7 +1095,7 @@ def test_stop_desktop_processes_locking_build_posix_swap_bypasses_early_return(t
 
 @pytest.mark.platforms("posix")  # Windows must stop the exe-locking ancestor too
 def test_posix_swap_spares_the_desktop_driving_this_update(tmp_path, monkeypatch):
-    """A historical Desktop runs `hermes update` as a piped child and relaunches
+    """A historical Desktop runs `moor update` as a piped child and relaunches
     itself afterwards; stopping it breaks the update's stdout (EPIPE). Its
     renderer/GPU/zygote helpers run the same exe but are not our ancestors;
     stopping them leaves a main process that can neither draw nor quit. Only an

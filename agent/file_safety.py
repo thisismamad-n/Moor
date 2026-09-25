@@ -72,7 +72,7 @@ def _resolve_target(path: str) -> Optional[Path]:
 def _guard_homes(path: str = "") -> set[str]:
     """Every home the write guards must cover. Process ``~`` alone is wrong whenever the
     process HOME is not the OS user's real home — ``TERMINAL_HOME_MODE=profile``,
-    containers, and spawned workers pin ``HOME`` to ``{HERMES_HOME}/home``, which leaves
+    containers, and spawned workers pin ``HOME`` to ``{MOOR_HOME}/home``, which leaves
     the real home's credential paths unguarded against absolute-path writes while file
     tools happily write there (and ``_expand_tilde`` may route ``~`` to yet another
     home). Deny/approval lists are built over the union: process home, real home,
@@ -80,7 +80,7 @@ def _guard_homes(path: str = "") -> set[str]:
     account's home, which joins the set so ``~root/.ssh/authorized_keys`` stays denied."""
     homes = {os.path.expanduser("~")}
     with suppress(Exception):
-        from hermes_constants import get_real_home, get_subprocess_home, _profile_home_path
+        from moor_constants import get_real_home, get_subprocess_home, _profile_home_path
 
         for candidate in (get_real_home(), get_subprocess_home(), _profile_home_path()):
             if candidate:

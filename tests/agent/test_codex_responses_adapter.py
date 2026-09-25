@@ -983,7 +983,7 @@ def _xai_reasoning_only_response(reasoning_text):
 def test_codex_preflight_passes_text_verbosity_through():
     """The preflight whitelist must let the Responses ``text`` block reach the wire (#20203).
 
-    Before it was allowed, ``text.verbosity`` died inside Hermes with
+    Before it was allowed, ``text.verbosity`` died inside Moor with
     "unsupported field(s): text" before the request ever left the process.
     """
     kwargs = {

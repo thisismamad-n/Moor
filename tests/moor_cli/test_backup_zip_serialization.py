@@ -7,14 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import backup
+from moor_cli import backup
 
 
 @pytest.mark.parametrize("automatic", [False, True])
 def test_zip_captures_live_wal_and_cleans_failed_staging(tmp_path, monkeypatch, automatic):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     output = tmp_path / "archive"
     output.mkdir()

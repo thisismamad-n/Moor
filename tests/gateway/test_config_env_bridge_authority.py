@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _run_gateway_import(
-    hermes_home: Path, initial_env: dict[str, str], routed_home: Path | None = None
+    moor_home: Path, initial_env: dict[str, str], routed_home: Path | None = None
 ) -> dict[str, str]:
     """Import gateway.run in a clean subprocess and return the post-import env.
 
@@ -36,8 +36,8 @@ def _run_gateway_import(
         import os, sys
         sys.path.insert(0, {str(PROJECT_ROOT)!r})
         if {str(routed_home or "")!r}:
-            from hermes_constants import set_hermes_home_override
-            set_hermes_home_override({str(routed_home or "")!r})
+            from moor_constants import set_moor_home_override
+            set_moor_home_override({str(routed_home or "")!r})
 
         try:
             from gateway import run  # noqa: F401  — module import triggers bridge
@@ -46,15 +46,15 @@ def _run_gateway_import(
             sys.exit(2)
 
         for k in (
-            "HERMES_MAX_ITERATIONS",
-            "HERMES_AGENT_TIMEOUT",
-            "HERMES_AGENT_TIMEOUT_WARNING",
-            "HERMES_TURN_LEASE_TIMEOUT",
-            "HERMES_SESSION_STALL_TIMEOUT",
-            "HERMES_GATEWAY_BUSY_INPUT_MODE",
-            "HERMES_GATEWAY_BUSY_TEXT_MODE",
-            "HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT",
-            "HERMES_TIMEZONE",
+            "MOOR_MAX_ITERATIONS",
+            "MOOR_AGENT_TIMEOUT",
+            "MOOR_AGENT_TIMEOUT_WARNING",
+            "MOOR_TURN_LEASE_TIMEOUT",
+            "MOOR_SESSION_STALL_TIMEOUT",
+            "MOOR_GATEWAY_BUSY_INPUT_MODE",
+            "MOOR_GATEWAY_BUSY_TEXT_MODE",
+            "MOOR_GATEWAY_PLATFORM_CONNECT_TIMEOUT",
+            "MOOR_TIMEZONE",
             "TERMINAL_CWD",
         ):
             v = os.environ.get(k)
@@ -106,7 +106,7 @@ def _run_gateway_import(
 
 def _write_config(home: Path, agent_cfg: dict | None = None, display_cfg: dict | None = None,
                   timezone: str | None = None, gateway_cfg: dict | None = None) -> None:
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
     cfg: dict = {}
     if agent_cfg:
         cfg["agent"] = agent_cfg
@@ -178,9 +178,9 @@ def test_default_turn_lease_timeout_overrides_stale_env_when_key_is_omitted(
 
     env = _run_gateway_import(moor_home, initial_env={})
 
-    from hermes_cli.config import DEFAULT_CONFIG
+    from moor_cli.config import DEFAULT_CONFIG
 
-    assert float(env.get("HERMES_TURN_LEASE_TIMEOUT")) == float(
+    assert float(env.get("MOOR_TURN_LEASE_TIMEOUT")) == float(
         DEFAULT_CONFIG["agent"]["gateway_turn_lease_timeout"]
     )
 
@@ -223,7 +223,7 @@ def test_env_platform_connect_timeout_wins_over_config(moor_home: Path) -> None:
         initial_env={"MOOR_GATEWAY_PLATFORM_CONNECT_TIMEOUT": "120"},
     )
 
-    assert env.get("HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT") == "120"
+    assert env.get("MOOR_GATEWAY_PLATFORM_CONNECT_TIMEOUT") == "120"
 
 
 def test_first_import_under_a_routed_override_bridges_the_process_home(tmp_path: Path) -> None:
@@ -241,5 +241,5 @@ def test_first_import_under_a_routed_override_bridges_the_process_home(tmp_path:
 
     env = _run_gateway_import(homes["launch"], {}, routed_home=homes["routed"])
 
-    assert env.get("HERMES_MAX_ITERATIONS") == "111"
+    assert env.get("MOOR_MAX_ITERATIONS") == "111"
     assert env.get("TERMINAL_CWD") == str(homes["launch"] / "work")

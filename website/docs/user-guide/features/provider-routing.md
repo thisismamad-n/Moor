@@ -12,7 +12,7 @@ When using [OpenRouter](https://openrouter.ai) as your LLM provider, Moor Agent 
 OpenRouter routes requests to many providers (e.g., Anthropic, Google, AWS Bedrock, Together AI). Provider routing lets you optimize for cost, speed, quality, or enforce specific provider requirements.
 
 :::note
-[Nous Portal](../../integrations/nous-portal.md) decides routing centrally per model and does not accept caller-supplied provider preferences; Hermes never sends the `provider` object to Portal, so `provider_routing` is simply ignored there.
+[Moor Portal](../../integrations/moor-portal.md) decides routing centrally per model and does not accept caller-supplied provider preferences; Moor never sends the `provider` object to Portal, so `provider_routing` is simply ignored there.
 :::
 
 ## Configuration

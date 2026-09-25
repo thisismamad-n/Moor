@@ -19,7 +19,7 @@ command. A hook with no concrete consumer is speculative infrastructure and is r
 - **No new in-tree memory providers (May 2026).** `plugins/memory/` is closed (honcho, mem0,
   supermemory, byterover, holographic, openviking, retaindb stay; bug fixes welcome; hindsight moved
   to the plugin catalog in Sep 2026 — `plugin-catalog/hindsight.yaml`, auto-installed by
-  `hermes_cli/memory_provider_migration.py` for homes still configured for it). New
+  `moor_cli/memory_provider_migration.py` for homes still configured for it). New
   backends ship as standalone repos implementing the same `MemoryProvider` ABC, discovered through
   the same path, integrated via `moor memory setup` / `post_setup()`.
 - **No new third-party-product plugins (June 2026).** Observability/metrics backends, vendor SaaS
@@ -36,15 +36,15 @@ command. A hook with no concrete consumer is speculative infrastructure and is r
 
 The ONLY discovery system for out-of-tree plugins. One YAML per entry, 40-hex SHA pin mandatory,
 human-merged via PR (`plugin-catalog/README.md` = admission policy; `plugin-catalog-ci.yml` clones
-each changed entry at its pin and runs `hermes plugins validate`). `removed.yaml` is the kill list —
+each changed entry at its pin and runs `moor plugins validate`). `removed.yaml` is the kill list —
 every install path (CLI, dashboard, TUI) refuses matches (repo URLs compared by canonical
 `host/owner/repo`, so `git@`/`ssh://`/`www.` spellings match); only the CLI has a loud
 `--allow-removed`, which is recorded on the install record and is the only thing that exempts an
 installed plugin from the same check at `update`, `enable` and load (`gate_manifest`). Catalog
 provenance lives on the installer-owned `.install-metadata.json` record (`catalog` block, sha =
-checked-out commit), NEVER in the tree: the in-tree `.hermes-catalog.json` is a convenience copy the
+checked-out commit), NEVER in the tree: the in-tree `.moor-catalog.json` is a convenience copy the
 Desktop reads for "Install here"; Python never trusts it (a repo can ship a forged one).
-Code: `hermes_cli/plugin_catalog.py` (loader, live refresh from
+Code: `moor_cli/plugin_catalog.py` (loader, live refresh from
 `/docs/api/plugin-catalog.json` published by the docs build, in-tree fallback),
 `moor_cli/plugins_cmd_catalog.py` (resolution, `.moor-catalog.json` provenance sidecar,
 search/info/validate, re-pin on `update`, dashboard/TUI payloads). Never add a second name index:
@@ -66,7 +66,7 @@ bare names resolve through the catalog or error.
 tool) and `run_agent.py` (lifecycle). A non-forced `discover_plugins()` short-circuits on `_discovered`: every
 mid-run load path (install/enable/update on any surface, `reload-plugins` verb) runs
 `discover_plugins(force=True)`, and `PluginManager.on_plugin_loaded` fires from inside that sweep for the
-newly loaded plugins with an activation summary (`hermes_cli/plugins_activation.py`: handlers live now;
+newly loaded plugins with an activation summary (`moor_cli/plugins_activation.py`: handlers live now;
 tools/prompt next session; `deferred.mcp_servers` until `mcp.reload`). Never emit that event from an RPC. Auxiliary LLM calls (titling, compression, MoA, vision, ...)
 fire `pre_auxiliary_call`/`post_auxiliary_call` from `agent/auxiliary_hooks.py` (payload = the
 `*_api_request` shape + `aux_task`); they never fire the turn-scoped `pre/post_api_request` (#79733). When a plugin changes a default, add a migration guard keyed

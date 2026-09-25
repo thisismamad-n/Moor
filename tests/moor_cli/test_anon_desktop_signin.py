@@ -97,7 +97,7 @@ def test_a_sign_in_cancelled_while_waiting_never_persists_the_account(portal, fr
     monkeypatch.setattr(anon_auth, "wait_for_promotion", _wait_until_released)
 
     threads_before = set(threading.enumerate())
-    start = client.post("/api/providers/oauth/nous/start", headers=HEADERS).json()
+    start = client.post("/api/providers/oauth/moor/start", headers=HEADERS).json()
     assert client.delete(f"/api/providers/oauth/sessions/{start['session_id']}", headers=HEADERS).json()["ok"] is True
     release.set()
     # Let the poller finish whatever it does with the "completed" result before asserting.

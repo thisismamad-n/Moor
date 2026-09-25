@@ -39,7 +39,7 @@ if _repo not in sys.path:
 from plugins.platforms.telegram.adapter import TelegramAdapter  # noqa: E402
 from gateway.run import GatewayRunner  # noqa: E402
 from gateway.profile_routing import ProfileRoute  # noqa: E402
-from hermes_cli.plugins import (  # noqa: E402
+from moor_cli.plugins import (  # noqa: E402
     PluginContext,
     PluginManager,
     PluginManifest,

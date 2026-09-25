@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { HermesConnection } from '@/global'
+import type { MoorConnection } from '@/global'
 import { $connection, $gatewayState, $sessions, setSessions } from '@/store/session'
 import { $sessionTiles, type SessionTile } from '@/store/session-states'
 
@@ -13,7 +13,7 @@ import {
   WRONG_BACKEND_TILE_ERROR
 } from './session-tile'
 
-function localConnection(): HermesConnection {
+function localConnection(): MoorConnection {
   return {
     baseUrl: 'http://127.0.0.1:9119',
     isFullscreen: false,

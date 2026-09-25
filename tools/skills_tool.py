@@ -653,7 +653,7 @@ def skill_view(
                 deps_note = (
                     "Tool dependencies could not be installed — "
                     + "; ".join(failed_deps)
-                    + ". Run `hermes pm install "
+                    + ". Run `moor pm install "
                     + " ".join(str(d) for d in declared_deps)
                     + "` and reload."
                 )

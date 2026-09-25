@@ -50,8 +50,8 @@ def _hermetic_container_argv(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: (),
     )
     # This fixture owns real files, but does not run as the image's service user.
-    monkeypatch.setattr("hermes_cli.service_manager._HERMES_UID", os.getuid())
-    monkeypatch.setattr("hermes_cli.service_manager._HERMES_GID", os.getgid())
+    monkeypatch.setattr("moor_cli.service_manager._MOOR_UID", os.getuid())
+    monkeypatch.setattr("moor_cli.service_manager._MOOR_GID", os.getgid())
 
 
 def _make_profile(
@@ -155,13 +155,13 @@ def test_the_retired_opt_out_cannot_boot_a_second_gateway_in_the_container(
     scandir.mkdir()
     _make_profile(tmp_path, "coder", state="running")
     (tmp_path / "config.yaml").write_text(f"multiplex_profiles: {config_value}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     if env_value is None:
         monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
     else:
         monkeypatch.setenv("GATEWAY_MULTIPLEX_PROFILES", env_value)
 
-    actions = reconcile_profile_gateways(hermes_home=tmp_path, scandir=scandir, dry_run=False)
+    actions = reconcile_profile_gateways(moor_home=tmp_path, scandir=scandir, dry_run=False)
 
     assert _named_actions(actions) == [ReconcileAction(
         profile="coder", prior_state="running", action="registered", folded_into_root=True)]
@@ -306,16 +306,16 @@ def test_main_skips_reconcile_in_dashboard_container_s6v3(
 
 
 def test_a_named_slots_autostart_intent_boots_the_root_slot(tmp_path: Path) -> None:
-    """An image only ever driven as `hermes -p coder gateway start` has no root state at all.
+    """An image only ever driven as `moor -p coder gateway start` has no root state at all.
     Named slots are now registered DOWN unconditionally (one gateway per container), so without
     the root slot inheriting their intent the container boots with ZERO gateways while every
     action reports "registered" — healthy-looking and completely dark."""
-    hermes_home = tmp_path / "data"
-    hermes_home.mkdir()
-    _make_profile(hermes_home, "coder", state=None, desired_state="running")
+    moor_home = tmp_path / "data"
+    moor_home.mkdir()
+    _make_profile(moor_home, "coder", state=None, desired_state="running")
 
     actions = reconcile_profile_gateways(
-        hermes_home=hermes_home, scandir=tmp_path / "svc", dry_run=True, container_argv=())
+        moor_home=moor_home, scandir=tmp_path / "svc", dry_run=True, container_argv=())
 
     by_profile = {a.profile: a for a in actions}
     assert by_profile["default"].action == "started", "something must serve this container"
@@ -326,14 +326,14 @@ def test_a_named_slots_autostart_intent_boots_the_root_slot(tmp_path: Path) -> N
 def test_a_stopped_fleet_still_boots_nothing(tmp_path: Path) -> None:
     """Control: no autostart intent anywhere means no gateway is started — the crash-loop guard
     and the operator's `gateway stop` both keep working."""
-    hermes_home = tmp_path / "data"
-    hermes_home.mkdir()
-    _seed_default_root(hermes_home, state="stopped")
-    _make_profile(hermes_home, "coder", state=None, desired_state="stopped")
-    _make_profile(hermes_home, "ops", state=None, desired_state="startup_failed")
+    moor_home = tmp_path / "data"
+    moor_home.mkdir()
+    _seed_default_root(moor_home, state="stopped")
+    _make_profile(moor_home, "coder", state=None, desired_state="stopped")
+    _make_profile(moor_home, "ops", state=None, desired_state="startup_failed")
 
     actions = reconcile_profile_gateways(
-        hermes_home=hermes_home, scandir=tmp_path / "svc", dry_run=True, container_argv=())
+        moor_home=moor_home, scandir=tmp_path / "svc", dry_run=True, container_argv=())
 
     assert [a.action for a in actions] == ["registered"] * 3
     assert not any(a.folded_into_root for a in actions)

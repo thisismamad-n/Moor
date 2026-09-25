@@ -74,7 +74,7 @@ def purge_profile_identity(profile: str) -> bool:
     Idempotent: purging an already-purged profile succeeds. Returns False only when the identity was
     not settled — by this process or by the live gateway.
     """
-    from hermes_cli.profiles import _canon_valid, _live_default_multiplexer, profile_exists
+    from moor_cli.profiles import _canon_valid, _live_default_multiplexer, profile_exists
     canon = _canon_valid(profile)
     if canon == "default":
         raise ValueError("Identity purge applies to named profiles only.")
@@ -93,8 +93,8 @@ def _purge_profile_identity(canon: str, live_mux: bool) -> bool:
     it. Never fatal to the delete, which has already happened by this point.
     """
     if live_mux:
-        from hermes_constants import get_default_hermes_root
-        root = get_default_hermes_root()
+        from moor_constants import get_default_moor_root
+        root = get_default_moor_root()
         try:
             from gateway.control_socket import purge_gateway_profile_identity
             answer = purge_gateway_profile_identity(root, canon)
@@ -110,14 +110,14 @@ def _purge_profile_identity(canon: str, live_mux: bool) -> bool:
         print(
             "⚠ Profile was deleted, but the live gateway could not purge its session identity"
             f" ({reason}). Restart the gateway, then run:\n"
-            f"    hermes profile purge-identity {canon}",
+            f"    moor profile purge-identity {canon}",
             file=sys.stderr)
         return False
 
-    from hermes_cli.profiles import get_profile_dir
-    from hermes_constants import get_default_hermes_root
-    from hermes_state_registry import acquire, release_or_close
-    root = get_default_hermes_root()
+    from moor_cli.profiles import get_profile_dir
+    from moor_constants import get_default_moor_root
+    from moor_state_registry import acquire, release_or_close
+    root = get_default_moor_root()
     purged = True
     for db_path in (root / "state.db", get_profile_dir(canon) / "state.db"):
         if not db_path.exists():
@@ -163,7 +163,7 @@ def _gateway_accepts_profile_identity_verb(root: Path) -> bool:
 
 def _migrate_checkpoint_identity(old_canon: str, new_canon: str) -> bool:
     """Rekey checkpoint projects whose absolute workdirs moved with the profile directory."""
-    from hermes_cli.profiles import get_profile_dir
+    from moor_cli.profiles import get_profile_dir
     from tools.checkpoint_manager_profile_rename import migrate_profile_checkpoint_projects
 
     old_dir = get_profile_dir(old_canon)
@@ -176,7 +176,7 @@ def _migrate_checkpoint_identity(old_canon: str, new_canon: str) -> bool:
     print(
         "⚠ Profile was renamed, but checkpoint identity migration failed for "
         f"{result['errors']} project(s). Retry with:\n"
-        f"    hermes profile migrate-identity {old_canon} {new_canon}",
+        f"    moor profile migrate-identity {old_canon} {new_canon}",
         file=sys.stderr,
     )
     return False
@@ -214,10 +214,10 @@ def _migrate_profile_identity(old_canon: str, new_canon: str, live_mux: bool) ->
             file=sys.stderr)
         return False
 
-    from hermes_cli.profiles import get_profile_dir
-    from hermes_state_registry import acquire, release_or_close
-    from hermes_constants import get_default_hermes_root
-    root = get_default_hermes_root()
+    from moor_cli.profiles import get_profile_dir
+    from moor_state_registry import acquire, release_or_close
+    from moor_constants import get_default_moor_root
+    root = get_default_moor_root()
     migrated = checkpoint_migrated
     for db_path in (root / "state.db", get_profile_dir(new_canon) / "state.db"):
         if not db_path.exists():

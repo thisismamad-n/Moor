@@ -241,7 +241,7 @@ test('POSIX relaunch gate rechecks after token upload immediately before process
 
 test('readRemoteInstallId reads the backend identity without spawning a dashboard or minting one', async () => {
   const ssh = fakeSsh([
-    [/HERMES_HOME/, '/Users/zillajr/.hermes\n'],
+    [/MOOR_HOME/, '/Users/zillajr/.moor\n'],
     [/cat .*install_id/, '0f8a1c2b3d4e5f60718293a4b5c6d7e8\n']
   ])
 
@@ -257,13 +257,13 @@ test('readRemoteInstallId reports the INSTALL root id for a profile-pinned home'
   // The whole point of the id: two ssh connections to one machine — one pinned at a profile,
   // one at the root — must report the SAME backend so their roster rows collapse.
   const pinned = fakeSsh([
-    [/HERMES_HOME/, '/Users/zillajr/.hermes/profiles/dixie\n'],
+    [/MOOR_HOME/, '/Users/zillajr/.moor/profiles/dixie\n'],
     [/cat .*install_id/, '0f8a1c2b3d4e5f60718293a4b5c6d7e8\n']
   ])
 
   assert.equal(await readRemoteInstallId(pinned), '0f8a1c2b3d4e5f60718293a4b5c6d7e8')
   assert.equal(
-    pinned.calls.some(cmd => cmd.includes('/Users/zillajr/.hermes/install_id')),
+    pinned.calls.some(cmd => cmd.includes('/Users/zillajr/.moor/install_id')),
     true
   )
   assert.equal(
@@ -275,7 +275,7 @@ test('readRemoteInstallId reports the INSTALL root id for a profile-pinned home'
 test('readRemoteInstallId reports no id rather than a bad one', async () => {
   for (const payload of ['', 'not-an-id\n', 'ABCDEF\n', '0f8a1c2b3d4e5f60718293a4b5c6d7e8extra\n']) {
     const ssh = fakeSsh([
-      [/HERMES_HOME/, '/Users/zillajr/.hermes\n'],
+      [/MOOR_HOME/, '/Users/zillajr/.moor\n'],
       [/cat .*install_id/, payload]
     ])
 
@@ -285,7 +285,7 @@ test('readRemoteInstallId reports no id rather than a bad one', async () => {
   }
 })
 
-test('listRemoteHermesProfiles inventories Mini-style profile dirs without spawning a dashboard', async () => {
+test('listRemoteMoorProfiles inventories Mini-style profile dirs without spawning a dashboard', async () => {
   const ssh = fakeSsh([
     [/MOOR_HOME/, '/Users/zillajr/.moor\n'],
     [/ls -1/, 'bob\ndixie\ngoose\nrambo\nbob.rollback-old\n']
@@ -626,15 +626,15 @@ test.skipIf(process.platform === 'win32')(
   'pidIsOurDashboard recognizes an installer wrapper after it execs python + entrypoint',
   async (): Promise<void> => {
     const shell: string = (await exec('command -v bash', { shell: 'bash' })).stdout.trim()
-    const temp: string = await mkdtemp(path.join(os.tmpdir(), 'hermes wrapper ownership '))
+    const temp: string = await mkdtemp(path.join(os.tmpdir(), 'moor wrapper ownership '))
     const installDir = path.join(temp, 'install dir')
     const venvBin = path.join(installDir, 'venv', 'bin')
     const pythonLink = path.join(venvBin, 'python')
-    const entrypoint = path.join(installDir, 'hermes')
-    const launcher = path.join(temp, 'hermes launcher')
+    const entrypoint = path.join(installDir, 'moor')
+    const launcher = path.join(temp, 'moor launcher')
     const python: string = (await exec('command -v python3', { shell })).stdout.trim()
     const tokenPath: string = path.join(temp, spawnTokenPath(OWNERSHIP_ID, SPAWN_NONCE).replace(/^~\//, ''))
-    const env: NodeJS.ProcessEnv = { ...process.env, HOME: temp, HERMES_HOME: temp }
+    const env: NodeJS.ProcessEnv = { ...process.env, HOME: temp, MOOR_HOME: temp }
 
     await mkdir(venvBin, { recursive: true })
     await symlink(python, pythonLink)
@@ -836,21 +836,21 @@ test.skipIf(process.platform === 'win32')(
   'detached backend does not inherit the update mutex descriptor',
   async (): Promise<void> => {
     const shell: string = (await exec('command -v bash', { shell: 'bash' })).stdout.trim()
-    const directory: string = await mkdtemp(path.join(os.tmpdir(), 'hermes-update-mutex-'))
-    const hermesPath: string = path.join(directory, 'hermes')
+    const directory: string = await mkdtemp(path.join(os.tmpdir(), 'moor-update-mutex-'))
+    const moorPath: string = path.join(directory, 'moor')
     const reportPath: string = path.join(directory, 'descriptor-report')
     const logPath: string = path.join(directory, 'spawn.log')
 
     try {
       await writeFile(
-        hermesPath,
+        moorPath,
         `#!${shell}
 report=${expandRemotePath(reportPath)}
 : > "$report.tmp"
 for fd in /proc/$$/fd/*; do
   target=$(readlink "$fd" 2>/dev/null || true)
   case "$target" in
-    *hermes-update-in-progress.mutex) printf '%s\\n' "$target" >> "$report.tmp" ;;
+    *moor-update-in-progress.mutex) printf '%s\\n' "$target" >> "$report.tmp" ;;
   esac
 done
 mv "$report.tmp" "$report"
@@ -858,12 +858,12 @@ mv "$report.tmp" "$report"
         { encoding: 'utf8', mode: 0o700 }
       )
 
-      const command: string = buildSpawnCommand(hermesPath, '', {
-        hermesHome: path.join(directory, 'home'),
+      const command: string = buildSpawnCommand(moorPath, '', {
+        moorHome: path.join(directory, 'home'),
         logPath
       })
 
-      await exec(command, { shell, env: { ...process.env, HOME: directory, HERMES_HOME: directory } })
+      await exec(command, { shell, env: { ...process.env, HOME: directory, MOOR_HOME: directory } })
 
       for (let attempt: number = 0; attempt < 100; attempt += 1) {
         try {
@@ -1758,15 +1758,15 @@ test.skipIf(process.platform === 'win32')(
       return
     }
 
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'hermes-zsh-probe-'))
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'moor-zsh-probe-'))
 
     try {
-      const hermes = path.join(dir, 'hermes')
-      await writeFile(hermes, '#!/bin/sh\necho "--ssh-session-token-file --ssh-owner-nonce"\n', { mode: 0o700 })
+      const moor = path.join(dir, 'moor')
+      await writeFile(moor, '#!/bin/sh\necho "--ssh-session-token-file --ssh-owner-nonce"\n', { mode: 0o700 })
 
       const ssh = { exec: async (command: string) => (await exec(command, { shell: zsh })).stdout }
 
-      assert.equal(await remoteSupportsSshOwnership(ssh, hermes), true)
+      assert.equal(await remoteSupportsSshOwnership(ssh, moor), true)
     } finally {
       await rm(dir, { recursive: true, force: true })
     }
@@ -1877,7 +1877,7 @@ test.skipIf(process.platform === 'win32')(
 
     // Capture the argv a remote shell would hand to python3, via a shim on PATH.
     const shell: string = (await exec('command -v bash', { shell: 'bash' })).stdout.trim()
-    const root: string = await mkdtemp(path.join(os.tmpdir(), 'hermes-argv-shim-'))
+    const root: string = await mkdtemp(path.join(os.tmpdir(), 'moor-argv-shim-'))
 
     try {
       const shimDir = path.join(root, 'shim')
@@ -2009,7 +2009,7 @@ test('connect() post-spawn cleanup that cannot prove ownership keeps the origina
     connect(
       connectDeps(ssh, {
         platform: { os: 'Linux', arch: 'x86_64' },
-        waitForHermes: async () => {
+        waitForMoor: async () => {
           throw boot
         }
       })

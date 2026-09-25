@@ -46,7 +46,7 @@ def _no_memo():
 @pytest.fixture
 def owner_pid(tmp_path, monkeypatch):
     """A REAL live process standing in for the host gateway (liveness is proved, not stubbed)."""
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     try:
         yield child.pid
@@ -78,7 +78,7 @@ def _answer_identify(monkeypatch, pid: int, home: Path, served: list[str]) -> No
     monkeypatch.setattr(
         "gateway.control_socket.identify_gateway",
         lambda dialled, **kw: (
-            {"pid": pid, "hermes_home": str(home), "served_profiles": served}
+            {"pid": pid, "moor_home": str(home), "served_profiles": served}
             if Path(dialled) == home else None))
 
 
@@ -108,7 +108,7 @@ def test_attach_needs_a_live_identify_answer(tmp_path, monkeypatch, owner_pid):
     ours = owner_home / "profiles" / "other"
     _publish(owner_pid, owner_home, ())  # the record claims nothing; the socket answers
     _answer_identify(monkeypatch, owner_pid, owner_home, ["default", "other"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: ours)
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: ours)
 
     def _never(*a, **k):
         raise AssertionError("a second gateway was started for an already-served profile")
@@ -123,7 +123,7 @@ def test_run_for_an_unserved_profile_rescans_then_attaches(tmp_path, monkeypatch
     ours = owner_home / "profiles" / "other"
     _publish(owner_pid, owner_home, ("default",))
     _answer_identify(monkeypatch, owner_pid, owner_home, ["default"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: ours)
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: ours)
     asked: list[Path] = []
 
     def _rescan(home, *, timeout=8.0):
@@ -141,7 +141,7 @@ def test_host_gateway_refuses_when_it_will_not_serve_the_profile(tmp_path, monke
     owner_home = tmp_path / "root"
     _publish(owner_pid, owner_home, ("default",))
     _answer_identify(monkeypatch, owner_pid, owner_home, ["default"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: owner_home / "profiles" / "other")
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: owner_home / "profiles" / "other")
     monkeypatch.setattr("gateway.control_socket.rescan_gateway_profiles",
                         lambda home, timeout=8.0: {"multiplex": True, "served_profiles": ["default"]})
 
@@ -155,12 +155,12 @@ def test_a_standalone_owner_is_the_per_profile_topology_not_a_refusal(tmp_path, 
     owner_home = tmp_path / "root" / "profiles" / "tank"
     _publish(owner_pid, owner_home, ("tank",))
     _answer_identify(monkeypatch, owner_pid, owner_home, ["tank"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: tmp_path / "root" / "profiles" / "nous")
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: tmp_path / "root" / "profiles" / "moor")
     monkeypatch.setattr("gateway.control_socket.rescan_gateway_profiles",
                         lambda home, timeout=8.0: {"multiplex": False, "served_profiles": ["tank"]})
 
     with caplog.at_level("INFO", logger="gateway.host_attach"):
-        assert host_attach.decide(tmp_path / "root" / "profiles" / "nous").outcome == host_attach.START
+        assert host_attach.decide(tmp_path / "root" / "profiles" / "moor").outcome == host_attach.START
     assert any("migrate --multiplex" in r.getMessage() for r in caplog.records), "the converge hint is logged"
     assert asyncio.run(gateway_run._host_attach_or_none(replace=False)) is None
 
@@ -173,7 +173,7 @@ def test_replace_starts_beside_a_standalone_owner_it_does_not_belong_to(tmp_path
     owner_home = tmp_path / "root" / "profiles" / "tank"
     _publish(owner_pid, owner_home, ("tank",))
     _answer_identify(monkeypatch, owner_pid, owner_home, ["tank"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: tmp_path / "root" / "profiles" / "nous")
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: tmp_path / "root" / "profiles" / "moor")
     monkeypatch.setattr("gateway.control_socket.rescan_gateway_profiles",
                         lambda home, timeout=8.0: {"multiplex": False, "served_profiles": ["tank"]})
     signalled: list[int] = []
@@ -184,7 +184,7 @@ def test_replace_starts_beside_a_standalone_owner_it_does_not_belong_to(tmp_path
 
     monkeypatch.setattr(gateway_run, "_start_gateway_replace_existing_instance", _replace)
 
-    assert host_attach.decide(tmp_path / "root" / "profiles" / "nous", replace=True).outcome == host_attach.START
+    assert host_attach.decide(tmp_path / "root" / "profiles" / "moor", replace=True).outcome == host_attach.START
     assert asyncio.run(gateway_run._host_attach_or_none(replace=True)) is None
     assert signalled == [], "--replace must not target a standalone owner that does not serve this profile"
 
@@ -205,7 +205,7 @@ def test_replace_signals_the_owner_instead_of_standing_down(tmp_path, monkeypatc
     owner_home = tmp_path / "root"
     _publish(owner_pid, owner_home, ("default", "other"))
     _answer_identify(monkeypatch, owner_pid, owner_home, ["default", "other"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: owner_home / "profiles" / "other")
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: owner_home / "profiles" / "other")
     signalled: list[int] = []
 
     async def _replace(pid, replace):
@@ -223,15 +223,15 @@ def test_force_starts_without_consulting_the_owner(tmp_path, monkeypatch, owner_
     owner_home = tmp_path / "root"
     _publish(owner_pid, owner_home, ("default", "other"))
     _answer_identify(monkeypatch, owner_pid, owner_home, ["default", "other"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: owner_home / "profiles" / "other")
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: owner_home / "profiles" / "other")
 
     assert asyncio.run(gateway_run._host_attach_or_none(replace=False, force=True)) is None
 
 
 def test_the_claim_time_record_publishes_no_served_set(tmp_path, monkeypatch):
     """Claim time is too early to know the served set; publishing a guess strands other profiles."""
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: tmp_path / "root")
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: tmp_path / "root")
     monkeypatch.setattr(hr, "served_profiles",
                         lambda **kw: pytest.fail("the claim must not guess a served set"))
     try:
@@ -257,9 +257,9 @@ def test_served_profiles_ignores_the_retired_opt_out_but_honours_an_explicit_arg
         return ([("default", Path("/x")), ("other", Path("/y"))] if multiplex
                 else [("default", Path("/x"))])
 
-    monkeypatch.setattr("hermes_cli.profiles.profiles_to_serve", _roster)
+    monkeypatch.setattr("moor_cli.profiles.profiles_to_serve", _roster)
     monkeypatch.setattr(
-        "hermes_cli.gateway_multiplex_mode.explicit_multiplex_flag", lambda home: False)
+        "moor_cli.gateway_multiplex_mode.explicit_multiplex_flag", lambda home: False)
 
     assert hr.served_profiles() == ("default", "other")
     assert hr.served_profiles(multiplex=False) == ("default",)
@@ -285,7 +285,7 @@ def test_the_default_profile_arriving_second_starts_beside_a_standalone_named_ow
     owner_home = root / "profiles" / "agent-ops"
     _publish(owner_pid, owner_home, ("agent-ops",))
     _answer_identify(monkeypatch, owner_pid, owner_home, ["agent-ops"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: root)
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: root)
     monkeypatch.setattr("gateway.control_socket.rescan_gateway_profiles",
                         lambda home, timeout=8.0: {"multiplex": False, "served_profiles": ["agent-ops"]})
 

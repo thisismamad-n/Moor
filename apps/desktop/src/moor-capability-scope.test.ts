@@ -129,7 +129,7 @@ describe('capability helpers are connection-scoped', () => {
   })
 
   it('keeps ambient config reads unprioritized for background hydration', () => {
-    getHermesConfigRecord()
+    getMoorConfigRecord()
     expect(last()).not.toHaveProperty('priority')
 
     void getGlobalModelInfo()

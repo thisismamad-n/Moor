@@ -34,8 +34,8 @@ from utils import env_var_enabled
 logger = logging.getLogger(__name__)
 
 # Opt-in debug tracing for the interrupt/activity/poll machinery
-# (HERMES_DEBUG_INTERRUPT=1). Off by default to avoid flooding gateway logs.
-_DEBUG_INTERRUPT = env_var_enabled("HERMES_DEBUG_INTERRUPT")
+# (MOOR_DEBUG_INTERRUPT=1). Off by default to avoid flooding gateway logs.
+_DEBUG_INTERRUPT = env_var_enabled("MOOR_DEBUG_INTERRUPT")
 
 # Extra seconds the ``run_bounded_sync`` backstop waits past the inner ``_wait_for_process``
 # deadline: the inner loop returns partial output + 124; the outer bound only fires when that

@@ -6,7 +6,7 @@ from time import time as wall_time
 from typing import Any, MutableMapping, Optional, TypeVar
 
 
-# These fields describe Hermes' durable record and timeline display, not
+# These fields describe Moor' durable record and timeline display, not
 # provider-visible message content. The request builder strips them from every
 # outgoing copy and the token estimator ignores them: one set, so an estimate
 # never prices bytes the provider never receives (an edit's inline_diff in

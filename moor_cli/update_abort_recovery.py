@@ -234,9 +234,9 @@ def _warn_stale_serve_runtimes(rows) -> None:
         print(
             f"      pid {row.get('pid')} — {row.get('kind')}"
             f" (profile {row.get('profile') or 'default'}, {row.get('supervisor') or 'unknown'})")
-    print("    Ask their owner to relaunch `hermes serve` / `hermes dashboard`, or reconnect Desktop for an SSH backend.")
+    print("    Ask their owner to relaunch `moor serve` / `moor dashboard`, or reconnect Desktop for an SSH backend.")
     if sys.platform == "linux" and any(row.get("supervisor") == "systemd" for row in rows):
-        print("    For unit-managed backends: `systemctl --user restart hermes-serve.service`.")
+        print("    For unit-managed backends: `systemctl --user restart moor-serve.service`.")
     if sys.platform == "darwin" and any(row.get("supervisor") == "launchd" for row in rows):
         print("    For launchd-managed backends: `launchctl kickstart -k gui/$UID/<label>`.")
 

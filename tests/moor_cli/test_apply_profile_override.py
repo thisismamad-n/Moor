@@ -20,7 +20,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _platform_home(tmp_path, monkeypatch):
-    monkeypatch.setattr("hermes_constants._get_platform_default_hermes_home", lambda: tmp_path / ".hermes")
+    monkeypatch.setattr("moor_constants._get_platform_default_moor_home", lambda: tmp_path / ".moor")
 
 
 def _run_apply_profile_override(
@@ -39,8 +39,8 @@ def _run_apply_profile_override(
         (moor_root / "active_profile").write_text(active_profile)
 
     if active_profile and active_profile != "default":
-        (hermes_root / "profiles" / active_profile).mkdir(parents=True, exist_ok=True)
-        (hermes_root / "profiles" / active_profile / "config.yaml").write_text("{}\n")  # identity marker
+        (moor_root / "profiles" / active_profile).mkdir(parents=True, exist_ok=True)
+        (moor_root / "profiles" / active_profile / "config.yaml").write_text("{}\n")  # identity marker
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     if moor_home is not None:
@@ -114,7 +114,7 @@ class TestApplyProfileOverrideMoorHomeGuard:
         profile_dir = user_home / ".moor" / "profiles" / "elias"
         profile_dir.mkdir(parents=True, exist_ok=True)
         (profile_dir / "config.yaml").write_text("{}\n")  # identity marker: a bare dir does not resolve
-        (root_home / ".hermes").mkdir(parents=True, exist_ok=True)
+        (root_home / ".moor").mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(Path, "home", lambda: root_home)
         monkeypatch.setenv("SUDO_USER", "moor")
@@ -126,13 +126,13 @@ class TestApplyProfileOverrideMoorHomeGuard:
 
         monkeypatch.setattr(pwd, "getpwnam", lambda name: SimpleNamespace(pw_dir=str(user_home)))
 
-        from hermes_cli.main import _apply_profile_override, _resolve_sudo_user_profile_env
+        from moor_cli.main import _apply_profile_override, _resolve_sudo_user_profile_env
         _apply_profile_override()
 
-        assert os.environ.get("HERMES_HOME") == str(profile_dir)
-        assert sys.argv == ["hermes", "gateway", "install", "--system"]
+        assert os.environ.get("MOOR_HOME") == str(profile_dir)
+        assert sys.argv == ["moor", "gateway", "install", "--system"]
         # Same identity gate as ``-p`` without sudo: a marker-less shell is not a profile.
-        (user_home / ".hermes" / "profiles" / "ghost" / "cron").mkdir(parents=True)
+        (user_home / ".moor" / "profiles" / "ghost" / "cron").mkdir(parents=True)
         assert _resolve_sudo_user_profile_env("ghost") is None
 
 
@@ -171,12 +171,12 @@ class TestSupervisedChildIgnoresStickyProfile:
         """A supervised named-profile slot passes ``-p <name>`` explicitly;
         that must still resolve (the sentinel guard only skips the sticky
         active_profile fallback, never an explicit flag)."""
-        hermes_root = tmp_path / ".hermes"
-        hermes_root.mkdir(parents=True, exist_ok=True)
-        (hermes_root / "active_profile").write_text("briefer")
+        moor_root = tmp_path / ".moor"
+        moor_root.mkdir(parents=True, exist_ok=True)
+        (moor_root / "active_profile").write_text("briefer")
         for name in ("briefer", "coder"):
-            (hermes_root / "profiles" / name).mkdir(parents=True, exist_ok=True)
-            (hermes_root / "profiles" / name / "config.yaml").write_text("{}\n")  # identity marker
+            (moor_root / "profiles" / name).mkdir(parents=True, exist_ok=True)
+            (moor_root / "profiles" / name / "config.yaml").write_text("{}\n")  # identity marker
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.delenv("MOOR_HOME", raising=False)
@@ -313,7 +313,7 @@ class TestGeneralizedSupervisorMarkers:
         from moor_cli.gateway import generate_launchd_plist
 
         plist = generate_launchd_plist()
-        assert "<key>HERMES_SUPERVISED_CHILD</key>" in plist
+        assert "<key>MOOR_SUPERVISED_CHILD</key>" in plist
 
 
 class TestS6ContainerGatewayRun:
@@ -324,21 +324,21 @@ class TestS6ContainerGatewayRun:
     def test_the_redirected_run_keeps_the_root_home_despite_the_active_profile(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setattr("hermes_cli.service_manager._s6_running", lambda: True)
-        root = tmp_path / ".hermes"
+        monkeypatch.setattr("moor_cli.service_manager._s6_running", lambda: True)
+        root = tmp_path / ".moor"
         result = _run_apply_profile_override(
-            tmp_path, monkeypatch, hermes_home=str(root), active_profile="coder",
-            argv=["hermes", "gateway", "run"],
+            tmp_path, monkeypatch, moor_home=str(root), active_profile="coder",
+            argv=["moor", "gateway", "run"],
         )
         assert result == str(root)
 
     def test_a_foreground_run_and_other_verbs_still_follow_the_active_profile(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setattr("hermes_cli.service_manager._s6_running", lambda: True)
-        root = tmp_path / ".hermes"
-        for argv in (["hermes", "gateway", "run", "--no-supervise"], ["hermes", "chat"]):
+        monkeypatch.setattr("moor_cli.service_manager._s6_running", lambda: True)
+        root = tmp_path / ".moor"
+        for argv in (["moor", "gateway", "run", "--no-supervise"], ["moor", "chat"]):
             result = _run_apply_profile_override(
-                tmp_path, monkeypatch, hermes_home=str(root), active_profile="coder", argv=argv,
+                tmp_path, monkeypatch, moor_home=str(root), active_profile="coder", argv=argv,
             )
             assert result == str(root / "profiles" / "coder"), argv

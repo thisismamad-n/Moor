@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.model_switch import ModelSwitchResult
 

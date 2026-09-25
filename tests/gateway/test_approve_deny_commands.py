@@ -331,9 +331,9 @@ class TestBlockingApprovalE2E:
         session_key = "e2e-timeout"
         notified = []
         register_gateway_notify(session_key, notified.append)
-        monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
-        monkeypatch.setenv("HERMES_SESSION_KEY", session_key)
+        monkeypatch.setenv("MOOR_GATEWAY_SESSION", "1")
+        monkeypatch.setenv("MOOR_EXEC_ASK", "1")
+        monkeypatch.setenv("MOOR_SESSION_KEY", session_key)
         token = set_current_session_key(session_key)
         try:
             # Zero expires in the real poll loop. A timed join followed by /deny

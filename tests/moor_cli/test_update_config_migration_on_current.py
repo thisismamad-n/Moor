@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from hermes_cli import config, update_cmd
+from moor_cli import config, update_cmd
 
 
 @pytest.mark.parametrize('case,expected', [
@@ -60,7 +60,7 @@ def test_migration_policy(monkeypatch, capsys, case, expected):
         if case in {'yes', 'noninteractive', 'gateway'}:
             assert 'API keys require manual entry' in output
         elif not expected:
-            assert 'hermes config migrate' in output
+            assert 'moor config migrate' in output
     elif case in {'current', 'ahead'}:
         assert 'Configuration is up to date' in output
     elif case == 'read-error':
@@ -76,15 +76,15 @@ def test_migration_policy(monkeypatch, capsys, case, expected):
 @pytest.mark.parametrize('named', [False, True])
 def test_update_copies_bundled_skill_bytes_to_default_active_and_sibling(tmp_path, monkeypatch, named):
     from pathlib import Path
-    from hermes_cli import update_cmd_maint
+    from moor_cli import update_cmd_maint
 
-    home = tmp_path / '.hermes'
+    home = tmp_path / '.moor'
     homes = [home, home / 'profiles/active', home / 'profiles/sibling'] if named else [home]
     for profile in homes:
         profile.mkdir(parents=True, exist_ok=True)
         (profile / 'config.yaml').write_text('{}\n', encoding='utf-8')
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(homes[1] if named else home))
+    monkeypatch.setenv('MOOR_HOME', str(homes[1] if named else home))
     monkeypatch.setattr('plugins.memory.honcho.cli.sync_honcho_profiles_quiet', lambda: [])
     update_cmd_maint._sync_profiles_after_update()
     bundled = Path(__file__).resolve().parents[2] / 'skills'

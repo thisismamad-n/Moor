@@ -32,11 +32,11 @@ from moor_state_common import (
     TITLE_SOURCE_USER as _TITLE_SOURCE_USER,
     escape_like as _escape_like, stat_db_file_identity as _stat_db_file_identity,
 )
-from hermes_state_holders import read_only_db_uri
-from hermes_state_health import (
+from moor_state_holders import read_only_db_uri
+from moor_state_health import (
     STORAGE_CORRUPT, mark_storage_corrupt, note_storage_error, storage_corrupt_reason, storage_state,
 )
-from hermes_state_errors import (
+from moor_state_errors import (
     _DELETED_WAL_GENERATION_MSG, _DISK_IO_ERROR_MARKER, _STATE_DB_CORRUPT_MSG, _STATE_DB_GENERATION_KEY,
     _STATE_DB_REPLACED_MSG, DeletedWalGenerationError, SessionCompressionInProgressError, StateDbCorruptError,
     StateDbReplacedError, _is_no_more_rows, classify_persistence_error, is_malformed_db_error,
@@ -46,17 +46,17 @@ from moor_state_guard import (
     _STATE_DB_GUARD_BYPASS_ENV, _in_test_context, _is_production_state_db, _real_platform_state_root,
     _register_test_instance, _set_last_init_error, get_last_init_error,
 )
-from hermes_state_readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget_for
-from hermes_state_sessions import SessionSessionsMixin
-from hermes_state_fts import SessionFtsSetupMixin, load_fts5_cjk_extension
-from hermes_state_portability import SessionPortabilityMixin
-from hermes_state_telegram import SessionTelegramTopicsMixin
-from hermes_state_profile_repair import SessionProfileRepairMixin
-from hermes_state_schema import SessionSchemaMixin
-import hermes_state_holders as _state_holders
-import hermes_state_lockguard as _lockguard
-from hermes_state_lockowners import log_write_lock_holders
-from hermes_state_dbfile import (
+from moor_state_readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget_for
+from moor_state_sessions import SessionSessionsMixin
+from moor_state_fts import SessionFtsSetupMixin, load_fts5_cjk_extension
+from moor_state_portability import SessionPortabilityMixin
+from moor_state_telegram import SessionTelegramTopicsMixin
+from moor_state_profile_repair import SessionProfileRepairMixin
+from moor_state_schema import SessionSchemaMixin
+import moor_state_holders as _state_holders
+import moor_state_lockguard as _lockguard
+from moor_state_lockowners import log_write_lock_holders
+from moor_state_dbfile import (
     _connect_tracked_db, _fd_is_truly_unlinked, _prepare_connection_retirement,
     _read_sqlite_application_id, _stat_sqlite_sidecar_identity,
     _watched_sqlite_sidecar_paths, has_invalid_sqlite_header_preopen, is_zeroed_state_db, quarantine_cross_process_lock,
@@ -181,7 +181,7 @@ _READ_ONLY_IOERR_RETRY_ATTEMPTS, _READ_ONLY_IOERR_RETRY_BACKOFF_S = 3, 0.05
 # SQLite busy handler budget for reads. Under DELETE (rollback-journal) mode a reader needs a SHARED
 # lock, which every commit from another process blocks across its journal+db fsyncs; the writer
 # connection's 1 s timeout exists for writes (they retry at application level) and starved readers
-# into "database is locked" (dashboard 503s, `hermes sessions list` crashes) under a busy gateway.
+# into "database is locked" (dashboard 503s, `moor sessions list` crashes) under a busy gateway.
 _READ_BUSY_TIMEOUT_S = 5.0
 
 
@@ -361,7 +361,7 @@ _SESSION_DB_CONSEQUENCE = "Sessions will not be saved until this is fixed."
 _NETWORK_DRIVE_HINT = " If the database lives on a network drive, move it to a local disk."
 _NETWORK_DRIVE_GLOSS = "the session database could not be opened; it may be on a network or unsupported drive"
 _NETWORK_DRIVE_ACTION = (
-    "Move it to a local disk (`hermes {profile_arg}doctor` shows where it is), then start Hermes again."
+    "Move it to a local disk (`moor {profile_arg}doctor` shows where it is), then start Moor again."
 )
 
 
@@ -378,16 +378,16 @@ def format_session_db_unavailable(
     cannot host SQLite's write-ahead log: when the raw cause carries one of those markers the
     message names the network-drive suspicion, because ``moor doctor --fix`` cannot repair a
     mount — only moving the file can."""
-    from hermes_constants import profile_cli_selector
+    from moor_constants import profile_cli_selector
 
     profile_arg = profile_cli_selector()
     cause = get_last_init_error()
     if not cause:
         return (
-            f"{prefix}. {_SESSION_DB_CONSEQUENCE} Run `hermes {profile_arg}doctor` to check the "
+            f"{prefix}. {_SESSION_DB_CONSEQUENCE} Run `moor {profile_arg}doctor` to check the "
             "storage location."
         )
-    from hermes_state_user_copy import describe_storage_failure
+    from moor_state_user_copy import describe_storage_failure
     failure = describe_storage_failure(cause)
     gloss, action, hint = failure.gloss, failure.action, ""
     if any(m in cause.lower() for m in _WAL_INCOMPAT_MARKERS):
@@ -458,7 +458,7 @@ class SessionDB(
 
     # Only these state-owned producers join automatic stale-open reconciliation; messaging/UI
     # sources have their own lifecycle owners; unknown sources fail closed.
-    # See #60609.  `recovered` = placeholders `hermes sessions recover` synthesizes for
+    # See #60609.  `recovered` = placeholders `moor sessions recover` synthesizes for
     # orphaned messages (no live owner, never stamped ended_at); without it they are immortal.
     _AUTO_PRUNE_STALE_OPEN_SOURCES: Tuple[str, ...] = (
         "cli", "cron", "kanban", "acp", "api_server", "subagent", "tool", "recovered",
@@ -714,7 +714,7 @@ class SessionDB(
                 # needs). Closes in milliseconds: retry a bounded number of times before
                 # classifying the store as failed (#100436; see _READ_ONLY_IOERR_RETRY_ATTEMPTS).
                 # A lock is NOT retried here: the connection already waited _READ_BUSY_TIMEOUT_S,
-                # and a retry would multiply that wait on blocking callers (TUI, `hermes status`).
+                # and a retry would multiply that wait on blocking callers (TUI, `moor status`).
                 transient = _DISK_IO_ERROR_MARKER in str(ioerr).lower()
                 if attempt >= _READ_ONLY_IOERR_RETRY_ATTEMPTS or not transient:
                     raise

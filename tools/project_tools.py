@@ -2,7 +2,7 @@
 """Project tools — the agent's INTENTIONAL handle on first-class Projects (per-profile
 ``projects.db``, the desktop sidebar's named workspaces). Creating/switching is an explicit
 tool call, never a side effect of ``cd``. GUI-only: the `project` toolset stays off
-``_HERMES_CORE_TOOLS``; the desktop/TUI gateway folds it in and wires
+``_MOOR_CORE_TOOLS``; the desktop/TUI gateway folds it in and wires
 ``set_project_workspace_callback`` so the live session's cwd and sidebar follow. A live
 session create/switch re-anchors only that session; it must not move the profile-global
 Desktop selection shared by concurrent chats."""
@@ -75,7 +75,7 @@ def _calling_session_project_id(conn, task_id: Optional[str]) -> tuple[bool, Opt
     """``(scoped, project_id)`` for the calling session. The GUI gateway registers each session's
     workspace (``cwd_source``) in the terminal override table; a caller it never registered (CLI,
     scripts) is unscoped and falls back to the profile-global pointer."""
-    from hermes_cli import projects_db as pdb
+    from moor_cli import projects_db as pdb
     from tools.terminal_tool import resolve_task_overrides
     overrides = resolve_task_overrides(task_id) if task_id else {}
     if "cwd_source" not in overrides:

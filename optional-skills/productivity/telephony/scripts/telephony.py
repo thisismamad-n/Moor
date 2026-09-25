@@ -11,7 +11,7 @@ Capabilities:
 - Make outbound AI voice calls via Bland.ai or Vapi
 
 This file intentionally uses Python stdlib HTTP clients so the skill can run in a
-minimal environment with no extra pip installs. Reading Hermes config.yaml is
+minimal environment with no extra pip installs. Reading Moor config.yaml is
 optional and requires ruamel.yaml (standalone install: ruamel.yaml==0.18.17).
 """
 
@@ -90,7 +90,7 @@ def _load_root_config() -> dict[str, Any]:
     if not path.exists():
         return {}
     try:
-        from ruamel.yaml import YAML  # optional dependency; Hermes ships ruamel.yaml
+        from ruamel.yaml import YAML  # optional dependency; Moor ships ruamel.yaml
     except Exception:
         return {}
     try:

@@ -96,7 +96,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
       bootstrapState({
         setupChoice: {
           platform: 'win32',
-          activeRoot: 'C:\\Users\\me\\AppData\\Local\\hermes\\hermes-agent',
+          activeRoot: 'C:\\Users\\me\\AppData\\Local\\moor\\moor-agent',
           local: 'none',
           bundled: false
         }
@@ -105,9 +105,9 @@ describe('DesktopInstallOverlay first-run setup', () => {
 
     render(<DesktopInstallOverlay />)
 
-    expect(await screen.findByText('Set up Hermes Desktop')).toBeTruthy()
-    expect(screen.getByText('Connect to existing Hermes')).toBeTruthy()
-    expect(screen.getByText('Install Hermes locally')).toBeTruthy()
+    expect(await screen.findByText('Set up Moor Desktop')).toBeTruthy()
+    expect(screen.getByText('Connect to existing Moor')).toBeTruthy()
+    expect(screen.getByText('Install Moor locally')).toBeTruthy()
     expect(screen.getByText(/Will install to/i)).toBeTruthy()
     expect(screen.queryByText(/steps complete/i)).toBeNull()
     expect(screen.queryByText(/Fetching installer manifest/i)).toBeNull()
@@ -118,7 +118,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
       bootstrapState({
         setupChoice: {
           platform: 'win32',
-          activeRoot: 'C:\\Users\\me\\AppData\\Local\\hermes\\hermes-agent',
+          activeRoot: 'C:\\Users\\me\\AppData\\Local\\moor\\moor-agent',
           local: 'none',
           bundled: false
         }
@@ -145,7 +145,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
       bootstrapState({
         setupChoice: {
           platform: 'win32',
-          activeRoot: 'C:\\Users\\me\\AppData\\Local\\hermes\\hermes-agent',
+          activeRoot: 'C:\\Users\\me\\AppData\\Local\\moor\\moor-agent',
           local: 'none',
           bundled: false
         }
@@ -169,7 +169,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
       bootstrapState({
         setupChoice: {
           platform: 'win32',
-          activeRoot: 'C:\\Users\\me\\AppData\\Local\\hermes\\hermes-agent',
+          activeRoot: 'C:\\Users\\me\\AppData\\Local\\moor\\moor-agent',
           local: 'none',
           bundled: false
         }
@@ -197,7 +197,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
       bootstrapState({
         setupChoice: {
           platform: 'win32',
-          activeRoot: 'C:\\Users\\me\\AppData\\Local\\hermes\\hermes-agent',
+          activeRoot: 'C:\\Users\\me\\AppData\\Local\\moor\\moor-agent',
           local: 'none',
           bundled: false
         }
@@ -227,7 +227,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
   it('opens the remote connection form from the first-run choice', async () => {
     installDesktopMock(
       bootstrapState({
-        setupChoice: { platform: 'linux', activeRoot: '/home/me/.hermes/hermes-agent', local: 'none', bundled: false }
+        setupChoice: { platform: 'linux', activeRoot: '/home/me/.moor/moor-agent', local: 'none', bundled: false }
       })
     )
 
@@ -243,7 +243,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
   it('returns from the remote connection form to the first-run choice', async () => {
     installDesktopMock(
       bootstrapState({
-        setupChoice: { platform: 'linux', activeRoot: '/home/me/.hermes/hermes-agent', local: 'none', bundled: false }
+        setupChoice: { platform: 'linux', activeRoot: '/home/me/.moor/moor-agent', local: 'none', bundled: false }
       })
     )
 
@@ -261,7 +261,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
   it('requires a successful token connection test before applying remote config', async () => {
     const desktop = installDesktopMock(
       bootstrapState({
-        setupChoice: { platform: 'linux', activeRoot: '/home/me/.hermes/hermes-agent', local: 'none', bundled: false }
+        setupChoice: { platform: 'linux', activeRoot: '/home/me/.moor/moor-agent', local: 'none', bundled: false }
       })
     )
 
@@ -331,7 +331,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
   it('restores remote apply controls when applying the tested connection fails', async () => {
     const desktop = installDesktopMock(
       bootstrapState({
-        setupChoice: { platform: 'linux', activeRoot: '/home/me/.hermes/hermes-agent', local: 'none', bundled: false }
+        setupChoice: { platform: 'linux', activeRoot: '/home/me/.moor/moor-agent', local: 'none', bundled: false }
       })
     )
 
@@ -378,7 +378,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
   it('signs in, tests, and applies a password-style remote gateway', async () => {
     const desktop = installDesktopMock(
       bootstrapState({
-        setupChoice: { platform: 'linux', activeRoot: '/home/me/.hermes/hermes-agent', local: 'none', bundled: false }
+        setupChoice: { platform: 'linux', activeRoot: '/home/me/.moor/moor-agent', local: 'none', bundled: false }
       })
     )
 
@@ -449,7 +449,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
   it('does not authorize a new URL with an old login result or save before Apply', async () => {
     const desktop = installDesktopMock(
       bootstrapState({
-        setupChoice: { platform: 'linux', activeRoot: '/tmp/hermes', local: 'none', bundled: false }
+        setupChoice: { platform: 'linux', activeRoot: '/tmp/moor', local: 'none', bundled: false }
       })
     )
 
@@ -470,8 +470,8 @@ describe('DesktopInstallOverlay first-run setup', () => {
       })
     )
     render(<DesktopInstallOverlay />)
-    fireEvent.click(await screen.findByText('Connect to existing Hermes'))
-    const url = screen.getByPlaceholderText('https://gateway.example.com/hermes')
+    fireEvent.click(await screen.findByText('Connect to existing Moor'))
+    const url = screen.getByPlaceholderText('https://gateway.example.com/moor')
     fireEvent.change(url, { target: { value: 'https://a.example' } })
     fireEvent.click(await screen.findByRole('button', { name: /Sign in with/ }))
     await waitFor(() => expect(desktop.oauthLoginConnectionConfig).toHaveBeenCalledWith('https://a.example'))
@@ -483,7 +483,7 @@ describe('DesktopInstallOverlay first-run setup', () => {
     expect(saveConnectionConfig).not.toHaveBeenCalled()
     expect(desktop.applyConnectionConfig).not.toHaveBeenCalled()
     fireEvent.click(screen.getByText('Back'))
-    fireEvent.click(await screen.findByText('Install Hermes locally'))
+    fireEvent.click(await screen.findByText('Install Moor locally'))
     expect(desktop.continueBootstrapLocal).toHaveBeenCalledTimes(1)
     expect(saveConnectionConfig).not.toHaveBeenCalled()
   })
@@ -548,9 +548,9 @@ describe('DesktopInstallOverlay first-run setup', () => {
 })
 
 it.each([
-  ['installed', false, 'Use Hermes on this computer', /already installed here/i, false],
-  ['bundled', true, 'Use Hermes on this computer', /included with this app/i, false],
-  [undefined, false, 'Install Hermes locally', /Will install to/i, true]
+  ['installed', false, 'Use Moor on this computer', /already installed here/i, false],
+  ['bundled', true, 'Use Moor on this computer', /included with this app/i, false],
+  [undefined, false, 'Install Moor locally', /Will install to/i, true]
 ] as const)(
   'local presentation for %s (including old backends)',
   async (
@@ -561,7 +561,7 @@ it.each([
     footer: boolean
   ): Promise<void> => {
     const state: DesktopBootstrapState = bootstrapState({
-      setupChoice: { platform: 'win32', activeRoot: 'C:\\Hermes', local: local ?? 'none', bundled }
+      setupChoice: { platform: 'win32', activeRoot: 'C:\\Moor', local: local ?? 'none', bundled }
     })
 
     if (local === undefined && state.setupChoice) {
@@ -575,7 +575,7 @@ it.each([
     expect(screen.queryByText(/Will install to/i) !== null).toBe(footer)
 
     if (!footer) {
-      expect(screen.queryByText('Install Hermes locally')).toBeNull()
+      expect(screen.queryByText('Install Moor locally')).toBeNull()
     }
   }
 )

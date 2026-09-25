@@ -20,9 +20,9 @@ from moor_cli.web_server_profiles import _profile_cli_args
 # Same logger the handlers used before extraction (identical logger object).
 log = logging.getLogger("moor_cli.web_server")
 
-_profile_scope = late("_profile_scope", "hermes_cli.web_server_profiles")
-_config_profile_scope = late("_config_profile_scope", "hermes_cli.web_server_profiles")
-_spawn_hermes_action = late("_spawn_hermes_action", "hermes_cli.web_server_gateway")
+_profile_scope = late("_profile_scope", "moor_cli.web_server_profiles")
+_config_profile_scope = late("_config_profile_scope", "moor_cli.web_server_profiles")
+_spawn_moor_action = late("_spawn_moor_action", "moor_cli.web_server_gateway")
 # Config read-modify-write serialization for off-loop handlers (live lock —
 # LateState supports ``with``-blocks).
 _CONFIG_MUTATION_LOCK = LateState("_CONFIG_MUTATION_LOCK")
@@ -68,7 +68,7 @@ def destructive_profile(profile: Optional[str], route: str) -> Optional[str]:
     (``is_multiplex_active()``, decided once at boot by
     ``activate_multi_profile_hosting_eagerly``). A genuinely single-profile host has
     nothing to confuse, so there an omitted profile keeps meaning the launch profile
-    and `curl` against a plain ``hermes serve`` is unchanged.
+    and `curl` against a plain ``moor serve`` is unchanged.
 
     "Privileged" is the same class as "destructive": arming an auto-approved shell hook
     in the wrong profile is at least as bad as removing one from it.
@@ -128,7 +128,7 @@ def redacted_credential_preview(value: Any) -> Optional[str]:
     """Return a display-only credential sentinel that can never gain write authority."""
     if not value:
         return None
-    from hermes_cli.config import redact_key
+    from moor_cli.config import redact_key
     return f"«redacted:{redact_key(str(value))}»"
 
 
@@ -166,14 +166,14 @@ CORRUPT_STORE_DETAIL = {
 # lives would repair the wrong generation in place, so it is deliberately NOT suggested here.
 DELETED_WAL_DETAIL = {
     "error": "state_db_deleted_wal",
-    "message": "another Hermes process still holds an old copy of the session database's write-ahead log — "
-               "quit every Hermes process on this profile, run `hermes doctor` (it names the holders), "
-               "then start Hermes again. Do not run `hermes doctor --fix` while they run.",
+    "message": "another Moor process still holds an old copy of the session database's write-ahead log — "
+               "quit every Moor process on this profile, run `moor doctor` (it names the holders), "
+               "then start Moor again. Do not run `moor doctor --fix` while they run.",
 }
 STATE_DB_REPLACED_DETAIL = {
     "error": "state_db_replaced",
-    "message": "state.db was replaced while Hermes was running — stop Hermes, run `hermes doctor`, "
-               "then start it again. Do not run `hermes doctor --fix`, which would repair the wrong file in place.",
+    "message": "state.db was replaced while Moor was running — stop Moor, run `moor doctor`, "
+               "then start it again. Do not run `moor doctor --fix`, which would repair the wrong file in place.",
 }
 # Every other bucket a malformed image can classify as ("corrupt", "fts_index") is the corrupt payload.
 _STORE_STATUS_DETAIL_BY_CAUSE = {"deleted_wal": DELETED_WAL_DETAIL, "replaced": STATE_DB_REPLACED_DETAIL}
@@ -184,7 +184,7 @@ def corrupt_store_as_status(db_path):
     """Map a corrupt-image ``sqlite3.DatabaseError`` or ``StateDbReplacedError`` from a state.db read to a 503 status
     payload, warning once per store per :data:`_CORRUPT_STORE_WARN_INTERVAL_S`.
     Busy/locked and every other error propagate unchanged."""
-    from hermes_state_errors import StateDbReplacedError, classify_persistence_error, is_malformed_db_error
+    from moor_state_errors import StateDbReplacedError, classify_persistence_error, is_malformed_db_error
 
     try:
         yield
@@ -197,7 +197,7 @@ def corrupt_store_as_status(db_path):
         if last is None or now - last >= _CORRUPT_STORE_WARN_INTERVAL_S:
             _corrupt_store_warned_at[key] = now
             log.warning("state.db at %s is unreadable (%s); dashboard reads return a status payload until it is "
-                        "repaired — run `hermes doctor`", db_path, exc)
+                        "repaired — run `moor doctor`", db_path, exc)
         else:
             log.debug("state.db at %s still has error: %s", db_path, exc)
         raise HTTPException(status_code=503, detail={**detail, "path": key}) from exc

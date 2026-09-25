@@ -240,7 +240,7 @@ jobs:
           BUNDLE_MANIFEST: ${{ inputs.bundle-manifest-url }}
           BUNDLE_MANIFEST_SHA256: ${{ inputs.bundle-manifest-sha256 }}
           BUNDLE_ARCH: ${{ inputs.bundle-arch }}
-          HERMES_E2E_LOG_DIR: ${{ runner.temp }}/e2e-logs
+          MOOR_E2E_LOG_DIR: ${{ runner.temp }}/e2e-logs
 
       - name: Update to NEW via About -> Update now (${{ inputs.bundle-arch }})
         run: |
@@ -251,7 +251,7 @@ jobs:
           BUNDLE_MANIFEST: ${{ inputs.bundle-manifest-url }}
           BUNDLE_MANIFEST_SHA256: ${{ inputs.bundle-manifest-sha256 }}
           BUNDLE_ARCH: ${{ inputs.bundle-arch }}
-          HERMES_E2E_LOG_DIR: ${{ runner.temp }}/e2e-logs
+          MOOR_E2E_LOG_DIR: ${{ runner.temp }}/e2e-logs
 
       - name: Stop screen recording
         if: always()

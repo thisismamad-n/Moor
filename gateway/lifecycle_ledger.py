@@ -24,12 +24,12 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 
-def _process_hermes_home() -> Path:
-    """HERMES_HOME for process-level identity files (ignore task overrides)."""
-    from hermes_constants import get_hermes_home, get_process_hermes_home
+def _process_moor_home() -> Path:
+    """MOOR_HOME for process-level identity files (ignore task overrides)."""
+    from moor_constants import get_moor_home, get_process_moor_home
 
-    # get_process_hermes_home expands ``~``/``$VAR`` (python -m gateway.run skips the CLI normalizer).
-    return get_process_hermes_home() if os.environ.get("HERMES_HOME", "").strip() else get_hermes_home()
+    # get_process_moor_home expands ``~``/``$VAR`` (python -m gateway.run skips the CLI normalizer).
+    return get_process_moor_home() if os.environ.get("MOOR_HOME", "").strip() else get_moor_home()
 
 
 def _home_path(home: Optional[Path], *relative: str) -> Path:
@@ -203,7 +203,7 @@ def _install_integrity_check_lease(conn: sqlite3.Connection) -> None:
     The handler always returns 0 -- it must never abort the verdict PRAGMA.  Synchronous
     by design: no checker worker thread can outlive the check.
     """
-    from hermes_startup_watchdog import report_startup_progress
+    from moor_startup_watchdog import report_startup_progress
 
     report_startup_progress(_INTEGRITY_CHECK_LEASE_S, phase=_INTEGRITY_CHECK_LEASE_PHASE)
     last_renew = time.monotonic()

@@ -269,9 +269,9 @@ def test_versioned_or_absolute_interpreter_records_ad_hoc_evidence(tmp_path, mon
     the verify-on-stop nudge itself hands the agent, so a passing run recorded no evidence and
     every later turn re-nudged the same workspace as unverified.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
-    script = Path(tempfile.gettempdir()) / f"hermes-verify-{tmp_path.name}.py"
+    script = Path(tempfile.gettempdir()) / f"moor-verify-{tmp_path.name}.py"
     script.write_text("print('ok')\n", encoding="utf-8")
     try:
         evidence = classify_verification_command(
@@ -293,9 +293,9 @@ def test_non_interpreter_command_touching_the_temp_script_is_not_evidence(tmp_pa
     """The nudge also tells the agent to clean the temp script up. A command that merely names
     the script — `rm`, `chmod`, `cat` — runs no verification and must not satisfy the gate.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
-    script = Path(tempfile.gettempdir()) / f"hermes-verify-{tmp_path.name}.py"
+    script = Path(tempfile.gettempdir()) / f"moor-verify-{tmp_path.name}.py"
 
     for command in (f"rm -f {script}", f"/usr/bin/chmod +x {script}", f"/usr/bin/cat {script}"):
         evidence = classify_verification_command(command, cwd=tmp_path, session_id="s1", exit_code=0)
@@ -385,9 +385,9 @@ def test_windows_exe_interpreter_records_ad_hoc_evidence(tmp_path, monkeypatch, 
 
     monkeypatch.setattr(
         "agent.verification_evidence._is_temp_script_path",
-        lambda token, root: "hermes-verify-" in token and token.endswith(".py"),
+        lambda token, root: "moor-verify-" in token and token.endswith(".py"),
     )
-    win_script = r"C:\Users\me\AppData\Local\Temp\hermes-verify-x.py"
+    win_script = r"C:\Users\me\AppData\Local\Temp\moor-verify-x.py"
     assert _find_ad_hoc_match(f"{interpreter} {win_script}", tmp_path) == []
 
 

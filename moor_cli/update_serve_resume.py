@@ -18,8 +18,8 @@ def main(context: Path, result: Path) -> int:
         sys.path.insert(0, str(root))
         from pm.environments import activate_dependencies
         activate_dependencies(root)
-        from hermes_cli.dashboard_procs import _filter_dashboard_respawn_candidates
-        from hermes_cli.main_dashboard import _respawn_dashboard_processes
+        from moor_cli.dashboard_procs import _filter_dashboard_respawn_candidates
+        from moor_cli.main_dashboard import _respawn_dashboard_processes
 
         candidates = []
         skipped = 0
@@ -29,7 +29,7 @@ def main(context: Path, result: Path) -> int:
                     or type(port) is not int or not 0 < port <= 65535):
                 skipped += 1
                 continue
-            command = [sys.executable, str(root / "hermes")]
+            command = [sys.executable, str(root / "moor")]
             profile = entry.get("profile")
             if profile and profile != "default":
                 command += ["--profile", str(profile)]
@@ -37,7 +37,7 @@ def main(context: Path, result: Path) -> int:
             if entry.get("host"):
                 command += ["--host", str(entry["host"])]
             command += ["--port", str(port)]
-            candidates.append((entry.get("pid", 0), command, entry.get("hermes_home") or None))
+            candidates.append((entry.get("pid", 0), command, entry.get("moor_home") or None))
         commands = _filter_dashboard_respawn_candidates(candidates, own_home=request.get("home"))
         skipped += len(candidates) - len(commands)
         # An acknowledged attempt is terminal even if spawning failed: replaying

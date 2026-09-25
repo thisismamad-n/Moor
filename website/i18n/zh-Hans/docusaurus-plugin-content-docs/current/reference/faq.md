@@ -7,7 +7,7 @@ description: "Moor Agent 常见问题解答及常见问题解决方案"
 # 常见问题与故障排查
 
 本页的 Python 依赖命令使用 [PM 准备的源码环境](./package-management.md#developer-workflow)。
-依赖变更后，请重新激活该 checkout 并重启 Hermes。
+依赖变更后，请重新激活该 checkout 并重启 Moor。
 
 针对最常见问题的快速解答与修复方法。
 
@@ -54,12 +54,12 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 
 参见：
 
-- [在 Hermes 中使用 MCP](../guides/use-mcp-with-hermes.md#wsl2-bridge-hermes-in-wsl-to-windows-chrome)
+- [在 Moor 中使用 MCP](../guides/use-mcp-with-moor.md#wsl2-bridge-moor-in-wsl-to-windows-chrome)
 - [浏览器自动化](../user-guide/features/browser.md#wsl2--windows-chrome优先使用-mcp-而非-browser-connect)
 
 ### 支持 Android 吗？
 
-aarch64 设备可使用预发布的 Termux APT 软件包。请参阅 [Termux 指南](../getting-started/termux.md)了解签名仓库、安装步骤和限制。请使用 `pkg upgrade hermes-agent` 更新，不要使用 `hermes update` 或桌面和服务器的安装脚本。
+aarch64 设备可使用预发布的 Termux APT 软件包。请参阅 [Termux 指南](../getting-started/termux.md)了解签名仓库、安装步骤和限制。请使用 `pkg upgrade moor-agent` 更新，不要使用 `moor update` 或桌面和服务器的安装脚本。
 
 ### 我的数据会被发送到哪里？
 
@@ -96,7 +96,7 @@ Moor 会将端点、提供商和 base URL 持久化到 `config.yaml`，重启后
 :::
 
 :::tip 本地模型超时问题
-Hermes 会自动检测本地端点并放宽流式传输超时（读取超时从 120s 提升至 1800s，禁用停滞流检测）。如果在非常大的上下文下仍然超时，请在 `.env` 中设置 `HERMES_STREAM_READ_TIMEOUT=1800`。详情请参阅[本地 LLM 指南](../guides/local-llm-on-mac.md#超时设置)。
+Moor 会自动检测本地端点并放宽流式传输超时（读取超时从 120s 提升至 1800s，禁用停滞流检测）。如果在非常大的上下文下仍然超时，请在 `.env` 中设置 `MOOR_STREAM_READ_TIMEOUT=1800`。详情请参阅[本地 LLM 指南](../guides/local-llm-on-mac.md#超时设置)。
 :::
 
 ### 费用是多少？
@@ -158,7 +158,7 @@ ls ~/.local/bin/moor
 
 #### Python 版本不受支持
 
-Hermes 要求 Python 3.14（`>=3.14,<3.15`），不是任意更新版本。
+Moor 要求 Python 3.14（`>=3.14,<3.15`），不是任意更新版本。
 源码安装脚本和软件包会提供相应的运行时。
 手动开发环境请按照 [开发指南](../developer-guide/contributing.md)准备。
 不要在签名应用或容器内部替换 Python 来修复版本错误。
@@ -422,7 +422,7 @@ cat ~/.moor/logs/gateway.log | tail -50
 **解决方案：**
 ```bash
 # 安装核心消息网关依赖项
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['messaging'], explicit=True)"  # Telegram、Discord、Slack 及共享网关依赖
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['messaging'], explicit=True)"  # Telegram、Discord、Slack 及共享网关依赖
 
 # 检查端口冲突
 lsof -i :8080
@@ -542,7 +542,7 @@ moor chat --continue
 **解决方案：**
 ```bash
 # 确保 MCP 依赖项已安装（标准安装中已包含）
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['mcp'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['mcp'], explicit=True)"
 
 # 对于基于 npm 的服务器，确保 Node.js 可用
 node --version
@@ -581,7 +581,7 @@ moor chat
 
 另请参阅：
 - [MCP（模型上下文协议）](../user-guide/features/mcp.md)
-- [在 Hermes 中使用 MCP](../guides/use-mcp-with-hermes.md)
+- [在 Moor 中使用 MCP](../guides/use-mcp-with-moor.md)
 - [MCP 配置参考](./mcp-config-reference.md)
 
 #### MCP 超时错误
@@ -742,8 +742,8 @@ skills:
    ```bash
    moor backup
    ```
-   归档保存到 `~/hermes-backup-<timestamp>.zip`。
-   完整备份涵盖 Hermes 数据根目录中的配置、凭据、记忆、技能、会话和 profiles。
+   归档保存到 `~/moor-backup-<timestamp>.zip`。
+   完整备份涵盖 Moor 数据根目录中的配置、凭据、记忆、技能、会话和 profiles。
    它不是应用程序或运行时的完整镜像。
 
 3. 将 zip 文件复制到新机器并导入：
@@ -771,12 +771,12 @@ moor profile import ./work-backup.tar.gz work
 
 导入的 profile 将包含导出时的所有配置、记忆、会话和技能。如果新机器的设置不同，您可能需要更新路径或重新向提供商进行身份验证。
 
-### `hermes backup` 与 `hermes profile export` 的对比 {#hermes-backup-vs-hermes-profile-export}
+### `moor backup` 与 `moor profile export` 的对比 {#moor-backup-vs-moor-profile-export}
 
 | 功能 | `moor backup` | `moor profile export` |
 | :--- | :--- | :--- |
 | **使用场景** | **整机迁移** | **移植/共享特定 profile** |
-| **范围** | Hermes 数据根目录，下列排除项除外 | 单个 profile 目录 |
+| **范围** | Moor 数据根目录，下列排除项除外 | 单个 profile 目录 |
 | **包含内容** | 所有 profiles、全局配置、API key、会话 | 单个 profile：SOUL.md、记忆、会话、技能 |
 | **凭据** | **包含**（`.env` 和 `auth.json`） | **排除**（为安全共享而剥离） |
 | **格式** | `.zip` | `.tar.gz` |
@@ -788,7 +788,7 @@ moor profile import ./work-backup.tar.gz work
 - 浏览器配置目录，包括真实浏览器凭据的副本。
 - 字节码、SQLite 辅助文件，以及 `gateway.pid`、`cron.pid` 和 `.backup.lock`。
 
-`hermes backup --quick` 只保存指定的状态文件，不生成完整归档。
+`moor backup --quick` 只保存指定的状态文件，不生成完整归档。
 迁移机器前，它不能替代完整备份。
 
 完整备份会报告复制失败的文件。因此，即使归档已生成，也可能缺少部分数据。
@@ -856,6 +856,6 @@ moor chat -q "hello" --model anthropic/claude-opus-4.7
 
 如果您的问题未在此处涵盖：
 
-1. **搜索现有 issue：** [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
+1. **搜索现有 issue：** [GitHub Issues](https://github.com/thisismamad-n/Moor/issues)
 2. **向社区提问：** [Moor inc. Discord](https://discord.gg/nousresearch)
 3. **提交 bug 报告：** 请包含您的操作系统、Python 版本（`python3 --version`）、Moor 版本（`moor --version`）以及完整的错误信息

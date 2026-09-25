@@ -276,15 +276,15 @@ def test_cron_session_set_clear_and_reset_tristate(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_plugin_slash_command_sees_session_env(monkeypatch):
-    """A plugin-registered slash command handler must see the same HERMES_SESSION_*
+    """A plugin-registered slash command handler must see the same MOOR_SESSION_*
     contextvars an agent turn would for that event (#108698): the agent-turn path binds
     them via _set_session_env before running, but plugin command dispatch is a separate,
     earlier path that previously called the handler with nothing bound."""
     from gateway.config import GatewayConfig, PlatformConfig
     from gateway.platforms.event import MessageEvent
 
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_CHAT_ID", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_CHAT_ID", raising=False)
 
     runner = object.__new__(GatewayRunner)
     runner.config = GatewayConfig(platforms={Platform.TELEGRAM: PlatformConfig(enabled=True, token="***")})
@@ -298,11 +298,11 @@ async def test_plugin_slash_command_sees_session_env(monkeypatch):
     seen = {}
 
     def _handler(raw_args):
-        seen["session_key"] = get_session_env("HERMES_SESSION_KEY")
-        seen["chat_id"] = get_session_env("HERMES_SESSION_CHAT_ID")
+        seen["session_key"] = get_session_env("MOOR_SESSION_KEY")
+        seen["chat_id"] = get_session_env("MOOR_SESSION_CHAT_ID")
         return f"Bound: {raw_args}"
 
-    from hermes_cli import plugins as _plugins_mod
+    from moor_cli import plugins as _plugins_mod
     monkeypatch.setattr(_plugins_mod, "get_plugin_command_handler",
                          lambda name: _handler if name == "gsd-bind" else None)
 
@@ -314,5 +314,5 @@ async def test_plugin_slash_command_sees_session_env(monkeypatch):
     assert seen["session_key"] != ""
     assert seen["chat_id"] == "c1"
     # Bound only for the handler call, not leaked past dispatch
-    assert get_session_env("HERMES_SESSION_KEY") == ""
+    assert get_session_env("MOOR_SESSION_KEY") == ""
 

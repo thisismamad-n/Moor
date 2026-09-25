@@ -21,8 +21,8 @@ import time as _time_mod
 
 from pathlib import Path
 from typing import Callable, Optional
-from hermes_cli.desktop_console import desktop_console_output, desktop_launch_notice
-from hermes_platform.host import facts
+from moor_cli.desktop_console import desktop_console_output, desktop_launch_notice
+from moor_platform.host import facts
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("moor_cli.main")
@@ -119,7 +119,7 @@ def _desktop_build_needed(desktop_dir: Path, project_root: Path, *, source_mode:
         print("  ⚠ The packaged desktop app has no node-pty native binary; rebuilding it")
         return True
 
-    from hermes_cli.source_build import source_product_current
+    from moor_cli.source_build import source_product_current
 
     return dist_dir is None or not source_product_current(project_root, "desktop", dist_dir)
 
@@ -232,7 +232,7 @@ def _swap_staged_desktop_app(desktop_dir: Path, staging_dir: Path) -> Optional[P
         moved_aside = live_root.exists()
         if moved_aside:
             # A Desktop may have reopened during the long packaging step (Windows lock) or
-            # never exited at all (a manual `hermes update`/`hermes desktop` run does not
+            # never exited at all (a manual `moor update`/`moor desktop` run does not
             # wait for it — only the update hand-offs do). Either way a renderer alive
             # past the rename below keeps fetching its old hashed chunks from disk and
             # dies on the next lazy import, so stop it on every platform (#109643).
@@ -429,7 +429,7 @@ def _stop_desktop_processes_locking_build(desktop_dir: Path, *, also_posix: bool
 
     me = os.getpid()
     # On POSIX, never stop a Desktop that is one of OUR ancestors. A
-    # historical Desktop (v2026.7.1 Linux in-app update) runs `hermes update`
+    # historical Desktop (v2026.7.1 Linux in-app update) runs `moor update`
     # as a child with piped stdout/stderr and owns the post-update rebuild and
     # relaunch. Killing it breaks those pipes (EPIPE fails the update) and
     # leaves nobody to relaunch. It also outlives the swap safely because it
@@ -910,14 +910,14 @@ def _swap_in_new_macos_bundle(tmp: Path, target: Path, old: Path) -> None:
 
 
 def _running_macos_app_bundles() -> set[Path]:
-    """``.app`` bundles of every live Hermes Desktop process. A running bundle is never swapped
+    """``.app`` bundles of every live Moor Desktop process. A running bundle is never swapped
     under: Electron loads ``app.asar`` chunks and helper apps lazily, so renaming its bundle away
     and deleting the old tree crashes the live app (the detached updater waits for it to exit)."""
     import psutil  # noqa: PLC0415
     bundles: set[Path] = set()
     for proc in psutil.process_iter(["exe"]):
         exe = proc.info.get("exe") or ""
-        if exe.endswith("/Contents/MacOS/Hermes"):
+        if exe.endswith("/Contents/MacOS/Moor"):
             bundles.add(Path(exe).resolve().parents[2])
     return bundles
 
@@ -929,9 +929,9 @@ def _stage_macos_bundle_copy(src: Path, dst: Path) -> None:
 
 
 def _install_rebuilt_desktop_app(desktop_dir: Path) -> tuple[list[Path], list[str]]:
-    """Copy the rebuilt macOS bundle over every stale installed ``Hermes.app`` (#52339).
+    """Copy the rebuilt macOS bundle over every stale installed ``Moor.app`` (#52339).
 
-    ``hermes desktop --build-only`` (what ``hermes update`` runs) packages into
+    ``moor desktop --build-only`` (what ``moor update`` runs) packages into
     ``apps/desktop/release/`` only. Finder, the Dock and Spotlight launch the copy in
     ``/Applications`` (or ``~/Applications``), so without this step every update leaves the
     installed shell one build behind the backend it boots. The detached Desktop updater swaps
@@ -947,8 +947,8 @@ def _install_rebuilt_desktop_app(desktop_dir: Path) -> tuple[list[Path], list[st
     rebuilt_exe = _desktop_packaged_executable(desktop_dir)
     if rebuilt_exe is None:
         return [], []
-    from hermes_cli.gui_uninstall import packaged_gui_app_paths  # noqa: PLC0415
-    # .../Hermes.app/Contents/MacOS/Hermes -> .../Hermes.app
+    from moor_cli.gui_uninstall import packaged_gui_app_paths  # noqa: PLC0415
+    # .../Moor.app/Contents/MacOS/Moor -> .../Moor.app
     return _install_rebuilt_macos_bundles(
         rebuilt_exe.parents[2], packaged_gui_app_paths(), running=_running_macos_app_bundles())
 
@@ -969,11 +969,11 @@ def _install_rebuilt_macos_bundles(
             continue
         if app.resolve() in running:
             problems.append(
-                f"{app} is running and was not refreshed; quit Hermes Desktop and run "
-                "`hermes update` again (or update from inside the app)")
+                f"{app} is running and was not refreshed; quit Moor Desktop and run "
+                "`moor update` again (or update from inside the app)")
             continue
-        tmp = app.parent / f"{app.name}.hermes-update-new"
-        old = app.parent / f"{app.name}.hermes-update-old"
+        tmp = app.parent / f"{app.name}.moor-update-new"
+        old = app.parent / f"{app.name}.moor-update-old"
         shutil.rmtree(tmp, ignore_errors=True)
         shutil.rmtree(old, ignore_errors=True)
         try:
@@ -1366,14 +1366,14 @@ def _packaged_desktop_launch_command(packaged_executable: Path) -> list[str]:
 
 def cmd_gui(args: argparse.Namespace):
     """Build and launch the native Electron desktop GUI."""
-    from hermes_cli.main import PROJECT_ROOT
-    from hermes_cli.source_build import prepare_source_dependencies, source_build_env
+    from moor_cli.main import PROJECT_ROOT
+    from moor_cli.source_build import prepare_source_dependencies, source_build_env
     desktop_dir = PROJECT_ROOT / "apps" / "desktop"
     # A bundled install IS the app: no source tree, no build, and the
     # launcher is a sibling of this payload rather than something we
     # produce. Every rung below assembles a checkout build, so the sealed
     # shape leaves here with the env it just built.
-    from hermes_cli.steward import is_bundled_payload
+    from moor_cli.steward import is_bundled_payload
 
     bundled = is_bundled_payload(PROJECT_ROOT)
     if not bundled and not (desktop_dir / "package.json").exists():
@@ -1455,7 +1455,7 @@ def cmd_gui(args: argparse.Namespace):
         return
 
     if source_mode:
-        print("→ Launching Hermes Desktop from source build...")
+        print("→ Launching Moor Desktop from source build...")
         # Launch only the prepared runtime. npm exec can provision a missing
         # Electron package, including when --skip-build was requested.
         electron = _electron_dir(PROJECT_ROOT)
@@ -1477,7 +1477,7 @@ def cmd_gui(args: argparse.Namespace):
     if getattr(args, "local", False):
         launch_command.append("--local")
     if not source_mode:
-        desktop_launch_notice(f"→ Launching packaged Hermes Desktop: {' '.join(launch_command)}")
+        desktop_launch_notice(f"→ Launching packaged Moor Desktop: {' '.join(launch_command)}")
     pass_fds: tuple[int, ...] = ()
     if deferred_entry is not None:
         env = deferred_entry.child_env(env)
@@ -1505,8 +1505,8 @@ def _launch_bundled_desktop(
 
     Never returns.
     """
-    from hermes_cli.bundled_app import NotBundledApp, launch_detached, resolve_bundle_layout
-    from hermes_cli.main import PROJECT_ROOT
+    from moor_cli.bundled_app import NotBundledApp, launch_detached, resolve_bundle_layout
+    from moor_cli.main import PROJECT_ROOT
 
     refused = [
         flag
@@ -1518,7 +1518,7 @@ def _launch_bundled_desktop(
         if getattr(args, name, False)
     ]
     if refused:
-        print(f"✗ {', '.join(refused)} cannot apply to a bundled Hermes install.")
+        print(f"✗ {', '.join(refused)} cannot apply to a bundled Moor install.")
         print("  This app ships prebuilt and has no desktop source tree to build.")
         sys.exit(2)
 
@@ -1528,13 +1528,13 @@ def _launch_bundled_desktop(
         # The stamp says bundled, so a tree that is not one is a damaged or
         # mispackaged install. Report it — degrading to the build ladder
         # would run npm inside the app's own resources.
-        print(f"✗ This Hermes is stamped as a bundled desktop install, but {exc}.")
-        print("  The install is damaged — reinstall Hermes from the website.")
+        print(f"✗ This Moor is stamped as a bundled desktop install, but {exc}.")
+        print("  The install is damaged — reinstall Moor from the website.")
         sys.exit(1)
 
     if layout.launcher is None:
-        print(f"✗ Found no Hermes Desktop launcher in {layout.app_root}.")
-        print("  The install is damaged — reinstall Hermes from the website.")
+        print(f"✗ Found no Moor Desktop launcher in {layout.app_root}.")
+        print("  The install is damaged — reinstall Moor from the website.")
         sys.exit(1)
 
     launch_command = [str(layout.launcher)]
@@ -1547,7 +1547,7 @@ def _launch_bundled_desktop(
 
     launch_command.extend(electron_flags)
     pid = launch_detached(launch_command, env=env, cwd=layout.app_root)
-    print(f"→ Launched Hermes Desktop: {' '.join(launch_command)} (pid {pid})")
+    print(f"→ Launched Moor Desktop: {' '.join(launch_command)} (pid {pid})")
     sys.exit(0)
 
 

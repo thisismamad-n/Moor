@@ -105,7 +105,7 @@ def _check_kanban_orchestrator_mode() -> bool:
 # --- Shared helpers: validation failures raise _Reject; _kanban_handler renders it ---
 
 # Worker tools that terminate or transition a run's ownership. An unbound worker
-# (HERMES_KANBAN_RUN_ID unresolvable) must not run these: expected_run_id=None
+# (MOOR_KANBAN_RUN_ID unresolvable) must not run these: expected_run_id=None
 # would silently skip the run-ownership CAS in kanban_db. Non-lifecycle tools
 # (heartbeat / attach / attach_url) do not terminate a run and are not gated.
 _RUN_LIFECYCLE_TOOLS = frozenset({
@@ -139,13 +139,13 @@ _UNDECLARED_ARGS: dict[str, frozenset[str]] = {
 def _persisted_identity() -> str:
     """Profile name persisted into board records (comment author, task creator).
 
-    ``hermes_cli.profiles.current_profile_name`` resolves the profile this call runs FOR — the bound
-    home override under a multiplexed tick or turn, else the dispatcher's ``HERMES_PROFILE`` pin,
+    ``moor_cli.profiles.current_profile_name`` resolves the profile this call runs FOR — the bound
+    home override under a multiplexed tick or turn, else the dispatcher's ``MOOR_PROFILE`` pin,
     else the process home; the generic ``"worker"`` only when nothing names a profile. Never taken
     from tool args: board records are injected into future workers' prompts, so a caller-supplied
     identity could forge an authoritative-looking author (see #19713).
     """
-    from hermes_cli.profiles import current_profile_name
+    from moor_cli.profiles import current_profile_name
 
     return current_profile_name("worker") or "worker"
 
@@ -242,14 +242,14 @@ def _worker_guard(tool_name: str, args: dict) -> str:
     """Worker mutation preamble, in order: delegate-child rejection, task id
     resolution, task-scope ownership, run-identity proof. Returns the task id.
 
-    A dispatcher-spawned worker (``HERMES_KANBAN_TASK`` set) that cannot name
+    A dispatcher-spawned worker (``MOOR_KANBAN_TASK`` set) that cannot name
     its run id is refused on the run-lifecycle mutations: ``expected_run_id=None``
     would silently skip the run-ownership CAS in ``kanban_db`` (``complete_task`` /
     ``block_task`` / ``request_review`` / ``request_changes`` only append
     ``AND current_run_id = ?`` when the value is not ``None``), so an unbound
     stale worker could complete a card a live successor owns. This mirrors
     ``agent/kanban_stop.py``, which already treats an unbound run id as unknown
-    and fails closed. CLI / human / orchestrator paths (no ``HERMES_KANBAN_TASK``)
+    and fails closed. CLI / human / orchestrator paths (no ``MOOR_KANBAN_TASK``)
     legitimately pass ``expected_run_id=None`` and are unaffected. Non-lifecycle
     worker tools (heartbeat / attach / attach_url) do not terminate a run and are
     not gated here.
@@ -259,12 +259,12 @@ def _worker_guard(tool_name: str, args: dict) -> str:
     _enforce_worker_task_ownership(tid)
     if (
         tool_name in _RUN_LIFECYCLE_TOOLS
-        and os.environ.get("HERMES_KANBAN_TASK")
+        and os.environ.get("MOOR_KANBAN_TASK")
         and _worker_run_id(tid) is None
     ):
         raise _Reject(
             f"{tool_name} refused: this worker cannot resolve its "
-            "HERMES_KANBAN_RUN_ID, so it cannot prove ownership of the card's "
+            "MOOR_KANBAN_RUN_ID, so it cannot prove ownership of the card's "
             "current run. A stale or unbound worker must not terminate a run a "
             "live successor owns. Re-run through the dispatcher so the run id is "
             "pinned, or use an orchestrator/CLI path that passes an explicit "
@@ -518,10 +518,10 @@ _auto_heartbeat_fence_warned = False
 
 def heartbeat_current_worker_from_env() -> bool:
     """Claim extension + board heartbeat for the current worker; True iff both writes
-    succeed. ``HERMES_KANBAN_RUN_ID`` pins the run row so a reclaimed stale run is not
-    heartbeated; ``HERMES_KANBAN_CLAIM_LOCK`` absent -> default claimer (local workers)."""
+    succeed. ``MOOR_KANBAN_RUN_ID`` pins the run row so a reclaimed stale run is not
+    heartbeated; ``MOOR_KANBAN_CLAIM_LOCK`` absent -> default claimer (local workers)."""
     global _auto_heartbeat_last_attempt, _auto_heartbeat_fence_warned
-    tid = os.environ.get("HERMES_KANBAN_TASK")
+    tid = os.environ.get("MOOR_KANBAN_TASK")
     now = time.monotonic()
     if not tid or (now - _auto_heartbeat_last_attempt) < _AUTO_HEARTBEAT_MIN_INTERVAL_SECONDS:
         return False
@@ -542,7 +542,7 @@ def heartbeat_current_worker_from_env() -> bool:
                     succeeded = bool(fn(conn, tid, **kwargs)) and succeeded
                 except PermissionError as exc:
                     # The board fence rejected the worker's own liveness write: this process
-                    # inherited HERMES_DELEGATED_CHILD_CONTEXT next to HERMES_KANBAN_TASK, so it is
+                    # inherited MOOR_DELEGATED_CHILD_CONTEXT next to MOOR_KANBAN_TASK, so it is
                     # a delegate descendant, not the dispatcher's worker (kanban_complete refuses
                     # too). Loud once: at DEBUG the board just showed a worker that never beats.
                     succeeded = False
@@ -550,7 +550,7 @@ def heartbeat_current_worker_from_env() -> bool:
                         _auto_heartbeat_fence_warned = True
                         logger.warning(
                             "kanban auto-heartbeat for task %s refused (%s): this process carries "
-                            "HERMES_DELEGATED_CHILD_CONTEXT together with HERMES_KANBAN_TASK, so the board "
+                            "MOOR_DELEGATED_CHILD_CONTEXT together with MOOR_KANBAN_TASK, so the board "
                             "treats it as a delegate_task descendant and its claim will not be extended by "
                             "activity. Only the dispatcher's own spawn grants worker scope; do not copy a "
                             "worker's environment into a hand-launched process.", tid, exc)
@@ -577,7 +577,7 @@ def inject_new_comments_from_env(agent: Any) -> bool:
     global _comment_poll_last_attempt
     # Operator notes address the dispatcher-owned worker; a delegate_task child sharing
     # this process must neither receive them nor advance the shared watermark (#112817).
-    tid = os.environ.get("HERMES_KANBAN_TASK") if _is_dispatcher_owned_worker() else None
+    tid = os.environ.get("MOOR_KANBAN_TASK") if _is_dispatcher_owned_worker() else None
     now = time.monotonic()
     if (not tid or agent is None or not hasattr(agent, "steer")
             or (now - _comment_poll_last_attempt) < _COMMENT_POLL_MIN_INTERVAL_SECONDS):
@@ -597,7 +597,7 @@ def inject_new_comments_from_env(agent: Any) -> bool:
     # Advance past everything read (including our own notes) so nothing is re-injected.
     _comment_watermark[tid] = max(c.id for c in rows)
     # Same resolution the write side used, so a worker skips its OWN comments even
-    # when the dispatcher did not pin HERMES_PROFILE (echoed notes would otherwise
+    # when the dispatcher did not pin MOOR_PROFILE (echoed notes would otherwise
     # re-enter the live turn as fake operator steering).
     own = _persisted_identity()
     fresh = [c for c in rows if (c.author or "").strip() != own and (c.body or "").strip()]
@@ -881,7 +881,7 @@ def _handle_comment(args: dict, **kw) -> str:
     body = _redact(_require_text(args, "body"))
     # Author comes from the worker's runtime identity (``_persisted_identity``), never
     # caller args: comments are injected into future workers' system prompts, so an
-    # args["author"] override could forge a directive from ``hermes-system``.
+    # args["author"] override could forge a directive from ``moor-system``.
     # Cross-task commenting stays unrestricted — it is the handoff channel between tasks.
     # Comments are injected into the next worker's system prompt by ``build_worker_context`` as
     # ``**{author}** (timestamp): {body}`` — accepting an ``args["author"]`` override let a worker forge a
@@ -998,10 +998,10 @@ def _persisted_session_id(session_id: Optional[str]) -> Optional[str]:
     if not session_id:
         return None
     try:
-        from hermes_state import SessionDB
-        from hermes_constants import get_hermes_home
+        from moor_state import SessionDB
+        from moor_constants import get_moor_home
 
-        state = SessionDB(db_path=get_hermes_home() / "state.db", read_only=True)
+        state = SessionDB(db_path=get_moor_home() / "state.db", read_only=True)
     except Exception:  # state.db may not exist for a CLI/dashboard invocation
         logger.debug("Could not open state.db to verify Kanban provenance", exc_info=True)
         return None
@@ -1046,7 +1046,7 @@ def _handle_create(args: dict, **kw) -> str:
         session_id = (_persisted_session_id(args.get("session_id"))
                       or (self_task.session_id if self_task else None)
                       or _persisted_session_id(_current_origin_session_id())
-                      or _persisted_session_id(get_session_env("HERMES_SESSION_ID", "")))
+                      or _persisted_session_id(get_session_env("MOOR_SESSION_ID", "")))
         if project_id is None and workspace_kind is None and workspace_path is None:
             if self_task is not None and self_task.project_id:
                 project_id, project_source_task_id = self_task.project_id, self_task.id
@@ -1087,12 +1087,12 @@ def _resolve_notify_target() -> Optional[dict[str, Any]]:
         if not session_key:
             return None
         platform, chat_id = "tui", session_key
-    chat_type = env("HERMES_SESSION_CHAT_TYPE", "") or None
-    thread_id = env("HERMES_SESSION_THREAD_ID", "") or None
-    message_id = env("HERMES_SESSION_MESSAGE_ID", "") or ""
-    notifier_profile = env("HERMES_SESSION_PROFILE", "")
+    chat_type = env("MOOR_SESSION_CHAT_TYPE", "") or None
+    thread_id = env("MOOR_SESSION_THREAD_ID", "") or None
+    message_id = env("MOOR_SESSION_MESSAGE_ID", "") or ""
+    notifier_profile = env("MOOR_SESSION_PROFILE", "")
     if not notifier_profile:
-        from hermes_cli.profiles import current_profile_name
+        from moor_cli.profiles import current_profile_name
         notifier_profile = current_profile_name("default")
     delivery_metadata: dict[str, Any] = {
         k: v for k, v in (

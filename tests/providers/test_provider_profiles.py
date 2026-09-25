@@ -91,7 +91,7 @@ class TestOpenRouterProfile:
         assert p.build_extra_body(model="openai/gpt-5.6-sol", provider_preferences={"ignore": ["x"]})["provider"] == {"ignore": ["x"]}
 
 
-class TestNousProfile:
+class TestMoorProfile:
 
     def test_sticky_session_id_normalizes_cron_timestamp(self):
         """Cron re-fires of the same job keep the same sticky routing key."""

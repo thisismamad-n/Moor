@@ -830,7 +830,7 @@ def interactive_setup() -> None:
 
 def _install_hint() -> str:
     """Point to the setup flow that requests PM's declared Teams extra."""
-    return "Teams SDK missing — run `hermes setup`, configure Teams, then restart the gateway"
+    return "Teams SDK missing — run `moor setup`, configure Teams, then restart the gateway"
 
 
 def register(ctx) -> None:

@@ -276,7 +276,7 @@ class TestRuntimeLockFirstLiveness:
         from unittest.mock import patch
 
         from cron.jobs import record_ticker_heartbeat
-        import hermes_cli.cron as cron_cli
+        import moor_cli.cron as cron_cli
 
         record_ticker_heartbeat(success=True)
         with (

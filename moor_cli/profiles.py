@@ -16,16 +16,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from hermes_cli.archive_safe import archive_root_dirs, make_targz, normalize_archive_parts, safe_extract_targz
-from hermes_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS
-from hermes_constants import (
+from moor_cli.archive_safe import archive_root_dirs, make_targz, normalize_archive_parts, safe_extract_targz
+from moor_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS
+from moor_constants import (
     LOCAL_RUNTIME_ROOT_DIRS, PROFILE_ID_RE, clear_named_profile_deleted, mark_named_profile_deleted,
     named_profile_has_identity, named_profile_is_deleted, named_profile_is_live,
 )
 
 logger = logging.getLogger(__name__)
 
-_PROFILE_ID_RE = PROFILE_ID_RE  # legacy alias; hermes_constants.PROFILE_ID_RE is canonical
+_PROFILE_ID_RE = PROFILE_ID_RE  # legacy alias; moor_constants.PROFILE_ID_RE is canonical
 
 # Directories bootstrapped inside every new profile. ``home`` is the back-compat/Docker
 # HOME for tool subprocesses (host subprocesses keep the real HOME so CLI credentials
@@ -61,16 +61,16 @@ _CLONE_ALL_STRIP: list[str] = [
 # gate avoids silently dropping user data from a named-profile source. Export uses a root
 # allow-list instead (``_DEFAULT_EXPORT_INCLUDE_ROOT``): an archive is a portable snapshot,
 # a clone must run. The runtime trio is ``LOCAL_RUNTIME_ROOT_DIRS``, shared with
-# ``hermes_cli.backup._EXCLUDED_ROOT_DIRS`` so the two lists cannot drift.
+# ``moor_cli.backup._EXCLUDED_ROOT_DIRS`` so the two lists cannot drift.
 _CLONE_ALL_DEFAULT_EXCLUDE_ROOT: frozenset[str] =  frozenset({
-    "hermes-agent",
+    "moor-agent",
     ".worktrees",
     "profiles",
     "bin",
     "node_modules",
     # Managed runtime trees — install artifacts, never profile state
     # (install/profile bucket split; see test_install_bucket_separation).
-    ".hermes-runtime",
+    ".moor-runtime",
     "node",
 }) | LOCAL_RUNTIME_ROOT_DIRS
 
@@ -148,7 +148,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
     return _ignore
 
 
-# Directories/files to exclude when exporting the default (~/.hermes) profile.
+# Directories/files to exclude when exporting the default (~/.moor) profile.
 # The default profile contains infrastructure (repo checkout, worktrees, DBs,
 # caches, binaries) that named profiles don't have.  We exclude those so the
 # export is a portable, reasonable-size archive of actual profile data.
@@ -159,23 +159,23 @@ def _clone_all_copytree_ignore(source_dir: Path):
 # artifacts here — not in a downstream copy.
 _DEFAULT_EXPORT_EXCLUDE_ROOT = DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     # Infrastructure
-    "hermes-agent",         # repo checkout (multi-GB)
+    "moor-agent",         # repo checkout (multi-GB)
     ".worktrees",           # git worktrees
     "profiles",             # other profiles — never recursive-export
     "bin",                  # installed binaries (tirith, etc.)
     "node_modules",         # npm packages
-    ".hermes-runtime",      # managed runtime tree (install artifact)
+    ".moor-runtime",      # managed runtime tree (install artifact)
     "node",                 # legacy pre-split managed Node tree
     # Databases & runtime state
     "state.db", "state.db-shm", "state.db-wal",
-    "hermes_state.db",
+    "moor_state.db",
     "response_store.db", "response_store.db-shm", "response_store.db-wal",
     "gateway.pid", "gateway_state.json", "processes.json",
     "auth.json",            # API keys, OAuth tokens, credential pools
     ".env",                 # API keys (dotenv)
     "auth.lock", "active_profile", ".update_check", "source-checks",
     "errors.log",
-    ".hermes_history",
+    ".moor_history",
     # Caches (regenerated on use)
     "image_cache", "audio_cache", "document_cache",
     "browser_screenshots", "checkpoints",
@@ -183,15 +183,15 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     "logs",                 # gateway logs
 }) | PM_RUNTIME_ROOT_DIRS
 
-# Allow-list for ``export_profile("default")``: when HERMES_HOME equals the
+# Allow-list for ``export_profile("default")``: when MOOR_HOME equals the
 # cwd (Docker/custom deployments), the default profile home is the working
 # directory and contains arbitrary user files that should NOT be bundled
-# into the export. The set below identifies the *known Hermes profile
-# artifacts* at the root of HERMES_HOME; everything else is excluded.
+# into the export. The set below identifies the *known Moor profile
+# artifacts* at the root of MOOR_HOME; everything else is excluded.
 # Sensitive runtime infrastructure (``state.db``, ``logs/``, ``auth.*``,
 # other profiles) is intentionally *not* in this list so the export stays
 # a portable, credential-free snapshot of the user-facing surface
-# (#58394). Add new artifacts here when introduced in ``hermes_constants``.
+# (#58394). Add new artifacts here when introduced in ``moor_constants``.
 _DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
     # Configuration / persona
     "config.yaml", "SOUL.md", "MEMORY.md", "USER.md", "todo.json",
@@ -246,7 +246,7 @@ def _wrapper_path(alias: str) -> Path:
 def _is_our_wrapper(path: Path) -> bool:
     """True when *path* reads as a moor-generated wrapper (contains ``moor -p``)."""
     try:
-        return "hermes -p" in path.read_text(encoding="utf-8-sig")
+        return "moor -p" in path.read_text(encoding="utf-8-sig")
     except Exception:
         return False
 
@@ -398,7 +398,7 @@ def _iter_named_profile_dirs(*, live_only: bool = True) -> List[Path]:
     A dir is a profile only when it carries an identity marker (``named_profile_has_identity``):
     cron/logging side-effects and pre-tombstone ghost shells leave marker-less dirs that must
     not be listed, served, ticked, or ``.env``-seeded — that seeding is what turned a ghost
-    shell into a "real" profile on the next ``hermes update`` (#95188, #94823, #99392)."""
+    shell into a "real" profile on the next ``moor update`` (#95188, #94823, #99392)."""
     profiles_root = _get_profiles_root()
     if not profiles_root.is_dir():
         return []
@@ -607,14 +607,14 @@ class ProfileInfo:
     description_auto: bool = False
     # Presentation-only display name; resolution/comparison/spawn always use ``name``.
     display_name: str = ""
-    # Bot Mode title (``profile.yaml`` ``ui_meta['hermes-bots'].title``) — the name
+    # Bot Mode title (``profile.yaml`` ``ui_meta['moor-bots'].title``) — the name
     # the Bots roster shows. Presentation-only, like ``display_name``.
     bot_title: str = ""
-    # Canonical ids this profile was previously known by (``hermes profile rename``
+    # Canonical ids this profile was previously known by (``moor profile rename``
     # appends here). Lets Bot Mode group chats re-link persisted member
     # descriptors to the renamed live profile (#110200).
     previous_names: List[str] = field(default_factory=list)
-    # Backend-assigned role (``SETUP_ROLE`` or None). Only ``hermes_cli.setup_profile`` writes it.
+    # Backend-assigned role (``SETUP_ROLE`` or None). Only ``moor_cli.setup_profile`` writes it.
     role: Optional[str] = None
 
 
@@ -623,7 +623,7 @@ def _load_yaml_dict(path: Path) -> Optional[dict]:
     if not path.is_file():
         return None
     try:
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         data = yaml.safe_load(path.read_text(encoding="utf-8-sig")) or {}
     except Exception:
         return None
@@ -687,7 +687,7 @@ def _read_config_model(profile_dir: Path) -> tuple:
     def _read() -> tuple:
         try:
             # load_config() targets the ACTIVE profile's home; read THIS profile's file raw.
-            from hermes_cli.config import read_user_config_raw
+            from moor_cli.config import read_user_config_raw
             model_cfg = read_user_config_raw(config_path).get("model", {})
             if isinstance(model_cfg, str):
                 return model_cfg, None
@@ -722,10 +722,10 @@ def _seed_model_config(profile_dir: Path) -> None:
     config_path = profile_dir / "config.yaml"
     if config_path.exists():
         return
-    with contextlib.suppress(Exception):  # creation must not fail over this; `hermes model` sets it later
-        from hermes_constants import get_hermes_home
-        from hermes_cli.config import atomic_config_write, read_user_config_raw
-        source = get_hermes_home() / "config.yaml"
+    with contextlib.suppress(Exception):  # creation must not fail over this; `moor model` sets it later
+        from moor_constants import get_moor_home
+        from moor_cli.config import atomic_config_write, read_user_config_raw
+        source = get_moor_home() / "config.yaml"
         seed = launch_model_seed(read_user_config_raw(source)) if source.is_file() else {}
         if seed:
             atomic_config_write(config_path, seed)
@@ -806,7 +806,7 @@ def _walk_skill_count(skills_dir: Path) -> int:
 
 def _count_skills(profile_dir: Path) -> int:
     """Count installed skills in a profile (cached by skills-dir signature + TTL). Walks
-    synchronously when stale — detail surfaces (``hermes profile info``, ``profiles.describe``)
+    synchronously when stale — detail surfaces (``moor profile info``, ``profiles.describe``)
     want the fresh number; polled lists go through :func:`_cached_skill_count`."""
     skills_dir = profile_dir / "skills"
     if not skills_dir.is_dir():
@@ -843,7 +843,7 @@ def _cached_skill_count(profile_dir: Path) -> int:
             _SKILL_COUNT_NEXT_CHECK[key] = now + _SKILL_COUNT_RECHECK_SECONDS
     if due:
         threading.Thread(target=_count_skills, args=(profile_dir,),
-                         name="hermes-skill-count", daemon=True).start()
+                         name="moor-skill-count", daemon=True).start()
     cached = _SKILL_COUNT_CACHE.get(key)
     return cached[2] if cached is not None else 0
 
@@ -857,15 +857,15 @@ def _cached_skill_count(profile_dir: Path) -> int:
 def read_profile_meta(profile_dir: Path) -> dict:
     """Read ``profile.yaml`` -> ``{description, description_auto, display_name,
     previous_names}`` (empty defaults when missing/unreadable). Never raises — a
-    corrupt file on one profile must not break ``hermes profile list``."""
+    corrupt file on one profile must not break ``moor profile list``."""
     def _read() -> dict:
         data = _load_yaml_dict(profile_dir / "profile.yaml") or {}
         ui_meta = data.get("ui_meta")
         bot_title = ""
         if isinstance(ui_meta, dict):
-            hermes_bots = ui_meta.get("hermes-bots")
-            if isinstance(hermes_bots, dict):
-                bot_title = str(hermes_bots.get("title") or "").strip()
+            moor_bots = ui_meta.get("moor-bots")
+            if isinstance(moor_bots, dict):
+                bot_title = str(moor_bots.get("title") or "").strip()
         return {
             "description": str(data.get("description") or "").strip(),
             "description_auto": bool(data.get("description_auto", False)),
@@ -1027,7 +1027,7 @@ def profile_is_standalone(home: Path) -> bool:
     (``gateway.standalone: true``)? Memoised by file signature. The DEFAULT profile is
     never standalone — it IS the host — and warns once per process if the key is set there."""
     global _STANDALONE_WARNED
-    from hermes_yaml import YAMLError
+    from moor_yaml import YAMLError
     from utils import file_signature
 
     home = Path(home)
@@ -1049,7 +1049,7 @@ def profile_is_standalone(home: Path) -> bool:
         return cached[1]
     value = None
     if signature is not None:
-        from hermes_cli.config import read_user_config_raw
+        from moor_cli.config import read_user_config_raw
         try:
             cfg = read_user_config_raw(cfg_path) or {}
         except (YAMLError, OSError, UnicodeError) as exc:
@@ -1063,7 +1063,7 @@ def profile_is_standalone(home: Path) -> bool:
         if isinstance(cfg.get("gateway"), dict):
             value = cfg["gateway"].get("standalone")
     result = _standalone_truthy(value)
-    if home == _get_default_hermes_home():
+    if home == _get_default_moor_home():
         if result and not _STANDALONE_WARNED:
             logger.warning(_STANDALONE_DEFAULT_WARNING)
             _STANDALONE_WARNED = True
@@ -1095,7 +1095,7 @@ _parked_default_warned: set[Path] = set()
 
 def profiles_to_serve(multiplex: bool, *, include_standalone: bool = False,
                       include_parked: bool = False) -> List[Tuple[str, Path]]:
-    """``(profile_name, hermes_home)`` pairs a gateway should serve — the single chokepoint
+    """``(profile_name, moor_home)`` pairs a gateway should serve — the single chokepoint
     for "which profiles does the inbound gateway handle".
 
     ``multiplex=False``: exactly one entry for the *active* profile (byte-for-byte the
@@ -1104,11 +1104,11 @@ def profiles_to_serve(multiplex: bool, *, include_standalone: bool = False,
     and parked profiles skipped). Pure directory read: never creates a profile dir (#94590).
 
     Named profiles that authored ``gateway.standalone: true`` are skipped because they opted
-    out of the host multiplexer; a ``gateway.parked`` marker (``hermes -p X gateway stop``) skips
+    out of the host multiplexer; a ``gateway.parked`` marker (``moor -p X gateway stop``) skips
     a profile the host would otherwise serve. Callers enumerating INSTALLED profiles pass
     ``include_standalone=True, include_parked=True``; serving/ticking callers pass neither."""
     active = get_active_profile_name() or "default"
-    default = _get_default_hermes_home()
+    default = _get_default_moor_home()
     if profile_is_parked(default) and default not in _parked_default_warned:
         logger.warning("Ignoring gateway.parked for the default profile; stop the host gateway instead")
         _parked_default_warned.add(default)
@@ -1273,7 +1273,7 @@ def _bootstrap_profile_dir(profile_dir: Path, source_dir: Optional[Path],
         _copytree_keep_junctions(source_skills, profile_dir / "skills", _non_exportable_entries, dirs_exist_ok=True)
     for relpath in _CLONE_SUBDIR_FILES:
         _clone_file(source_dir, profile_dir, relpath)
-    from hermes_cli.profile_memory_config import active_memory_provider, clone_memory_provider_config
+    from moor_cli.profile_memory_config import active_memory_provider, clone_memory_provider_config
     clone_memory_provider_config(source_dir, profile_dir,
                                  active_memory_provider(_load_yaml_dict(source_dir / "config.yaml")))
     if sync_imports:
@@ -1421,7 +1421,7 @@ def _purge_identity(canon: str) -> bool:
 
     False means the filesystem delete happened but the identity settlement did not — the caller
     reports that as a pending settlement rather than a clean success."""
-    from hermes_cli.profile_identity import purge_profile_identity
+    from moor_cli.profile_identity import purge_profile_identity
     return purge_profile_identity(canon)
 
 
@@ -1623,14 +1623,14 @@ def _stop_profile_backends(canon: str, profile_dir: Path) -> None:
 
 def _stop_bot_desktop(profile_dir: Path) -> None:
     """Stop the profile's Bot Desktop (Xvnc + Xfce launcher) before its directory is removed or renamed;
-    gateway shutdown does not reach it (its own session, its own pid file). Scoped through the hermes-home
+    gateway shutdown does not reach it (its own session, its own pid file). Scoped through the moor-home
     override so the runtime reads THIS profile's bot-desktop/ state, whichever profile invoked the op.
     A failure here is logged, never fatal: the profile op is what the user asked for."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     from tools.bot_desktop import runtime
     if not runtime.is_supported_host():
         return
-    token = set_hermes_home_override(profile_dir)
+    token = set_moor_home_override(profile_dir)
     try:
         if runtime.stop():
             print("✓ Bot Desktop stopped")
@@ -1642,7 +1642,7 @@ def _stop_bot_desktop(profile_dir: Path) -> None:
     except Exception as e:
         logger.warning("Could not stop the Bot Desktop of %s: %s", profile_dir, e)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _rmtree_make_writable(func, path, exc):
@@ -1708,10 +1708,10 @@ def _print_delete_summary(canon: str, profile_dir: Path, gw_running: bool, wrapp
 
 class ProfileIdentitySettlementPending(RuntimeError):
     """The profile's directory was deleted, but its durable session/routing identity was not
-    settled (``hermes_cli.profile_identity.purge_profile_identity`` returned False).
+    settled (``moor_cli.profile_identity.purge_profile_identity`` returned False).
 
     Subclasses ``RuntimeError`` so delete-failure handling that treats the error as fatal (the
-    CLI's ``hermes profile delete``) keeps working unchanged; surfaces that can report a partial
+    CLI's ``moor profile delete``) keeps working unchanged; surfaces that can report a partial
     success (the dashboard's ``DELETE /api/profiles/{name}``) catch this type — it carries the
     profile, its now-removed path, and the retry command — instead of matching on the message.
     """
@@ -1719,7 +1719,7 @@ class ProfileIdentitySettlementPending(RuntimeError):
     def __init__(self, profile: str, path: Path):
         self.profile = profile
         self.path = path
-        self.retry_command = f"hermes profile purge-identity {profile}"
+        self.retry_command = f"moor profile purge-identity {profile}"
         super().__init__(
             f"Profile '{profile}' was deleted, but its session/routing identity settlement is "
             f"still pending — run: {self.retry_command}")
@@ -1794,7 +1794,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
     # QueueListener. On Windows those ConcurrentRotatingFileHandler instances retain their
     # ``.__*.lock`` files until explicitly closed, so rmtree otherwise fails with WinError 32.
     with contextlib.suppress(Exception):
-        from hermes_logging import release_profile_log_handlers
+        from moor_logging import release_profile_log_handlers
         _released_logs = release_profile_log_handlers(profile_dir)
         if _released_logs:
             print(f"✓ Released {_released_logs} profile log handler(s) held by this process")
@@ -1876,15 +1876,15 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> None:
     """Disable and remove systemd/launchd service for a profile."""
     import platform as _platform
 
-    # The service name follows get_hermes_home(): bind the override (the seam a multiplexed
+    # The service name follows get_moor_home(): bind the override (the seam a multiplexed
     # dashboard/tui-gateway process reads) and mirror the env for identity-file readers, so a
     # DELETE from a multi-profile dashboard names THIS profile's unit, never the host's bare one.
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    old_home = os.environ.get("HERMES_HOME")
-    home_token = set_hermes_home_override(str(profile_dir))
+    from moor_constants import reset_moor_home_override, set_moor_home_override
+    old_home = os.environ.get("MOOR_HOME")
+    home_token = set_moor_home_override(str(profile_dir))
     try:
-        os.environ["HERMES_HOME"] = str(profile_dir)
-        from hermes_cli.gateway import get_service_name, get_launchd_plist_path, user_systemd_unit_dir
+        os.environ["MOOR_HOME"] = str(profile_dir)
+        from moor_cli.gateway import get_service_name, get_launchd_plist_path, user_systemd_unit_dir
 
         def _run(*cmd: str) -> None:
             subprocess.run(list(cmd), capture_output=True, check=False, timeout=10)
@@ -1908,8 +1908,8 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> None:
     except Exception as e:
         print(f"⚠ Service cleanup: {e}")
     finally:
-        reset_hermes_home_override(home_token)
-        os.environ.pop("HERMES_HOME", None)
+        reset_moor_home_override(home_token)
+        os.environ.pop("MOOR_HOME", None)
         if old_home is not None:
             os.environ["MOOR_HOME"] = old_home
 
@@ -1953,7 +1953,7 @@ def _stop_gateway_process(profile_dir: Path) -> None:
 # Active profile (sticky default)
 
 def get_active_profile(root: Path | None = None) -> str:
-    """Read the sticky active profile name (of *root*, default: this process's Hermes root)."""
+    """Read the sticky active profile name (of *root*, default: this process's Moor root)."""
     path = root / "active_profile" if root is not None else _get_active_profile_path()
     try:
         name = path.read_text(encoding="utf-8-sig").strip()
@@ -2005,17 +2005,17 @@ def get_active_profile_name() -> str:
 
 
 def current_profile_name(default: str | None = None) -> str | None:
-    """Identity of the profile the current task runs FOR: the ``HERMES_HOME`` override when one is
+    """Identity of the profile the current task runs FOR: the ``MOOR_HOME`` override when one is
     bound (a multiplexed cron tick, a routed gateway turn), else a launcher-pinned
-    ``HERMES_PROFILE_NAME``/``HERMES_PROFILE`` (the kanban dispatcher pins it on its workers), else
-    the name derived from the process's ``HERMES_HOME``; *default* when nothing names a profile.
+    ``MOOR_PROFILE_NAME``/``MOOR_PROFILE`` (the kanban dispatcher pins it on its workers), else
+    the name derived from the process's ``MOOR_HOME``; *default* when nothing names a profile.
 
     The env pin is read only outside an override: ``os.environ`` is the LAUNCH profile's, so under
     an override it would re-label a served profile's board writes with the host's identity.
     """
-    from hermes_constants import get_hermes_home_override
-    if get_hermes_home_override() is None:
-        for env_name in ("HERMES_PROFILE_NAME", "HERMES_PROFILE"):
+    from moor_constants import get_moor_home_override
+    if get_moor_home_override() is None:
+        for env_name in ("MOOR_PROFILE_NAME", "MOOR_PROFILE"):
             value = (os.environ.get(env_name) or "").strip()
             if value:
                 return value
@@ -2402,8 +2402,8 @@ def rename_profile(old_name: str, new_name: str) -> Path:
 # Profile env resolution (called from _apply_profile_override)
 
 def profile_root_for_env_home(env_home: str, default_root: Path) -> Path:
-    """Hermes root named by an exported ``HERMES_HOME``: the grandparent of a profile-shaped value
-    (``<root>/profiles/<name>``, mirrors ``get_default_hermes_root()``), the value itself otherwise,
+    """Moor root named by an exported ``MOOR_HOME``: the grandparent of a profile-shaped value
+    (``<root>/profiles/<name>``, mirrors ``get_default_moor_root()``), the value itself otherwise,
     *default_root* when unset. Pure: callers pass any process's env, not only ``os.environ``."""
     env_home = env_home.strip()
     if not env_home:
@@ -2423,7 +2423,7 @@ def resolve_profile_env(profile_name: str) -> str:
     (junction-transparent); only the spelling is preserved.
     """
     canon = _canon_valid(profile_name)
-    root = profile_root_for_env_home(os.environ.get("HERMES_HOME", ""), _get_default_hermes_home())
+    root = profile_root_for_env_home(os.environ.get("MOOR_HOME", ""), _get_default_moor_home())
     if canon == "default":
         return str(root)
     profile_dir = root / "profiles" / canon

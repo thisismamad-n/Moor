@@ -112,7 +112,7 @@ def _mcp_rpc(name: str, required=_NAME):
 
 
 def _mcp_server_rows():
-    config_servers = _tools_mod("hermes_cli.mcp_config")._get_mcp_servers()
+    config_servers = _tools_mod("moor_cli.mcp_config")._get_mcp_servers()
     return _tools_mod("tui_gateway.mcp_rpc_helpers").server_configs_with_sources(config_servers)
 
 
@@ -300,11 +300,11 @@ def _refresh_live_sessions(home=None, *, preserve_prefix: bool = False, note: st
     ``home``: only sessions of that profile home (a session with no ``profile_home`` belongs to the
     launch home). ``preserve_prefix``: append-only rebuild inside a live conversation. ``note``: queued
     for each session's next turn on the one-shot turn-note channel (``agent/turn_context.py``)."""
-    from hermes_constants import hermes_home_key
-    want = hermes_home_key(home) if home is not None else None
+    from moor_constants import moor_home_key
+    want = moor_home_key(home) if home is not None else None
     with _sessions_lock:
         live = [(sid, sess) for sid, sess in _sessions.items() if sess.get("agent") is not None and (
-            want is None or hermes_home_key(sess.get("profile_home") or get_process_hermes_home()) == want)]
+            want is None or moor_home_key(sess.get("profile_home") or get_process_moor_home()) == want)]
     refresh = _tools_mod("tools.mcp_tool_agent").refresh_agent_mcp_tools
     for sid, sess in live:
         agent = sess["agent"]
@@ -323,7 +323,7 @@ def _refresh_live_sessions(home=None, *, preserve_prefix: bool = False, note: st
 def refresh_plugin_sessions(home, note: str) -> None:
     """A plugin just went live in ``home``: append its MCP tools to that profile's open chats (deferred
     behind tool_search, so the model-facing tool array is unchanged) and queue ``note`` for their next
-    turn. Called by ``hermes_cli.plugins_activation_live``."""
+    turn. Called by ``moor_cli.plugins_activation_live``."""
     _refresh_live_sessions(home, preserve_prefix=True, note=note)
 
 
@@ -526,14 +526,14 @@ def _(rid, params: dict) -> dict:
     if hint:
         return _ok(rid, {"blocked": True, "hint": hint, "code": -1, "output": ""})
     # Same-interpreter re-exec: ambient PYTHONPATH must survive the env factory's
-    # Hermes-owned strip (no-boot-through-venv).
-    _compat = _tools_mod("hermes_cli._subprocess_compat")
+    # moor-owned strip (no-boot-through-venv).
+    _compat = _tools_mod("moor_cli._subprocess_compat")
     return _captured_exec(
         rid, [sys.executable, "-m", "moor_cli.main", *argv], min(int(params.get("timeout", 240)), 600),
         on_result=lambda r: _ok(rid, {
             "blocked": False, "code": r.returncode, "output": (_joined_output(r) or "(no output)")[:48_000]}),
         timeout_err=(5016, "cli.exec: timeout"), fail_code=5017,
-        env=_compat.restore_ambient_pythonpath(hermes_subprocess_env(inherit_credentials=True)))
+        env=_compat.restore_ambient_pythonpath(moor_subprocess_env(inherit_credentials=True)))
 
 
 @_rpc("command.resolve", 5012)
@@ -572,13 +572,13 @@ def _plugin_command_handler(name: str):
 
 
 def _run_plugin_command(handler, arg: str, session=None) -> str:
-    """Run a plugin slash-command handler under the session's ``HERMES_SESSION_*`` binding.
+    """Run a plugin slash-command handler under the session's ``MOOR_SESSION_*`` binding.
 
     Plugin handlers read ``get_session_env()`` for the chat/session they serve; these RPCs run on
     the socket/worker thread where nothing upstream binds it (only the turn path does), so a handler
     saw ``""`` or the launch process's inherited values. Same class as the messaging gateway's
     #108698; ``_set_session_context`` is the turn path's own seam."""
-    plugins = _tools_mod("hermes_cli.plugins")
+    plugins = _tools_mod("moor_cli.plugins")
     tokens = _set_session_context(session.get("session_key", "") or "", cwd=str(session.get("cwd") or "")) if session else []
     try:
         return str(plugins.resolve_plugin_command_result(handler(arg)) or "")
@@ -588,7 +588,7 @@ def _run_plugin_command(handler, arg: str, session=None) -> str:
 
 @contextlib.contextmanager
 def _session_home_scope(session, cwd: str | None = None):
-    """Bind HERMES_HOME and the logical cwd to the session for the block.
+    """Bind MOOR_HOME and the logical cwd to the session for the block.
 
     Skill/bundle/quick-command resolution is home-keyed (``skills.external_dirs``, ``skill-bundles/``,
     ``quick_commands`` all live in the profile's config/home); nothing upstream of these RPC handlers
@@ -597,11 +597,11 @@ def _session_home_scope(session, cwd: str | None = None):
     thread with no session context, where the terminal scope resolves a placeholder ``terminal.cwd`` to
     ``$HOME`` and no project skill ever registers or dispatches (#114359). ``cwd`` overrides the session
     record (a session-less catalog request binds the workspace a new session would be seeded with)."""
-    hc = _tools_mod("hermes_constants")
+    hc = _tools_mod("moor_constants")
     rc = _tools_mod("agent.runtime_cwd")
     profile_home = session.get("profile_home") if session else None
     cwd = cwd or (str(session.get("cwd") or "") if session else "")
-    token = hc.set_hermes_home_override(profile_home) if profile_home else None
+    token = hc.set_moor_home_override(profile_home) if profile_home else None
     cwd_token = rc.set_session_cwd(cwd) if cwd else None
     try:
         yield
@@ -1101,9 +1101,9 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     cfg = _load_cfg()
     get_secret = _tools_mod("agent.secret_scope").get_secret
-    api_key = get_secret("HERMES_API_KEY", "") or cfg.get("api_key", "")
+    api_key = get_secret("MOOR_API_KEY", "") or cfg.get("api_key", "")
     masked = f"****{api_key[-4:]}" if len(api_key) > 4 else "(not set)"
-    base_url = get_secret("HERMES_BASE_URL", "") or cfg.get("base_url", "")
+    base_url = get_secret("MOOR_BASE_URL", "") or cfg.get("base_url", "")
     sections = [
         {"title": "Model", "rows": [
             ["Model", _resolve_model()], ["Base URL", base_url or "(default)"], ["API Key", masked]]},
@@ -1338,7 +1338,7 @@ def _(rid, params: dict) -> dict:
     runtime state; never connects, probes, or starts auth. Under a multiplexer the runtime view is the
     scoped profile's; otherwise it is shown only when ``profile`` is the launch profile."""
     import time
-    hc = _tools_mod("hermes_constants")
+    hc = _tools_mod("moor_constants")
     configured, plugins = _mcp_server_rows()
     include_runtime = (_tools_mod("agent.secret_scope").is_multiplex_active()
                        or hc.moor_home_key() == hc.moor_home_key(hc.get_process_moor_home()))
@@ -1367,7 +1367,7 @@ def _(rid, params: dict) -> dict:
     # before the CLI preset registry — that registry raises, and the wrapper
     # turns the raise into 5024 before the 4063 check below can run.
     if preset and not (server_config.get("url") or server_config.get("command")):
-        catalog = _tools_mod("hermes_cli.mcp_catalog")
+        catalog = _tools_mod("moor_cli.mcp_catalog")
         entry = catalog.get_entry(preset)
         if entry is not None:
             for key, value in catalog._build_server_config(entry, install_dir=None).items():
@@ -1394,7 +1394,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Secret → profile .env under ``env_var`` (default ``MCP_<NAME>_API_KEY``); config.yaml gets only
     a ``${ENV}`` reference (Bearer header for http, ``env`` entry for stdio)."""
-    hc, mc = _tools_mod("hermes_cli.config"), _tools_mod("hermes_cli.mcp_config")
+    hc, mc = _tools_mod("moor_cli.config"), _tools_mod("moor_cli.mcp_config")
     name, servers, err = _mcp_config_server_or_error(rid, params)
     if err:
         return err
@@ -1458,7 +1458,7 @@ def _(rid, params: dict) -> dict:
     name = _str_arg(params, "name")
     if err := _mcp_plugin_write_error(rid, name, _mcp_server_rows()[1]):
         return err
-    if not _tools_mod("hermes_cli.mcp_config")._remove_mcp_server(name):
+    if not _tools_mod("moor_cli.mcp_config")._remove_mcp_server(name):
         return _err(rid, 4064, f"server '{name}' not found")
     return _ok(rid, {"ok": True, "removed": True})
 
@@ -1517,12 +1517,12 @@ def _(rid, params: dict) -> dict:
 def _plugin_server_rows(plugin_dir: Path | None, key: str, *, portable: bool) -> list[dict]:
     if not portable or plugin_dir is None:
         return []
-    package = _tools_mod("hermes_cli.agent_plugins").load_agent_plugin(plugin_dir, plugin_dir)
-    namespace = package.manifest.get("extensions", {}).get("com.nousresearch.hermes", {})
+    package = _tools_mod("moor_cli.agent_plugins").load_agent_plugin(plugin_dir, plugin_dir)
+    namespace = package.manifest.get("extensions", {}).get("com.moorinc.moor", {})
     declared = namespace.get("servers", {})
     if not isinstance(declared, dict):
         return []
-    server_name_for = _tools_mod("hermes_cli.plugins_manifest").portable_mcp_server_name
+    server_name_for = _tools_mod("moor_cli.plugins_manifest").portable_mcp_server_name
     liveness = _tools_mod("tools.mcp_liveness")
     core = _tools_mod("tools.mcp_tool_common")._core
     resolve_key = _tools_mod("tools.mcp_tool_scope")._resolve_server_key
@@ -1535,7 +1535,7 @@ def _plugin_server_rows(plugin_dir: Path | None, key: str, *, portable: bool) ->
         if connected:
             rows.append({"name": name, "state": "connected", "sentence": ""})
             continue
-        decl = _tools_mod("hermes_platform.declaration").lookup(internal_name)
+        decl = _tools_mod("moor_platform.declaration").lookup(internal_name)
         status = liveness.status(internal_name)
         if decl is None or status is None:
             rows.append({"name": name, "state": "unknown", "sentence": ""})
@@ -1572,7 +1572,7 @@ def _plugin_rows() -> list[dict]:
             "install_dir": str(_dir_path) if _dir_path else "",
             "has_desktop_half": bool(_dir_path and (_dir_path / "desktop" / "plugin.js").is_file()),
             # Manifest ``config_schema`` + current values: the Plugins hub renders these as a form.
-            "settings_schema": _tools_mod("hermes_cli.plugins_settings").plugin_settings_fields(key, _dir_path),
+            "settings_schema": _tools_mod("moor_cli.plugins_settings").plugin_settings_fields(key, _dir_path),
             "servers": _plugin_server_rows(_dir_path, key, portable=portable),
             **cat.catalog_row_fields(_dir, pins, versions),
             **({"pinned_sha": sha} if (sha := pc.pinned_revision(name, ref_pins)) else {})})
@@ -1586,7 +1586,7 @@ _plugin_activation_subscribed: set = set()
 
 
 def _ensure_plugin_activation_listener() -> None:
-    from hermes_cli.plugins import get_plugin_manager
+    from moor_cli.plugins import get_plugin_manager
     manager = get_plugin_manager()
     if manager.scope_key in _plugin_activation_subscribed:
         return
@@ -1623,7 +1623,7 @@ def _plugins_toggle(rid, params):
     if not ident:
         return _err(rid, 4019, "plugins.toggle requires a 'key' or 'name'")
     _ensure_plugin_activation_listener()
-    toggle = _tools_mod("hermes_cli.plugins_cmd").dashboard_set_agent_plugin_enabled
+    toggle = _tools_mod("moor_cli.plugins_cmd").dashboard_set_agent_plugin_enabled
     result = toggle(ident, enabled=bool(params.get("enable")))
     if not result.get("ok"):
         return _err(rid, 5026, result.get("error") or "toggle failed")
@@ -1645,7 +1645,7 @@ def _plugins_install(rid, params):
     if not ident and not catalog_name:
         return _err(rid, 4019, "plugins.install requires 'identifier', 'repo', or 'catalog_name'")
     _ensure_plugin_activation_listener()
-    result = _tools_mod("hermes_cli.plugins_cmd").dashboard_install_plugin(
+    result = _tools_mod("moor_cli.plugins_cmd").dashboard_install_plugin(
         ident, force=bool(params.get("force")), enable=params.get("enable", True), catalog_name=catalog_name or None,
         ref=str(params.get("ref") or "").strip() or None)
     if not result.get("ok"):
@@ -1678,18 +1678,18 @@ def _plugins_update(rid, params):
                "warnings": list(result.warnings)}
     if result.changed:
         _ensure_plugin_activation_listener()
-        activate = _tools_mod("hermes_cli.plugins_activation").activate_plugin_now
+        activate = _tools_mod("moor_cli.plugins_activation").activate_plugin_now
         payload = _with_activation({**payload, **activate(result.installed_name)}, result.installed_name)
     return _ok(rid, payload)
 
 
 def _plugins_remove(rid, params):
-    """Uninstall a user install (``<HERMES_HOME>/plugins/<name>``) — the same core as ``hermes plugins
+    """Uninstall a user install (``<MOOR_HOME>/plugins/<name>``) — the same core as ``moor plugins
     remove`` and the dashboard; bundled plugins and paths outside the plugins dir are refused there."""
     name = (params.get("name") or "").strip()
     if not name:
         return _err(rid, 4019, "plugins.remove requires a 'name'")
-    result = _tools_mod("hermes_cli.plugins_cmd").dashboard_remove_user_plugin(name)
+    result = _tools_mod("moor_cli.plugins_cmd").dashboard_remove_user_plugin(name)
     return _ok(rid, result) if result.get("ok") else _err(rid, 5026, result.get("error") or "remove failed")
 
 
@@ -1700,13 +1700,13 @@ def _plugins_settings(rid, params):
     values = params.get("values")
     if not key or not isinstance(values, dict):
         return _err(rid, 4019, "plugins.settings requires a 'key' and a 'values' mapping")
-    pc = _tools_mod("hermes_cli.plugins_cmd")
+    pc = _tools_mod("moor_cli.plugins_cmd")
     found = next((p for p in pc._discover_all_plugins() if key in (p[5], p[0])), None)
     if found is None:
         return _err(rid, 4020, f"plugin '{key}' not found")
     _name, _version, _desc, _source, plugin_dir, canonical = found
     try:
-        written = _tools_mod("hermes_cli.plugins_settings").save_plugin_settings(
+        written = _tools_mod("moor_cli.plugins_settings").save_plugin_settings(
             canonical, Path(str(plugin_dir)) if plugin_dir else None, values)
     except (ValueError, PermissionError) as e:
         return _err(rid, 4021, str(e))
@@ -1716,7 +1716,7 @@ def _plugins_settings(rid, params):
 
 def _plugins_onboarding(rid, params):
     """Catalog plugins curated for the onboarding card that this OS runs, each with its app state."""
-    return _ok(rid, {"onboarding": _tools_mod("hermes_cli.plugin_catalog_presence").onboarding_entries()})
+    return _ok(rid, {"onboarding": _tools_mod("moor_cli.plugin_catalog_presence").onboarding_entries()})
 
 
 _PLUGINS_ACTIONS = {"list": _plugins_list, "onboarding": _plugins_onboarding, "toggle": _plugins_toggle, "install": _plugins_install,

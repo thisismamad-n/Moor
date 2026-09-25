@@ -1,6 +1,6 @@
 import logging
 
-from hermes_cli import nous_auth_keepalive as keepalive
+from moor_cli import moor_auth_keepalive as keepalive
 
 # Both lifetimes have been observed on real installs.
 OBSERVED_LIFETIMES_SECONDS = (3594, 899)
@@ -129,16 +129,16 @@ def test_keepalive_falls_back_to_singleton_state(monkeypatch):
 def test_keepalive_binds_launch_scope_for_multiplexed_singleton_refresh(tmp_path, monkeypatch, caplog):
     """The daemon tick must not lose the launch profile's routing secrets."""
     from agent.secret_scope import is_multiplex_active, set_multiplex_active
-    from hermes_cli.auth_nous import _nous_inference_env_override, _nous_portal_env_override
+    from moor_cli.auth_moor import _moor_inference_env_override, _moor_portal_env_override
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".moor"
     launch_home.mkdir()
     (launch_home / ".env").write_text(
-        "NOUS_INFERENCE_BASE_URL=https://inference.example/v1\n"
-        "HERMES_PORTAL_BASE_URL=https://portal.example\n",
+        "MOOR_INFERENCE_BASE_URL=https://inference.example/v1\n"
+        "MOOR_PORTAL_BASE_URL=https://portal.example\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
     monkeypatch.setattr("agent.credential_pool.load_pool", lambda provider: None)
     monkeypatch.setattr(
         keepalive, "get_provider_auth_state", lambda provider: {"access_token": "stored-token"}
@@ -146,15 +146,15 @@ def test_keepalive_binds_launch_scope_for_multiplexed_singleton_refresh(tmp_path
     seen = []
 
     def _resolve(**kwargs):
-        seen.append((_nous_inference_env_override(), _nous_portal_env_override(), kwargs))
-        return {"provider": "nous"}
+        seen.append((_moor_inference_env_override(), _moor_portal_env_override(), kwargs))
+        return {"provider": "moor"}
 
-    monkeypatch.setattr(keepalive, "resolve_nous_runtime_credentials", _resolve)
+    monkeypatch.setattr(keepalive, "resolve_moor_runtime_credentials", _resolve)
     previous_multiplex = is_multiplex_active()
     set_multiplex_active(True)
     try:
         with caplog.at_level(logging.WARNING):
-            assert keepalive.refresh_nous_auth_keepalive_once(timeout_seconds=15.0) is True
+            assert keepalive.refresh_moor_auth_keepalive_once(timeout_seconds=15.0) is True
     finally:
         set_multiplex_active(previous_multiplex)
 
@@ -168,12 +168,12 @@ def test_keepalive_binds_launch_scope_for_multiplexed_pool_refresh(tmp_path, mon
     """Pool refreshes run under the same launch scope as singleton refreshes."""
     from agent.secret_scope import current_secret_scope, is_multiplex_active, set_multiplex_active
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".moor"
     launch_home.mkdir()
     (launch_home / ".env").write_text(
-        "NOUS_INFERENCE_BASE_URL=https://inference.example/v1\n", encoding="utf-8"
+        "MOOR_INFERENCE_BASE_URL=https://inference.example/v1\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
     seen = []
 
     class _Entry:
@@ -188,7 +188,7 @@ def test_keepalive_binds_launch_scope_for_multiplexed_pool_refresh(tmp_path, mon
             return True
 
         def select(self):
-            seen.append((current_secret_scope() or {}).get("NOUS_INFERENCE_BASE_URL"))
+            seen.append((current_secret_scope() or {}).get("MOOR_INFERENCE_BASE_URL"))
             return _Entry()
 
         def try_refresh_current(self):
@@ -198,7 +198,7 @@ def test_keepalive_binds_launch_scope_for_multiplexed_pool_refresh(tmp_path, mon
     previous_multiplex = is_multiplex_active()
     set_multiplex_active(True)
     try:
-        assert keepalive.refresh_nous_auth_keepalive_once() is True
+        assert keepalive.refresh_moor_auth_keepalive_once() is True
     finally:
         set_multiplex_active(previous_multiplex)
 

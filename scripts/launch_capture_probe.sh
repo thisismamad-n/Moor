@@ -41,7 +41,7 @@ rm -f "$WORK"/spec.json*
 run_py yes -c '
 import subprocess, tempfile
 tmp = tempfile.gettempdir()
-r = subprocess.run(["npm", "exec", "--", "electron", "."], cwd=tmp, env={"HERMES_DESKTOP_CWD": tmp, "PATH": "/usr/bin"})
+r = subprocess.run(["npm", "exec", "--", "electron", "."], cwd=tmp, env={"MOOR_DESKTOP_CWD": tmp, "PATH": "/usr/bin"})
 assert r.returncode == 0, r
 '
 [ -e "$WORK/spec.json" ] || fail "treatment 1: no spec written"
@@ -52,7 +52,7 @@ tmp = tempfile.gettempdir()
 spec = json.load(open(sys.argv[1]))
 assert spec["argv"] == ["npm", "exec", "--", "electron", "."], spec["argv"]
 assert spec["cwd"] == tmp, spec["cwd"]
-assert spec["env"]["HERMES_DESKTOP_CWD"] == tmp, "env= kwarg not captured"
+assert spec["env"]["MOOR_DESKTOP_CWD"] == tmp, "env= kwarg not captured"
 assert spec["matchedShape"] == "source"
 print("spec contents OK")
 EOF
@@ -62,7 +62,7 @@ echo "--- treatment 2: packaged shape captured, not spawned"
 rm -f "$WORK"/spec.json*
 run_py yes -c '
 import subprocess, tempfile
-exe = "/x/apps/desktop/release/linux-unpacked/Hermes"
+exe = "/x/apps/desktop/release/linux-unpacked/Moor"
 r = subprocess.run([exe, "--no-sandbox"], cwd=tempfile.gettempdir(), env={"PATH": "/usr/bin"})
 assert r.returncode == 0, r   # a real spawn of this path would ENOENT
 '

@@ -13,11 +13,11 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state_wal
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_dispatch as kbd
-from hermes_cli import kanban_db_workspace as kbw
+import moor_state_wal
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_db_workspace as kbw
 
 
 @pytest.fixture
@@ -390,11 +390,11 @@ def test_terminal_provider_exit_blocks_after_one_attempt_in_either_lane(kanban_h
     gone) parks the card ``blocked`` on the FIRST death — well below ``failure_limit`` and the
     per-task ``max_retries`` — with the provider error as the reason, sticky against
     ``recompute_ready``. Same booking for the implementation and the review lane (#114587)."""
-    import hermes_cli.kanban_db as _kb
-    from hermes_cli import kanban_db_dispatch as _kbd
+    import moor_cli.kanban_db as _kb
+    from moor_cli import kanban_db_dispatch as _kbd
 
     monkeypatch.setattr(_kb, "_pid_alive", lambda _pid: False)
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("MOOR_KANBAN_CRASH_GRACE_SECONDS", "0")
 
     with kbc.connect() as conn:
         host = _kb._claimer_id().split(":", 1)[0]
@@ -492,7 +492,7 @@ def test_respawn_guard_blocker_auth_curated_not_open_stem(
     ordinary English words like "author"/"authored"/"authoring"/"authoritative"
     in worker progress prose, parking a healthy ``ready`` card forever (#117009).
     The auth family must be a curated set of real auth-failure tokens."""
-    monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
+    monkeypatch.setenv("MOOR_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
 
     with kbc.connect() as conn:
         tid = kb.create_task(conn, title="prose", assignee="a")
@@ -565,10 +565,10 @@ def test_infrastructure_spawn_refusal_never_charges_the_card(
     monkeypatch.setattr(process_registry, "_is_supervised_gateway_process", lambda: True)
     monkeypatch.setenv("INVOCATION_ID", "managed-gateway")
     monkeypatch.setattr(process_registry, "_systemd_run_user_scope_available", lambda: False)
-    monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
+    monkeypatch.setenv("MOOR_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
 
     def spawn_via_real_boundary(task, workspace, board=None):
-        kbd._restart_safe_worker_argv(task, ["hermes", "chat"])  # raises: real probe verdict, real _degrade()
+        kbd._restart_safe_worker_argv(task, ["moor", "chat"])  # raises: real probe verdict, real _degrade()
         raise AssertionError("unreachable")
 
     with kbc.connect() as conn:
@@ -587,11 +587,11 @@ def test_infrastructure_spawn_refusal_never_charges_the_card(
         assert [r["outcome"] for r in runs] == ["spawn_failed"] * 3
         assert all(json.loads(r["metadata"])["infrastructure"] is True for r in runs)
 
-        monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
+        monkeypatch.setenv("MOOR_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
         assert kbd.check_respawn_guard(conn, tid) == "infrastructure_cooldown"
 
         # Control: an ordinary spawn failure on the same card still spends budget.
-        monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
+        monkeypatch.setenv("MOOR_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
 
         def spawn_broken(task, workspace, board=None):
             raise RuntimeError("profile launcher exploded")
@@ -1580,7 +1580,7 @@ def test_resolve_moor_argv_module_actually_runs():
     Run it as a real subprocess to catch that regression.
     """
     import subprocess
-    from hermes_cli import kanban_db_dispatch as kbd
+    from moor_cli import kanban_db_dispatch as kbd
     import shutil
     import unittest.mock as mock
 

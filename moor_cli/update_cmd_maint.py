@@ -1,4 +1,4 @@
-"""Post-update maintenance for ``hermes update``: pre-update backup snapshot, state-db verify/restore, curator/FTS notices, FHS path guard, completion summary.
+"""Post-update maintenance for ``moor update``: pre-update backup snapshot, state-db verify/restore, curator/FTS notices, FHS path guard, completion summary.
 
 Split out of ``update_cmd.py``, which re-imports every name so ``moor_cli.update_cmd.<name>``
 still resolves/monkeypatches. Origin helpers are imported lazily per function (no cycle;
@@ -23,7 +23,7 @@ logger = logging.getLogger("moor_cli.update_cmd")
 
 def _prepare_updated_checkout(project_root: Path, *, desktop: bool) -> None:
     """Historical updater hook: never complete inside the pre-swap interpreter."""
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
     stop_for_relaunch(incomplete=True)
 
 
@@ -62,15 +62,15 @@ def _load_updates_cfg() -> dict:
     return updates if isinstance(updates, dict) else {}
 
 
-def _purge_stale_hermes_modules() -> None:
+def _purge_stale_moor_modules() -> None:
     """Historical updater hook; module-graph surgery cannot complete an update."""
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
     stop_for_relaunch(incomplete=True)
 
 
 def _reload_updated_runtime_modules() -> None:
     # Historical updater hook: dependency activation belongs to the next process.
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
 
     stop_for_relaunch()
 
@@ -255,7 +255,7 @@ def _format_time_ago(iso_ts: str) -> str:
 
 def _reload_process_scan_modules() -> None:
     """Historical updater hook; scans now run only in fresh completion Python."""
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
     stop_for_relaunch(incomplete=True)
 
 
@@ -263,7 +263,7 @@ def _finish_dashboard_update_cleanup(
     node_failures: list[str], already_restarted_units: "set[str] | None" = None
 ) -> None:
     """Historical updater hook; do not continue a pre-PM update after the swap."""
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
 
     stop_for_relaunch()
 
@@ -276,13 +276,13 @@ def _refresh_dashboard_after_update(*, already_restarted_units: set[str] | None 
 
     See #83595.
     """
-    from hermes_cli.update_cmd import _m, _record_update_step
-    from hermes_constants import get_hermes_home
+    from moor_cli.update_cmd import _m, _record_update_step
+    from moor_constants import get_moor_home
 
     try:
         stop_result = _m()._kill_stale_dashboard_processes(
             restart_managed=True, already_restarted_units=already_restarted_units,
-            scope_home=str(get_hermes_home()),
+            scope_home=str(get_moor_home()),
         )
     except Exception as exc:
         # Isolated like every sibling post-update step: a failure here (#112604) used to abort
@@ -294,7 +294,7 @@ def _refresh_dashboard_after_update(*, already_restarted_units: set[str] | None 
         print()
         print(f"⚠ Could not refresh running dashboard/serve process(es): {exc}")
         print("  If one is still running, restart it so it serves the updated code:")
-        print("    hermes dashboard --port <port>   (or: systemctl --user restart hermes-dashboard)")
+        print("    moor dashboard --port <port>   (or: systemctl --user restart moor-dashboard)")
         return
     if not stop_result.get("unrecovered"):
         return
@@ -337,8 +337,8 @@ def _checkout_version() -> str | None:
     pyproject.toml is an inert 0.0.0 on source checkouts; the release a checkout
     runs is derived from its reachable tags.
     """
-    from hermes_cli.update_cmd import _m
-    from hermes_cli.version_info import _git_version_info
+    from moor_cli.update_cmd import _m
+    from moor_cli.version_info import _git_version_info
     info = _git_version_info(Path(_m().PROJECT_ROOT), include_untracked=True)
     return info.derived_version if info.commit else None
 
@@ -365,7 +365,7 @@ def _update_complete_message(pre_version: str | None) -> str:
 
 def _post_update_sqlite_runtime_status():
     """Return whether the interpreter used after update has safe SQLite."""
-    from hermes_cli.sqlite_runtime import probe_sqlite_runtime
+    from moor_cli.sqlite_runtime import probe_sqlite_runtime
     # Completion already runs on PM's selected Python, not the obsolete repo venv.
     info = probe_sqlite_runtime(Path(sys.executable))
     return info is not None and not info.wal_reset_vulnerable, info
@@ -406,7 +406,7 @@ def _clear_stale_sqlite_sidecars(db_path: Path) -> None:
 
 def _print_update_summary(*, node_failures: list, desktop_build_ok: bool, pre_update_version: str | None) -> bool:
     """Historical updater hook; old soft-build results cannot establish completion."""
-    from hermes_cli._old_updater import stop_for_relaunch
+    from moor_cli._old_updater import stop_for_relaunch
 
     stop_for_relaunch()
 
@@ -420,9 +420,9 @@ def _restore_state_db_from_snapshot(state_path: Path, snap_state: Path) -> bool:
     clobbers pages. Holder scan ``None`` proceeds (gateways drained; refusing on unknown would
     disable auto-restore on non-Linux). Raises OSError if the copy fails.
     """
-    from hermes_cli.backup import verify_sqlite_integrity
-    from hermes_cli.backup_restore import _foreign_db_holder_pids
-    from hermes_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
+    from moor_cli.backup import verify_sqlite_integrity
+    from moor_cli.backup_restore import _foreign_db_holder_pids
+    from moor_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
     holders = _foreign_db_holder_pids(state_path)
     if holders:
         print(
@@ -598,8 +598,8 @@ def _ensure_fhs_path_guard() -> None:
 
 def _ensure_acp_launcher() -> None:
     """Historical export; launcher policy belongs to the launcher owner."""
-    from hermes_cli import _launchers
-    from hermes_cli.update_cmd import _m
+    from moor_cli import _launchers
+    from moor_cli.update_cmd import _m
     _launchers.expose_cli(_m().PROJECT_ROOT)
 
 
@@ -788,7 +788,7 @@ def _run_pre_update_backup(args) -> Optional[str]:
 def _sweep_bytecode_after_update(branch: str) -> None:
     """Clear stale ``__pycache__`` (else gateway restart ImportErrors on names absent from old
     bytecode), re-stamp the fingerprint, refresh the bootstrap cache scripts."""
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     # Timestamp-based .pyc validation can accept old bytecode after the source swap.
     removed = _m()._clear_bytecode_cache(_m().PROJECT_ROOT)
     if removed:
@@ -849,7 +849,7 @@ def _refresh_cua_driver_after_update() -> None:
 
     if not _load_updates_cfg().get("refresh_cua_driver", True):
         return
-    if os.environ.get("HERMES_CUA_DRIVER_CMD", "").strip():
+    if os.environ.get("MOOR_CUA_DRIVER_CMD", "").strip():
         return
     if pm.installed_package("cua-driver", allow_outdated=True) is None:
         return
@@ -857,13 +857,13 @@ def _refresh_cua_driver_after_update() -> None:
         # The scheduled task targets a versioned binary. Selecting a new pin
         # without re-registering leaves it stale; registration requires UAC.
         print("\n→ Windows cua-driver refresh deferred (autostart registration requires UAC).")
-        print("  Run `hermes computer-use install --upgrade` in an interactive terminal.")
+        print("  Run `moor computer-use install --upgrade` in an interactive terminal.")
         return
     print("\n→ Preparing pinned cua-driver (Computer Use)...")
     if sys.platform == "darwin":
         # PM preserves the signed app; setup validates and registers its new path
         # with LaunchServices. This path never requests permissions or elevation.
-        from hermes_cli.tools_config_cua import install_cua_driver
+        from moor_cli.tools_config_cua import install_cua_driver
         install_cua_driver(show_installer_progress=False)
     else:
         pm.ensure("cua-driver", explicit=True)
@@ -884,18 +884,18 @@ def _install_default_tools_after_update() -> None:
     from pm.paths import lockfile_path
 
     # Sealed payloads ship their tools; the lazy-install policy (config or the
-    # Docker/test bridge) means the user asked Hermes not to fetch on its own.
+    # Docker/test bridge) means the user asked Moor not to fetch on its own.
     if sealed() or not lazy_installs_allowed():
         return
     for name in default_packages(Lockfile(lockfile_path()).names()):
         if pm.installed_package(name) is not None:
             continue
-        print(f"\n→ Installing {name} (browser tools; opt out with `hermes pm install --without {name}`)...")
+        print(f"\n→ Installing {name} (browser tools; opt out with `moor pm install --without {name}`)...")
         try:
             pm.ensure(name, explicit=True)
         except (pm.InstallError, OSError) as exc:
             print(f"  ⚠ {name} was not installed: {exc}")
-            print(f"    Retry with: hermes pm install {name}")
+            print(f"    Retry with: moor pm install {name}")
 
 
 def _print_checkpoint_footprint_notice() -> None:
@@ -919,8 +919,8 @@ def _print_plugin_compat_notice() -> None:
 def _print_post_update_notices_and_self_heals() -> None:
     """Best-effort notices (FTS optimize, curator) and self-heals (FHS PATH, ACP launcher,
     Windows bin launchers, cua-driver refresh) that run after the summary."""
-    from hermes_cli.update_cmd import _m, _print_curator_first_run_notice, _print_curator_recent_run_notice
-    from hermes_cli import _launchers
+    from moor_cli.update_cmd import _m, _print_curator_first_run_notice, _print_curator_recent_run_notice
+    from moor_cli import _launchers
 
     def _migrate_windows_bin_path() -> None:
         # Windows launchers into the managed bin dir: in-checkout launchers were swept by the
@@ -961,7 +961,7 @@ def _run_post_update_maintenance(
 
     Ancillary repairs and notices are best-effort; an unsafe runtime withholds success.
     """
-    from hermes_cli.update_cmd import _check_and_apply_config_migration, _m
+    from moor_cli.update_cmd import _check_and_apply_config_migration, _m
     # macOS TCC: Desktop bundles are re-signed each update, so old grants can go stale
     # (toggle ON, yet macOS re-prompts with no Allow button). Tell users how to re-grant.
     # With the post-#73681 identifier-pinned DR, new grants survive rebuilds — but a grant made to a pre-fix
@@ -993,8 +993,8 @@ def _run_post_update_maintenance(
     # Both shallow history and missing tags can hide the release identity.
     # Refresh them before the completion line and install stamp read it.
     try:
-        from hermes_cli.gitlock import fetch_full_commit_graph
-        from hermes_cli.update_cmd import _no_prompt_git_kwargs
+        from moor_cli.gitlock import fetch_full_commit_graph
+        from moor_cli.update_cmd import _no_prompt_git_kwargs
         if fetch_full_commit_graph(Path(_m().PROJECT_ROOT), **_no_prompt_git_kwargs()):
             print("  ✓ Fetched release history (commits only) for version identity")
     except (OSError, subprocess.SubprocessError) as exc:
@@ -1023,7 +1023,7 @@ def _run_post_update_maintenance(
     # A multi-profile host whose gateway came back standalone on a guard says so here too — the
     # update summary is the one line operators read (the boot log under s6 is not).
     with suppress(Exception):
-        from hermes_cli.gateway_multiplex_mode import consume_rewritten_notice, recorded_standalone_warning_lines
+        from moor_cli.gateway_multiplex_mode import consume_rewritten_notice, recorded_standalone_warning_lines
         for line in [*consume_rewritten_notice(), *recorded_standalone_warning_lines()]:
             print(line)
 

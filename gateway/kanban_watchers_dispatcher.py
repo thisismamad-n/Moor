@@ -310,7 +310,7 @@ def _default_profile_secret_scope():
         yield
         return
     token = set_secret_scope(
-        build_profile_secret_scope(Path(get_hermes_home())), profile_home=str(get_hermes_home()))
+        build_profile_secret_scope(Path(get_moor_home())), profile_home=str(get_moor_home()))
     try:
         yield
     finally:

@@ -84,8 +84,8 @@ def test_bounded_git_probe_fast_path_spawn_contract_windows(monkeypatch):
     itself adds CREATE_SUSPENDED and assigns the real process handle, which a fake
     Popen cannot provide.
     """
-    from hermes_cli import _subprocess_compat
-    from hermes_cli.local_runtime import processes
+    from moor_cli import _subprocess_compat
+    from moor_cli.local_runtime import processes
 
     spawns = []
     fake_popen = _make_fake_popen(spawns, stdout="main\n")

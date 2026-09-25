@@ -64,7 +64,7 @@ def _current_reasoning_effort(config: dict) -> str:
         return ""
     effort = agent_cfg.get("reasoning_effort")
     if isinstance(effort, dict):  # {enabled, effort} form: the tier name, never str(dict)
-        from hermes_constants import parse_reasoning_effort
+        from moor_constants import parse_reasoning_effort
         parsed = parse_reasoning_effort(effort) or {}
         effort = "none" if parsed.get("enabled") is False else parsed.get("effort")
     return str(effort or "").strip().lower()
@@ -420,13 +420,13 @@ def _apply_default_agent_settings(config: dict):
     config.setdefault("agent", {})["max_turns"] = 150
     # config.yaml is authoritative for max_turns (the gateway bridges it into MOOR_MAX_ITERATIONS);
     # a stale .env entry silently shadowing it caused the 60-vs-500 bug, so drop it.
-    remove_env_value("HERMES_MAX_ITERATIONS")
+    remove_env_value("MOOR_MAX_ITERATIONS")
     config.setdefault("compression", {})["enabled"] = True
     config["compression"]["threshold"] = 0.50
     save_config(config)
     print_success("Applied recommended defaults:")
     _info("  Max iterations: 150", "  Compression threshold: 0.50",
-          "  Run `hermes setup agent` later to customize.")
+          "  Run `moor setup agent` later to customize.")
 
 
 def _prompt_number(label: str, current, cast=int):

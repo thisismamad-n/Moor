@@ -8,14 +8,14 @@ description: "A practical guide to setting up and using Moor voice mode across C
 
 Python dependency commands on this page use a
 [PM-prepared source checkout](../reference/package-management.md#developer-workflow).
-After a dependency change, reactivate the checkout and restart Hermes.
+After a dependency change, reactivate the checkout and restart Moor.
 
 This guide is the practical companion to the [Voice Mode feature reference](../user-guide/features/voice-mode.md).
 
 If the feature page explains what voice mode can do, this guide shows how to actually use it well.
 
 :::tip
-[Nous Portal](../integrations/nous-portal.md) bundles both the LLM and TTS through one OAuth — voice mode works end-to-end with no extra credentials.
+[Moor Portal](../integrations/moor-portal.md) bundles both the LLM and TTS through one OAuth — voice mode works end-to-end with no extra credentials.
 :::
 
 ## What voice mode is good for
@@ -65,24 +65,24 @@ If that is not solid yet, fix text mode first.
 ### CLI microphone + playback
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['voice'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['voice'], explicit=True)"
 ```
 
 ### Messaging platforms
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['messaging'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['messaging'], explicit=True)"
 ```
 
 ### Premium ElevenLabs TTS
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['tts-premium'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['tts-premium'], explicit=True)"
 ```
 
 ### Local NeuTTS (optional)
 
-The declared `neutts` dependency requires Python below 3.14. The Hermes runtime
+The declared `neutts` dependency requires Python below 3.14. The Moor runtime
 requires Python 3.14, so requesting this extra does not install NeuTTS there.
 Choose a compatible provider. A separately managed NeuTTS command provider
 needs its own supported Python environment.
@@ -164,7 +164,7 @@ ELEVENLABS_API_KEY=***
 Setup requests declared Python extras through PM. It cannot override their
 Python-version or platform markers:
 
-The declared `neutts` dependency requires Python below 3.14. The Hermes runtime
+The declared `neutts` dependency requires Python below 3.14. The Moor runtime
 requires Python 3.14, so requesting this extra does not install NeuTTS there.
 Choose a compatible provider. A separately managed NeuTTS command provider
 needs its own supported Python environment.

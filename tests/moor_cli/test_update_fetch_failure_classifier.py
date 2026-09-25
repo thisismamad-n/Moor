@@ -15,7 +15,7 @@ RATE_LIMIT_STDERR = (
     "fatal: expected flush after ref listing"
 )
 CURL_429_STDERR = (
-    "fatal: unable to access 'https://github.com/NousResearch/hermes-agent.git/':"
+    "fatal: unable to access 'https://github.com/thisismamad-n/Moor.git/':"
     " The requested URL returned error: 429"
 )
 
@@ -76,7 +76,7 @@ class TestClassifyFetchFailure:
             "fatal: Could not read from remote repository."
         )
         assert "SSH authentication failed" in msg
-        assert "https://github.com/NousResearch/hermes-agent.git" in msg
+        assert "https://github.com/thisismamad-n/Moor.git" in msg
 
     def test_ssh_host_key_failure_reports_ssh_auth(self):
         msg = update_cmd._classify_fetch_failure(
@@ -109,7 +109,7 @@ class TestPrintFetchFailure:
 def test_update_network_git_calls_never_prompt_for_credentials():
     """Every `git fetch`/`pull`/`push` in the updater runs with prompts disabled.
 
-    Live incident (Sep 2026): a GitHub-side 401 made `hermes update` sit on
+    Live incident (Sep 2026): a GitHub-side 401 made `moor update` sit on
     ``Username for 'https://github.com':`` instead of failing with a diagnosis.
     """
     import os
@@ -126,7 +126,7 @@ def test_update_network_git_calls_never_prompt_for_credentials():
 def test_update_and_upstream_network_calls_disable_terminal_prompts(monkeypatch, tmp_path):
     """Exercise origin fetch and fork fetch/pull/push, not their source spelling."""
     import subprocess
-    from hermes_cli import update_cmd_git
+    from moor_cli import update_cmd_git
 
     monkeypatch.setenv("GIT_TERMINAL_PROMPT", "1")
     monkeypatch.setenv("GCM_INTERACTIVE", "Always")

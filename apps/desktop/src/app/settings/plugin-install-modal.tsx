@@ -185,7 +185,7 @@ export function PluginInstallModal() {
       ? m.agentTargetRemote(targetProfileLabel)
       : m.agentTargetLocal(
           targetProfileLabel,
-          targetProfile === 'default' ? '~/.hermes/plugins/' : `~/.hermes/profiles/${targetProfile}/plugins/`
+          targetProfile === 'default' ? '~/.moor/plugins/' : `~/.moor/profiles/${targetProfile}/plugins/`
         )
 
   // A unified package installed into a local backend carries its own desktop
@@ -289,7 +289,7 @@ export function PluginInstallModal() {
           // desktop-plugins/<git-name>/ beside the package copy (#100412). When
           // there is nothing to materialise, nothing was installed. The agent
           // error already says so.
-          const touched = (await window.hermesDesktop?.reconcileDesktopPlugins?.()) ?? []
+          const touched = (await window.moorDesktop?.reconcileDesktopPlugins?.()) ?? []
 
           if (agentInstalled || touched.length > 0) {
             successes.push(m.desktopSuccess(probe.agentName ?? request.repo))

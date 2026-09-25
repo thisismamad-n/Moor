@@ -92,7 +92,7 @@ def test_abort_recovery_hands_managed_profiles_to_a_fresh_process(monkeypatch):
     # Serve units travel in the same payload so one fresh child covers both
     # runtime families (#92145).
     assert set(payload["serve_units"]) == {"recover", "skip"}
-    assert kwargs["env"]["HERMES_UPDATE_RESTART_RECOVERY"] == "1"
+    assert kwargs["env"]["MOOR_UPDATE_RESTART_RECOVERY"] == "1"
 
 
 def test_abort_recovery_does_not_claim_success_when_fresh_process_fails(monkeypatch):

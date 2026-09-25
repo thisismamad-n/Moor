@@ -118,16 +118,16 @@ def aux_probe_mode():
 
 from agent.credential_pool import load_pool
 from agent.model_metadata import MINIMUM_CONTEXT_LENGTH, get_model_context_length
-from hermes_cli.config import get_hermes_home
-from hermes_cli.config_providers import _canonical_api_mode
+from moor_cli.config import get_moor_home
+from moor_cli.config_providers import _canonical_api_mode
 from agent.auxiliary_health import (
     _custom_health_base_url, _unhealthy_cache_key, fallback_candidate_quarantine_ttl,
     fallback_candidate_unavailable_reason,
 )
 from agent.auxiliary_unavailable import (
-    AuxiliaryClientUnavailable, clear_nous_credential_failure, missing_provider_credentials_message,
-    nous_credential_failure_detail, record_nous_credential_failure)
-from hermes_constants import OPENROUTER_BASE_URL, hermes_home_key
+    AuxiliaryClientUnavailable, clear_moor_credential_failure, missing_provider_credentials_message,
+    moor_credential_failure_detail, record_moor_credential_failure)
+from moor_constants import OPENROUTER_BASE_URL, moor_home_key
 from utils import base_url_host_matches, base_url_hostname, base_url_origin, env_float, is_truthy_value, model_forces_max_completion_tokens, normalize_proxy_env_vars
 
 logger = logging.getLogger(__name__)
@@ -528,7 +528,7 @@ def _extract_url_query_params(url: str):
 _stale_base_url_warned = False
 
 # Local OpenAI-compatible servers (Ollama, vLLM, llama.cpp) route through the generic custom
-# provider — mirrors hermes_cli.auth._PROVIDER_ALIASES. Without this group an explicit
+# provider — mirrors moor_cli.auth._PROVIDER_ALIASES. Without this group an explicit
 # ``provider: ollama`` aux lane matches no registry entry and raises a misleading
 # ``OLLAMA_API_KEY`` error instead of using the lane's base_url (#106010).
 _LOCAL_SERVER_ALIASES = {
@@ -540,7 +540,7 @@ _ALIAS_TABLE: Optional[Dict[str, str]] = None
 
 
 def _provider_alias_table() -> Dict[str, str]:
-    """The same alias table the main provider path resolves against (hermes_cli.auth).
+    """The same alias table the main provider path resolves against (moor_cli.auth).
 
     A hand-copied mirror here rots silently every time auth grows a family — the local
     servers (#106010) and the OpenCode entries were both missed that way. Local-server
@@ -551,7 +551,7 @@ def _provider_alias_table() -> Dict[str, str]:
     if _ALIAS_TABLE is None:
         merged: Dict[str, str] = dict(_LOCAL_SERVER_ALIASES)
         with contextlib.suppress(Exception):
-            from hermes_cli.auth import _PROVIDER_ALIASES as _auth_table
+            from moor_cli.auth import _PROVIDER_ALIASES as _auth_table
             merged.update(_auth_table)
         _ALIAS_TABLE = merged
     return _ALIAS_TABLE
@@ -932,17 +932,17 @@ def build_nvidia_nim_headers(base_url: str | None) -> dict:
 
 
 # Vercel AI Gateway attribution (HTTP-Referer → referrerUrl, X-Title → appName).
-from hermes_cli.version_info import get_version_info
+from moor_cli.version_info import get_version_info
 
 _AI_GATEWAY_HEADERS = {
     "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
+    "X-Title": "Moor Agent",
     "User-Agent": f"HermesAgent/{get_version_info().base_version}",
 }
 
-# Nous Portal attribution extra_body. Tags come from agent.portal_tags so the client= marker
+# Moor Portal attribution extra_body. Tags come from agent.portal_tags so the client= marker
 # tracks the canonical base version — never inline a literal here.
-from agent.portal_tags import nous_portal_tags as _nous_portal_tags
+from agent.portal_tags import moor_portal_tags as _moor_portal_tags
 
 
 def _moor_extra_body() -> dict:
@@ -1448,7 +1448,7 @@ class _CodexCompletionsAdapter:
         # (``_wire_aliases``, popped in ``create()``), never on the instance — aux adapters are shared.
         wire_tools, wire_aliases = _alias_wire_tools(
             _responses_tools(tools),
-            {"provider": getattr(self._client, "_hermes_aux_effective_provider", "") or None, "base_url": host},
+            {"provider": getattr(self._client, "_moor_aux_effective_provider", "") or None, "base_url": host},
             is_xai,
         )
         renamed = {original: alias for alias, original in wire_aliases.items()}
@@ -1594,7 +1594,7 @@ class _CodexCompletionsAdapter:
             if final is None:
                 raise RuntimeError("Codex auxiliary Responses stream did not return a final response")
             text_parts, tool_calls_raw, usage = _parse_codex_final_response(final)
-            # Undo only the aliases THIS request emitted, before the call reaches Hermes dispatch.
+            # Undo only the aliases THIS request emitted, before the call reaches Moor dispatch.
             for tc in tool_calls_raw or ():
                 if tc.function.name in wire_aliases:
                     tc.function.name = wire_aliases[tc.function.name]
@@ -2053,9 +2053,9 @@ def _resolve_moor_runtime_api(
     except Exception as exc:
         # Kept at WARNING (once per message) and remembered: the ladder falls back silently, and
         # without this the goal judge only ever saw "judge error: RuntimeError" (#42177).
-        record_nous_credential_failure(exc)
+        record_moor_credential_failure(exc)
         return None
-    clear_nous_credential_failure()
+    clear_moor_credential_failure()
     return _creds_pair(creds)
 
 
@@ -2155,7 +2155,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
         if provider_id == "copilot":
             # Explicit-config gate: ambient gh-CLI credentials must not silently become aux fallback (#114740).
             with contextlib.suppress(ImportError):
-                from hermes_cli.auth import is_provider_explicitly_configured
+                from moor_cli.auth import is_provider_explicitly_configured
                 if not is_provider_explicitly_configured("copilot"):
                     continue
         model = _get_aux_model_for_provider(provider_id) or None
@@ -2337,12 +2337,12 @@ def _describe_openrouter_unavailable(model: str = None) -> str:
     return "no usable OpenRouter credentials found"
 
 
-def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
-    nous = _read_nous_auth()
-    runtime = _resolve_nous_runtime_api(force_refresh=False)
-    if runtime is None and not nous:
-        logger.warning("Auxiliary Nous client unavailable: no Nous authentication found (run: hermes auth).")
-        _mark_provider_unhealthy("nous", ttl=60, reason="no Nous authentication found", level=logging.DEBUG)
+def _try_moor(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
+    moor = _read_moor_auth()
+    runtime = _resolve_moor_runtime_api(force_refresh=False)
+    if runtime is None and not moor:
+        logger.warning("Auxiliary Moor client unavailable: no Moor authentication found (run: moor auth).")
+        _mark_provider_unhealthy("moor", ttl=60, reason="no Moor authentication found", level=logging.DEBUG)
         return None, None
     if runtime is None and moor:
         logger.debug("Auxiliary Moor: runtime JWT refresh failed; checking stored auth.json token.")
@@ -2355,24 +2355,24 @@ def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
                 "Auxiliary Moor client unavailable: no usable inference JWT found "
                 "(run: moor auth add moor)."
             )
-            _mark_provider_unhealthy("nous", ttl=60, reason="no usable Nous inference JWT", level=logging.DEBUG)
+            _mark_provider_unhealthy("moor", ttl=60, reason="no usable Moor inference JWT", level=logging.DEBUG)
             return None, None
         base_url = str(
             (moor or {}).get("inference_base_url") or _scoped_key_env("MOOR_INFERENCE_BASE_URL") or _MOOR_DEFAULT_BASE_URL
         ).rstrip("/")
     with contextlib.suppress(Exception):
-        from agent.nous_rate_guard import nous_rate_limit_remaining
-        from hermes_cli.anon_auth import is_anonymous_request
-        anonymous = is_anonymous_request("nous", api_key)
-        remaining = nous_rate_limit_remaining(anonymous=anonymous)
+        from agent.moor_rate_guard import moor_rate_limit_remaining
+        from moor_cli.anon_auth import is_anonymous_request
+        anonymous = is_anonymous_request("moor", api_key)
+        remaining = moor_rate_limit_remaining(anonymous=anonymous)
         if remaining is not None and remaining > 0:
-            logger.debug("Auxiliary: skipping Nous Portal (rate-limited, resets in %.0fs)", remaining)
+            logger.debug("Auxiliary: skipping Moor Portal (rate-limited, resets in %.0fs)", remaining)
             # The health marker is provider-wide, so a full-length anonymous cooldown would
             # outlive signing in mid-cooldown; bound it instead of re-resolving credentials
             # (auth store lock, pool read) on every auxiliary call for the cooldown's duration.
             _mark_provider_unhealthy(
-                "nous", ttl=min(remaining, 60.0) if anonymous else remaining,
-                reason="Nous Portal rate-limited", level=logging.INFO)
+                "moor", ttl=min(remaining, 60.0) if anonymous else remaining,
+                reason="Moor Portal rate-limited", level=logging.INFO)
             return None, None
     lane = "vision" if vision else "text"
     # The free tier's host serves exactly one model, for every lane: asking it for the Portal's
@@ -3511,7 +3511,7 @@ def _should_skip_same_provider_retry(task: Optional[str], exc: Exception) -> boo
 def _evict_cached_clients(provider: str) -> None:
     """Drop this profile's cached auxiliary clients for a provider so fresh creds are used.
 
-    Scoped to the calling profile (``hermes_home_key()`` is the first key slot): a rotation in
+    Scoped to the calling profile (``moor_home_key()`` is the first key slot): a rotation in
     one profile must not drop another profile's client for the same provider in a multiplexing
     gateway, since that profile's credentials did not change. Entries are popped, not closed:
     a concurrent caller may be mid-request on the shared client (closing it raises ReadError /
@@ -3519,7 +3519,7 @@ def _evict_cached_clients(provider: str) -> None:
     overflow path in ``_get_cached_client``.
     """
     normalized = _normalize_aux_provider(provider)
-    home = hermes_home_key()
+    home = moor_home_key()
     with _client_cache_lock:
         for key in [key for key in _client_cache
                     if key[0] == home and _normalize_aux_provider(str(key[1])) == normalized]:
@@ -3605,7 +3605,7 @@ _POOL_PROVIDER_BY_HOST = (
 )
 _AUTH_REFRESH_PROVIDER_BY_HOST = (
     ("api.githubcopilot.com", "copilot"), ("chatgpt.com", "openai-codex"),
-    ("api.anthropic.com", "anthropic"), ("inference-api.nousresearch.com", "nous"),
+    ("api.anthropic.com", "anthropic"), ("inference-api.nousresearch.com", "moor"),
     # An aux call that inherits the main xai-oauth route arrives as "auto"; without this row the
     # 403 bad-credentials rung skipped the refresh and benched the only grant (#84845).
     ("api.x.ai", "xai-oauth"),
@@ -5140,7 +5140,7 @@ def _resolve_named_custom_branch(req: _ResolveRequest) -> Optional[_ResolveResul
     if not custom_base:
         logger.warning("resolve_provider_client: named custom provider %r has no base_url", provider)
         return None, None
-    from hermes_cli.config import normalize_extra_headers
+    from moor_cli.config import normalize_extra_headers
     entry_headers = normalize_extra_headers(custom_entry.get("extra_headers"))
     final_model = _normalize_resolved_model(
         req.model
@@ -6088,7 +6088,7 @@ def _resolve_task_provider_model(
             cfg_api_key = None
     # One shared alias table with resolve_runtime_provider(): ``provider: openai`` routes the same
     # way here (compression/vision/title) and on the runtime path (background review, curator, MoA).
-    from hermes_cli.runtime_provider_custom import expand_direct_api_alias
+    from moor_cli.runtime_provider_custom import expand_direct_api_alias
     if provider:
         provider, base_url = expand_direct_api_alias(provider, base_url)
     if cfg_provider:
@@ -6420,7 +6420,7 @@ def _contains_profile_reasoning_fields(value: Any) -> bool:
     )
 
 
-_MOOR_PROVIDER_NAMES = frozenset({"moor", "moor-portal", "nousresearch", "nous"})  # LEGACY-REBRAND-COMPAT: fallback provider alias
+_MOOR_PROVIDER_NAMES = frozenset({"moor", "moor-portal", "nousresearch", "moor"})  # LEGACY-REBRAND-COMPAT: fallback provider alias
 
 
 def _moor_on_messages_wire(provider_norm: str, model: str) -> bool:
@@ -6503,7 +6503,7 @@ def _routes_to_custom_endpoint(provider_norm: str) -> bool:
     name = _normalize_aux_provider(provider_norm)
     if name == "custom":
         return True
-    from hermes_cli.runtime_provider import _get_named_custom_provider
+    from moor_cli.runtime_provider import _get_named_custom_provider
     return _get_named_custom_provider(name) is not None
 
 
@@ -6669,6 +6669,7 @@ def _build_call_kwargs(
             kwargs["_reasoning_config"] = dict(reasoning_config)
     # Conversation affinity (OpenCode relay, opt-in custom-provider header) — same key as the main
     # turn so compression/title/vision calls stay on the conversation's warm backend.
+    from agent.opencode_affinity import merge_session_affinity_headers
     return merge_session_affinity_headers(
         kwargs,
         provider,
@@ -6821,7 +6822,7 @@ def _managed_local_netloc() -> str:
     if now - ts < _MANAGED_LOCAL_STATE_TTL_S:
         return cached
     try:
-        from hermes_cli.local_runtime.supervisor import state_path
+        from moor_cli.local_runtime.supervisor import state_path
 
         raw = state_path().read_text(encoding="utf-8-sig")
         base = str((json.loads(raw) or {}).get("base_url", ""))
@@ -7248,9 +7249,9 @@ def _resolve_call_client(
                 fb_client, fb_model, fb_label = _try_configured_fallback_for_unavailable_client(
                     task, _explicit)
                 if fb_client is None:
-                    nous_detail = nous_credential_failure_detail() if _explicit == "nous" else None
+                    moor_detail = moor_credential_failure_detail() if _explicit == "moor" else None
                     raise AuxiliaryClientUnavailable(
-                        nous_detail or missing_provider_credentials_message(_explicit))
+                        moor_detail or missing_provider_credentials_message(_explicit))
                 client, final_model = fb_client, fb_model
                 if async_mode:
                     client, final_model = _to_async_client(
@@ -7267,7 +7268,7 @@ def _resolve_call_client(
                 effective_provider = _effective_provider_for_client(client, "auto")
     if client is None:
         raise AuxiliaryClientUnavailable(f"No LLM provider configured for task={task} "
-                                         f"provider={resolved_provider}. Run: hermes setup")
+                                         f"provider={resolved_provider}. Run: moor setup")
     return _ResolvedAuxRoute(client, final_model, resolved_provider, effective_provider)
 
 
@@ -7447,7 +7448,7 @@ def _parameter_rungs(client: Any, max_tokens: Optional[int]) -> tuple:
         # (top-level ``reasoning_effort: none``), and strict-schema gateways reject the generic
         # ``extra_body.reasoning`` fallback outright (#109774); the caller only wanted "no thinking",
         # so retry with every reasoning field omitted and let the route default apply (#112781).
-        # The endpoint refuses the *disable* rather than the field (Nous Portal gpt-6-astra: "Reasoning is
+        # The endpoint refuses the *disable* rather than the field (Moor Portal gpt-6-astra: "Reasoning is
         # mandatory ... cannot be disabled"): step the effort up to the floor and remember the route so
         # the next thinking-off aux call starts there. Ordered before the strip so a floor that still
         # 400s falls through to it.

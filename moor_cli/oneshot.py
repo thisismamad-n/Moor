@@ -146,7 +146,7 @@ def _build_preloaded_skills_prompt(skills: object = None) -> str | None:
 def _configured_mcp_servers() -> tuple[set[str], set[str]]:
     """``(enabled, disabled)`` MCP server names from config; both empty on any error."""
     try:
-        from hermes_cli.config import read_raw_config
+        from moor_cli.config import read_raw_config
         from tools.mcp_tool_common import mcp_server_enabled
 
         cfg = read_raw_config()
@@ -275,11 +275,11 @@ def run_oneshot(
     use_config_toolsets = _normalize_toolsets(toolsets) is None
 
     # Non-interactive by definition — an approval prompt would hang forever.
-    os.environ["HERMES_YOLO_MODE"] = "1"
-    os.environ["HERMES_ACCEPT_HOOKS"] = "1"
-    # Same finite-chat marker as `hermes chat -q` (cli.py): the session-source resolver uses it to drop an
+    os.environ["MOOR_YOLO_MODE"] = "1"
+    os.environ["MOOR_ACCEPT_HOOKS"] = "1"
+    # Same finite-chat marker as `moor chat -q` (cli.py): the session-source resolver uses it to drop an
     # inherited tui/desktop transport label, and delegate dispatch to route detached results inline.
-    os.environ["HERMES_SINGLE_QUERY_SESSION"] = "1"
+    os.environ["MOOR_SINGLE_QUERY_SESSION"] = "1"
 
     # Nothing here drains process_registry.completion_queue (only cli.py's process_loop and the
     # gateway watchers do), so left unbound delegate_task would be forced background and every
@@ -339,7 +339,7 @@ def run_oneshot(
 
     exit_code = _oneshot_exit_code(response, result)
     if exit_code == 1:
-        real_stderr.write("hermes -z: no final response was produced; treating the run as failed.\n")
+        real_stderr.write("moor -z: no final response was produced; treating the run as failed.\n")
         real_stderr.flush()
     return exit_code
 
@@ -396,7 +396,7 @@ def _resolve_model_and_provider(cfg: dict, model: Optional[str], provider: Optio
 
     # DIRECT_ALIASES (config.yaml ``model_aliases:``) map a user alias to (model, provider,
     # base_url) for endpoints outside any catalog (local servers, custom proxies, ...).
-    from hermes_cli import model_switch as _ms
+    from moor_cli import model_switch as _ms
     try:
         _ms._ensure_direct_aliases()
         direct = _ms.DIRECT_ALIASES.get(explicit_model.strip().lower())
@@ -406,8 +406,8 @@ def _resolve_model_and_provider(cfg: dict, model: Optional[str], provider: Optio
         cfg_provider = ""
         if isinstance(model_cfg, dict):
             cfg_provider = str(model_cfg.get("provider") or "").strip().lower()
-        current_provider = cfg_provider or os.getenv("HERMES_INFERENCE_PROVIDER", "").strip().lower() or "auto"
-        # Same owner as HermesCLI startup: a provider-qualified string (``custom:<name>:<model>``,
+        current_provider = cfg_provider or os.getenv("MOOR_INFERENCE_PROVIDER", "").strip().lower() or "auto"
+        # Same owner as MoorCLI startup: a provider-qualified string (``custom:<name>:<model>``,
         # ``<provider>/<model>``) selects that provider before auto-detection can hand the unsplit
         # string to the configured default (#73943).
         route = _ms.resolve_startup_model_route(
@@ -511,9 +511,9 @@ def _run_agent(
     """Build an AIAgent exactly like a normal CLI chat turn, run one conversation, and return
     ``(final_response, run_result)``. Imports are local to keep CLI startup cheap. *ledger* (set when
     ``--usage-file`` is requested) attaches this run's auxiliary usage to the result."""
-    from hermes_cli.config import load_config
-    from hermes_cli.runtime_provider import resolve_runtime_with_fallback
-    from hermes_cli.tools_config import _get_platform_tools
+    from moor_cli.config import load_config
+    from moor_cli.runtime_provider import resolve_runtime_with_fallback
+    from moor_cli.tools_config import _get_platform_tools
     from run_agent import AIAgent
 
     cfg = load_config()

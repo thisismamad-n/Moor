@@ -27,7 +27,7 @@ except ImportError:  # pragma: no cover - non-Windows
     msvcrt = None
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from cron.constants import CLAIM_TTL_INACTIVITY_HEADROOM, FIRE_CLAIM_SKEW_SECONDS, FIRE_CLAIM_TTL_SECONDS
 from cron.env_settings import cron_env_setting
 from typing import Optional, Dict, List, Any, Callable, Set, Tuple, Union, Collection
@@ -1594,9 +1594,9 @@ def _main_model_pin() -> Tuple[Optional[str], Optional[str]]:
     """``(provider, model)`` the main agent runs on right now (``model.default`` + the provider it
     resolves to), for ``pinned=True`` jobs: the lock is a plain per-job pin, so the scheduler needs
     no second precedence axis. ``(None, None)`` when nothing is configured (the job stays unpinned)."""
-    from hermes_cli.config_effective import load_user_config_effective
+    from moor_cli.config_effective import load_user_config_effective
 
-    cfg_path = get_hermes_home() / "config.yaml"
+    cfg_path = get_moor_home() / "config.yaml"
     cfg = load_user_config_effective(cfg_path) if cfg_path.exists() else {}
     model_cfg = cfg.get("model") or {}
     model = model_cfg.get("default") or model_cfg.get("model") if isinstance(model_cfg, dict) else model_cfg
@@ -1605,7 +1605,7 @@ def _main_model_pin() -> Tuple[Optional[str], Optional[str]]:
         return None, None
     provider = None
     with contextlib.suppress(Exception):
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
         provider = _normalize_job_optional_text(resolve_runtime_provider(requested=None).get("provider"))
     return (provider.lower() if provider else None), model
 
@@ -2094,7 +2094,7 @@ def resume_job(job_id: str) -> Optional[Dict[str, Any]]:
     if (
         job["schedule"].get("kind") in {"cron", "interval"}
         and stored_dt is not None
-        and _instant_at_or_before(stored_dt, _hermes_now())
+        and _instant_at_or_before(stored_dt, _moor_now())
     ):
         next_run_at = stored_next
         logger.info(

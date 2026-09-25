@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Hermes Agent Setup Script — THE dev-environment entry point.
+# Moor Agent Setup Script — THE dev-environment entry point.
 # ============================================================================
 # Sets up the pm-managed development environment from a fresh clone:
 #   1. Stage the pinned uv from pm/lock.json (sha256-verified, into the pm
@@ -106,7 +106,7 @@ uv_version="$(pin version)"
 py_version="$(pin version python | cut -d+ -f1 | cut -d. -f1,2)"
 [ -n "$uv_version" ] || { echo -e "${RED}✗${NC} no uv pin in pm/lock.json" >&2; exit 1; }
 
-store="${HERMES_RUNTIME_DIR:-$HOME/.hermes/tools}"
+store="${MOOR_RUNTIME_DIR:-$HOME/.moor/tools}"
 entry="$store/uv-$uv_version-$target"
 uv="$entry/uv"; [ "$os" = win32 ] && uv="$entry/uv.exe"
 
@@ -174,7 +174,7 @@ fi
 boot_py="$("$uv" python find --managed-python "$py_request")"
 boot_py="${boot_py%$'\r'}"
 # Activation trusts the recorded tool digest; a direct setup re-checks it
-# (setup-hermes.ps1 draws the same line).
+# (setup-moor.ps1 draws the same line).
 pm_args=("$test_environment")
 [ "$runtime_only" = true ] && pm_args+=(--trust-recorded)
 if ! "$boot_py" -m pm.cli install "${pm_args[@]}"; then
@@ -215,13 +215,13 @@ echo -e "${CYAN}→${NC} Setting up moor command..."
 # Reuse the bootstrap interpreter only to run the shared launcher writer.
 bin_dir="$HOME/.local/bin"
 if [ "$os" = win32 ]; then
-    bin_dir="$(cygpath -am "${HERMES_HOME:-${LOCALAPPDATA:-$HOME/AppData/Local}/hermes}/bin")"
+    bin_dir="$(cygpath -am "${MOOR_HOME:-${LOCALAPPDATA:-$HOME/AppData/Local}/moor}/bin")"
 fi
-if ! "$boot_py" -I -X utf8 hermes_cli/_launchers.py "$bin_dir"; then
+if ! "$boot_py" -I -X utf8 moor_cli/_launchers.py "$bin_dir"; then
     echo -e "${RED}✗${NC} launcher publication failed" >&2
     exit 1
 fi
-echo -e "${GREEN}✓${NC} Published Hermes commands in $bin_dir"
+echo -e "${GREEN}✓${NC} Published Moor commands in $bin_dir"
 
 if [ "$os" != win32 ]; then
     # Determine the appropriate shell config file
@@ -249,7 +249,7 @@ if [ "$os" != win32 ]; then
             if ! echo "$PATH" | tr ':' '\n' | grep -q "^$HOME/.local/bin$"; then
                 if ! grep -q '\.local/bin' "$SHELL_CONFIG" 2>/dev/null; then
                     echo "" >> "$SHELL_CONFIG"
-                    echo "# Hermes Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
+                    echo "# Moor Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
                     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_CONFIG"
                     echo -e "${GREEN}✓${NC} Added ~/.local/bin to PATH in $SHELL_CONFIG"
                 else
@@ -269,7 +269,7 @@ MOOR_SKILLS_DIR="${MOOR_HOME:-$HOME/.moor}/skills"
 mkdir -p "$MOOR_SKILLS_DIR"
 
 echo ""
-echo "Syncing bundled skills to ~/.hermes/skills/ ..."
+echo "Syncing bundled skills to ~/.moor/skills/ ..."
 if "$boot_py" -m tools.skills_sync 2>/dev/null; then
     echo -e "${GREEN}✓${NC} Skills synced"
 else
@@ -293,14 +293,14 @@ echo "  1. Activate the dev environment (venv-style, in THIS shell):"
 echo "     source ./activate"
 echo ""
 echo "  2. Run the setup wizard to configure API keys:"
-echo "     hermes setup"
+echo "     moor setup"
 echo ""
 echo "  3. Start chatting:"
-echo "     hermes"
+echo "     moor"
 echo ""
 echo "Other commands:"
-echo "  hermes pm install     # Re-run the tool + dependency install"
-echo "  hermes status         # Check configuration"
-echo "  hermes doctor         # Diagnose issues"
+echo "  moor pm install     # Re-run the tool + dependency install"
+echo "  moor status         # Check configuration"
+echo "  moor doctor         # Diagnose issues"
 echo "  deactivate            # Undo the activation (restore PATH etc.)"
 echo ""

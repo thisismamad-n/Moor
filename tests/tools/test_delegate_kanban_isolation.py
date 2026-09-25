@@ -185,14 +185,14 @@ def test_auto_heartbeat_reports_failure_without_mutating_fenced_child_board(
     delegate child stays fenced too, quietly, without consuming the worker's heartbeat window."""
     kb, tid, _workspace, _attachments_root = _make_running_kanban_task(monkeypatch, tmp_path)
     from agent.delegation_context import delegated_child_context
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools
 
     conn = kbc.connect()
     try:
         task_before = kb.get_task(conn, tid)
         events_before = kb.list_events(conn, tid)
-        monkeypatch.setenv("HERMES_DELEGATED_CHILD_CONTEXT", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_DELEGATED_CHILD_CONTEXT", str(tmp_path / ".moor"))
         monkeypatch.setattr(kanban_tools, "_auto_heartbeat_last_attempt", 0.0)
         # raising=False: a regression that drops the module flag must fail on the
         # symptom assertions below, not on this attribute probe.
@@ -202,10 +202,10 @@ def test_auto_heartbeat_reports_failure_without_mutating_fenced_child_board(
             assert kanban_tools.heartbeat_current_worker_from_env() is False
             monkeypatch.setattr(kanban_tools, "_auto_heartbeat_last_attempt", 0.0)
             assert kanban_tools.heartbeat_current_worker_from_env() is False
-        fence_warnings = [r for r in caplog.records if "HERMES_DELEGATED_CHILD_CONTEXT" in r.getMessage()]
+        fence_warnings = [r for r in caplog.records if "MOOR_DELEGATED_CHILD_CONTEXT" in r.getMessage()]
         assert len(fence_warnings) == 1 and tid in fence_warnings[0].getMessage()
 
-        monkeypatch.delenv("HERMES_DELEGATED_CHILD_CONTEXT")
+        monkeypatch.delenv("MOOR_DELEGATED_CHILD_CONTEXT")
         monkeypatch.setattr(kanban_tools, "_auto_heartbeat_last_attempt", 0.0)
         with delegated_child_context("child-1"):
             assert kanban_tools.heartbeat_current_worker_from_env() is False

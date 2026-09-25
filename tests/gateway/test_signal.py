@@ -306,7 +306,7 @@ class TestSignalPhoneRedaction:
         # the module was already imported during test collection with
         # whatever value was in the env then. Force the flag directly.
         # See skill: cross-test-pollution Pattern 5.
-        monkeypatch.delenv("HERMES_REDACT_SECRETS", raising=False)
+        monkeypatch.delenv("MOOR_REDACT_SECRETS", raising=False)
         monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 
     def test_us_number(self):

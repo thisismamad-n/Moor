@@ -67,7 +67,7 @@ jobs:
             echo '__EOF__'
           } >> "$GITHUB_OUTPUT"
 
-      - name: Prepare Hermes from the PR's own checkout
+      - name: Prepare Moor from the PR's own checkout
         if: steps.changed.outputs.files != ''
         uses: ./.github/actions/setup-pm
         with:
@@ -90,7 +90,7 @@ jobs:
           import shlex
           import sys
 
-          import hermes_yaml as yaml
+          import moor_yaml as yaml
 
           with open(sys.argv[1], encoding="utf-8") as fh:
               data = yaml.safe_load(fh) or {}
@@ -123,8 +123,8 @@ jobs:
             fi
 
             # Manifest schema + declared-vs-registered capability check.
-            if ! hermes plugins validate --install-deps "$PLUGIN_DIR"; then
-              echo "::error file=$entry::hermes plugins validate failed"
+            if ! moor plugins validate --install-deps "$PLUGIN_DIR"; then
+              echo "::error file=$entry::moor plugins validate failed"
               FAILED=1; echo "::endgroup::"; continue
             fi
 

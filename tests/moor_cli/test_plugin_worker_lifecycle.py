@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests.hermes_cli.plugin_worker_support import (
+from tests.moor_cli.plugin_worker_support import (
     plugin_world as plugin_world,
     isolated_python as isolated_python,
 )
@@ -14,7 +14,7 @@ from tests.hermes_cli.plugin_worker_support import (
     ("python_dependencies", "yml"), ("pip_dependencies", "yml"),
 ])
 def test_declaration_consent_admission_and_resync(plugin_world, monkeypatch, capsys, surface, suffix):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     from pm import client, receipt
 
     world = plugin_world
@@ -59,9 +59,9 @@ def test_declaration_consent_admission_and_resync(plugin_world, monkeypatch, cap
 
 
 def test_active_force_reinstall_decline_preserves_entire_selection(plugin_world, monkeypatch):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     from pm import paths
-    from tests.hermes_cli.plugin_worker_support import git, version
+    from tests.moor_cli.plugin_worker_support import git, version
 
     world = plugin_world
     origin, first = world.origin()
@@ -98,9 +98,9 @@ def test_active_force_reinstall_decline_preserves_entire_selection(plugin_world,
 
 @pytest.mark.parametrize("flag", ["no_enable", "enable"])
 def test_active_reinstall_does_not_overwrite_a_later_disable(plugin_world, monkeypatch, flag):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     from pm import paths
-    from tests.hermes_cli.plugin_worker_support import version
+    from tests.moor_cli.plugin_worker_support import version
 
     world = plugin_world
     origin, first = world.origin()
@@ -123,10 +123,10 @@ def test_active_reinstall_does_not_overwrite_a_later_disable(plugin_world, monke
 
 def test_malformed_portable_member_cannot_join_a_new_generation(plugin_world, monkeypatch):
     import json
-    from hermes_cli import plugins_cmd
-    from hermes_cli.agent_plugins import PLUGIN_SCHEMA_V1
+    from moor_cli import plugins_cmd
+    from moor_cli.agent_plugins import PLUGIN_SCHEMA_V1
     from pm import client, paths
-    from tests.hermes_cli.plugin_worker_support import git
+    from tests.moor_cli.plugin_worker_support import git
 
     world = plugin_world
     origin, _ = world.origin(surface="pyproject")
@@ -149,9 +149,9 @@ def test_malformed_portable_member_cannot_join_a_new_generation(plugin_world, mo
 
 def test_pack_admits_compatible_members_and_reports_conflict(plugin_world, monkeypatch, capsys):
     import json
-    import hermes_yaml as yaml
-    from hermes_cli import plugins_cmd
-    from tests.hermes_cli.plugin_worker_support import git, version
+    import moor_yaml as yaml
+    from moor_cli import plugins_cmd
+    from tests.moor_cli.plugin_worker_support import git, version
 
     world = plugin_world
     incumbent, first = world.origin()
@@ -199,9 +199,9 @@ def test_concurrent_commands_keep_acknowledged_enables(plugin_world, sibling_pro
     import shutil
     import subprocess
     import sys
-    import hermes_yaml as yaml
-    from hermes_constants import set_hermes_home_override, reset_hermes_home_override
-    from tests.hermes_cli.plugin_worker_support import worker_command
+    import moor_yaml as yaml
+    from moor_constants import set_moor_home_override, reset_moor_home_override
+    from tests.moor_cli.plugin_worker_support import worker_command
 
     world = plugin_world
     homes = [world.home, world.home]
@@ -212,11 +212,11 @@ def test_concurrent_commands_keep_acknowledged_enables(plugin_world, sibling_pro
             (home / "config.yaml").write_text("plugins:\n  enabled: []\n  disabled: []\n", encoding="utf-8")
     for name, home in zip(("race-left", "race-right"), homes):
         origin, revision = world.origin(name=name, dependency="plugin-proof-dep" if name == "race-left" else "plugin-proof-other")
-        token = set_hermes_home_override(home)
+        token = set_moor_home_override(home)
         try:
             world.command("install", identifier=origin.as_uri(), ref=revision, no_enable=True, allow_removed=True)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
     untouched = (world.home / "config.yaml").read_bytes()
     checkout = Path(__file__).resolve().parents[2]
     command = worker_command(checkout / "pm/worker.py", shutil.which("uv"), sys.executable,
@@ -234,8 +234,8 @@ def test_concurrent_commands_keep_acknowledged_enables(plugin_world, sibling_pro
                 "    assert sys.stdin.readline().strip() == 'go'\n"
                 f"    return {command!r}\n"
                 "client.runtime_command = ready\n"
-                "from hermes_cli.plugins_cmd import cmd_enable\n"
-                "from hermes_cli.plugins_admission import AdmissionRefused\n"
+                "from moor_cli.plugins_cmd import cmd_enable\n"
+                "from moor_cli.plugins_admission import AdmissionRefused\n"
                 "try:\n"
                 f"    cmd_enable({name!r}, allow_tool_override=False)\n"
                 "except AdmissionRefused as exc:\n"
@@ -244,7 +244,7 @@ def test_concurrent_commands_keep_acknowledged_enables(plugin_world, sibling_pro
             )
             processes.append(subprocess.Popen([sys.executable, "-I", "-B", "-c", script],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                env={**os.environ, "HERMES_HOME": str(home)}))
+                env={**os.environ, "MOOR_HOME": str(home)}))
         # Both commands have reached the worker launch (after the old stale
         # read). Release one all the way through publication, then the other.
         ready = queue.Queue()

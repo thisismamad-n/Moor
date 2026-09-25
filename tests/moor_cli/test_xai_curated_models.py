@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from hermes_cli.models import (
+from moor_cli.models import (
     _PROVIDER_MODELS,
     provider_model_ids,
 )

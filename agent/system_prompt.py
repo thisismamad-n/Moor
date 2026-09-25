@@ -27,7 +27,7 @@ from agent.prompt_builder import (
 )
 from agent import prompt_builder as _pb
 from agent.runtime_cwd import resolve_agent_cwd, resolve_context_cwd
-from hermes_constants import get_default_hermes_root, get_hermes_home
+from moor_constants import get_default_moor_root, get_moor_home
 from utils import is_truthy_value
 
 logger = logging.getLogger(__name__)
@@ -434,7 +434,7 @@ def _cron_delivery_hint(agent: Any) -> str:
     into the session ContextVar before the agent runs (same seam ``send_message`` routes by).
     """
     from gateway.session_context import get_session_env
-    deliver_key = get_session_env("HERMES_CRON_AUTO_DELIVER_PLATFORM", "").lower().strip()
+    deliver_key = get_session_env("MOOR_CRON_AUTO_DELIVER_PLATFORM", "").lower().strip()
     if not deliver_key or deliver_key == "cron":
         return ""
     hint = _resolve_platform_hint(agent, deliver_key, _default_platform_hint(deliver_key))
@@ -474,7 +474,7 @@ def _zone_bits(now: Any, tz: Any) -> List[str]:
     """IANA key, abbreviation (if different) and UTC offset — all constant for
     the day, so the byte-stable date line stays cacheable."""
     _iana = getattr(tz, "key", None)
-    from hermes_time import safe_strftime
+    from moor_time import safe_strftime
     _abbrev = safe_strftime(now, "%Z")
     _offset = safe_strftime(now, "%z")  # '-0400' -> 'UTC-04:00'
     bits = [_iana] if _iana else []
@@ -489,9 +489,9 @@ def _timestamp_line(agent: Any) -> str:
     """Date-only so the prompt is byte-stable for the day; zone + offset so
     tools needn't guess EST vs EDT. Long-lived sessions get an "as of" line on
     rebuild days (the cache prefix is already invalidated at that boundary)."""
-    from hermes_time import get_timezone as _hermes_tz, now as _hermes_now, safe_strftime
-    now = _hermes_now()
-    _bits = _zone_bits(now, _hermes_tz())
+    from moor_time import get_timezone as _moor_tz, now as _moor_now, safe_strftime
+    now = _moor_now()
+    _bits = _zone_bits(now, _moor_tz())
     _zone_suffix = f" ({', '.join(_bits)})" if _bits else ""
     _start = _session_start_like(agent, now)
     timestamp_line = f"Conversation started: {safe_strftime(_start, '%A, %B %d, %Y')}{_zone_suffix}"

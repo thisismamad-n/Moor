@@ -1,5 +1,5 @@
 /**
- * "Open recent session" on a bot row (hermes-agent#93054): opens the profile's
+ * "Open recent session" on a bot row (moor-agent#93054): opens the profile's
  * newest LISTED session as a tab in the bot's workspace — never in place of
  * the canonical Bot Chat — and hands a bot with nothing listable back to the
  * ordinary row click.
@@ -13,7 +13,7 @@ const { openRosterBot, openSession, prepareBotSource } = vi.hoisted(() => ({
   prepareBotSource: vi.fn(async () => undefined)
 }))
 
-vi.mock('@hermes/plugin-sdk', () => ({
+vi.mock('@moor/plugin-sdk', () => ({
   BOT_CHAT_SESSION_HYDRATION_TIMEOUT_MS: 60_000,
   haptic: () => undefined,
   host: { openSession, notifyError: vi.fn() }

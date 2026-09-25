@@ -2,8 +2,8 @@
 
 import pytest
 
-from hermes_cli.update_cmd import (
-    _hermes_holder_subcommand,
+from moor_cli.update_cmd import (
+    _moor_holder_subcommand,
 )
 
 class TestHolderSubcommand:
@@ -36,4 +36,4 @@ class TestHolderSubcommand:
         ],
     )
     def test_parses_subcommand(self, cmdline, expected):
-        assert _hermes_holder_subcommand(cmdline) == expected
+        assert _moor_holder_subcommand(cmdline) == expected

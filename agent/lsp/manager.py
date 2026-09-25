@@ -238,7 +238,7 @@ class LSPService:
 
     def enabled_for(self, file_path: str) -> bool:
         """True iff LSP should run for this file: registered non-disabled server, git workspace,
-        and pair not broken (a failed server costs nothing until ``hermes lsp restart`` / exit)."""
+        and pair not broken (a failed server costs nothing until ``moor lsp restart`` / exit)."""
         srv = self._server_for(file_path) if self._enabled else None
         if srv is None or srv.server_id in self._disabled_servers:
             return False

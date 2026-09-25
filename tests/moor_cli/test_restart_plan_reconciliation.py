@@ -287,7 +287,7 @@ def test_desktop_serve_deferral_requires_a_verified_alive_incarnation():
     desktop_serve.restart_via = _restart_mechanism("desktop", "default")
 
     unknown = match_runtime_outcomes(
-        _plan(desktop_serve), restarted_services=["hermes-serve.service"],
+        _plan(desktop_serve), restarted_services=["moor-serve.service"],
         relaunched_profiles=[], externally_supervised_profiles=[], killed_pids=set(),
         failed_units=[], stale_serve_pids=None,
     )
@@ -317,8 +317,8 @@ def test_unaccounted_serve_report_names_serve_remedy_not_gateway_restart(capsys)
     assert report_unaccounted_runtimes(outcomes) is True
     out = capsys.readouterr().out
     assert "serve [default] pid 900" in out
-    assert "relaunch `hermes serve`" in out
-    assert "hermes gateway restart" not in out
+    assert "relaunch `moor serve`" in out
+    assert "moor gateway restart" not in out
 
 
 def test_mixed_fleet_only_the_missed_one_escalates(capsys):

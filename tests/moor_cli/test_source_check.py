@@ -29,15 +29,15 @@ class Installation(tuple):
 
 @pytest.fixture
 def installation(tmp_path, monkeypatch):
-    from hermes_cli import source_releases
+    from moor_cli import source_releases
 
     root = tmp_path / "checkout"
     root.mkdir()
     home = tmp_path / "profile"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_REVISION", raising=False)
-    monkeypatch.delenv("HERMES_MANAGED", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.delenv("MOOR_REVISION", raising=False)
+    monkeypatch.delenv("MOOR_MANAGED", raising=False)
     # Git probes may use real local remotes, never the external network.
     monkeypatch.setenv("GIT_ALLOW_PROTOCOL", "file")
 
@@ -99,7 +99,7 @@ def installation(tmp_path, monkeypatch):
     # The credential ladder must not read this machine's gh login or env.
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     monkeypatch.delenv("GH_TOKEN", raising=False)
-    from hermes_cli import github_api
+    from moor_cli import github_api
     monkeypatch.setattr(github_api, "_gh_cli_token", lambda: None)
     fixture = Installation((root, linked, home, base, head, responses, requests, git))
     fixture.authorizations = authorizations
@@ -111,7 +111,7 @@ def installation(tmp_path, monkeypatch):
 
 
 def test_target_worktree_owns_admission_and_fork_comparison(installation, monkeypatch):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
 
     root, linked, home, base, head, responses, requests, git = installation
     (root / "install-stamp.json").write_text(json.dumps({"updateMechanism": "external"}))
@@ -133,7 +133,7 @@ def test_target_worktree_owns_admission_and_fork_comparison(installation, monkey
     assert status["supported"] is True
     assert status["branch"] == "feature/gui"
     assert status["behind"] == 3
-    assert status["hermesRoot"] == str(linked)
+    assert status["moorRoot"] == str(linked)
     assert check_for_updates(install_root=root, home=home, cache_path=cache)["supported"] is False
     assert requests == [MAIN_CHANNEL, "/repos/fixture/fork/commits/feature%2Fgui",
                         f"/repos/fixture/fork/compare/{head}...{target}"]
@@ -148,7 +148,7 @@ def test_target_worktree_owns_admission_and_fork_comparison(installation, monkey
     ("unknown", None, -1), ("unknown", {"ahead_by": True}, -1),
 ])
 def test_counts_are_honest_without_fetch(installation, tip_kind, compare, expected):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     target = {"head": head, "base": base, "unknown": "a" * 40}[tip_kind]
     responses["/repos/fixture/fork/commits/main"] = (200, "\ufeff" + target)
@@ -162,7 +162,7 @@ def test_counts_are_honest_without_fetch(installation, tip_kind, compare, expect
 
 
 def test_cache_force_expiry_and_passive_opt_out(installation, monkeypatch):
-    from hermes_cli import source_check
+    from moor_cli import source_check
     root, linked, home, base, head, responses, requests, git = installation
     clock = [1000000.0]
     monkeypatch.setattr(source_check.time, "time", lambda: clock[0])
@@ -200,7 +200,7 @@ def test_cache_force_expiry_and_passive_opt_out(installation, monkeypatch):
 
 
 def test_explicit_and_current_branch_heal_only_after_confirmed_absence(installation, monkeypatch):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     git("remote", "set-url", "origin", str(root))
     # Use the same real linked worktree with a local origin. No GitHub fallback is involved.
@@ -217,7 +217,7 @@ def test_explicit_and_current_branch_heal_only_after_confirmed_absence(installat
 
 @pytest.mark.parametrize("selection", ["explicit", "configured", "current", "detached"])
 def test_dynamic_source_channel_preserves_branch_precedence(installation, selection):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
 
     root, linked, home, base, head, responses, requests, git = installation
     name = "branch-" + uuid4().hex[:12]
@@ -250,7 +250,7 @@ def test_dynamic_source_channel_preserves_branch_precedence(installation, select
     (None, "missing"), (None, "malformed"), (None, "foreign"), (None, "unpublished"),
 ])
 def test_channel_failure_never_probes_or_heals_a_branch(installation, name, failure):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
 
     root, linked, home, base, head, responses, requests, git = installation
     name = name or "preview-" + uuid4().hex[:12]
@@ -289,7 +289,7 @@ def test_unpublished_main_record_follows_the_branch(installation):
     """A 404 for main.json keeps a checkout updating via git: the configured
     branch is probed exactly as for a published source-branch channel, and the
     Desktop branch setting is left alone."""
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
 
     root, linked, home, base, head, responses, requests, git = installation
     responses[MAIN_CHANNEL] = (404, source_channel("main", "fixture/fork"))
@@ -308,21 +308,21 @@ def test_unpublished_main_record_follows_the_branch(installation):
 
 
 def test_running_revision_is_not_applied_to_an_explicit_target(installation, monkeypatch):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
-    monkeypatch.setenv("HERMES_REVISION", "e" * 40)
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(root))
+    monkeypatch.setenv("MOOR_REVISION", "e" * 40)
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(root))
     responses["/repos/fixture/fork/commits/feature%2Fgui"] = (200, head)
     assert check_for_updates(install_root=linked, home=home)["currentSha"] == head
     # Default invocation retains the Nix revision probe even without a Git checkout.
-    monkeypatch.setattr("hermes_cli.config.get_project_root", lambda: home)
+    monkeypatch.setattr("moor_cli.config.get_project_root", lambda: home)
     responses[MAIN_CHANNEL] = (200, source_channel("main", "NousResearch/hermes-agent"))
     responses["/repos/NousResearch/hermes-agent/commits/main"] = (200, "e" * 40)
     assert check_for_updates(home=home)["behind"] == 0
 
 
 def test_deleted_desktop_branch_is_persisted_only_after_definitive_probe(installation):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     branch_file = home / "desktop-update.json"
     branch_file.write_text(json.dumps({"branch": "deleted", "other": "café"}, ensure_ascii=False),
@@ -339,7 +339,7 @@ def test_deleted_desktop_branch_is_persisted_only_after_definitive_probe(install
 
 
 def test_inherited_git_target_cannot_redirect_an_explicit_install(installation, monkeypatch):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     responses["/repos/fixture/fork/commits/feature%2Fgui"] = (200, head)
     monkeypatch.setenv("GIT_DIR", str(root / ".git"))
@@ -351,7 +351,7 @@ def test_inherited_git_target_cannot_redirect_an_explicit_install(installation, 
 
 @pytest.mark.parametrize("mechanism", ["external", "electron-updater", "app-installer", "microsoft-store", "self", None])
 def test_source_admission_is_stamp_owned_not_path_owned(installation, mechanism):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     if mechanism:
         (linked / "install-stamp.json").write_text(json.dumps({"updateMechanism": mechanism, "distribution": "nix" if mechanism == "external" else "source"}))
@@ -367,11 +367,11 @@ def test_source_admission_is_stamp_owned_not_path_owned(installation, mechanism)
 
 
 def test_embedded_revision_keeps_https_ref_advertisement_recovery(installation, monkeypatch):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
-    monkeypatch.setenv("HERMES_REVISION", head)
-    monkeypatch.setattr("hermes_cli.config.get_project_root", lambda: home)
-    monkeypatch.setattr("hermes_cli.config.detect_install_method", lambda root: "nix")
+    monkeypatch.setenv("MOOR_REVISION", head)
+    monkeypatch.setattr("moor_cli.config.get_project_root", lambda: home)
+    monkeypatch.setattr("moor_cli.config.detect_install_method", lambda root: "nix")
     responses[MAIN_CHANNEL] = (200, source_channel("main", "NousResearch/hermes-agent"))
     original = subprocess.run
     probes = []
@@ -385,13 +385,13 @@ def test_embedded_revision_keeps_https_ref_advertisement_recovery(installation, 
     monkeypatch.setattr(subprocess, "run", advertise)
     assert check_for_updates(home=home)["behind"] == 0
     assert len(probes) == 1
-    assert "https://github.com/NousResearch/hermes-agent.git" in probes[0][0]
+    assert "https://github.com/thisismamad-n/Moor.git" in probes[0][0]
     assert probes[0][1]["stdin"] == subprocess.DEVNULL
     assert probes[0][1]["env"]["GIT_TERMINAL_PROMPT"] == "0"
 
 
 def test_malformed_optional_changelog_and_cache_do_not_hide_the_update(installation):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     cache = home / "cache.json"
     responses["/repos/fixture/fork/commits/main"] = (200, "a" * 40)
@@ -411,10 +411,10 @@ def test_malformed_optional_changelog_and_cache_do_not_hide_the_update(installat
 
 @pytest.mark.parametrize("repository,heals", [("NousResearch/hermes-agent", True), ("fixture/fork", False)])
 def test_official_ssh_healing_uses_public_https_without_retargeting_forks(installation, monkeypatch, repository, heals):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     git("remote", "set-url", "origin", f"git@github.com:{repository}.git")
-    git("config", f"url.{root.as_uri()}.insteadOf", "https://github.com/NousResearch/hermes-agent.git")
+    git("config", f"url.{root.as_uri()}.insteadOf", "https://github.com/thisismamad-n/Moor.git")
     monkeypatch.setenv("GIT_SSH_COMMAND", "false")
     branch_file = home / "desktop-update.json"
     branch_file.write_text(json.dumps({"branch": "deleted"}))
@@ -434,7 +434,7 @@ def github_authorizations(installation, path):
 
 
 def test_github_calls_carry_the_configured_token_and_retry_anonymously_on_401(installation, monkeypatch):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     url = "/repos/fixture/fork/commits/main"
     responses[url] = (200, head)
@@ -449,7 +449,7 @@ def test_github_calls_carry_the_configured_token_and_retry_anonymously_on_401(in
 
 
 def test_branch_tip_failure_names_the_cause(installation):
-    from hermes_cli.source_check import check_for_updates
+    from moor_cli.source_check import check_for_updates
     root, linked, home, base, head, responses, requests, git = installation
     url = "/repos/fixture/fork/commits/main"
     responses[url] = (403, {})

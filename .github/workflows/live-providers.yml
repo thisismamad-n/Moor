@@ -45,17 +45,17 @@ jobs:
     env:
       HAS_OPENROUTER: ${{ secrets.LIVE_OPENROUTER_API_KEY != '' }}
       HAS_ANTHROPIC: ${{ secrets.LIVE_ANTHROPIC_API_KEY != '' }}
-      HAS_NOUS: ${{ secrets.LIVE_NOUS_API_KEY != '' }}
+      HAS_MOOR: ${{ secrets.LIVE_NOUS_API_KEY != '' }}
       HAS_OPENAI: ${{ secrets.LIVE_OPENAI_API_KEY != '' }}
       HAS_GEMINI: ${{ secrets.LIVE_GEMINI_API_KEY != '' }}
       HAS_XAI: ${{ secrets.LIVE_XAI_API_KEY != '' }}
-      HERMES_LIVE_USAGE_FILE: ${{ github.workspace }}/live-usage.jsonl
+      MOOR_LIVE_USAGE_FILE: ${{ github.workspace }}/live-usage.jsonl
     steps:
       - name: Check that at least one provider secret is configured
         id: gate
         run: |
           n=0
-          for v in HAS_OPENROUTER HAS_ANTHROPIC HAS_NOUS HAS_OPENAI HAS_GEMINI HAS_XAI; do
+          for v in HAS_OPENROUTER HAS_ANTHROPIC HAS_MOOR HAS_OPENAI HAS_GEMINI HAS_XAI; do
             if [ "${!v}" = "true" ]; then n=$((n+1)); echo "configured: ${v#HAS_}"; fi
           done
           echo "configured=$n" >> "$GITHUB_OUTPUT"
@@ -116,12 +116,12 @@ jobs:
           rows = ["### Live provider canary usage", "",
                   "| case | model | calls | input | output | cache read | cache write | est. $ | ceiling $ |",
                   "|---|---|---|---|---|---|---|---|---|"]
-          path = os.environ["HERMES_LIVE_USAGE_FILE"]
+          path = os.environ["MOOR_LIVE_USAGE_FILE"]
           if os.path.exists(path):
               for line in open(path, encoding="utf-8"):
                   u = json.loads(line)
                   rows.append("| {case} | {model} | {api_calls} | {input} | {output} | {cache_read} "
-                              "| {cache_write} | {hermes_est_usd} | {list_price_ceiling_usd} |".format(**u))
+                              "| {cache_write} | {moor_est_usd} | {list_price_ceiling_usd} |".format(**u))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
               fh.write("\n".join(rows) + "\n")
 

@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Dict, Optional
 
-from hermes_state_common import _RESET_CHILD_SQL, _sql_json_extract
+from moor_state_common import _RESET_CHILD_SQL, _sql_json_extract
 
 # Same logger the code used before extraction (record parity).
 _log = logging.getLogger("moor_cli.web_server")
@@ -227,26 +227,26 @@ def _maybe_auto_archive_for_profile(profile: Optional[str]) -> None:
             return
         _last_auto_archive_check[key] = now
 
-        from hermes_cli.config import load_config as _load_full_config
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_cli.config import load_config as _load_full_config
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         # The config that governs a store is the one in that store's OWN home. A zero-arg
-        # load_config() resolves through the PROCESS HERMES_HOME, so the dashboard swept every
+        # load_config() resolves through the PROCESS MOOR_HOME, so the dashboard swept every
         # profile's sessions with the launch profile's sessions.auto_archive/auto_archive_days —
         # one profile's retention silently decided another's.
         profile_home = _session_db_path_for_profile(profile).parent
-        _home_token = set_hermes_home_override(str(profile_home))
+        _home_token = set_moor_home_override(str(profile_home))
         try:
             cfg = (_load_full_config().get("sessions") or {})
         finally:
-            reset_hermes_home_override(_home_token)
+            reset_moor_home_override(_home_token)
         if not cfg.get("auto_archive", False):
             return
-        from hermes_cli.profiles import _check_gateway_running
+        from moor_cli.profiles import _check_gateway_running
 
         # A live gateway owns this profile's store and runs the same sweep on its own
         # housekeeping tick ("state.db maintenance tick" in gateway/run.py, profile-scoped so a
-        # multiplexed secondary's store is swept too). Opening it WRITABLE from `hermes
+        # multiplexed secondary's store is swept too). Opening it WRITABLE from `moor
         # serve` adds a second writer to a database another process is already archiving,
         # for zero extra coverage (#110405). `_check_gateway_running` is the canonical
         # per-profile predicate (`_maybe_run_skill_maintenance` below uses it): its

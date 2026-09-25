@@ -23,9 +23,9 @@ from __future__ import annotations
 
 import logging
 
-from hermes_cli.auth import (
-    DEFAULT_NOUS_INFERENCE_URL,
-    _validate_nous_inference_url_from_network,
+from moor_cli.auth import (
+    DEFAULT_MOOR_INFERENCE_URL,
+    _validate_moor_inference_url_from_network,
 )
 
 class TestValidatorRules:

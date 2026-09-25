@@ -95,7 +95,7 @@ def yaml_load(content: str):
     """Parse YAML with the shared safe loader, imported lazily."""
     global _yaml_load_fn
     if _yaml_load_fn is None:
-        from hermes_yaml import safe_load
+        from moor_yaml import safe_load
         _yaml_load_fn = safe_load
     return _yaml_load_fn(content)
 
@@ -209,15 +209,15 @@ def skill_matches_environment(frontmatter: Dict[str, Any]) -> bool:
 def skill_matches_apps(frontmatter: Dict[str, Any]) -> bool:
     """True when every app named in ``requires_apps:`` has a registered declaration this host satisfies.
 
-    Names resolve through ``hermes_platform.declaration`` (registered by whoever owns the server,
+    Names resolve through ``moor_platform.declaration`` (registered by whoever owns the server,
     e.g. the plugin loader); the check is the same ``availability()`` the MCP check_fn uses. An
     unknown name hides the skill (fail closed). Offer-time filter, like ``environments:``.
     """
     names = frontmatter.get("requires_apps")
     if not names:
         return True
-    from hermes_platform import declaration
-    from hermes_platform.resolver.availability import availability
+    from moor_platform import declaration
+    from moor_platform.resolver.availability import availability
 
     for name in names if isinstance(names, list) else [names]:
         decl = declaration.lookup(str(name).strip())

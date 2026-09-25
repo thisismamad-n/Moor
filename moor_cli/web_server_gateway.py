@@ -146,7 +146,7 @@ def _collect_profile_gateway_topology() -> Dict[str, Any]:
     platform maps per live gateway, an internal aggregation input never exposed directly.
     """
     try:
-        from hermes_cli.profiles import _check_gateway_running, profiles_to_serve, profile_is_parked
+        from moor_cli.profiles import _check_gateway_running, profiles_to_serve, profile_is_parked
         from gateway.status import read_runtime_status
         homes = profiles_to_serve(True, include_standalone=True, include_parked=True)
     except Exception:
@@ -193,7 +193,7 @@ def _collect_profile_gateway_topology() -> Dict[str, Any]:
         mode = {0: "none", 1: "single"}.get(len(gateways), "multiple")
     # A guard refusal on a multi-profile host is what the dashboard banner shows; a single-profile
     # install has nothing unserved and gets no banner.
-    from hermes_cli.gateway_multiplex_mode import SINGLE_PROFILE_REASON
+    from moor_cli.gateway_multiplex_mode import SINGLE_PROFILE_REASON
     if standalone_reason == SINGLE_PROFILE_REASON or len(homes) < 2:
         standalone_reason = None
     return {
@@ -343,8 +343,8 @@ def _profile_action_environment(
         from moor_cli.env_loader import (
             _PROFILE_MANAGED_ENV_KEYS, _env_keys_defined_in_dotenv, get_secret_source_values,
         )
-        from hermes_cli.web_server_profiles import _resolve_profile_dir
-        from hermes_constants import apply_subprocess_home_env, get_default_hermes_root
+        from moor_cli.web_server_profiles import _resolve_profile_dir
+        from moor_constants import apply_subprocess_home_env, get_default_moor_root
         from tools.environments.local import build_subprocess_env, strip_launch_profile_env
 
         target_home = _resolve_profile_dir(profile)
@@ -436,7 +436,7 @@ def _spawn_moor_action(
     log_file = open(_ACTION_LOG_DIR / _ACTION_LOG_FILES[name], "ab", buffering=0)
     log_file.write(f"\n=== {name} started {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n".encode())
 
-    from hermes_cli._launchers import runtime_command
+    from moor_cli._launchers import runtime_command
     cmd = runtime_command(PROJECT_ROOT, subcommand)
     if _action_targets_system_gateway(subcommand):
         # A system-scope lifecycle verb spawned as the dashboard's own user can only ever write
@@ -518,7 +518,7 @@ def _has_own_gateway(profile_dir: Path) -> bool:
     so reading liveness alone made every served profile look self-hosted and the refusal below never
     fired while a multiplexer was live, which is the only time it is needed."""
     from gateway.status import get_running_pid, multiplexer_liveness_for_profile, resolve_gateway_liveness
-    from hermes_cli.profiles import _check_gateway_running
+    from moor_cli.profiles import _check_gateway_running
     if not _check_gateway_running(profile_dir):
         return False
     served = multiplexer_liveness_for_profile(profile_dir)
@@ -534,7 +534,7 @@ def multiplexed_profile_refusal(profile: Optional[str], verb: str) -> Optional[s
     """Refusal text for ``gateway start``/``stop`` on a named profile with no gateway of its own (a
     ``--force``-started separate one is managed normally), else None. A profile the live host
     multiplexer serves is parked by ``stop`` and a parked one is unparked by ``start`` (the spawned
-    ``hermes -p X gateway <verb>`` runs ``gateway_profile_lifecycle``), so neither is refused;
+    ``moor -p X gateway <verb>`` runs ``gateway_profile_lifecycle``), so neither is refused;
     ``start`` on an unparked named profile is — one host gateway serves every profile, so a new
     per-profile gateway is never the answer (the CLI twin ``_named_profile_refused_under_multiplexer``
     exits 78 into an action log nobody reads while the UI shows the verb as done)."""
@@ -542,8 +542,8 @@ def multiplexed_profile_refusal(profile: Optional[str], verb: str) -> Optional[s
     if not requested or requested.lower() in {"current", "default"}:
         return None
     served = _profile_is_multiplexed(requested)
-    from hermes_cli.profiles import profile_is_parked, profile_is_standalone
-    from hermes_cli.web_server_profiles import _resolve_profile_dir
+    from moor_cli.profiles import profile_is_parked, profile_is_standalone
+    from moor_cli.web_server_profiles import _resolve_profile_dir
     profile_dir = _resolve_profile_dir(requested)
     standalone = profile_is_standalone(profile_dir)
     if standalone:
@@ -566,13 +566,13 @@ def multiplexed_profile_refusal(profile: Optional[str], verb: str) -> Optional[s
             return None  # parks the profile inside the host
         return (f"The default gateway already serves profile '{requested}' as a multiplexer; "
                 f"{verb} it from the default profile instead of a separate gateway for this profile.")
-    from hermes_cli.gateway_migrate import _installed_services
+    from moor_cli.gateway_migrate import _installed_services
     if _installed_services(profile_dir):
         return None  # a --force-installed fleet member is not NEW; its own service is started normally
     return (f"Profile '{requested}' does not get a gateway of its own: one host gateway serves every "
-            f"profile. Install or start it from the default profile (hermes gateway install), or fold an "
-            f"existing per-profile fleet with `hermes gateway migrate --multiplex`; "
-            f"`hermes -p {requested} gateway install --force` starts a separate one anyway.")
+            f"profile. Install or start it from the default profile (moor gateway install), or fold an "
+            f"existing per-profile fleet with `moor gateway migrate --multiplex`; "
+            f"`moor -p {requested} gateway install --force` starts a separate one anyway.")
 
 
 def _restart_gateway_after(profile: Optional[str], *, what: str, label: str) -> dict[str, Any]:

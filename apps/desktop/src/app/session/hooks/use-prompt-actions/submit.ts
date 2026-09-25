@@ -1,4 +1,4 @@
-import type { PromptSubmitResult } from '@hermes/shared'
+import type { PromptSubmitResult } from '@moor/shared'
 import { type MutableRefObject, useCallback } from 'react'
 
 import { PROMPT_SUBMIT_REQUEST_TIMEOUT_MS } from '@/moor'
@@ -35,7 +35,7 @@ import {
   touchSessionActivity
 } from '@/store/session'
 import { $sessionStates } from '@/store/session-states'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import { profileScopeForTranscriptSession, resolveActiveTranscriptSession } from '../../../contrib/hooks/use-background-sync'
 import type { ClientSessionState } from '../../../types'

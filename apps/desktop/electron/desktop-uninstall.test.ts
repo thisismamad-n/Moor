@@ -72,12 +72,12 @@ test('nativeRemovalInstructions names the steward per kind and OS', () => {
   assert.match(nativeRemovalInstructions('bundled', 'win32'), /Installed apps/)
   assert.match(nativeRemovalInstructions('bundled', 'darwin'), /Trash/)
   assert.match(
-    nativeRemovalInstructions('bundled', 'linux', '/home/x/Apps/Hermes.AppImage'),
-    /\/home\/x\/Apps\/Hermes\.AppImage/
+    nativeRemovalInstructions('bundled', 'linux', '/home/x/Apps/Moor.AppImage'),
+    /\/home\/x\/Apps\/Moor\.AppImage/
   )
   assert.match(
-    nativeRemovalInstructions('bundled', 'linux', '/opt/hermes/linux-unpacked'),
-    /app directory at \/opt\/hermes\/linux-unpacked/
+    nativeRemovalInstructions('bundled', 'linux', '/opt/moor/linux-unpacked'),
+    /app directory at \/opt\/moor\/linux-unpacked/
   )
   assert.match(nativeRemovalInstructions('bundled', 'linux'), /wherever you saved it/)
 })
@@ -180,7 +180,7 @@ test.skipIf(process.platform === 'win32').each(['gui', 'lite', 'full'] as const)
       fs.mkdirSync(sibling)
       fs.writeFileSync(
         recorder,
-        `require('node:fs').writeFileSync(${JSON.stringify(resultFile)}, JSON.stringify({argv:process.argv.slice(2), home:process.env.HERMES_HOME, pythonPath:process.env.PYTHONPATH, cwd:process.cwd()}))`
+        `require('node:fs').writeFileSync(${JSON.stringify(resultFile)}, JSON.stringify({argv:process.argv.slice(2), home:process.env.MOOR_HOME, pythonPath:process.env.PYTHONPATH, cwd:process.cwd()}))`
       )
       fs.writeFileSync(
         script,
@@ -191,17 +191,17 @@ test.skipIf(process.platform === 'win32').each(['gui', 'lite', 'full'] as const)
           agentRoot: root,
           uninstallArgs: [recorder, ...uninstallArgsForMode(mode)],
           appPath: mode === 'lite' ? null : app,
-          hermesHome: root
+          moorHome: root
         })
       )
       child = spawn('bash', [script], {
-        env: { ...process.env, PYTHONPATH: 'inherited', HERMES_HOME: root },
+        env: { ...process.env, PYTHONPATH: 'inherited', MOOR_HOME: root },
         stdio: 'ignore'
       })
       await once(child, 'close')
       assert.equal(child.exitCode, 0)
       assert.deepEqual(JSON.parse(fs.readFileSync(resultFile, 'utf8')), {
-        argv: ['-m', 'hermes_cli.uninstall', '--mode', mode],
+        argv: ['-m', 'moor_cli.uninstall', '--mode', mode],
         home: root,
         pythonPath: mode === 'gui' ? 'inherited' : `${root}:inherited`,
         cwd: root
@@ -234,9 +234,9 @@ test('buildPosixCleanupScript waits for the PID, runs the uninstall module, remo
   assert.match(script, /^#!\/usr\/bin\/env bash\n/)
   assert.match(script, /pid=4321/)
   assert.match(script, /kill -0 "\$pid"/)
-  assert.match(script, /'-m' 'hermes_cli\.uninstall' '--mode' 'gui'/)
-  assert.match(script, /rm -rf '\/opt\/hermes\/linux-unpacked'/)
-  assert.match(script, /export HERMES_HOME='\/home\/x\/\.hermes'/)
+  assert.match(script, /'-m' 'moor_cli\.uninstall' '--mode' 'gui'/)
+  assert.match(script, /rm -rf '\/opt\/moor\/linux-unpacked'/)
+  assert.match(script, /export MOOR_HOME='\/home\/x\/\.moor'/)
 })
 
 // --- buildWindowsCleanupScript ---

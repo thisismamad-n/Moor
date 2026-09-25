@@ -14,12 +14,12 @@ import pytest
 
 @pytest.fixture()
 def isolated_kanban_home(tmp_path, monkeypatch):
-    """Fresh HERMES_HOME with a clean kanban DB."""
-    test_home = tmp_path / ".hermes"
+    """Fresh MOOR_HOME with a clean kanban DB."""
+    test_home = tmp_path / ".moor"
     test_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(test_home))
+    monkeypatch.setenv("MOOR_HOME", str(test_home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    from hermes_cli import kanban_db
+    from moor_cli import kanban_db
     yield kanban_db, test_home
 
 

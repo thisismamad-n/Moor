@@ -33,7 +33,7 @@ export function createMinimizeToTray(options: Options) {
   const broadcast = () => {
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) {
-        win.webContents.send('hermes:minimize-to-tray:changed', status())
+        win.webContents.send('moor:minimize-to-tray:changed', status())
       }
     }
   }
@@ -158,13 +158,13 @@ export function createMinimizeToTray(options: Options) {
             height: process.platform === 'darwin' ? 18 : 24
           })
         )
-        tray.setToolTip('Hermes')
+        tray.setToolTip('Moor')
         tray.setContextMenu(
           Menu.buildFromTemplate([
-            { label: 'Show Hermes', click: restore },
+            { label: 'Show Moor', click: restore },
             { type: 'separator' },
             // Do not bypass the ordinary active-work confirmation or teardown.
-            { label: 'Quit Hermes', click: () => app.quit() }
+            { label: 'Quit Moor', click: () => app.quit() }
           ])
         )
 
@@ -291,8 +291,8 @@ export function createMinimizeToTray(options: Options) {
     return operation
   }
 
-  ipcMain.handle('hermes:minimize-to-tray:get', status)
-  ipcMain.handle('hermes:minimize-to-tray:set', (_event, on) => setEnabled(on === true))
+  ipcMain.handle('moor:minimize-to-tray:get', status)
+  ipcMain.handle('moor:minimize-to-tray:set', (_event, on) => setEnabled(on === true))
   app.on('will-quit', destroyTray)
 
   return {

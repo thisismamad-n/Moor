@@ -71,7 +71,7 @@ class TestCacheRoundTrip:
 
 class TestCacheFileLocation:
     @pytest.mark.platforms("linux")
-    def test_cache_lives_under_hermes_home_cache_dir_with_0600(
+    def test_cache_lives_under_moor_home_cache_dir_with_0600(
         self, monkeypatch, tmp_path
     ):
         # Real path (no _cache_path monkeypatch): MOOR_HOME/cache/…, 0o600,

@@ -94,8 +94,8 @@ class TestMissingProfileWarning:
                         with caplog.at_level(logging.WARNING):
                             result = mock_runner._resolve_profile_home_for_source(discord_source)
 
-                            # Should fall back to global HERMES_HOME
-                            assert result == Path("/hermes")
+                            # Should fall back to global MOOR_HOME
+                            assert result == Path("/moor")
 
                             # Should have logged a warning
                             assert len(caplog.records) == 1
@@ -355,7 +355,7 @@ class TestAdapterToSessionKeyIntegration:
         adapter = _stub_adapter(Platform.DISCORD, mock_runner)
 
         with patch(
-            "hermes_cli.profiles.profiles_to_serve",
+            "moor_cli.profiles.profiles_to_serve",
             return_value=[("default", Path("/profiles/default")), ("zero", Path("/profiles/zero"))],
         ):
             source = adapter.build_source(chat_id="channel", user_id=0)

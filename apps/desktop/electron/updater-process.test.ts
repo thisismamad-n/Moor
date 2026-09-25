@@ -223,7 +223,7 @@ test('wrapHandoffForDetachedConsole runs the script inside a non-detached hidden
   // #116161: `start /min` allocated a NEW (minimized, visible) console for
   // powershell on every hand-off; `detached: true` (DETACHED_PROCESS) would
   // leave the wrapper console-less, forcing the same allocation under `/b`.
-  const root = String.raw`C:\Users\hermes\AppData\Local\hermes\hermes-agent`
+  const root = String.raw`C:\Users\moor\AppData\Local\moor\moor-agent`
   const expected = path.join(root, 'scripts', 'desktop-update', 'windows.ps1')
 
   const handoff = resolveUpdateScriptHandoff(root, {

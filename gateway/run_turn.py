@@ -50,18 +50,18 @@ _tool_call_logger_lock = threading.Lock()
 
 
 def _tool_call_logger() -> logging.Logger:
-    """Process-wide ``hermes.tool_calls`` Logger + one RotatingFileHandler on logs/tool_calls.log.
+    """Process-wide ``moor.tool_calls`` Logger + one RotatingFileHandler on logs/tool_calls.log.
     Named Loggers live in ``logging.Logger.manager.loggerDict`` forever, so the former per-turn name
-    (``hermes.tool_calls.<id(log_queue)>``) leaked one Logger per logged turn (#62950); a single
+    (``moor.tool_calls.<id(log_queue)>``) leaked one Logger per logged turn (#62950); a single
     shared handler also keeps concurrent turns from double-writing lines."""
-    tool_logger = logging.getLogger("hermes.tool_calls")
+    tool_logger = logging.getLogger("moor.tool_calls")
     with _tool_call_logger_lock:
         if not tool_logger.handlers:
             from logging.handlers import RotatingFileHandler
             from agent.redact import RedactingFormatter
-            from gateway.run import _hermes_home
+            from gateway.run import _moor_home
 
-            log_dir = _hermes_home / "logs"
+            log_dir = _moor_home / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             handler = RotatingFileHandler(
                 log_dir / "tool_calls.log", maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8",
@@ -231,7 +231,7 @@ class GatewayTurnMixin:
                     override["provider"], target_model=override.get("model") or None)
             except Exception as exc:
                 # Layering the override on the default runtime sent its model to the default provider's
-                # endpoint (openai-codex on the Nous URL). Run this turn on the whole default route and say
+                # endpoint (openai-codex on the Moor URL). Run this turn on the whole default route and say
                 # so; the persisted override is kept, so the next turn retries it.
                 logger.warning("Session /model override provider %s unavailable: %s", override["provider"], exc)
                 unavailable_override, override = override, None
@@ -245,7 +245,7 @@ class GatewayTurnMixin:
             logger.info("Runtime provider supplied explicit model override: %s -> %s", model, runtime_model)
             model = runtime_model
         if unavailable_override and not self._pre_agent_fallback_notice:
-            from hermes_cli.fallback_config import pre_agent_fallback_notice
+            from moor_cli.fallback_config import pre_agent_fallback_notice
             self._pre_agent_fallback_notice = pre_agent_fallback_notice(
                 unavailable_override["provider"], unavailable_override.get("model"), runtime_kwargs.get("provider"), model)
 
@@ -1965,7 +1965,7 @@ class GatewayTurnMixin:
 
         return response
 
-    # Chat-side next steps keyed by HTTP status; Hermes commands only (/login is the gateway's own
+    # Chat-side next steps keyed by HTTP status; Moor commands only (/login is the gateway's own
     # sign-in, `{relogin}` the profile-aware host equivalent, filled from the turn's agent provider).
     _STATUS_HINTS = {
         401: (" Your sign-in to the AI model service has expired or the API key is wrong. "
@@ -2027,7 +2027,7 @@ class GatewayTurnMixin:
         return self._hmwa_add_failed_turn_notice(
             f"⚠️ Something went wrong and I couldn't finish this reply.{status_hint}\n"
             "Use /retry to try again, or /new to start a fresh conversation. "
-            "Technical details are in the gateway log (`hermes logs`).",
+            "Technical details are in the gateway log (`moor logs`).",
             PARTIAL_FAILED_TURN_NOTICE,
         )
 
@@ -2354,8 +2354,8 @@ class GatewayTurnMixin:
         ]
         if (resolved.provider or "") == "moa":
             # The preset name hides who pays: the aggregator runs every tool-loop step (#112359).
-            from hermes_cli.config import load_config
-            from hermes_cli.moa_config import normalize_moa_config
+            from moor_cli.config import load_config
+            from moor_cli.moa_config import normalize_moa_config
             agg = normalize_moa_config(load_config().get("moa"))["presets"].get(resolved.model, {}).get("aggregator") or {}
             if agg:
                 lines.append(f"◆ Acting model (billed for the run): {agg.get('provider')}:{agg.get('model')}")
@@ -2960,7 +2960,7 @@ class GatewayTurnMixin:
         # A raw os.getenv here reads whichever profile's env loaded last under multiplexing
         # (#116898); get_secret resolves through the active profile's scope instead.
         progress_mode, _tool_progress_explicit = resolve_tool_progress(
-            user_config, platform_key, get_secret("HERMES_TOOL_PROGRESS_MODE"),
+            user_config, platform_key, get_secret("MOOR_TOOL_PROGRESS_MODE"),
         )
         # "accumulate" (edit one bubble) or "separate" (one msg per tool)
         progress_grouping = resolve_display_setting(user_config, platform_key, "tool_progress_grouping") or "accumulate"

@@ -39,9 +39,9 @@ def configured_update(source_launch, tmp_path, monkeypatch):
     # Application source is unchanged; the toy manifest keeps PM resolution
     # offline while exercising the real selected-environment launch boundary.
     for path in repository.iterdir():
-        if path.name in {"hermes_cli", "gateway", "agent", "tools", "plugins", "pm"} or path.suffix == ".py":
+        if path.name in {"moor_cli", "gateway", "agent", "tools", "plugins", "pm"} or path.suffix == ".py":
             if (root / path.name).exists():
-                # source_launch already stubs hermes_cli/source_completion.py; link the rest of that
+                # source_launch already stubs moor_cli/source_completion.py; link the rest of that
                 # package's modules beside it.
                 for module in path.iterdir():
                     if not (root / path.name / module.name).exists():
@@ -51,7 +51,7 @@ def configured_update(source_launch, tmp_path, monkeypatch):
     def build_in_child():
         script = (
             "import json, sys; from pathlib import Path\n"
-            "from hermes_cli import source_build\n"
+            "from moor_cli import source_build\n"
             "source_build.source_build_env = lambda **kwargs: {}\n"
             "source_build.prepare_source_dependencies = lambda *args, **kwargs: None\n"
             "source_build.build_source_tui = lambda *args, **kwargs: None\n"
@@ -68,7 +68,7 @@ def configured_update(source_launch, tmp_path, monkeypatch):
         "mcp_servers:\n  fixture:\n    command: must-not-run\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("MOOR_DISABLE_LAZY_INSTALLS", "1")
     # A stale positive verdict in the updater must not conceal missing child SDKs.
     from types import ModuleType
     for name in ("lark_oapi", "mcp"):
@@ -84,7 +84,7 @@ def test_update_names_missing_configured_features_from_selected_child(configured
     out = capfd.readouterr().out
     assert "fail to load them on restart" in out
     assert "Feishu / Lark" in out and "MCP servers" in out
-    assert "hermes setup" in out and "hermes pm" in out
+    assert "moor setup" in out and "moor pm" in out
     target = json.loads(next(line.removeprefix("TARGET=") for line in out.splitlines() if line.startswith("TARGET=")))
     assert Path(target["prefix"]) == selected
     assert Path(target["python"]).parent.parent == selected

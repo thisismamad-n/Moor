@@ -37,9 +37,9 @@ def _make_bot_profile(root, name, *, managed=True, soul=None):
 def test_roster_excludes_infra_dirs_and_tombstones(tmp_path):
     """The teammate roster applies the same identity predicate as ``profile list``: bare
     infrastructure dirs (``@sessions``, ``@logs``) and deleted profiles are not teammates (#99392)."""
-    from hermes_constants import mark_named_profile_deleted
+    from moor_constants import mark_named_profile_deleted
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     for stray in ("sessions", "logs"):
@@ -57,7 +57,7 @@ def test_roster_excludes_dirs_failing_the_profile_id_regex(tmp_path):
     """#116905: a directory carrying an identity marker but named like anything other than a
     profile id (a parked backup, a dotfile staging dir) is not a teammate. ``profile list``
     hides such dirs via ``_PROFILE_ID_RE``; the roster must agree with that predicate."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     for stray in ("_backup_removed_20260920", ".staging-area"):
@@ -211,7 +211,7 @@ def test_fingerprint_changes_on_each_capability_axis(tmp_path):
 
 def test_fingerprint_changes_when_model_vision_override_flips(tmp_path):
     """A Bot Chat prompt must rebuild when model.supports_vision flips."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     config = home / "config.yaml"
@@ -235,7 +235,7 @@ def test_fingerprint_changes_when_model_vision_override_flips(tmp_path):
 
 def test_vision_override_spellings_share_one_fingerprint(tmp_path):
     """YAML boolean tokens that image routing treats as the same override share an epoch."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     config = home / "config.yaml"
@@ -250,7 +250,7 @@ def test_vision_override_spellings_share_one_fingerprint(tmp_path):
 
 def test_fingerprint_changes_when_model_context_length_override_changes(tmp_path):
     """context_length truncates context files in the rebuilt prompt, so it is part of the epoch."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     config = home / "config.yaml"
@@ -351,7 +351,7 @@ def test_fingerprint_changes_when_a_peer_is_registered(tmp_path):
 
 
 def test_roster_resolves_default_to_root_home_over_stray_directory(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     # A stray profiles/default/ directory must not shadow the reserved root home.

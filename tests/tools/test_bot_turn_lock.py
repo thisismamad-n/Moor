@@ -267,7 +267,7 @@ def test_relay_deliver_returns_target_busy_error(tmp_path, monkeypatch):
     h = tmp_path / "h"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("MOOR_HOME", str(h))
     monkeypatch.setattr(bot_relay, "turn_wait_seconds", lambda: 0.2)
 
     spawned = {}
@@ -292,7 +292,7 @@ def test_relay_deliver_returns_target_busy_error(tmp_path, monkeypatch):
 
         return _Done()
 
-    monkeypatch.setattr("hermes_cli.quiet_single_query.run_reported_turn", _fake_run)
+    monkeypatch.setattr("moor_cli.quiet_single_query.run_reported_turn", _fake_run)
 
     held = threading.Event()
     release = threading.Event()
@@ -319,7 +319,7 @@ def test_relay_deliver_serializes_then_succeeds(tmp_path, monkeypatch):
     h = tmp_path / "h"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("MOOR_HOME", str(h))
     monkeypatch.setattr(bot_relay, "turn_wait_seconds", lambda: 5.0)
 
     class _Proc:
@@ -327,7 +327,7 @@ def test_relay_deliver_serializes_then_succeeds(tmp_path, monkeypatch):
         stdout = "pong"
         stderr = ""
 
-    monkeypatch.setattr("hermes_cli.quiet_single_query.run_reported_turn", lambda *a, **k: _Proc())
+    monkeypatch.setattr("moor_cli.quiet_single_query.run_reported_turn", lambda *a, **k: _Proc())
 
     held = threading.Event()
     release = threading.Event()
@@ -359,7 +359,7 @@ class _WithReason(RuntimeError):
     ("failure", "code", "reason"),
     [
         (TurnBusyError("ops", 0.2), 5096, "target_busy"),
-        (subprocess.TimeoutExpired(["hermes"], 600), 5093, "delivery_timeout"),
+        (subprocess.TimeoutExpired(["moor"], 600), 5093, "delivery_timeout"),
         (RuntimeError("Error code: 401 - invalid api key"), 5094, "provider_auth_or_access"),
         (RuntimeError("something nobody has a rule for"), 5094, "unknown"),
         (_WithReason("CERTIFICATE_VERIFY_FAILED", "ssl handshake failed"), 5094, "unknown"),
@@ -379,13 +379,13 @@ def test_every_relay_refusal_carries_its_typed_reason(tmp_path, monkeypatch, fai
     h = tmp_path / "h"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("MOOR_HOME", str(h))
     monkeypatch.setattr(bot_relay, "local_delivery_command", lambda prof, tmp: ["__delivery__", prof])
 
     def _raise(argv, **kwargs):
         raise failure
 
-    monkeypatch.setattr("hermes_cli.quiet_single_query.run_reported_turn", _raise)
+    monkeypatch.setattr("moor_cli.quiet_single_query.run_reported_turn", _raise)
 
     out = srv._methods["bot_relay.deliver"](1, {"profile": "ops", "message": "x"})
 
@@ -414,7 +414,7 @@ def test_delivery_main_reports_every_failure_as_typed_json(tmp_path, monkeypatch
 
     monkeypatch.setattr(bot_mode_dm, "_run_delivery", _raise)
 
-    rc = bot_mode_dm._delivery_main(["--run-delivery", "query-file", str(dm), "hermes", "-p", "ops", "chat"])
+    rc = bot_mode_dm._delivery_main(["--run-delivery", "query-file", str(dm), "moor", "-p", "ops", "chat"])
 
     assert rc == 1
     payload = json.loads(capsys.readouterr().out.strip())

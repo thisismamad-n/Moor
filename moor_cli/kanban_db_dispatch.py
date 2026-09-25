@@ -25,7 +25,7 @@ from typing import Mapping
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from hermes_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
+from moor_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
 
 if TYPE_CHECKING:
     from moor_cli.kanban_db import Task
@@ -188,7 +188,7 @@ def describe_suppression(results: Iterable[Optional["DispatchResult"]]) -> str:
 # task. Entry: ``pid -> (raw_wait_status, reaped_at_epoch)``; raw status kept so
 # both WIFEXITED/WEXITSTATUS and WIFSIGNALED can be consulted. Trimmed by age
 # plus a total size cap. Process-local by nature (``waitpid`` only reaps our own
-# children): a per-tick ``hermes kanban dispatch`` process finds it empty, so
+# children): a per-tick ``moor kanban dispatch`` process finds it empty, so
 # ``_classify_dead_worker_exit`` falls back to the exit trailer the worker
 # leaves in its own log (``KANBAN_WORKER_EXIT_TRAILER``).
 _RECENT_WORKER_EXIT_TTL_SECONDS = 600
@@ -266,7 +266,7 @@ def _worker_log_exit_code(task_id: str, board: Optional[str] = None) -> Optional
     """Exit code from the trailer the worker CLI wrote to its own log; None when absent.
 
     The durable twin of ``_recent_worker_exits``: written by the worker itself
-    (``hermes_cli.quiet_single_query.exit_single_query``), so it is there whether
+    (``moor_cli.quiet_single_query.exit_single_query``), so it is there whether
     or not the process running this sweep ever reaped the worker. Last trailer
     wins — the log is append-mode across re-runs.
     """
@@ -1679,7 +1679,7 @@ def _dispatch_profile_allowlist(normalize_profile_name) -> Optional[frozenset]:
     board must never widen this home's claim scope silently (#113620).
     """
     try:
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
         kanban = (load_user_config_effective(fail_closed=True) or {}).get("kanban", {})
     except Exception as exc:
         _kb._log.warning(
@@ -1710,12 +1710,12 @@ def _dispatch_profile_allowlist(normalize_profile_name) -> Optional[frozenset]:
 def dispatch_profile_allowlist_summary() -> str:
     """Human-readable resolution of ``kanban.dispatch_profiles`` for this home.
 
-    Surfaced by ``hermes kanban diagnostics`` so an operator on a shared board
+    Surfaced by ``moor kanban diagnostics`` so an operator on a shared board
     can see what a home believes it may claim (#113620): ``any`` (key absent),
     the sorted allowed names, or ``none (fail-closed: ...)``.
     """
     try:
-        from hermes_cli.profiles import normalize_profile_name
+        from moor_cli.profiles import normalize_profile_name
     except Exception as exc:
         return f"none (fail-closed: profiles unavailable: {exc})"
     allowlist = _dispatch_profile_allowlist(normalize_profile_name)
@@ -2572,7 +2572,7 @@ def _worker_terminal_timeout_env(
 
 
 @contextlib.contextmanager
-def _worker_profile_scope(hermes_home: str, *, bind_home: bool = True):
+def _worker_profile_scope(moor_home: str, *, bind_home: bool = True):
     """Bind an assigned profile's runtime scope (secrets + terminal policy, optionally home) for
     one dispatch-side read or spawn-env build.
 
@@ -2593,15 +2593,15 @@ def _worker_profile_scope(hermes_home: str, *, bind_home: bool = True):
     resolves for a standalone dispatcher.
     """
     from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
-    from hermes_constants import get_process_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import get_process_moor_home, reset_moor_home_override, set_moor_home_override
     from tools.terminal_scope import install_profile_terminal_scope, reset_terminal_scope
     from tui_gateway.launch_profile_policy import launch_secret_scope, launch_terminal_env
 
-    home = Path(hermes_home)
-    is_launch_home = str(home.resolve()) == str(Path(get_process_hermes_home()).resolve())
+    home = Path(moor_home)
+    is_launch_home = str(home.resolve()) == str(Path(get_process_moor_home()).resolve())
     home_token = secret_token = terminal_token = None
     try:
-        home_token = set_hermes_home_override(str(home)) if bind_home else None
+        home_token = set_moor_home_override(str(home)) if bind_home else None
         secret_token = set_secret_scope(
             launch_secret_scope(home) if is_launch_home else build_profile_secret_scope(home),
             profile_home=None if is_launch_home else str(home))
@@ -2614,10 +2614,10 @@ def _worker_profile_scope(hermes_home: str, *, bind_home: bool = True):
         if secret_token is not None:
             reset_secret_scope(secret_token)
         if home_token is not None:
-            reset_hermes_home_override(home_token)
+            reset_moor_home_override(home_token)
 
 
-def _resolve_worker_cli_toolsets(hermes_home: Optional[str]) -> Optional[list[str]]:
+def _resolve_worker_cli_toolsets(moor_home: Optional[str]) -> Optional[list[str]]:
     """Return the assigned profile's effective CLI toolsets for a worker.
 
     Resolved at dispatch time and passed as an explicit ``--toolsets`` pin so
@@ -2629,10 +2629,10 @@ def _resolve_worker_cli_toolsets(hermes_home: Optional[str]) -> Optional[list[st
     if not moor_home:
         return None
     try:
-        from hermes_cli.config import load_config
-        from hermes_cli.tools_config import _get_platform_tools
+        from moor_cli.config import load_config
+        from moor_cli.tools_config import _get_platform_tools
 
-        with _worker_profile_scope(hermes_home):
+        with _worker_profile_scope(moor_home):
             cfg = load_config()
             toolsets = sorted(_get_platform_tools(cfg, "cli"))
         return toolsets or None

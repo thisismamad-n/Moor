@@ -12,8 +12,8 @@ import { preflightStateDb } from './state-db-preflight'
 
 test('the desktop preflight publishes committed WAL rows before its caller can stop the backend', async (): Promise<void> => {
   const home: string = fs.mkdtempSync(path.join(os.tmpdir(), 'desktop-db-'))
-  const python: string = process.env.HERMES_PYTHON || 'python3'
-  const script: string = fileURLToPath(new URL('../../../../hermes_cli/backup_sqlite.py', import.meta.url))
+  const python: string = process.env.MOOR_PYTHON || 'python3'
+  const script: string = fileURLToPath(new URL('../../../../moor_cli/backup_sqlite.py', import.meta.url))
 
   const child = spawn(
     python,
@@ -94,8 +94,8 @@ test('an older selected checkout without the snapshot helper refuses before back
   try {
     assert.throws((): void => {
       preflightStateDb({
-        python: process.env.HERMES_PYTHON || 'python3',
-        script: path.join(oldRoot, 'hermes_cli', 'backup_sqlite.py'),
+        python: process.env.MOOR_PYTHON || 'python3',
+        script: path.join(oldRoot, 'moor_cli', 'backup_sqlite.py'),
         home: oldRoot,
         log: (): void => {}
       })

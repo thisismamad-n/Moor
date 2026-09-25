@@ -9,11 +9,11 @@ description: 'Choose your learning path through the Moor Agent documentation bas
 Moor Agent can do a lot — CLI assistant, Telegram/Discord bot, task automation, RL training, and more. This page helps you figure out where to start and what to read based on your experience level and what you're trying to accomplish.
 
 :::tip Start Here
-If you haven't installed Hermes Agent yet, begin with the [Installation guide](./installation.md) and then run through the [Quickstart](./quickstart.md). Everything below assumes you have a working installation.
+If you haven't installed Moor Agent yet, begin with the [Installation guide](./installation.md) and then run through the [Quickstart](./quickstart.md). Everything below assumes you have a working installation.
 :::
 
 :::tip First-time provider setup
-First-time users almost always want `hermes setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [Nous Portal](../integrations/nous-portal.md).
+First-time users almost always want `moor setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [Moor Portal](../integrations/moor-portal.md).
 :::
 
 ## How to Use This Page
@@ -59,7 +59,7 @@ Deploy Moor Agent as a bot on your favorite messaging platform.
 4. [Telegram Setup](../user-guide/messaging/telegram.md)
 5. [Discord Setup](../user-guide/messaging/discord.md)
 6. [Voice Mode](../user-guide/features/voice-mode.md)
-7. [Use Voice Mode with Hermes](../guides/use-voice-mode-with-hermes.md)
+7. [Use Voice Mode with Moor](../guides/use-voice-mode-with-moor.md)
 8. [Security](../user-guide/security.md)
 
 For full project examples, see:
@@ -95,7 +95,7 @@ Create named Bots with their own model, memory, skills, routines, and chats, the
 Extend Moor Agent with your own tools and reusable skill packages.
 
 1. [Plugins](../user-guide/features/plugins.md)
-2. [Build a Hermes Plugin](../developer-guide/plugins/index.md)
+2. [Build a Moor Plugin](../developer-guide/plugins/index.md)
 3. [Tools Overview](../user-guide/features/tools.md)
 4. [Skills Overview](../user-guide/features/skills.md)
 5. [MCP (Model Context Protocol)](../user-guide/features/mcp.md)
@@ -105,7 +105,7 @@ Extend Moor Agent with your own tools and reusable skill packages.
 
 :::tip
 For most custom tool creation, start with plugins. The [Adding Tools](../developer-guide/adding-tools.md)
-page is for built-in Hermes core development, not the usual user/custom-tool path.
+page is for built-in Moor core development, not the usual user/custom-tool path.
 :::
 
 ### "I want to train models"
@@ -147,7 +147,7 @@ Not sure what's available? Here's a quick directory of major features:
 | **MCP** | Connect to external tool servers via Model Context Protocol | [MCP](../user-guide/features/mcp.md) |
 | **Cron** | Schedule recurring agent tasks | [Cron](../user-guide/features/cron.md) |
 | **Delegation** | Spawn sub-agents for parallel work | [Delegation](../user-guide/features/delegation.md) |
-| **Code Execution** | Run Python scripts that call Hermes tools programmatically | [Code Execution](../user-guide/features/code-execution.md) |
+| **Code Execution** | Run Python scripts that call Moor tools programmatically | [Code Execution](../user-guide/features/code-execution.md) |
 | **Browser** | Web browsing and scraping | [Browser](../user-guide/features/browser.md) |
 | **Hooks** | Event-driven callbacks and middleware | [Hooks](../user-guide/features/hooks.md) |
 | **Batch Processing** | Process multiple inputs in bulk | [Batch Processing](../user-guide/features/batch-processing.md) |

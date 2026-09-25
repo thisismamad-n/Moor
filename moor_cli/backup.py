@@ -21,14 +21,14 @@ from moor_constants import (
     LOCAL_RUNTIME_ROOT_DIRS, _get_platform_default_moor_home, get_default_moor_root, get_moor_home,
     display_moor_home,
 )
-from hermes_state_dbfile import RETIRED_GENERATION_DIR_SUFFIX
+from moor_state_dbfile import RETIRED_GENERATION_DIR_SUFFIX
 
-from hermes_cli.archive_safe import normalize_archive_parts
-from hermes_cli.backup_sqlite import _close_quietly, _safe_copy_db
-from hermes_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS, profile_root_entry
-from hermes_cli.sizefmt import format_bytes as _format_size
+from moor_cli.archive_safe import normalize_archive_parts
+from moor_cli.backup_sqlite import _close_quietly, _safe_copy_db
+from moor_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS, profile_root_entry
+from moor_cli.sizefmt import format_bytes as _format_size
 
-from hermes_cli.backup_restore import (
+from moor_cli.backup_restore import (
     _count_session_rows,
     _default_new_file_mode,
     _detect_prefix,
@@ -86,7 +86,7 @@ _EXCLUDED_DIRS = {
     ".cache", ".tox", ".nox", ".pytest_cache", ".mypy_cache", ".ruff_cache",
 }
 
-# Hermes-managed runtime downloads are regenerable. Match only profile roots:
+# moor-managed runtime downloads are regenerable. Match only profile roots:
 # a deeper directory of the same name (such as a skill's models/) is user data.
 _EXCLUDED_ROOT_DIRS = LOCAL_RUNTIME_ROOT_DIRS | (PM_RUNTIME_ROOT_DIRS - {"cache"})
 
@@ -313,8 +313,8 @@ def _iter_backup_files(moor_root: Path, out_path: Path, skipped_dirs: Optional[s
     """Yield ``(abs_path, rel_path)`` for every file a full backup should hold.
 
     The one owner of the walk policy (directory pruning so os.walk never descends a multi-GB
-    excluded tree, the root-only ``hermes-agent`` carve-out, root runtime trees, per-file rules),
-    shared by ``hermes backup`` and the pre-update path so they can never drift.
+    excluded tree, the root-only ``moor-agent`` carve-out, root runtime trees, per-file rules),
+    shared by ``moor backup`` and the pre-update path so they can never drift.
     """
     for dirpath, dirnames, filenames in os.walk(moor_root, followlinks=False):
         rel_dir = Path(dirpath).relative_to(moor_root)
@@ -331,7 +331,7 @@ def _iter_backup_files(moor_root: Path, out_path: Path, skipped_dirs: Optional[s
             rel = rel_dir / fname
             fpath = moor_root / rel
             # zipfile.write() follows file symlinks, so skip links before any archive write can
-            # copy data from outside HERMES_HOME; never archive the output zip into itself.
+            # copy data from outside MOOR_HOME; never archive the output zip into itself.
             if _should_exclude(rel):
                 continue
             if _is_non_regular_path(fpath):
@@ -542,28 +542,28 @@ def _collect_external_entries() -> tuple[list[tuple[Path, str]], list[str]]:
 
 
 def run_backup(args) -> bool:
-    """Create a zip backup of the Hermes home directory.
+    """Create a zip backup of the Moor home directory.
 
     True when every selected file landed in the archive (or there was nothing to back up); False
     when the zip was written but is incomplete — it is kept so the rest can still be restored, and
     the caller turns False into exit status 1 so a cron/systemd timer never publishes a "successful"
     archive that is missing state.db. Hard failures keep raising ``SystemExit``.
     """
-    hermes_root = get_default_hermes_root()
+    moor_root = get_default_moor_root()
 
     if not moor_root.is_dir():
         print(f"Error: Moor home directory not found at {moor_root}")
         sys.exit(1)
 
     try:
-        with _backup_operation_lock(hermes_root):
-            return _run_backup_locked(args, hermes_root)
+        with _backup_operation_lock(moor_root):
+            return _run_backup_locked(args, moor_root)
     except BackupInProgressError as exc:
         print(f"Error: {exc}")
         raise SystemExit(2) from exc
 
 
-def _run_backup_locked(args, hermes_root: Path) -> bool:
+def _run_backup_locked(args, moor_root: Path) -> bool:
     """Write a full backup while the cross-process backup slot is held."""
     out_path = _resolve_backup_output_path(args.output)
     scan_started = time.monotonic()
@@ -622,7 +622,7 @@ def _run_backup_locked(args, hermes_root: Path) -> bool:
     if errors:
         _print_capped(f"\n  Archive kept, but {len(errors)} file(s) could not be added:", errors, "  ")
     else:
-        print(f"\nRestore with: hermes import {out_path.name}")
+        print(f"\nRestore with: moor import {out_path.name}")
     # Prune only after a complete archive: a timer hitting the same unreadable file every run must
     # not rotate the last good backups out in favour of incomplete ones.
     keep = getattr(args, "keep", 0)  # 0 / absent: never prune (non-CLI callers)
@@ -658,7 +658,7 @@ def _find_corrupt_members(zf: zipfile.ZipFile, members: List[str]) -> List[str]:
 
 
 def _import_skipped(rel: str) -> bool:
-    """True for a HERMES_HOME-relative member the import deliberately does not restore: runtime
+    """True for a MOOR_HOME-relative member the import deliberately does not restore: runtime
     state (``_IMPORT_SKIP_NAMES``), PM-local interpreter/dependency roots, or an archived SQLite
     WAL/SHM/journal. A ``.db`` member is page-restored into the live file, and a sidecar from a
     different image would replay a foreign WAL on next open (older archives may ship these)."""
@@ -675,7 +675,7 @@ def _import_member_rel(member: str, prefix: str) -> tuple[str, bool]:
     """Classify an archive member exactly as the restore does: return ``(rel, skipped)``.
 
     ``_external/`` members are home-relative and never skipped; every other member is
-    HERMES_HOME-relative after stripping the archive ``prefix``. Shared by the integrity
+    MOOR_HOME-relative after stripping the archive ``prefix``. Shared by the integrity
     pre-flight and ``_import_members`` so the two cannot disagree on what gets restored."""
     if member.startswith(_EXTERNAL_PREFIX):
         return member[len(_EXTERNAL_PREFIX):], False
@@ -684,7 +684,7 @@ def _import_member_rel(member: str, prefix: str) -> tuple[str, bool]:
 
 
 def run_import(args) -> Optional[int]:
-    """Restore a Hermes backup; return 1 on damaged archives or incomplete restores."""
+    """Restore a Moor backup; return 1 on damaged archives or incomplete restores."""
     zip_path = Path(args.zipfile).expanduser().resolve()
 
     if not zip_path.is_file():
@@ -696,11 +696,11 @@ def run_import(args) -> Optional[int]:
         sys.exit(1)
 
     # The restore target must be the home the command operates under — the
-    # same path printed as "Target:" via display_hermes_home(). Resolving
-    # through get_default_hermes_root() instead maps a profile home
+    # same path printed as "Target:" via display_moor_home(). Resolving
+    # through get_default_moor_root() instead maps a profile home
     # (<root>/profiles/<name>) back to <root>, silently retargeting the
     # restore at the live root while the profile directory stays empty.
-    hermes_root = get_hermes_home()
+    moor_root = get_moor_home()
 
     with zipfile.ZipFile(zip_path, "r") as zf:
         # Validate
@@ -714,18 +714,18 @@ def run_import(args) -> Optional[int]:
         file_count = len(members)
 
         print(f"Backup contains {file_count} files")
-        print(f"Target: {display_hermes_home()}")
+        print(f"Target: {display_moor_home()}")
 
         if prefix:
             print(f"Detected archive prefix: {prefix!r} (will be stripped)")
 
         # Check for existing installation
-        has_config = (hermes_root / "config.yaml").exists()
-        has_env = (hermes_root / ".env").exists()
+        has_config = (moor_root / "config.yaml").exists()
+        has_env = (moor_root / ".env").exists()
 
         if (has_config or has_env) and not args.force:
             print()
-            print("Warning: Target directory already has Hermes configuration.")
+            print("Warning: Target directory already has Moor configuration.")
             print("Importing will overwrite existing files with backup contents.")
             print()
             try:
@@ -748,7 +748,7 @@ def run_import(args) -> Optional[int]:
 
         # Extract
         print(f"\nImporting {file_count} files ...")
-        hermes_root.mkdir(parents=True, exist_ok=True)
+        moor_root.mkdir(parents=True, exist_ok=True)
 
         errors = []
         restored = 0
@@ -767,7 +767,7 @@ def run_import(args) -> Optional[int]:
         for member in members:
             # External memory-provider state captured under the reserved
             # ``_external/`` arc prefix restores to its original home-relative
-            # location (e.g. ~/.honcho/config.json), NOT under HERMES_HOME.
+            # location (e.g. ~/.honcho/config.json), NOT under MOOR_HOME.
             if member.startswith(_EXTERNAL_PREFIX):
                 ext_rel = member[len(_EXTERNAL_PREFIX):]
                 if not ext_rel:
@@ -815,7 +815,7 @@ def run_import(args) -> Optional[int]:
             # namespaced to the machine/container the backup was taken on;
             # clobbering them (especially gateway_state.json) breaks the gateway
             # reconciler on the target and disconnects hosted instances from the
-            # Nous portal. Matched by basename so both the root profile and
+            # Moor portal. Matched by basename so both the root profile and
             # named profiles (profiles/<name>/gateway_state.json) are covered.
             if parts[-1] in _IMPORT_SKIP_NAMES:
                 skipped_runtime.append(rel)
@@ -837,11 +837,11 @@ def run_import(args) -> Optional[int]:
                 skipped_runtime.append(rel)
                 continue
 
-            target = hermes_root.joinpath(*parts)
+            target = moor_root.joinpath(*parts)
 
             # Security: reject absolute paths and traversals
             try:
-                target.resolve().relative_to(hermes_root.resolve())
+                target.resolve().relative_to(moor_root.resolve())
             except ValueError:
                 errors.append(f"  {rel}: path traversal blocked")
                 continue
@@ -872,12 +872,12 @@ def run_import(args) -> Optional[int]:
         # Summary
         print()
         print(f"Import {'incomplete' if errors else 'complete'}: {restored} files restored in {elapsed:.1f}s")
-        print(f"  Target: {display_hermes_home()}")
+        print(f"  Target: {display_moor_home()}")
 
         if restored_external:
             print(
                 f"\n  Restored {restored_external} memory-provider file(s) to "
-                f"their original location(s) outside {display_hermes_home()}."
+                f"their original location(s) outside {display_moor_home()}."
             )
 
         if errors:
@@ -913,11 +913,11 @@ def run_import(args) -> Optional[int]:
                 print(f"    ... and {len(skipped_runtime) - 10} more")
 
         # Post-import: restore profile wrapper scripts
-        profiles_dir = hermes_root / "profiles"
+        profiles_dir = moor_root / "profiles"
         restored_profiles = []
         if profiles_dir.is_dir():
             try:
-                from hermes_cli.profiles import (
+                from moor_cli.profiles import (
                     create_wrapper_script, check_alias_collision,
                     _is_wrapper_dir_in_path, _get_wrapper_dir,
                 )
@@ -948,22 +948,22 @@ def run_import(args) -> Optional[int]:
                         print('  Add to your shell config (~/.bashrc or ~/.zshrc):')
                         print('    export PATH="$HOME/.local/bin:$PATH"')
             except ImportError:
-                # hermes_cli.profiles might not be available (fresh install)
+                # moor_cli.profiles might not be available (fresh install)
                 if any(profiles_dir.iterdir()):
                     print("\n  Profiles detected but aliases could not be created.")
-                    print("  Run: hermes profile list  (after installing hermes)")
+                    print("  Run: moor profile list  (after installing moor)")
 
         # Guidance
         print()
-        if not (hermes_root / "hermes-agent").is_dir():
-            print("Note: The hermes-agent codebase was not included in the backup.")
-            print("  If this is a fresh install, run: hermes update")
+        if not (moor_root / "moor-agent").is_dir():
+            print("Note: The moor-agent codebase was not included in the backup.")
+            print("  If this is a fresh install, run: moor update")
 
         if restored_profiles:
             gw_profiles = [n for n, _ in restored_profiles]
             print("\nTo re-enable gateway services for profiles:")
             for pname in gw_profiles:
-                print(f"  hermes -p {pname} gateway install")
+                print(f"  moor -p {pname} gateway install")
 
         # Bring the restored install to life: the backup may contain bot
         # tokens and registered cron jobs, but they're inert without a
@@ -971,7 +971,7 @@ def run_import(args) -> Optional[int]:
         # platform-less gateway is a supported mode, so this is safe even
         # for backups with no messaging config). Best-effort and prompt-free;
         # failures print a manual fallback and never fail the import.
-        native_default = _get_platform_default_hermes_home()
+        native_default = _get_platform_default_moor_home()
         default_has_install = any(
             (native_default / marker).exists()
             for marker in ("config.yaml", ".env", "state.db")
@@ -981,29 +981,29 @@ def run_import(args) -> Optional[int]:
         # would shadow or hijack the machine's primary install. Only revive
         # the service automatically when the restore landed in the default
         # home, or when no other install exists on this machine.
-        if hermes_root != native_default and default_has_install:
+        if moor_root != native_default and default_has_install:
             print(
                 "\nRestored into a non-default home; leaving the gateway service "
                 "alone to avoid clashing with the install at "
                 f"{native_default}."
             )
-            print("To start a gateway for this home, run:  hermes gateway install")
+            print("To start a gateway for this home, run:  moor gateway install")
         else:
             try:
-                from hermes_cli.gateway import ensure_gateway_service, _is_service_running
+                from moor_cli.gateway import ensure_gateway_service, _is_service_running
 
                 if not _is_service_running():
                     print()
                     ensure_gateway_service(context="import")
             except Exception:
                 print("\nStart the gateway to activate cron jobs and messaging:")
-                print("  hermes gateway install")
+                print("  moor gateway install")
 
         if errors:
             print(f"Import incomplete: {len(errors)} file(s) were not restored (see Warnings above). "
                   "Fix the cause and re-run the import.")
             return 1
-        print("Done. Your Hermes configuration has been restored.")
+        print("Done. Your Moor configuration has been restored.")
 
 
 
@@ -1159,21 +1159,21 @@ def copy_db_and_verify(src: Path, dst: Path) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Quick state snapshots (used by /snapshot slash command and hermes backup --quick)
+# Quick state snapshots (used by /snapshot slash command and moor backup --quick)
 # ---------------------------------------------------------------------------
 
 def create_quick_snapshot(
     label: Optional[str] = None,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
     keep: Optional[int] = None,
     max_file_size: Optional[int] = None,
 ) -> Optional[str]:
     """Create one atomic quick snapshot while holding the shared backup slot."""
-    home = hermes_home or get_hermes_home()
+    home = moor_home or get_moor_home()
     with _backup_operation_lock(home):
         return _create_quick_snapshot_locked(
             label=label,
-            hermes_home=home,
+            moor_home=home,
             keep=keep,
             max_file_size=max_file_size,
         )
@@ -1181,7 +1181,7 @@ def create_quick_snapshot(
 
 def _create_quick_snapshot_locked(
     label: Optional[str] = None,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
     keep: Optional[int] = None,
     max_file_size: Optional[int] = None,
 ) -> Optional[str]:
@@ -1194,16 +1194,16 @@ def _create_quick_snapshot_locked(
         max_file_size: When set, individual files larger than this many bytes
             are skipped (with a printed warning) instead of copied. Used by
             the pre-update safety snapshot so a multi-GB ``state.db`` can
-            never stall ``hermes update`` or silently eat disk — the small
+            never stall ``moor update`` or silently eat disk — the small
             pairing/cron/config files the snapshot exists to protect are
             always captured. ``None`` (default) copies everything, which
-            preserves manual ``/snapshot`` and ``hermes backup --quick``
+            preserves manual ``/snapshot`` and ``moor backup --quick``
             behavior.
 
     Returns:
         Snapshot ID (timestamp-based), or None if no files found.
     """
-    home = hermes_home or get_hermes_home()
+    home = moor_home or get_moor_home()
     root = _quick_snapshot_root(home)
 
     def _too_large(path: Path, rel_name: str) -> bool:
@@ -1424,10 +1424,10 @@ def _create_quick_snapshot_locked(
 
 def list_quick_snapshots(
     limit: int = 20,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> List[Dict[str, Any]]:
     """List existing quick state snapshots, most recent first."""
-    root = _quick_snapshot_root(hermes_home)
+    root = _quick_snapshot_root(moor_home)
     if not root.exists():
         return []
 
@@ -1450,14 +1450,14 @@ def list_quick_snapshots(
 
 def restore_quick_snapshot(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> bool:
     """Restore state from a quick snapshot.
 
     Overwrites current state files with the snapshot's copies.
     Returns True if at least one file was restored.
     """
-    home = hermes_home or get_hermes_home()
+    home = moor_home or get_moor_home()
     root = _quick_snapshot_root(home)
 
     # Security: reject snapshot_id values that contain path separators or
@@ -1561,9 +1561,9 @@ def _count_cron_jobs(path: Path) -> Optional[int]:
 
 def restore_cron_jobs_if_emptied(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Safety net for silent cron-job loss across ``hermes update``.
+    """Safety net for silent cron-job loss across ``moor update``.
 
     Config-version migrations have been observed to leave ``cron/jobs.json``
     valid-but-empty after an update, silently dropping every scheduled job
@@ -1584,7 +1584,7 @@ def restore_cron_jobs_if_emptied(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        hermes_home: Override for the Hermes home directory (tests).
+        moor_home: Override for the Moor home directory (tests).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -1594,7 +1594,7 @@ def restore_cron_jobs_if_emptied(
     if not snapshot_id:
         return None
 
-    home = hermes_home or get_hermes_home()
+    home = moor_home or get_moor_home()
     live_path = home / _CRON_JOBS_REL
 
     live_count = _count_cron_jobs(live_path)
@@ -1644,14 +1644,14 @@ def _sibling_profile_homes(invoking_home: Path) -> list[tuple[str, Path]]:
     """
     homes: list[tuple[str, Path]] = []
     try:
-        from hermes_cli.profiles import (
-            _get_default_hermes_home,
+        from moor_cli.profiles import (
+            _get_default_moor_home,
             _get_profiles_root,
             _PROFILE_ID_RE,
         )
 
         invoking = invoking_home.resolve()
-        default_home = _get_default_hermes_home()
+        default_home = _get_default_moor_home()
         if default_home.is_dir() and default_home.resolve() != invoking:
             homes.append(("default", default_home))
         root = _get_profiles_root()
@@ -1684,12 +1684,12 @@ def create_pre_update_snapshots_all_profiles(
     siblings that snapshotted successfully. Never raises.
     """
     results: Dict[str, str] = {}
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_moor_home()
     for name, profile_home in _sibling_profile_homes(home):
         try:
             snap_id = create_quick_snapshot(
                 label="pre-update",
-                hermes_home=profile_home,
+                moor_home=profile_home,
                 keep=keep,
                 max_file_size=max_file_size,
             )
@@ -1719,7 +1719,7 @@ def _read_raw_yaml_dict(path: Path) -> Optional[Dict[str, Any]]:
     if not path.is_file():
         return None
     try:
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         with open(path, "r", encoding="utf-8-sig") as f:
             data = yaml.safe_load(f)
@@ -1750,9 +1750,9 @@ def _set_config_path_value(data: Dict[str, Any], dotted: Tuple[str, ...], value:
 
 def restore_config_model_settings_if_rewritten(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Safety net for silent config.yaml model/MoA loss across ``hermes update``.
+    """Safety net for silent config.yaml model/MoA loss across ``moor update``.
 
     Desktop update/repair cycles have been observed to rewrite user-set
     ``model.provider``/``model.default`` and drop the ``moa:`` section
@@ -1771,7 +1771,7 @@ def restore_config_model_settings_if_rewritten(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        hermes_home: Override for the Hermes home directory (tests/siblings).
+        moor_home: Override for the Moor home directory (tests/siblings).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -1781,7 +1781,7 @@ def restore_config_model_settings_if_rewritten(
     if not snapshot_id:
         return None
 
-    home = hermes_home or get_hermes_home()
+    home = moor_home or get_moor_home()
     live_path = home / "config.yaml"
     snap_path = _quick_snapshot_root(home) / snapshot_id / "config.yaml"
 
@@ -1809,7 +1809,7 @@ def restore_config_model_settings_if_rewritten(
         return None
 
     try:
-        from hermes_cli.config import atomic_config_write
+        from moor_cli.config import atomic_config_write
 
         atomic_config_write(live_path, live)
     except (OSError, PermissionError) as exc:
@@ -1843,7 +1843,7 @@ def restore_config_model_settings_all_profiles(
     restored: list[Dict[str, Any]] = []
     if not profile_snapshots:
         return restored
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_moor_home()
     by_name = dict(_sibling_profile_homes(home))
     for name, snap_id in profile_snapshots.items():
         profile_home = by_name.get(name)
@@ -1851,7 +1851,7 @@ def restore_config_model_settings_all_profiles(
             continue
         try:
             result = restore_config_model_settings_if_rewritten(
-                snap_id, hermes_home=profile_home
+                snap_id, moor_home=profile_home
             )
         except Exception as exc:
             logger.debug(
@@ -1882,14 +1882,14 @@ def restore_cron_jobs_all_profiles(
     restored: list[Dict[str, Any]] = []
     if not profile_snapshots:
         return restored
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_moor_home()
     by_name = dict(_sibling_profile_homes(home))
     for name, snap_id in profile_snapshots.items():
         profile_home = by_name.get(name)
         if profile_home is None:
             continue
         try:
-            result = restore_cron_jobs_if_emptied(snap_id, hermes_home=profile_home)
+            result = restore_cron_jobs_if_emptied(snap_id, moor_home=profile_home)
         except Exception as exc:
             logger.debug("Cron restore check for profile %s failed: %s", name, exc)
             continue
@@ -1927,20 +1927,20 @@ def _prune_quick_snapshots(root: Path, keep: int = _QUICK_DEFAULT_KEEP) -> int:
 
 def prune_quick_snapshots(
     keep: int = _QUICK_DEFAULT_KEEP,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> int:
     """Manually prune quick snapshots. Returns count deleted."""
-    return _prune_quick_snapshots(_quick_snapshot_root(hermes_home), keep=keep)
+    return _prune_quick_snapshots(_quick_snapshot_root(moor_home), keep=keep)
 
 
 def run_quick_backup(args) -> None:
-    """CLI entry point for hermes backup --quick."""
+    """CLI entry point for moor backup --quick."""
     label = getattr(args, "label", None)
     snap_id = create_quick_snapshot(label=label)
     if snap_id:
         print(f"State snapshot created: {snap_id}")
         snaps = list_quick_snapshots()
-        print(f"  {len(snaps)} snapshot(s) stored in {display_hermes_home()}/state-snapshots/")
+        print(f"  {len(snaps)} snapshot(s) stored in {display_moor_home()}/state-snapshots/")
         print(f"  Restore with: /snapshot restore {snap_id}")
     else:
         print("No state files found to snapshot.")
@@ -1950,21 +1950,21 @@ def run_quick_backup(args) -> None:
 # Shared full-zip backup helper
 # ---------------------------------------------------------------------------
 
-def _write_full_zip_backup(out_path: Path, hermes_root: Path) -> Optional[Path]:
+def _write_full_zip_backup(out_path: Path, moor_root: Path) -> Optional[Path]:
     """Single-flight wrapper for automatic full zip backups."""
     try:
-        with _backup_operation_lock(hermes_root):
-            return _write_full_zip_backup_locked(out_path, hermes_root)
+        with _backup_operation_lock(moor_root):
+            return _write_full_zip_backup_locked(out_path, moor_root)
     except BackupInProgressError as exc:
         logger.warning("Full-zip backup skipped: %s", exc)
         return None
 
 
-def _write_full_zip_backup_locked(out_path: Path, hermes_root: Path) -> Optional[Path]:
+def _write_full_zip_backup_locked(out_path: Path, moor_root: Path) -> Optional[Path]:
     scan_started = time.monotonic()
     logger.info("automatic backup phase=scan status=started")
     try:
-        files_to_add = list(_iter_backup_files(hermes_root, out_path))
+        files_to_add = list(_iter_backup_files(moor_root, out_path))
     except OSError as exc:
         logger.warning("Full-zip backup: walk failed: %s", exc)
         return None

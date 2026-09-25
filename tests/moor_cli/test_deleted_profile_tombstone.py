@@ -14,8 +14,8 @@ from unittest.mock import patch
 import pytest
 
 from cron.scheduler_delivery import BOT_CHAT_PLATFORM, cron_delivery_targets
-from hermes_cli.config import ensure_hermes_home
-from hermes_cli.profiles import (
+from moor_cli.config import ensure_moor_home
+from moor_cli.profiles import (
     backfill_profile_envs,
     create_profile,
     delete_profile,
@@ -198,14 +198,14 @@ class TestDeletedProfileTombstone:
     def test_marker_less_shell_is_not_a_profile(self, profile_env):
         """A ``profiles/<name>`` dir with no identity file (a pre-tombstone ghost shell left by a
         cron ticker, or a stray infrastructure dir) is not listed, served, or seeded with the
-        default install's ``.env`` — that seeding is what legitimised ghosts on ``hermes update``
+        default install's ``.env`` — that seeding is what legitimised ghosts on ``moor update``
         (#95188 path D, #94823, #99392). ``profile create`` may take the name back."""
-        default_env = profile_env / ".hermes" / ".env"
+        default_env = profile_env / ".moor" / ".env"
         default_env.write_text("OPENAI_API_KEY=sk-real\n", encoding="utf-8")
-        shell = profile_env / ".hermes" / "profiles" / "ghost"
+        shell = profile_env / ".moor" / "profiles" / "ghost"
         (shell / "cron").mkdir(parents=True)
         (shell / "cron" / "ticker_heartbeat").write_text("1\n", encoding="utf-8")
-        legacy = profile_env / ".hermes" / "profiles" / "legacy"
+        legacy = profile_env / ".moor" / "profiles" / "legacy"
         legacy.mkdir()
         (legacy / "state.db").write_bytes(b"")
 
@@ -213,8 +213,8 @@ class TestDeletedProfileTombstone:
         assert not (shell / ".env").exists()
         assert _named_homes(profile_env) == ["legacy"]
         assert [name for name, _ in profiles_to_serve(True)] == ["default", "legacy"]
-        # ``hermes --profile ghost serve`` (a stale Desktop boot target) must not start a backend
-        # in the shell — its ensure_hermes_home() would rebuild the full profile tree.
+        # ``moor --profile ghost serve`` (a stale Desktop boot target) must not start a backend
+        # in the shell — its ensure_moor_home() would rebuild the full profile tree.
         assert not profile_exists("ghost")
         with pytest.raises(FileNotFoundError):
             resolve_profile_env("ghost")
@@ -232,7 +232,7 @@ class TestDeletedProfileTombstone:
     def test_dangling_symlink_marker_is_still_identity(self, profile_env):
         """A profile whose only marker is a dangling symlinked ``config.yaml`` (clone/migration
         leftover) stays resolvable: ``is_file()`` follows links and would make it invisible."""
-        legacy = profile_env / ".hermes" / "profiles" / "legacy"
+        legacy = profile_env / ".moor" / "profiles" / "legacy"
         legacy.mkdir(parents=True)
         (legacy / "config.yaml").symlink_to(profile_env / "gone" / "config.yaml")
         assert profile_exists("legacy")

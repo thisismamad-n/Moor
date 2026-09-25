@@ -259,7 +259,7 @@ def _open_continuable_cron_thread(job: dict, adapter, chat_id: str, loop) -> Opt
     create_thread = getattr(adapter, "create_handoff_thread", None)
     if not callable(create_thread) or loop is None:
         return None
-    thread_name = f"Hermes — {_cron_display_name(job)}"
+    thread_name = f"Moor — {_cron_display_name(job)}"
     try:
         from agent.async_utils import safe_schedule_threadsafe
         coro = create_thread(str(chat_id), thread_name)
@@ -724,13 +724,13 @@ _BOT_CHAT_BANNER_PREFIXES = ("Resumed session", "session_id:")
 
 
 def _run_bot_chat_turn(argv: list, env: dict, report_path: str, timeout: float) -> subprocess.CompletedProcess:
-    """Run one ``hermes chat -Q`` delivery child; the cap bounds the TURN, not the process (#113608).
+    """Run one ``moor chat -Q`` delivery child; the cap bounds the TURN, not the process (#113608).
 
     The booking policy lives with the report contract (``quiet_single_query.run_reported_turn``):
     this lane needs only the outcome, so a child that reported its turn gets the exit grace and is
     then left to its linger; only a turn that never ends is killed.
     """
-    from hermes_cli.quiet_single_query import run_reported_turn
+    from moor_cli.quiet_single_query import run_reported_turn
 
     # The scheduler may sit in a directory that no longer exists (a kanban worker whose
     # scratch workspace was reaped): a child inheriting that cwd dies at CLI startup
@@ -738,7 +738,7 @@ def _run_bot_chat_turn(argv: list, env: dict, report_path: str, timeout: float) 
     # Decoding is the runner's platform policy: lossy everywhere (#105582), UTF-8 only on
     # win32 (#115894), the locale codec on POSIX (#66566).
     return run_reported_turn(argv, env=env, report_path=report_path, timeout=timeout,
-                             cwd=env.get("HERMES_HOME") or None)
+                             cwd=env.get("MOOR_HOME") or None)
 
 
 def _format_failure_streams(result) -> str:
@@ -809,7 +809,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
                 get_profile_dir(profile) if profile else source_home).resolve()
         for_failure = for_failure or bool((deferred or {}).get("for_failure"))
         from gateway.warning_notifications import warning_notifications_enabled
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
         suppress_notification = for_failure and not warning_notifications_enabled(
             BOT_CHAT_POLICY_PLATFORM, load_user_config_effective(home / "config.yaml"))
         if deferred is not None and not (home / "state.db").is_file():
@@ -923,7 +923,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
             "chat", "--in", "~", "-c", "Bot Chat", "--create-if-missing",
             "-Q", "--query-file", query_file,
         ]
-        from hermes_cli.quiet_single_query import TURN_REPORT_FILE_ENV
+        from moor_cli.quiet_single_query import TURN_REPORT_FILE_ENV
         report_file = f"{query_file}.turn.json"
         env[TURN_REPORT_FILE_ENV] = report_file
         timeout_s = _get_bot_chat_delivery_timeout()
@@ -934,8 +934,8 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
                 "Job '%s': bot-chat delivery to profile '%s' failed at %s: %s",
                 job_id, profile_label, home, tail)
             return (
-                f"Hermes could not deliver this result to Bot Chat (profile '{profile_label}'). "
-                "The result is saved; run `hermes cron runs` to see it, or `hermes doctor` if this keeps happening"
+                f"Moor could not deliver this result to Bot Chat (profile '{profile_label}'). "
+                "The result is saved; run `moor cron runs` to see it, or `moor doctor` if this keeps happening"
                 f". Details: {tail}")
         logger.info("Job '%s': delivered to Bot Chat of profile '%s'", job_id, profile_label)
         return None
@@ -949,7 +949,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
             marker = (
                 f"DELIVERY DEGRADED: this alert's bot-chat turn timed out after "
                 f"{timeout_s}s, so the full output could NOT be posted here. Read the "
-                f"complete saved output with `hermes cron runs` (job '{job_id}'). "
+                f"complete saved output with `moor cron runs` (job '{job_id}'). "
                 f"Excerpt: {content.strip()[:280]}"
             )
             try:
@@ -967,9 +967,9 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
                     job_id, defer_exc)
         hint = (
             "a short degraded-delivery notice was queued to Bot Chat — posted once the "
-            f"session frees; full output stays saved, run `hermes cron runs` for job '{job_id}'"
+            f"session frees; full output stays saved, run `moor cron runs` for job '{job_id}'"
             if marker_queued else
-            "the result is saved; run `hermes cron runs` to see it, or `hermes doctor` "
+            "the result is saved; run `moor cron runs` to see it, or `moor doctor` "
             "if this keeps happening")
         return _fail(
             f"bot-chat delivery to profile '{profile_label}' timed out "

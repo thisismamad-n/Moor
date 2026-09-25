@@ -134,10 +134,10 @@ describe('probePluginRepo', () => {
   })
 
   it('probes a monorepo subdirectory through the sparse partial clone', async () => {
-    const repo = mkdtemp('hermes-plugin-monorepo-')
+    const repo = mkdtemp('moor-plugin-monorepo-')
     roots.push(repo)
     const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, stdio: 'pipe' })
-    const plugin = path.join(repo, 'integrations', 'hermes')
+    const plugin = path.join(repo, 'integrations', 'moor')
     fs.mkdirSync(plugin, { recursive: true })
     fs.writeFileSync(path.join(plugin, 'plugin.yaml'), 'name: nested-agent\n')
     fs.writeFileSync(path.join(plugin, '__init__.py'), 'def register(ctx): pass\n')
@@ -147,7 +147,7 @@ describe('probePluginRepo', () => {
     git('add', '.')
     git('-c', 'user.email=fixture@example.com', '-c', 'user.name=Fixture', 'commit', '-qm', 'init')
 
-    const result = await probePluginRepo('git', `${pathToFileURL(repo).href}#integrations/hermes`)
+    const result = await probePluginRepo('git', `${pathToFileURL(repo).href}#integrations/moor`)
 
     expect(result).toMatchObject({ ok: true, agent: true, agentName: 'nested-agent' })
   })
@@ -165,7 +165,7 @@ describe('installDesktopPluginFromGit', () => {
   /** A git repo whose root is one plugin: `desktop/plugin.js` plus, when
    *  `agentName` is given, the agent half that makes it a unified package. */
   function pluginRepo(agentName: null | string): string {
-    const repo = mkdtemp('hermes-plugin-install-')
+    const repo = mkdtemp('moor-plugin-install-')
     roots.push(repo)
     const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, stdio: 'pipe' })
 
@@ -189,21 +189,21 @@ describe('installDesktopPluginFromGit', () => {
     // agent row's desktop half: the row sits on "copying…" while the copy shows
     // up as a second, default-enabled standalone row, and reconcile refuses to
     // re-copy the folder ever again.
-    const repo = pluginRepo('hermes-talk')
-    const appRoot = mkdtemp('hermes-plugin-root-')
+    const repo = pluginRepo('moor-talk')
+    const appRoot = mkdtemp('moor-plugin-root-')
     roots.push(appRoot)
 
     const result = await installDesktopPluginFromGit('git', pathToFileURL(repo).href, appRoot)
 
-    expect(result).toMatchObject({ ok: true, pluginName: 'hermes-talk' })
-    const marker = JSON.parse(fs.readFileSync(path.join(appRoot, 'hermes-talk', PACKAGE_MARKER), 'utf8'))
-    expect(marker.package).toBe('hermes-talk')
+    expect(result).toMatchObject({ ok: true, pluginName: 'moor-talk' })
+    const marker = JSON.parse(fs.readFileSync(path.join(appRoot, 'moor-talk', PACKAGE_MARKER), 'utf8'))
+    expect(marker.package).toBe('moor-talk')
     expect(marker.repo).toBe(pathToFileURL(repo).href)
   })
 
   it('leaves a desktop-only repo unmarked so it stays a standalone plugin', async () => {
     const repo = pluginRepo(null)
-    const appRoot = mkdtemp('hermes-plugin-root-')
+    const appRoot = mkdtemp('moor-plugin-root-')
     roots.push(appRoot)
 
     const result = await installDesktopPluginFromGit('git', pathToFileURL(repo).href, appRoot)

@@ -121,7 +121,7 @@ config = {
     },
     "prompt_caching": {"enabled": False},
 }
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 Path(os.environ["MOOR_HOME"], "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
 from moor_state import SessionDB

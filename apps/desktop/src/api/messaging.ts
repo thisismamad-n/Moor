@@ -88,7 +88,7 @@ export function applyTelegramOnboarding(
 ): Promise<TelegramOnboardingApplyResponse> {
   const scope = profileScoped(profile)
 
-  return hermesApi<TelegramOnboardingApplyResponse>({
+  return moorApi<TelegramOnboardingApplyResponse>({
     ...scope,
     path: `/api/messaging/telegram/onboarding/${encodeURIComponent(pairingId)}/apply`,
     method: 'POST',
@@ -125,7 +125,7 @@ export function approvePairing(
 ): Promise<{ ok: boolean; user: PairingUser }> {
   const scope = profileScoped(profile)
 
-  return hermesApi<{ ok: boolean; user: PairingUser }>({
+  return moorApi<{ ok: boolean; user: PairingUser }>({
     ...scope,
     path: '/api/pairing/approve',
     method: 'POST',
@@ -138,7 +138,7 @@ export function approvePairing(
 export function revokePairing(platform: string, userId: string, profile?: null | string): Promise<{ ok: boolean }> {
   const scope = profileScoped(profile)
 
-  return hermesApi<{ ok: boolean }>({
+  return moorApi<{ ok: boolean }>({
     ...scope,
     path: '/api/pairing/revoke',
     method: 'POST',

@@ -98,7 +98,7 @@ _OPENROUTER_URL = "https://openrouter.ai/api/v1"
 
 
 def create_environment(env_type: str = "local", image: str = "python:3.11-slim", cwd: str | None = None, timeout: int = 60, **kwargs):
-    """Create a Hermes execution environment (``local`` ignores ``image``/``kwargs``).
+    """Create a Moor execution environment (``local`` ignores ``image``/``kwargs``).
 
     ``cwd=None`` means the host temp dir locally and the sandbox's own ``/tmp`` inside a container.
     """

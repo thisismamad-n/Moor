@@ -21,14 +21,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import main as hermes_main
-import hermes_cli.main_web_build as main_web_build
-import hermes_cli.main_install_repair as main_install_repair
-from hermes_cli import update_cmd
-import hermes_cli.update_cmd_fleet as update_cmd_fleet
-from hermes_cli.update_receipt import COMMAND_BOUNDARY_STOP_REASON
-from hermes_constants import get_hermes_home
-import hermes_cli.update_host_obligation as host_obligation
+from moor_cli import main as moor_main
+import moor_cli.main_web_build as main_web_build
+import moor_cli.main_install_repair as main_install_repair
+from moor_cli import update_cmd
+import moor_cli.update_cmd_fleet as update_cmd_fleet
+from moor_cli.update_receipt import COMMAND_BOUNDARY_STOP_REASON
+from moor_constants import get_moor_home
+import moor_cli.update_host_obligation as host_obligation
 from gateway import host_rendezvous
 
 pytestmark = pytest.mark.usefixtures("isolated_source_completion")
@@ -94,8 +94,8 @@ def _make_head_moved_side_effect(pre_sha="abc123", post_sha="def456"):
 
 def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
     """Isolate machine maintenance while exercising interrupted fleet updates."""
-    monkeypatch.setattr(hermes_main.subprocess, "run", run_side_effect)
-    monkeypatch.setattr(hermes_main, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(moor_main.subprocess, "run", run_side_effect)
+    monkeypatch.setattr(moor_main, "PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(update_cmd, "_prepare_updated_checkout", lambda *a, **k: None)
     (tmp_path / ".git").mkdir()
     monkeypatch.setattr(moor_main, "_resolve_update_branch", lambda args: "main")
@@ -110,7 +110,7 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
     monkeypatch.setattr(
         moor_main,
         "_get_origin_url",
-        lambda *a, **k: "https://github.com/NousResearch/hermes-agent.git",
+        lambda *a, **k: "https://github.com/thisismamad-n/Moor.git",
     )
     monkeypatch.setattr(update_cmd, "_is_fork", lambda *a, **k: False)
     monkeypatch.setattr(
@@ -133,36 +133,36 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
     # _install_hangup_protection wraps sys.stdout in a mirror stream that
     # survives the test and breaks later capsys captures — no-op it.
     monkeypatch.setattr(
-        hermes_main,
+        moor_main,
         "_install_hangup_protection",
         lambda gateway_mode=False: {
             "prev_stdout": None, "prev_stderr": None,
             "log_file": None, "installed": False,
         },
     )
-    monkeypatch.setattr(hermes_main, "_finalize_update_output", lambda *a, **k: None)
+    monkeypatch.setattr(moor_main, "_finalize_update_output", lambda *a, **k: None)
     # _check_and_apply_config_migration → _run_migrate_config_fresh →
-    # _reload_config_modules() force-reloads hermes_cli.config via
+    # _reload_config_modules() force-reloads moor_cli.config via
     # importlib, replacing the module object pytest's capsys + the config
     # tests' patches target. No-op the reload so the config module stays
     # stable for later tests in the same process.
     monkeypatch.setattr(
-        "hermes_cli.update_cmd._reload_config_modules",
+        "moor_cli.update_cmd._reload_config_modules",
         lambda *a, **k: None,
     )
     monkeypatch.setattr(
-        "hermes_cli.update_cmd_maint._refresh_dashboard_after_update", lambda **k: None,
+        "moor_cli.update_cmd_maint._refresh_dashboard_after_update", lambda **k: None,
     )
     # The startup version-info probe runs git rev-parse HEAD (and the
     # result is cached per-process, so whether it runs depends on test
     # order). Mock it so the head-moved mock's call counting only sees the
     # update flow's own pre/post captures.
     monkeypatch.setattr(
-        "hermes_cli.version_info.get_version_info",
+        "moor_cli.version_info.get_version_info",
         lambda *a, **k: SimpleNamespace(),
     )
-    monkeypatch.setattr(update_cmd, "_purge_stale_hermes_modules", lambda: None)
-    monkeypatch.setattr(hermes_main, "_purge_stale_hermes_modules", lambda: None)
+    monkeypatch.setattr(update_cmd, "_purge_stale_moor_modules", lambda: None)
+    monkeypatch.setattr(moor_main, "_purge_stale_moor_modules", lambda: None)
 
     import moor_cli.gateway as moor_gateway
 
@@ -182,7 +182,7 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
         lambda: SimpleNamespace(runtimes=[], to_dict=lambda: {}),
     )
     # The restart phase imports discovery fns fresh after
-    # _purge_stale_hermes_modules (the update reloads code in-place), so
+    # _purge_stale_moor_modules (the update reloads code in-place), so
     # module-attr mocks are lost; stub os.kill so the conftest live-system
     # guard never fires on real pids. No gateways are expected, so the
     # post-restart fleet matrix must not demand rows.
@@ -190,7 +190,7 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
 
     monkeypatch.setattr(_os_mod, "kill", lambda *a, **k: None)
     monkeypatch.setattr(
-        hermes_main, "_fleet_probe_expected_runtimes", lambda *a, **k: False
+        moor_main, "_fleet_probe_expected_runtimes", lambda *a, **k: False
     )
 
 
@@ -214,7 +214,7 @@ def test_obligation_round_trip_is_host_scoped():
     record = json.loads(path.read_text(encoding="utf-8"))
     assert record["expected_sha"] == "abc123"
     assert record["pid"] and record["started"]
-    assert not (get_hermes_home() / "fleet_restart_pending").exists()
+    assert not (get_moor_home() / "fleet_restart_pending").exists()
 
     update_cmd._clear_fleet_restart_pending_marker()
     assert not update_cmd_fleet._fleet_restart_obligation_armed()
@@ -458,7 +458,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
     # The gateway leg answers the fleet probe on the new code (otherwise the
     # verifier polls its full no-rows window, ~2 min of wall clock).
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **_k: [{"profile": "default", "pid": 4444, "code_sha": "def456",
                        "code_version": "0.21.0", "state": "current"}],
     )
@@ -626,7 +626,7 @@ def test_startup_warn_discharged_when_multiplexer_covers_owed_profiles(monkeypat
         runtimes=[{"kind": "gateway", "profile": p} for p in ("default", "coder")],
     )
     _patch_marker_sha(monkeypatch, disk_sha)
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_moor_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -644,7 +644,7 @@ def test_startup_warn_discharged_when_multiplexer_covers_owed_profiles(monkeypat
         encoding="utf-8",
     )
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {
                 "profile": "default",
@@ -688,7 +688,7 @@ def test_startup_warn_discharged_when_inventory_holds_supervised_serve(monkeypat
     )
     _patch_marker_sha(monkeypatch, disk_sha)
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "default", "pid": 42, "code_sha": disk_sha, "code_version": "0.21.0", "state": "current"}
         ],
@@ -712,7 +712,7 @@ def test_startup_warn_kept_when_inventory_holds_unclassified_serve(monkeypatch, 
     )
     _patch_marker_sha(monkeypatch, disk_sha)
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "default", "pid": 42, "code_sha": disk_sha, "code_version": "0.21.0", "state": "current"}
         ],
@@ -751,7 +751,7 @@ def test_startup_warn_kept_without_positive_evidence(monkeypatch, capsys, disk_s
 #
 # A cherry-picked hotfix on top of the pulled SHA moves HEAD without arming a fresh obligation,
 # so an equality gate on ``expected_sha`` could never discharge the old one: every CLI start
-# warned and every no-op ``hermes update`` exited 1 while the gateway verifiably served HEAD.
+# warned and every no-op ``moor update`` exited 1 while the gateway verifiably served HEAD.
 
 
 def _checkout_with_carried_commit(monkeypatch, tmp_path):
@@ -775,7 +775,7 @@ def _checkout_with_carried_commit(monkeypatch, tmp_path):
     git("add", "b")
     git("commit", "-qm", "carried hotfix")
     head = git("rev-parse", "HEAD")
-    monkeypatch.setattr(hermes_main, "PROJECT_ROOT", repo)
+    monkeypatch.setattr(moor_main, "PROJECT_ROOT", repo)
     _patch_marker_sha(monkeypatch, head)
     return expected, head
 
@@ -784,7 +784,7 @@ def test_obligation_discharges_when_gateway_serves_descendant_of_expected_sha(mo
     expected, head = _checkout_with_carried_commit(monkeypatch, tmp_path)
     update_cmd._write_fleet_restart_pending_marker(expected_sha=expected, runtimes=[{"kind": "gateway", "profile": "default"}])
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [{"profile": "default", "pid": 42, "code_sha": head, "code_version": "0.21.4", "state": "current"}],
     )
     assert update_cmd._pending_fleet_restart_needed() is False
@@ -798,7 +798,7 @@ def test_obligation_kept_when_gateway_serves_stale_code_on_carried_checkout(monk
     expected, _head = _checkout_with_carried_commit(monkeypatch, tmp_path)
     update_cmd._write_fleet_restart_pending_marker(expected_sha=expected, runtimes=[{"kind": "gateway", "profile": "default"}])
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [{"profile": "default", "pid": 42, "code_sha": "0" * 40, "code_version": "0.21.3", "state": "stale"}],
     )
 
@@ -846,19 +846,19 @@ def test_startup_warn_silent_when_failed_receipt_already_restarted_fleet(monkeyp
     """#112604 aftermath: the update pulled ``pulled``, restarted every gateway onto it, then a
     post-restart step crashed (receipt ``failed``, empty ``fleet`` matrix). Later a manual
     ``git pull`` moved the checkout again. The startup hint must not blame that update for a
-    restart it performed; ``hermes update``'s catch-up still owes the fleet the checkout."""
+    restart it performed; ``moor update``'s catch-up still owes the fleet the checkout."""
     pre, pulled, checkout = "a" * 40, "b" * 40, "c" * 40
     _patch_marker_sha(monkeypatch, checkout)
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_moor_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
             {
                 "outcome": "failed", "exit_code": 1,
-                "stop_reason": "AttributeError: module 'hermes_cli.main_dashboard' has no attribute 'x'",
+                "stop_reason": "AttributeError: module 'moor_cli.main_dashboard' has no attribute 'x'",
                 "pre_update": {"sha": pre}, "post_update": {"sha": pulled},
                 "gateway_restart": {
-                    "restarted_services": ["hermes-gateway"], "relaunched_profiles": [],
+                    "restarted_services": ["moor-gateway"], "relaunched_profiles": [],
                     "externally_supervised_profiles": [], "killed_pids": [], "failed_units": [],
                     "incomplete": False, "phase_error": "",
                 },
@@ -869,7 +869,7 @@ def test_startup_warn_silent_when_failed_receipt_already_restarted_fleet(monkeyp
         encoding="utf-8",
     )
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "default", "pid": 42, "code_sha": pulled, "code_version": "0.21.3", "state": "stale"}
         ],
@@ -883,11 +883,11 @@ def test_startup_warn_silent_when_failed_receipt_already_restarted_fleet(monkeyp
 
 def test_startup_warn_silent_when_completed_update_fleet_restarted_onto_moved_checkout(monkeypatch, capsys):
     """The remedy the warning names must clear it: after a completed update, a manual ``git pull``
-    plus ``hermes gateway restart`` leaves every owed gateway on today's checkout — newer than the
+    plus ``moor gateway restart`` leaves every owed gateway on today's checkout — newer than the
     update's ``post_update.sha`` — which is nothing that update still owes (#113350 steps 3–4)."""
     pre, pulled, checkout = "a" * 40, "b" * 40, "c" * 40
     _patch_marker_sha(monkeypatch, checkout)
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_moor_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -895,7 +895,7 @@ def test_startup_warn_silent_when_completed_update_fleet_restarted_onto_moved_ch
                 "outcome": "success", "exit_code": 0,
                 "pre_update": {"sha": pre}, "post_update": {"sha": pulled},
                 "gateway_restart": {
-                    "restarted_services": ["hermes-gateway"], "relaunched_profiles": [],
+                    "restarted_services": ["moor-gateway"], "relaunched_profiles": [],
                     "externally_supervised_profiles": [], "killed_pids": [], "failed_units": [],
                     "incomplete": False, "phase_error": "",
                 },
@@ -906,7 +906,7 @@ def test_startup_warn_silent_when_completed_update_fleet_restarted_onto_moved_ch
         encoding="utf-8",
     )
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "default", "pid": 42, "code_sha": checkout, "code_version": "0.21.3", "state": "current"}
         ],
@@ -932,7 +932,7 @@ def test_startup_warn_discharged_when_inventory_less_marker_fleet_current(monkey
     assert "inventory" not in host_obligation.read_host_obligation()
     _patch_marker_sha(monkeypatch, disk_sha)
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "default", "pid": 42, "code_sha": disk_sha, "code_version": "0.21.0", "state": "current"}
         ],
@@ -949,7 +949,7 @@ def test_startup_warn_kept_when_inventory_less_marker_fleet_stale(monkeypatch, c
     update_cmd._write_fleet_restart_pending_marker(expected_sha=disk_sha)
     _patch_marker_sha(monkeypatch, disk_sha)
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "default", "pid": 42, "code_sha": "7" * 40, "code_version": "0.20.0", "state": "stale"}
         ],
@@ -989,7 +989,7 @@ def test_pending_fleet_restart_cleared_instead_of_exit_1(monkeypatch, tmp_path):
 
     monkeypatch.setattr(update_cmd_fleet, "_current_checkout_sha", lambda: "abc123")
 
-    hermes_main.cmd_update(args)
+    moor_main.cmd_update(args)
 
     assert not marker.exists()
 
@@ -1003,7 +1003,7 @@ def _current_row(sha):
 
 def _plan_with_current_gateway(monkeypatch, sha):
     """Pre-update inventory: one gateway already stamped with the checkout code."""
-    import hermes_cli.update_inventory as ui
+    import moor_cli.update_inventory as ui
 
     plan = ui.UpdatePlan()
     plan.runtimes = [ui.RuntimeRecord(kind="gateway", profile="default", pid=42, supervisor="systemd",
@@ -1024,22 +1024,22 @@ def _spy_fleet_restart(monkeypatch):
 
 
 def test_up_to_date_update_leaves_current_fleet_alone(monkeypatch, tmp_path, capsys):
-    """Every live gateway already serves the checkout code: `hermes update` (cron, a second
+    """Every live gateway already serves the checkout code: `moor update` (cron, a second
     profile) must not drain and restart the shared multiplexer again, and must still discharge
     the obligation it armed and finish clean."""
     args = _update_args()
     _patch_update_deps(monkeypatch, tmp_path, _make_up_to_date_side_effect("abc123"))
     _patch_marker_sha(monkeypatch, "abc123")
     _plan_with_current_gateway(monkeypatch, "abc123")
-    monkeypatch.setattr("hermes_cli.update_receipt.collect_fleet_versions", lambda **k: _current_row("abc123"))
+    monkeypatch.setattr("moor_cli.update_receipt.collect_fleet_versions", lambda **k: _current_row("abc123"))
     restarts = _spy_fleet_restart(monkeypatch)
 
-    hermes_main.cmd_update(args)
+    moor_main.cmd_update(args)
 
     assert restarts == []
     assert not update_cmd_fleet._fleet_restart_obligation_armed()
     assert "Gateway restart skipped" in capsys.readouterr().out
-    from hermes_cli.update_receipt import read_latest_receipt
+    from moor_cli.update_receipt import read_latest_receipt
     receipt = read_latest_receipt()
     assert receipt["outcome"] == "success"
     assert any(skip.get("name") == "gateway_restart" for skip in receipt.get("skips", []))
@@ -1052,14 +1052,14 @@ def test_up_to_date_update_still_restarts_a_stale_gateway(monkeypatch, tmp_path)
     _patch_marker_sha(monkeypatch, "abc123")
     _plan_with_current_gateway(monkeypatch, "abc123")
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **k: _current_row("abc123") + [
             {"profile": "work", "pid": 43, "code_sha": "0" * 40, "code_version": "0.20.0", "state": "stale"}],
     )
     restarts = _spy_fleet_restart(monkeypatch)
 
     with pytest.raises(SystemExit) as error:
-        hermes_main.cmd_update(args)
+        moor_main.cmd_update(args)
 
     assert error.value.code == 3
     assert len(restarts) == 1
@@ -1069,7 +1069,7 @@ def test_second_profile_attaches_to_completed_host_restart(monkeypatch):
     """One host process serves every profile: once its restart is stamped for this checkout,
     another profile's completion skips the restart instead of killing the multiplexer again."""
     _patch_marker_sha(monkeypatch, "abc123")
-    monkeypatch.setattr("hermes_cli.update_receipt.collect_fleet_versions", lambda **k: [])
+    monkeypatch.setattr("moor_cli.update_receipt.collect_fleet_versions", lambda **k: [])
     update_cmd._write_fleet_restart_pending_marker(expected_sha="abc123")
     assert update_cmd_fleet._fleet_restart_skip_reason(None) is None
 

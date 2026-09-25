@@ -139,7 +139,7 @@ class TestShouldExclude:
         """state-snapshots/ is excluded for the same reason as backups/: every
         quick / pre-update snapshot holds its own copy of state.db, so zipping
         the tree would ship the DB once per retained snapshot."""
-        from hermes_cli.backup import _QUICK_SNAPSHOTS_DIR, _should_exclude
+        from moor_cli.backup import _QUICK_SNAPSHOTS_DIR, _should_exclude
         assert _should_exclude(Path(_QUICK_SNAPSHOTS_DIR) / "20260814-203829-2026-08-15" / "state.db")
         assert _should_exclude(Path(_QUICK_SNAPSHOTS_DIR) / "20260814-203829-2026-08-15" / "manifest.json")
         # Named profiles accumulate snapshots too.
@@ -245,12 +245,12 @@ class TestIterBackupFiles:
         assert not any(s.startswith("moor-agent") for s in selected)
 
     def test_prunes_browser_use_cli_profiles_at_home_roots_only(self, tmp_path):
-        """The Browser Use CLI backend writes ``HERMES_HOME/browser_profiles/`` (underscore) — a
+        """The Browser Use CLI backend writes ``MOOR_HOME/browser_profiles/`` (underscore) — a
         live Chromium user-data dir holding Login Data / Cookies. It must never enter an archive,
         at the root or under ``profiles/<name>/``; a skill's same-named dir is user data (#117346)."""
-        from hermes_cli.backup import _iter_backup_files
+        from moor_cli.backup import _iter_backup_files
 
-        root = tmp_path / ".hermes"
+        root = tmp_path / ".moor"
         root.mkdir()
         files = {
             "browser_profiles/browser-use-default/Default/Login Data": False,
@@ -552,7 +552,7 @@ class TestImport:
         from moor_cli.backup import run_import
         run_import(Namespace(zipfile=str(zip_path), force=True))
 
-        assert (hermes_home / "config.yaml").read_text() == "model: test\n"
+        assert (moor_home / "config.yaml").read_text() == "model: test\n"
 
     @staticmethod
     def _corrupt_member(zip_path: Path, name: str, damage: str) -> None:
@@ -582,12 +582,12 @@ class TestImport:
         zip_path.write_bytes(bytes(raw))
 
     def _home_for_corrupt_import(self, tmp_path, monkeypatch) -> Path:
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: live\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text("model: live\n")
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        return hermes_home
+        return moor_home
 
     @pytest.mark.parametrize("damage, compression", [
         ("deflate", zipfile.ZIP_DEFLATED),
@@ -601,7 +601,7 @@ class TestImport:
         """#121258: members that fail to decompress, fail their CRC or are cut short must all be
         found BEFORE the first file is replaced -- not surface as a traceback half-way through
         -- listed (capped) in one run, and the command must exit 1 without "restored" wording."""
-        hermes_home = self._home_for_corrupt_import(tmp_path, monkeypatch)
+        moor_home = self._home_for_corrupt_import(tmp_path, monkeypatch)
         zip_path = tmp_path / "backup.zip"
         names = [f"skills/s{i}/SKILL.md" for i in range(12)]
         with zipfile.ZipFile(zip_path, "w", compression=compression) as zf:
@@ -613,8 +613,8 @@ class TestImport:
             self._corrupt_member(zip_path, name, damage)
         assert zipfile.is_zipfile(zip_path)
 
-        from hermes_cli.backup import run_import
-        from hermes_cli.main import cmd_import
+        from moor_cli.backup import run_import
+        from moor_cli.main import cmd_import
 
         assert run_import(Namespace(zipfile=str(zip_path), force=True)) == 1
         out = capsys.readouterr().out
@@ -624,15 +624,15 @@ class TestImport:
         assert "Importing" not in out
         assert "restored" not in out.replace("nothing was restored", "")
         # The home is exactly as it was.
-        assert (hermes_home / "config.yaml").read_text() == "model: live\n"
-        assert sorted(p.name for p in hermes_home.iterdir()) == ["config.yaml"]
+        assert (moor_home / "config.yaml").read_text() == "model: live\n"
+        assert sorted(p.name for p in moor_home.iterdir()) == ["config.yaml"]
         assert cmd_import(Namespace(zipfile=str(zip_path), force=True)) == 1
 
     def test_import_ignores_damaged_pm_runtime_but_keeps_portable_data(
         self, tmp_path, monkeypatch
     ):
         """Machine-local interpreter/dependency state is not a reason to refuse a backup."""
-        hermes_home = self._home_for_corrupt_import(tmp_path, monkeypatch)
+        moor_home = self._home_for_corrupt_import(tmp_path, monkeypatch)
         zip_path = tmp_path / "backup.zip"
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("config.yaml", "model: restored\n")
@@ -640,12 +640,12 @@ class TestImport:
             zf.writestr("skills/demo/SKILL.md", "# portable\n")
         self._corrupt_member(zip_path, "profiles/coder/installs/python.zip", "deflate")
 
-        from hermes_cli.backup import run_import
+        from moor_cli.backup import run_import
 
         assert run_import(Namespace(zipfile=str(zip_path), force=True)) is None
-        assert (hermes_home / "config.yaml").read_text() == "model: restored\n"
-        assert (hermes_home / "skills/demo/SKILL.md").read_text() == "# portable\n"
-        assert not (hermes_home / "profiles/coder/installs").exists()
+        assert (moor_home / "config.yaml").read_text() == "model: restored\n"
+        assert (moor_home / "skills/demo/SKILL.md").read_text() == "# portable\n"
+        assert not (moor_home / "profiles/coder/installs").exists()
 
     def test_import_skips_member_that_rots_after_preflight_and_reports_incomplete(
         self, tmp_path, monkeypatch, capsys
@@ -654,7 +654,7 @@ class TestImport:
         bad under the archive) warns, leaves the damaged target absent, restores the rest and
         exits 1 -- rather than escaping as a traceback. A damaged member the restore skips
         anyway (runtime ``gateway.pid``) does not make the pre-flight refuse the archive."""
-        hermes_home = self._home_for_corrupt_import(tmp_path, monkeypatch)
+        moor_home = self._home_for_corrupt_import(tmp_path, monkeypatch)
         zip_path = tmp_path / "backup.zip"
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("config.yaml", "model: restored\n")
@@ -663,7 +663,7 @@ class TestImport:
             zf.writestr("sessions/after.json", '{"restored": true}')
         self._corrupt_member(zip_path, "gateway.pid", "deflate")
 
-        import hermes_cli.backup as backup_mod
+        import moor_cli.backup as backup_mod
 
         real_extract = backup_mod._extract_member_atomically
 
@@ -678,11 +678,11 @@ class TestImport:
 
         out = capsys.readouterr().out
         assert "damaged (" not in out
-        assert (hermes_home / "config.yaml").read_text() == "model: restored\n"
-        assert not (hermes_home / "damaged.json").exists()
-        assert not (hermes_home / "gateway.pid").exists()
-        assert not list(hermes_home.glob(".damaged.json.*.partial"))
-        assert (hermes_home / "sessions" / "after.json").read_text() == '{"restored": true}'
+        assert (moor_home / "config.yaml").read_text() == "model: restored\n"
+        assert not (moor_home / "damaged.json").exists()
+        assert not (moor_home / "gateway.pid").exists()
+        assert not list(moor_home.glob(".damaged.json.*.partial"))
+        assert (moor_home / "sessions" / "after.json").read_text() == '{"restored": true}'
         assert "Warnings (1 files skipped):" in out
         assert "Import incomplete" in out
         assert "has been restored" not in out
@@ -691,10 +691,10 @@ class TestImport:
         """A member that could not be written is a partial restore: the CLI must not print
         "restored" or exit 0, or a script and the dashboard's "done" badge carry on over it.
         Runtime files the import deliberately keeps are not failures."""
-        hermes_home = tmp_path / ".hermes"
-        locked = hermes_home / "skills" / "demo"
+        moor_home = tmp_path / ".moor"
+        locked = moor_home / "skills" / "demo"
         locked.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -705,8 +705,8 @@ class TestImport:
         })
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
-        from hermes_cli.main import cmd_import
+        from moor_cli.backup import run_import
+        from moor_cli.main import cmd_import
 
         locked.chmod(0o555)
         try:
@@ -726,7 +726,7 @@ class TestImport:
         assert cmd_import(args) is None
         out = capsys.readouterr().out
         assert "Preserved 1 runtime state file(s)" in out
-        assert "Done. Your Hermes configuration has been restored." in out
+        assert "Done. Your Moor configuration has been restored." in out
 
 
 
@@ -919,18 +919,18 @@ class TestBackupEdgeCases:
     def test_incomplete_archive_is_kept_but_reported_as_failure(self, tmp_path, monkeypatch, capsys):
         """A file that cannot be read is skipped, the zip still lands, and the CLI exits 1: a
         cron/systemd timer must never see a partial archive as success (#101096)."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
-        unreadable = hermes_home / "skills" / "locked.md"
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        _make_moor_tree(moor_home)
+        unreadable = moor_home / "skills" / "locked.md"
         unreadable.write_text("secret\n")
         unreadable.chmod(0)
         if os.access(unreadable, os.R_OK):
             pytest.skip("running as root: chmod 0 does not make the file unreadable")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        from hermes_cli.backup import _RUN_BACKUP_PREFIX, run_backup
-        from hermes_cli.main import cmd_backup
+        from moor_cli.backup import _RUN_BACKUP_PREFIX, run_backup
+        from moor_cli.main import cmd_backup
 
         out_dir = tmp_path / "b"
         out_dir.mkdir()
@@ -1236,7 +1236,7 @@ class TestImportAtomicWrites:
 
         chown_calls: list[tuple[Path, int, int]] = []
         monkeypatch.setattr(
-            "hermes_cli.backup_restore._preserve_file_owner",
+            "moor_cli.backup_restore._preserve_file_owner",
             lambda p: (123, 456) if Path(p).exists() else None,
         )
         monkeypatch.setattr(
@@ -1254,19 +1254,19 @@ class TestImportAtomicWrites:
 
     def test_mode_is_applied_before_the_replace(self, tmp_path, monkeypatch):
         """Publish the correct native permission bits with no permissive window."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        target = hermes_home / "config.yaml"
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        target = moor_home / "config.yaml"
         target.write_text("model: original\n")
         os.chmod(target, 0o644)
         expected_mode = target.stat().st_mode & 0o777
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
         self._zip(zip_path, {"config.yaml": "model: restored\n", "state.db": ""})
 
-        import hermes_cli.backup_restore as backup_mod
+        import moor_cli.backup_restore as backup_mod
 
         real_replace = backup_mod.atomic_replace
         staged_modes: list[int] = []
@@ -1319,7 +1319,7 @@ class TestImportAtomicWrites:
             {"helper.sh": "#!/bin/sh\necho attacker\n", "state.db": ""},
         )
 
-        import hermes_cli.backup_restore as backup_mod
+        import moor_cli.backup_restore as backup_mod
 
         real_replace = backup_mod.atomic_replace
         staged_modes: list[int] = []
@@ -1522,10 +1522,10 @@ class TestQuickSnapshot:
             return False
 
         monkeypatch.setattr(backup_mod, "_safe_copy_db", boom)
-        snap_id = backup_mod.create_quick_snapshot(hermes_home=hermes_home)
+        snap_id = backup_mod.create_quick_snapshot(moor_home=moor_home)
         # Other small files still snapshot; the failed DB is recorded, not silently dropped.
         assert snap_id
-        manifest = (hermes_home / "state-snapshots" / snap_id / "manifest.json")
+        manifest = (moor_home / "state-snapshots" / snap_id / "manifest.json")
         data = json.loads(manifest.read_text(encoding="utf-8"))
         assert "state.db" not in data.get("files", {})
         assert "state.db" in data.get("failed_dbs", [])
@@ -1898,9 +1898,9 @@ class TestRunPreUpdateBackup:
         return root
 
     @staticmethod
-    def _set_mode(hermes_home, value):
-        import hermes_yaml as yaml
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump({
+    def _set_mode(moor_home, value):
+        import moor_yaml as yaml
+        (moor_home / "config.yaml").write_text(yaml.safe_dump({
             "_config_version": 22,
             "updates": {"pre_update_backup": value},
         }))
@@ -1937,7 +1937,7 @@ class TestRunPreUpdateBackup:
         from moor_cli.update_cmd import _run_pre_update_backup
         snap_id = _run_pre_update_backup(Namespace(no_backup=False, backup=False))
         assert snap_id is not None
-        assert len(self._zips(hermes_home)) == 1
+        assert len(self._zips(moor_home)) == 1
 
 
 
@@ -2091,8 +2091,8 @@ class TestRestoreConfigModelSettingsIfRewritten:
         return cfg
 
     def test_restores_rewritten_provider_and_dropped_moa(self, tmp_path):
-        import hermes_yaml as yaml
-        from hermes_cli.backup import restore_config_model_settings_if_rewritten
+        import moor_yaml as yaml
+        from moor_cli.backup import restore_config_model_settings_if_rewritten
 
         moor_home = tmp_path / ".moor"
         cfg = self._seed(moor_home)
@@ -2142,8 +2142,8 @@ class TestRestoreConfigModelSettingsIfRewritten:
     def test_preserves_legitimate_update_writes(self, tmp_path):
         """Only protected keys are restored — a version bump or a new section
         the migration legitimately wrote must survive the restore."""
-        import hermes_yaml as yaml
-        from hermes_cli.backup import restore_config_model_settings_if_rewritten
+        import moor_yaml as yaml
+        from moor_cli.backup import restore_config_model_settings_if_rewritten
 
         moor_home = tmp_path / ".moor"
         cfg = self._seed(moor_home)
@@ -2356,7 +2356,7 @@ class TestImportHonorsMoorHomeOverride:
 
         import argparse
 
-        from hermes_cli import backup as backup_mod
+        from moor_cli import backup as backup_mod
 
         monkeypatch.setattr(
             backup_mod,
@@ -2497,10 +2497,10 @@ class TestImportLiveSessionDatabase:
         self, tmp_path, monkeypatch, capsys
     ):
         """A refused live-safe restore is a warning, not a counted success."""
-        import hermes_cli.backup as backup_mod
+        import moor_cli.backup as backup_mod
         # _import_db_member (the run_import .db publish path) lives in
-        # hermes_cli.backup_restore and resolves _safe_restore_db there.
-        import hermes_cli.backup_restore as backup_restore_mod
+        # moor_cli.backup_restore and resolves _safe_restore_db there.
+        import moor_cli.backup_restore as backup_restore_mod
 
         home, live_db, zip_path = self._prepare(tmp_path, monkeypatch)
         monkeypatch.setattr(backup_restore_mod, "_safe_restore_db", lambda src, dst: False)

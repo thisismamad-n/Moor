@@ -6,7 +6,7 @@ None`` alone orphans it for the CLI process lifetime (#72548)."""
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from hermes_cli.cli_commands_mixin import CLICommandsMixin
+from moor_cli.cli_commands_mixin import CLICommandsMixin
 
 
 class _FakeAgent:

@@ -1,14 +1,14 @@
 name: little-canary
-repo: https://github.com/hermes-labs-ai/little-canary
+repo: https://github.com/moor-labs-ai/little-canary
 sha: b67c7292679f202e6378e439307dea1f82cbf243
-subdir: integrations/hermes-agent
+subdir: integrations/moor-agent
 version: "0.3.8"
 description: Screens user turns and blocks downstream tools on a BLOCK verdict; the original prompt still reaches the model.
-maintainer: roli-lpci (Hermes Labs; independent of Nous Research)
+maintainer: roli-lpci (Moor Labs; independent of Moor inc.)
 tier: community
 category: general
-requires_hermes: ">=0.21.3"
-docs_url: https://github.com/hermes-labs-ai/little-canary#hermes-agent
+requires_moor: ">=0.21.3"
+docs_url: https://github.com/moor-labs-ai/little-canary#moor-agent
 capabilities:
   provides_tools: []
   provides_hooks:

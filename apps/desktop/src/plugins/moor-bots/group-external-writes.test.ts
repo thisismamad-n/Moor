@@ -7,14 +7,14 @@ import { createGroupGateway, drain, runTimersInline, scriptedStorage } from './g
 import type { GatewayOptions, ScriptedGateway } from './group-test-utils'
 import type { GroupChat, GroupMember } from './types'
 
-// #93813: a member's per-group session is a plain Hermes session, so the CLI
-// (`hermes -p <bot> chat --resume "Group: …"`), cron and the agent's tools
+// #93813: a member's per-group session is a plain Moor session, so the CLI
+// (`moor -p <bot> chat --resume "Group: …"`), cron and the agent's tools
 // write to it too. Those rows must reach the room log — once — or the room
 // silently diverges from what the member actually said.
 
 const { host } = vi.hoisted(() => ({ host: {} as Record<string, unknown> }))
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { pluginSdkMock } = await import('./group-test-utils')
 
   return pluginSdkMock(host)

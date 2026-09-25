@@ -9,10 +9,10 @@ description: "NVIDIA Broadcast control through its local MCP gateway: camera, mi
   desktop session. Disclosure: the tools change live audio and video effects on this machine; nothing
   leaves loopback."
 title: NVIDIA Broadcast
-maintainer: NousResearch
+maintainer: Moor inc.
 tier: official
 category: tools
-requires_hermes: ">=0.21.4"
+requires_moor: ">=0.21.4"
 docs_url: https://github.com/NousResearch/hermes-nvidia/tree/main/nvidia-broadcast
 version: "0.1.0"
 platforms: [windows]

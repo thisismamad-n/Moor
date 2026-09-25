@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from hermes_cli.local_runtime.binaries import Engine
+from moor_cli.local_runtime.binaries import Engine
 
 
 @pytest.fixture
@@ -150,9 +150,9 @@ def test_quickstart_runs_all_three_legs(client, capable_hardware, monkeypatch, t
 
     # Leg 1: no runtime installed yet; install is the stubbed binaries call.
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.binaries.installed_engine", lambda *args, **kwargs: None)
+        "moor_cli.local_runtime.binaries.installed_engine", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.binaries.ensure_engine",
+        "moor_cli.local_runtime.binaries.ensure_engine",
         lambda backend, **kwargs: calls.append("install"))
 
     # Leg 2: nothing staged; the download writes the files the plan names.
@@ -163,7 +163,7 @@ def test_quickstart_runs_all_three_legs(client, capable_hardware, monkeypatch, t
         calls.append("download")
 
     monkeypatch.setattr(
-        "hermes_cli.web_routers.local_models._download_job", _fake_download)
+        "moor_cli.web_routers.local_models._download_job", _fake_download)
 
     # Leg 3: activation — stub the server start and the model assignment.
     monkeypatch.setattr(
@@ -203,14 +203,14 @@ def test_quickstart_skips_satisfied_legs(client, capable_hardware, monkeypatch):
     calls: list[str] = []
 
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.binaries.installed_engine", lambda *args, **kwargs: Engine("cpu", "b10362", Path("unused")))
+        "moor_cli.local_runtime.binaries.installed_engine", lambda *args, **kwargs: Engine("cpu", "b10362", Path("unused")))
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.binaries.ensure_engine",
+        "moor_cli.local_runtime.binaries.ensure_engine",
         lambda backend, **kwargs: calls.append("install"))
 
     # Every model file and companion is already present.
-    from hermes_cli.local_runtime.catalog import CATALOG
-    from hermes_cli.web_routers.local_models import _download_plan
+    from moor_cli.local_runtime.catalog import CATALOG
+    from moor_cli.web_routers.local_models import _download_plan
 
     for entry in CATALOG:
         for variant in entry.variants:
@@ -218,7 +218,7 @@ def test_quickstart_skips_satisfied_legs(client, capable_hardware, monkeypatch):
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(b"downloaded fixture")
     monkeypatch.setattr(
-        "hermes_cli.web_routers.local_models._download_job",
+        "moor_cli.web_routers.local_models._download_job",
         lambda *a, **k: calls.append("download"))
     monkeypatch.setattr(
         "moor_cli.local_runtime.bootstrap.ensure_local_runtime",
@@ -252,7 +252,7 @@ def quickstart_ready(monkeypatch):
     from moor_cli.local_runtime.catalog import VariantChoice
 
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.binaries.installed_engine", lambda *args, **kwargs: Engine("cpu", "b10362", Path("unused")))
+        "moor_cli.local_runtime.binaries.installed_engine", lambda *args, **kwargs: Engine("cpu", "b10362", Path("unused")))
     monkeypatch.setattr(
         "moor_cli.local_runtime.catalog.select_variant",
         lambda entry, budget: VariantChoice(variant=entry.variants[0],

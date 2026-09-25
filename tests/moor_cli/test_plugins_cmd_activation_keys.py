@@ -1,6 +1,6 @@
 """Plugin activation writes and reads the SAME key on every surface (#27548, #73131, #82898).
 
-Runs the real ``hermes_cli.plugins_cmd`` commands against a temp HERMES_HOME and checks the verdict
+Runs the real ``moor_cli.plugins_cmd`` commands against a temp MOOR_HOME and checks the verdict
 through the loader's own gate (``plugins_discovery.gate_manifest``) — never by re-reading the list
 the command just wrote.
 """
@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli import plugins_cmd
-from hermes_cli.config import load_config, save_config
-from hermes_cli.plugins_discovery import collect_directory_manifests, gate_manifest
+from moor_cli import plugins_cmd
+from moor_cli.config import load_config, save_config
+from moor_cli.plugins_discovery import collect_directory_manifests, gate_manifest
 
 
 def _write_plugin(root, rel, name, extra=""):
@@ -24,11 +24,11 @@ def _write_plugin(root, rel, name, extra=""):
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes-home"
-    (hermes_home / "plugins").mkdir(parents=True)
-    (hermes_home / "config.yaml").write_text("plugins:\n  enabled: []\n  disabled: []\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    return hermes_home
+    moor_home = tmp_path / "moor-home"
+    (moor_home / "plugins").mkdir(parents=True)
+    (moor_home / "config.yaml").write_text("plugins:\n  enabled: []\n  disabled: []\n", encoding="utf-8")
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
+    return moor_home
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +39,7 @@ def _commit_plugin_selection_without_building_an_environment(monkeypatch):
         cfg["plugins"] = {"enabled": sorted(enabled), "disabled": sorted(disabled)}
         save_config(cfg)
 
-    monkeypatch.setattr("hermes_cli.plugins_admission.admit_plugin_set_change", admit)
+    monkeypatch.setattr("moor_cli.plugins_admission.admit_plugin_set_change", admit)
 
 
 def _lists():
@@ -48,7 +48,7 @@ def _lists():
 
 
 def test_disable_bundled_platform_by_manifest_name_gates_the_loader(home):
-    """`hermes plugins disable photon-platform` must produce a key the loader's gate matches; the
+    """`moor plugins disable photon-platform` must produce a key the loader's gate matches; the
     CLI wrote ``platforms/photon`` while discovery keyed the adapter ``photon-platform``."""
     plugins_cmd.cmd_disable("photon-platform")
 

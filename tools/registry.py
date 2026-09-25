@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set
 
-from hermes_constants import hermes_home_key, normalize_scope
+from moor_constants import moor_home_key, normalize_scope
 
 logger = logging.getLogger(__name__)
 
@@ -386,10 +386,10 @@ def _check_fn_cached(fn: Callable) -> bool:
 
 
 def _core_tools_gated_by(fn: Callable) -> Set[str]:
-    """Names of ``_HERMES_CORE_TOOLS`` members whose registered ``check_fn`` is *fn*."""
+    """Names of ``_MOOR_CORE_TOOLS`` members whose registered ``check_fn`` is *fn*."""
     try:
-        from toolsets import _HERMES_CORE_TOOLS
-        core = frozenset(_HERMES_CORE_TOOLS)
+        from toolsets import _MOOR_CORE_TOOLS
+        core = frozenset(_MOOR_CORE_TOOLS)
     except Exception:
         return set()
     return {e.name for e in registry._snapshot_entries() if e.check_fn is fn and e.name in core}
@@ -470,7 +470,7 @@ class ToolRegistry:
 
     def _merged_tools(self, scope: Optional[str] = None) -> Dict[str, ToolEntry]:
         """Return global tools overlaid with one profile's plugin tools."""
-        return {**self._tools, **self._scoped_tools.get(hermes_home_key(scope), {})}
+        return {**self._tools, **self._scoped_tools.get(moor_home_key(scope), {})}
 
     def _toolset_entries(self, toolset: str, scope: Optional[str]) -> List[ToolEntry]:
         return self._grouped(self._merged_tools(scope).values()).get(toolset, [])

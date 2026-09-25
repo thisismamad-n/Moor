@@ -7,9 +7,9 @@ description: "将 Moor Agent 设置为 Matrix 机器人"
 # Matrix 设置
 
 本页的 Python 依赖命令使用 [PM 准备的源码环境](../../reference/package-management.md#developer-workflow)。
-依赖变更后，请重新激活该 checkout 并重启 Hermes。
+依赖变更后，请重新激活该 checkout 并重启 Moor。
 
-Hermes Agent 与 Matrix 集成，Matrix 是一种开放的联邦消息协议。Matrix 允许你运行自己的 homeserver，也可以使用 matrix.org 等公共 homeserver——无论哪种方式，你都保持对通信的控制权。机器人通过 `mautrix` Python SDK 连接，通过 Hermes Agent 管道（包括工具调用、记忆和推理）处理消息，并实时响应。它支持文本、文件附件、图片、音频、视频，以及可选的端对端加密（E2EE）。
+Moor Agent 与 Matrix 集成，Matrix 是一种开放的联邦消息协议。Matrix 允许你运行自己的 homeserver，也可以使用 matrix.org 等公共 homeserver——无论哪种方式，你都保持对通信的控制权。机器人通过 `mautrix` Python SDK 连接，通过 Moor Agent 管道（包括工具调用、记忆和推理）处理消息，并实时响应。它支持文本、文件附件、图片、音频、视频，以及可选的端对端加密（E2EE）。
 
 Moor 兼容任何 Matrix homeserver——Synapse、Conduit、Dendrite 或 matrix.org。
 
@@ -249,8 +249,8 @@ E2EE 需要带有加密扩展的 `mautrix` 库以及 `libolm` C 库：
 # 安装带 E2EE 支持的 mautrix
 python -c "import pm; pm.sync_venv(['matrix'], explicit=True)"
 
-# 或通过 hermes extras 安装
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['matrix'], explicit=True)"
+# 或通过 moor extras 安装
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['matrix'], explicit=True)"
 ```
 
 你还需要在系统上安装 `libolm`：
@@ -390,7 +390,7 @@ MATRIX_ALLOWED_ROOMS="!abc123def456:matrix.example.org,!opsroom789:matrix.exampl
 
 ### 机器人加入房间但静默丢弃所有消息（时钟偏差）
 
-**原因**：主机系统时钟超前于实际时间。Matrix 适配器应用了 5 秒启动宽限过滤器（`event_ts < startup_ts - 5`）以忽略初始同步中重放的事件。当系统时钟超前时，每个传入事件看起来都"早于启动时间"，在到达消息处理器之前就被丢弃——机器人看起来已连接但从不回复。参见 [#12614](https://github.com/NousResearch/hermes-agent/issues/12614)。
+**原因**：主机系统时钟超前于实际时间。Matrix 适配器应用了 5 秒启动宽限过滤器（`event_ts < startup_ts - 5`）以忽略初始同步中重放的事件。当系统时钟超前时，每个传入事件看起来都"早于启动时间"，在到达消息处理器之前就被丢弃——机器人看起来已连接但从不回复。参见 [#12614](https://github.com/thisismamad-n/Moor/issues/12614)。
 
 **症状**：Gateway 日志显示 `Matrix: dropped N live events as 'too old' more than 30s after startup`。
 
@@ -431,7 +431,7 @@ python -c "import pm; pm.sync_venv(['matrix'], explicit=True)"
 或通过 Moor extras：
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['matrix'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['matrix'], explicit=True)"
 ```
 
 ### 加密错误/"无法解密事件"

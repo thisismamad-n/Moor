@@ -534,7 +534,7 @@ export interface Translations {
       openaiTtsNeedsKey: string
       codeSkewRestartRequired: string
       rpcOutOfSync: string
-      restartHermesFailed: string
+      restartMoorFailed: string
     }
     actions: {
       restartMoor: string
@@ -1003,7 +1003,7 @@ export interface Translations {
     uninstallSection: {
       dangerZone: string
       checkingInstalled: string
-      uninstallHermes: string
+      uninstallMoor: string
       chooseHowMuch: string
       confirmUninstall: string
       confirmBody: (what: string) => string

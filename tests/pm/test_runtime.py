@@ -18,13 +18,13 @@ def test_pm_runtime_discovers_plugins_without_application_dependencies(tmp_path,
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(home / "tools"))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(home / "tools"))
     (home / "config.yaml").write_text("plugins:\n  enabled: []\n", encoding="utf-8")
     repo = Path(__file__).resolve().parents[2]
     python = prepare_runtime(Path(uv), Path(sys.executable), tmp_path / "runtime")
     env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTHON", "UV_"))}
-    env.update(HERMES_HOME=str(home), HERMES_RUNTIME_DIR=str(home / "tools"))
+    env.update(MOOR_HOME=str(home), MOOR_RUNTIME_DIR=str(home / "tools"))
     # Import real PM, including its production plugin-discovery chain.
     code = f"""
 import importlib.util, json, sys
@@ -55,7 +55,7 @@ print(json.dumps({{"prefix": sys.prefix, "yaml": importlib.util.find_spec("ruame
 
 def test_cold_worker_bootstrap_reuses_the_requests_cache(tmp_path, monkeypatch):
     import pm
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
     from pm import client, runtime
     from pm.runtime_stage import stage_runtime
 
@@ -65,8 +65,8 @@ def test_cold_worker_bootstrap_reuses_the_requests_cache(tmp_path, monkeypatch):
     cache = tmp_path / "shared-cache"
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
     monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home/.hermes"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home/.moor"))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(tmp_path / "tools"))
     monkeypatch.setattr("pm.paths.repo_root", lambda: tmp_path / "project")
     monkeypatch.setattr("pm._uv._toolchain", lambda **kwargs: tools)
     monkeypatch.setattr(client, "is_runtime", lambda: False)
@@ -96,7 +96,7 @@ def test_cold_worker_bootstrap_reuses_the_requests_cache(tmp_path, monkeypatch):
     before = dict(os.environ)
     pm.prune_cache(cache)
     assert cache.is_dir()
-    assert not (get_default_hermes_root() / "cache/uv").exists(), "bootstrap created an unshared private cache"
+    assert not (get_default_moor_root() / "cache/uv").exists(), "bootstrap created an unshared private cache"
     assert dict(os.environ) == before
 
 
@@ -105,9 +105,9 @@ def test_sealed_worker_command_uses_only_its_recorded_site(tmp_path, monkeypatch
     from pm import paths
     from pm.runtime import runtime_command
 
-    repo = tmp_path / "payload" / "hermes-agent"
+    repo = tmp_path / "payload" / "moor-agent"
     repo.mkdir(parents=True)
-    (repo.parent / "manifest.json").write_text('{"repo":"hermes-agent"}')
+    (repo.parent / "manifest.json").write_text('{"repo":"moor-agent"}')
     runtime = repo.parent / "pm-runtime"
     site = runtime / "site"
     site.mkdir(parents=True)

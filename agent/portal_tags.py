@@ -2,7 +2,7 @@
 
 Every Moor request to the Moor Portal (main loop, auxiliary client, fallback
 paths) must carry the same product-attribution tags, sent in OpenAI-compatible
-``extra_body['tags']``: ``["product=hermes-agent", "client=hermes-client-v<base_version>"]``.
+``extra_body['tags']``: ``["product=moor-agent", "client=moor-client-v<base_version>"]``.
 The value comes from the canonical runtime identity's base version so build
 provenance never leaks into this compatibility tag.
 """
@@ -70,10 +70,10 @@ def get_conversation_context() -> Optional[str]:
     return _conversation_id.get()
 
 
-def hermes_client_tag() -> str:
-    """``client=hermes-client-v<MAJOR>.<MINOR>.<PATCH>`` from canonical runtime identity."""
-    from hermes_cli.version_info import get_version_info
-    return f"client=hermes-client-v{get_version_info().base_version}"
+def moor_client_tag() -> str:
+    """``client=moor-client-v<MAJOR>.<MINOR>.<PATCH>`` from canonical runtime identity."""
+    from moor_cli.version_info import get_version_info
+    return f"client=moor-client-v{get_version_info().base_version}"
 
 
 def conversation_tag(session_id: str) -> str:

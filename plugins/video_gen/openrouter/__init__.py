@@ -164,7 +164,7 @@ class OpenRouterVideoGenProvider(VideoGenProvider):
     def _credentials(self) -> Tuple[str, str]:
         """``(api_key, base_url)`` from the runtime resolver chat uses, so a pooled or OAuth credential counts
         and a multiplexed profile never spends the launch profile's ``os.environ`` key; raises on failure."""
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested="openrouter")
         return (str(runtime.get("api_key") or "").strip(),
@@ -172,7 +172,7 @@ class OpenRouterVideoGenProvider(VideoGenProvider):
 
     def _headers(self, api_key: str) -> Dict[str, str]:
         return {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
-                "HTTP-Referer": "https://github.com/NousResearch/hermes-agent", "X-Title": "Hermes Agent"}
+                "HTTP-Referer": "https://github.com/thisismamad-n/Moor", "X-Title": "Moor Agent"}
 
     def _session(self) -> Any:
         import requests
@@ -298,7 +298,7 @@ class OpenRouterVideoGenProvider(VideoGenProvider):
         except Exception as exc:  # noqa: BLE001
             return fail(f"Could not resolve OpenRouter credentials: {exc}", "missing_credentials")
         if not api_key:
-            return fail("No OpenRouter credential: set OPENROUTER_API_KEY or run `hermes auth add openrouter`",
+            return fail("No OpenRouter credential: set OPENROUTER_API_KEY or run `moor auth add openrouter`",
                         "missing_credentials")
         # Resolved once: a rotating pool must not submit under one key and poll or download under another.
         headers = self._headers(api_key)

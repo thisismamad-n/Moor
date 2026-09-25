@@ -252,8 +252,8 @@ def test_download_short_of_server_length_errors_and_cleans_up(client, monkeypatc
     fewer bytes than the server promised means a dropped connection, so
     the job errors and nothing is staged."""
 
-    from hermes_cli.web_routers import local_models as lm
-    from hermes_cli.local_runtime.bootstrap import models_dir
+    from moor_cli.web_routers import local_models as lm
+    from moor_cli.local_runtime.bootstrap import models_dir
     requests = []
     class Truncated(_FakeRangeOpener):
         def open(self, req, timeout=None):
@@ -310,7 +310,7 @@ def test_download_already_downloaded_short_circuits(client, monkeypatch):
                         lambda **kw: budget)
     choice = select_variant(CATALOG[0], budget)
     assert choice is not None
-    from hermes_cli.web_routers.local_models import _download_plan
+    from moor_cli.web_routers.local_models import _download_plan
 
     for _, dest, _ in _download_plan(CATALOG[0], choice.variant):
         _write_fake_gguf(dest)
@@ -430,19 +430,19 @@ def test_download_survives_a_held_finished_file(client, monkeypatch):
 
     monkeypatch.setattr(os, "replace", held_at_first)
 
-    from hermes_cli.local_runtime.estimator import HardwareBudget
+    from moor_cli.local_runtime.estimator import HardwareBudget
 
     budget = HardwareBudget(usable_vram_bytes=64 << 30,
                             total_device_bytes=64 << 30,
                             ram_available_bytes=64 << 30)
-    monkeypatch.setattr("hermes_cli.local_runtime.hardware.probe_budget",
+    monkeypatch.setattr("moor_cli.local_runtime.hardware.probe_budget",
                         lambda **kw: budget)
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.bootstrap.refresh_local_runtime",
+        "moor_cli.local_runtime.bootstrap.refresh_local_runtime",
         lambda: False)
 
-    from hermes_cli.local_runtime.bootstrap import models_dir
-    from hermes_cli.local_runtime.catalog import CATALOG
+    from moor_cli.local_runtime.bootstrap import models_dir
+    from moor_cli.local_runtime.catalog import CATALOG
 
     r = client.post("/api/local-models/download", json={"model_id": CATALOG[0].id})
     assert r.status_code == 200
@@ -474,12 +474,12 @@ def test_download_pause_and_resume_unknown_404(client):
 def _pin_budget(monkeypatch):
     """Deterministic variant selection: a generous GPU budget so the
     download path (not selection) is what the test exercises."""
-    from hermes_cli.local_runtime.estimator import HardwareBudget
+    from moor_cli.local_runtime.estimator import HardwareBudget
 
     budget = HardwareBudget(usable_vram_bytes=64 << 30,
                             total_device_bytes=64 << 30,
                             ram_available_bytes=64 << 30)
-    monkeypatch.setattr("hermes_cli.local_runtime.hardware.probe_budget",
+    monkeypatch.setattr("moor_cli.local_runtime.hardware.probe_budget",
                         lambda **kw: budget)
 
 
@@ -489,8 +489,8 @@ def _serve_plan(monkeypatch, dl_server, tmp_partials, bodies):
     under a temp dir (never the machine's cache)."""
     from pm import paths as pm_paths
     from tests.pm._range_server import RangeHandler
-    from hermes_cli.local_runtime.bootstrap import models_dir
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.local_runtime.bootstrap import models_dir
+    from moor_cli.web_routers import local_models as lm
 
     RangeHandler.chunk = 128 * 1024
     RangeHandler.slow_per_chunk = 0.2
@@ -503,7 +503,7 @@ def _serve_plan(monkeypatch, dl_server, tmp_partials, bodies):
     monkeypatch.setattr(pm_paths, "partials_root", lambda: Path(tmp_partials))
     monkeypatch.setattr(lm, "_download_plan", lambda entry, variant: plan)
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.bootstrap.refresh_local_runtime",
+        "moor_cli.local_runtime.bootstrap.refresh_local_runtime",
         lambda: False)
     return plan
 
@@ -547,9 +547,9 @@ def test_download_resume_completes_bytes(client, monkeypatch, dl_server,
     stages the exact file the server serves."""
     _pin_budget(monkeypatch)
     from tests.pm._range_server import RangeHandler
-    from hermes_cli.local_runtime.bootstrap import models_dir
-    from hermes_cli.local_runtime.catalog import CATALOG
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.local_runtime.bootstrap import models_dir
+    from moor_cli.local_runtime.catalog import CATALOG
+    from moor_cli.web_routers import local_models as lm
 
     _serve_plan(monkeypatch, dl_server, tmp_path / "partials",
                 {"PartA": _BIG_BODY})
@@ -583,8 +583,8 @@ def test_repeated_resume_never_spawns_concurrent_writers(
 
     _pin_budget(monkeypatch)
     from tests.pm._range_server import RangeHandler
-    from hermes_cli.local_runtime.catalog import CATALOG
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.local_runtime.catalog import CATALOG
+    from moor_cli.web_routers import local_models as lm
 
     _serve_plan(monkeypatch, dl_server, tmp_path / "partials",
                 {"PartA": _BIG_BODY})
@@ -633,13 +633,13 @@ def test_quickstart_pause_stops_the_sequence(client, monkeypatch, dl_server,
     its resume handle stays registered."""
     _pin_budget(monkeypatch)
     from tests.pm._range_server import RangeHandler
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.web_routers import local_models as lm
 
     _serve_plan(monkeypatch, dl_server, tmp_path / "partials",
                 {"QsPartA": _BIG_BODY, "QsPartB": _BIG_BODY})
-    from hermes_cli.local_runtime.binaries import Engine
+    from moor_cli.local_runtime.binaries import Engine
 
-    monkeypatch.setattr("hermes_cli.local_runtime.binaries.installed_engine",
+    monkeypatch.setattr("moor_cli.local_runtime.binaries.installed_engine",
                         lambda *args, **kwargs: Engine("cpu", "b99999", Path("unused")))
     monkeypatch.setattr(lm, "_runtime_target",
                         lambda requested=None: ("b1", "cpu"))
@@ -651,7 +651,7 @@ def test_quickstart_pause_stops_the_sequence(client, monkeypatch, dl_server,
         raise RuntimeError("server must not start after a pause")
 
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.bootstrap.ensure_local_runtime", _fail_server)
+        "moor_cli.local_runtime.bootstrap.ensure_local_runtime", _fail_server)
 
     class _RecordLate:
         def __call__(self, *a, **kw):
@@ -659,7 +659,7 @@ def test_quickstart_pause_stops_the_sequence(client, monkeypatch, dl_server,
 
     monkeypatch.setattr(lm.web_deps, "late", _RecordLate())
 
-    from hermes_cli.local_runtime.catalog import CATALOG
+    from moor_cli.local_runtime.catalog import CATALOG
 
     job_id = client.post("/api/local-models/quickstart",
                          json={"model_id": CATALOG[0].id}).json()["job_id"]
@@ -669,7 +669,7 @@ def test_quickstart_pause_stops_the_sequence(client, monkeypatch, dl_server,
     assert status["status"] == "paused", status
     assert calls == {"server": 0, "assign": 0}
     # The second plan file must never have been touched after the pause.
-    from hermes_cli.local_runtime.bootstrap import models_dir
+    from moor_cli.local_runtime.bootstrap import models_dir
 
     assert not (models_dir() / "QsPartB.gguf").exists()
     assert lm._RUNNING[job_id].get("resume") is not None
@@ -696,8 +696,8 @@ def test_quickstart_pause_stops_the_sequence(client, monkeypatch, dl_server,
 
 
 def test_download_failure_releases_resume_handle(client, monkeypatch):
-    from hermes_cli.local_runtime.catalog import CATALOG
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.local_runtime.catalog import CATALOG
+    from moor_cli.web_routers import local_models as lm
 
     _pin_budget(monkeypatch)
     monkeypatch.setattr(lm, "_download_plan", lambda *args: [])

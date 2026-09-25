@@ -200,7 +200,7 @@ def kanban_command(args: argparse.Namespace) -> int:
 
 def _profile_author() -> str:
     """Best-effort author name for an interactive CLI call."""
-    from hermes_cli.profiles import current_profile_name
+    from moor_cli.profiles import current_profile_name
     return current_profile_name("user") or "user"
 
 
@@ -708,7 +708,7 @@ def _cmd_link(args: argparse.Namespace) -> int:
     # ownership with its run id; linking a foreign task never needs one.
     expected_child_run_id = (
         _worker_run_id_for(args.child_id)
-        if args.child_id == os.environ.get("HERMES_KANBAN_TASK") else None)
+        if args.child_id == os.environ.get("MOOR_KANBAN_TASK") else None)
     with kbc.connect_closing() as conn:
         gated = kb.link_tasks(conn, args.parent_id, args.child_id,
                               expected_child_run_id=expected_child_run_id)
@@ -937,7 +937,7 @@ def _cmd_complete(args: argparse.Namespace) -> int:
                 if blockers:
                     detail = ", ".join(f"{pid} ({status})" for pid, status in blockers)
                     fail_msg[tid] = (f"cannot complete {tid}: unsatisfied parent dependencies: {detail}; "
-                                     f"complete the parents first, or `hermes kanban unlink <parent> {tid}`.")
+                                     f"complete the parents first, or `moor kanban unlink <parent> {tid}`.")
             return done
 
         return _bulk_apply(ids, op, lambda tid: f"Completed {tid}", fail_msg.__getitem__)

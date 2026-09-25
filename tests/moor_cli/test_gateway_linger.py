@@ -33,9 +33,9 @@ def _stub_linger_file(monkeypatch, tmp_path, *, exists: bool) -> None:
 def _root_with_system_unit_pinned_home(monkeypatch, tmp_path) -> None:
     """Take the root/system-unit branch of service-name resolution (``_bare_unit_pinned_home``), the
     path that calls ``Path(...).expanduser()`` while rendering the restart hint."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor-home"))
     monkeypatch.setattr(gateway.os, "geteuid", lambda: 0)
-    monkeypatch.setattr(gateway, "_hermes_home_pinned_by_unit", lambda _unit_path: str(tmp_path / "system-home"))
+    monkeypatch.setattr(gateway, "_moor_home_pinned_by_unit", lambda _unit_path: str(tmp_path / "system-home"))
 
 
 class TestEnsureLingerEnabled:

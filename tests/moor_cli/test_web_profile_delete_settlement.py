@@ -20,17 +20,17 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
-    """Path.home() and HERMES_HOME both point into the temp dir (profile ops are HOME-anchored)."""
+    """Path.home() and MOOR_HOME both point into the temp dir (profile ops are HOME-anchored)."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     return tmp_path
 
 
 @pytest.fixture()
 def client(profile_env):
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     with TestClient(web_server.app, raise_server_exceptions=False) as c:
         c.headers["Authorization"] = f"Bearer {web_server._SESSION_TOKEN}"
@@ -39,7 +39,7 @@ def client(profile_env):
 
 def test_settle_pending_delete_reports_partial_success(client, monkeypatch):
     """The profile really is deleted; only the identity settlement is missing — report both."""
-    from hermes_cli import profiles as profiles_mod
+    from moor_cli import profiles as profiles_mod
 
     monkeypatch.setattr(profiles_mod, "_cleanup_gateway_service", lambda *a, **k: None)
     # A live multiplexer owns the routing index and none is reachable here, so the settlement
@@ -55,7 +55,7 @@ def test_settle_pending_delete_reports_partial_success(client, monkeypatch):
     assert body["ok"] is True
     assert body["settlement_pending"] is True
     assert body["identity_settled"] is False
-    assert body["retry_command"] == "hermes profile purge-identity gone"
+    assert body["retry_command"] == "moor profile purge-identity gone"
     assert body["path"] == str(gone_dir)
     # Not lying about the filesystem half: the directory is really gone.
     assert not gone_dir.exists()
@@ -63,7 +63,7 @@ def test_settle_pending_delete_reports_partial_success(client, monkeypatch):
 
 def test_filesystem_remove_failure_still_reports_500(client, monkeypatch):
     """A plain rmtree failure keeps the generic 500 — not every delete error is a partial success."""
-    from hermes_cli import profiles as profiles_mod
+    from moor_cli import profiles as profiles_mod
 
     monkeypatch.setattr(profiles_mod, "_cleanup_gateway_service", lambda *a, **k: None)
 

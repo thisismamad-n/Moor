@@ -15,7 +15,7 @@ Read the live Moor desktop DOM/CSS over CDP.
 | | |
 |---|---|
 | Source | Bundled (installed by default) |
-| Path | `skills/software-development/inspecting-hermes-desktop-dom` |
+| Path | `skills/software-development/inspecting-moor-desktop-dom` |
 | Version | `1.0.0` |
 | Author | Moor Agent |
 | License | MIT |
@@ -140,10 +140,10 @@ When there is no port, or you must not disturb the user's window:
 
 ```bash
 cd apps/desktop
-HERMES_HOME=$HOME/.hermes/cache/scratch/cdp-probe-home \
-HERMES_DESKTOP_DEV_SERVER=http://127.0.0.1:5174 \
-HERMES_DESKTOP_CDP_PORT=9333 \
-  npx electron . --user-data-dir=$HOME/.hermes/cache/scratch/cdp-probe-userdata
+MOOR_HOME=$HOME/.moor/cache/scratch/cdp-probe-home \
+MOOR_DESKTOP_DEV_SERVER=http://127.0.0.1:5174 \
+MOOR_DESKTOP_CDP_PORT=9333 \
+  npx electron . --user-data-dir=$HOME/.moor/cache/scratch/cdp-probe-userdata
 ```
 
 The separate `--user-data-dir` dodges Electron's single-instance lock, so it

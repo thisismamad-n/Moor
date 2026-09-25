@@ -924,7 +924,7 @@ def _sanitize_session_model_config(destination: sqlite3.Connection) -> int:
     ``integrity_check`` validates b-tree structure, never column *contents*: a row whose
     JSON was truncated by the damage verifies clean, and the recovered store then raises
     ``OperationalError: malformed JSON`` the first time ``reopen_session`` rewrites the
-    reset-child markers with ``json_set`` (``hermes_state_sessions.py::reopen_session``) —
+    reset-child markers with ``json_set`` (``moor_state_sessions.py::reopen_session``) —
     i.e. on the first resume of a parent session. Read paths are already guarded
     (``_sql_json_extract`` wraps every extract in ``CASE WHEN json_valid``), so this is
     about the write path. The blob is unrecoverable either way, so neutralise it at the

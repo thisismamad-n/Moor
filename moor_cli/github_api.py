@@ -3,7 +3,7 @@
 The passive source check asks the REST API for a branch tip. Unauthenticated
 that budget is 60 requests/hour keyed on the *client IP*, so a shared exit
 (office NAT, VPN, proxy) exhausts it for everyone behind it and the check
-reports a 403 that read as "Hermes can't reach the update server".
+reports a 403 that read as "Moor can't reach the update server".
 Authenticating moves the caller onto the token's 5,000/hour budget.
 
 Credential ladder: GITHUB_TOKEN, then GH_TOKEN, then ``gh auth token`` (the
@@ -44,7 +44,7 @@ def _gh_cli_token() -> Optional[str]:
     if _gh_cli_probed:
         return _gh_cli_cache
     _gh_cli_probed = True
-    from hermes_cli._subprocess_compat import windows_hide_flags
+    from moor_cli._subprocess_compat import windows_hide_flags
     try:
         result = subprocess.run(
             ["gh", "auth", "token"], capture_output=True, text=True, encoding="utf-8", errors="replace",

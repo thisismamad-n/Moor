@@ -232,7 +232,7 @@ def _resolve_moor_bin_for_desktop_entry(
     # desktop-update hand-off hands the updater <checkout>/venv/bin at the front of PATH, so
     # persisting a reroute to the venv console script pins the entry to WHO wrote it. The next
     # DE-launched context re-resolves to the durable wrapper and flips the bytes back — and
-    # every flip rewrites hermes.desktop, which arms the gnome-shell 50.x crash this function's
+    # every flip rewrites moor.desktop, which arms the gnome-shell 50.x crash this function's
     # callers guard against when the write lands inside a launch's STARTING window. Fall
     # through to the durable probe below, exactly as a PATH miss does.
 

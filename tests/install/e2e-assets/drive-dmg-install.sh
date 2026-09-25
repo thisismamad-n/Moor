@@ -3,7 +3,7 @@
 #
 # The Setup app is Tauri (Rust + system webview), so Playwright/Electron
 # attach never works. Launch the binary bare in the background (it inherits
-# the redirect env), click "Install Hermes ->" with native input, then watch
+# the redirect env), click "Install Moor ->" with native input, then watch
 # the install land on disk: checkout + installed source launcher + app.
 #
 # Usage:
@@ -42,8 +42,8 @@ SETUP_PID=$!
 log "launched $APP_BIN (pid $SETUP_PID)"
 cleanup() {
   kill "$SETUP_PID" 2>/dev/null || true
-  if [ -d "$HOME/.hermes/logs" ]; then
-    cp -R "$HOME/.hermes/logs" "$PROOF_DIR/bootstrap-logs"
+  if [ -d "$HOME/.moor/logs" ]; then
+    cp -R "$HOME/.moor/logs" "$PROOF_DIR/bootstrap-logs"
   fi
 }
 trap cleanup EXIT
@@ -98,7 +98,7 @@ click_install() {
 }
 
 # Use the same source-launcher selection as the later read-only checkpoint:
-# PM installs publish .hermes/bin/hermes; older releases use venv/bin/hermes.
+# PM installs publish .moor/bin/moor; older releases use venv/bin/moor.
 # The first packaged app can land before the products stage finishes (and can
 # be rebuilt again). Wait for native bootstrap completion, not install.sh's
 # marker (historical releases predate it, and it precedes the native handoff).
@@ -115,7 +115,7 @@ installed_app() {
   done
   return 1
 }
-BOOTSTRAP_LOG="$HOME/.hermes/logs/bootstrap-installer.log"
+BOOTSTRAP_LOG="$HOME/.moor/logs/bootstrap-installer.log"
 bootstrap_completed() {
   [ -f "$BOOTSTRAP_LOG" ] || return 1
   local line
@@ -127,7 +127,7 @@ bootstrap_completed() {
 install_complete() {
   bootstrap_completed \
     && [ -d "$INSTALL_DIR/.git" ] \
-    && source_hermes "$INSTALL_DIR" >/dev/null 2>&1 \
+    && source_moor "$INSTALL_DIR" >/dev/null 2>&1 \
     && installed_app
 }
 # The bootstrap parks on an error screen instead of exiting when a stage
@@ -154,7 +154,7 @@ FIRST_SHOT=0
 CLICKS=0
 while :; do
   if install_complete; then
-    log "install landed: checkout + source launcher + Hermes.app present"
+    log "install landed: checkout + source launcher + Moor.app present"
     shot "02-install-landed"
     break
   fi

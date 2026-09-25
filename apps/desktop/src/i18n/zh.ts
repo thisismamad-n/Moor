@@ -34,7 +34,7 @@ export const zh = defineLocale({
     ownerMissing: '请重新打开此对话以管理连接。',
     search: '查找应用',
     empty: '没有匹配的应用',
-    disclaimer: '连接为可选操作。请仅授权你希望 Hermes 使用的应用。',
+    disclaimer: '连接为可选操作。请仅授权你希望 Moor 使用的应用。',
     execution: '连接器工具',
     setup: server => `设置 ${server}`,
     openInBrowser: '在浏览器中打开',
@@ -172,8 +172,8 @@ export const zh = defineLocale({
       back: '返回',
       openLogs: '打开日志',
       repairHint: '修复会重新运行安装器，在新机器上可能需要几分钟。',
-      bundledReinstallHint: '捆绑安装无法从应用内部自修复——重新安装 Hermes Desktop 以恢复其后端。',
-      reinstallApp: '重新安装 Hermes Desktop',
+      bundledReinstallHint: '捆绑安装无法从应用内部自修复——重新安装 Moor Desktop 以恢复其后端。',
+      reinstallApp: '重新安装 Moor Desktop',
       remoteSignInHint: signInLabel =>
         `先退出已保存的远程浏览器会话，然后打开${signInLabel}。也可以使用本地网关切换到随应用提供的后端。`,
       signOutAndSignIn: '退出并重新登录',
@@ -199,7 +199,7 @@ export const zh = defineLocale({
 
   notifications: {
     sharedProfileWarning:
-      '另一个 Hermes 安装实例正在使用此配置。两个实例共享此配置的设置和数据，因此更改可能发生冲突。你可以继续使用，也可以在更改前关闭另一个实例。',
+      '另一个 Moor 安装实例正在使用此配置。两个实例共享此配置的设置和数据，因此更改可能发生冲突。你可以继续使用，也可以在更改前关闭另一个实例。',
     region: '通知',
     hide: '隐藏',
     show: '显示',
@@ -216,7 +216,7 @@ export const zh = defineLocale({
     updateReadyTitle: '有可用更新',
     updateReadyMessage: count => `有 ${count} 项新更改可用。`,
     updateReadyMessageUnknown: '有新更新可用。',
-    updateReadyMessageAppInstaller: 'Hermes 新版本已就绪。现在更新，Windows 会自动完成。',
+    updateReadyMessageAppInstaller: 'Moor 新版本已就绪。现在更新，Windows 会自动完成。',
     seeWhatsNew: '查看更新内容',
     mcp: {
       needsAuthTitle: 'MCP 服务器需要重新认证',
@@ -273,8 +273,8 @@ export const zh = defineLocale({
       rejectAction: '拒绝',
       inputTitle: '需要输入',
       inputTitleNamed: session => `需要输入 — ${session}`,
-      inputBody: 'Hermes 正在等待你的回应。',
-      turnDoneTitle: 'Hermes 已完成',
+      inputBody: 'Moor 正在等待你的回应。',
+      turnDoneTitle: 'Moor 已完成',
       turnDoneBody: '',
       turnErrorTitle: '本轮失败',
       backgroundDoneTitle: '后台任务已完成',
@@ -676,7 +676,7 @@ export const zh = defineLocale({
         agentSuccess: name => `智能体插件 ${name} 已安装`,
         desktopSuccess: name => `桌面插件 ${name} 已安装`,
         agentFailed: '智能体插件安装失败',
-        installUncertain: 'Hermes 已停止等待安装结果，但插件可能仍在安装。关闭此窗口并刷新插件列表，然后再尝试安装。',
+        installUncertain: 'Moor 已停止等待安装结果，但插件可能仍在安装。关闭此窗口并刷新插件列表，然后再尝试安装。',
         desktopFailed: '桌面插件安装失败',
         missingEnv: (_name, vars) => `缺少环境变量：${vars}。请在设置 → 密钥中添加。`
       }
@@ -1172,7 +1172,7 @@ export const zh = defineLocale({
     uninstallSection: {
       dangerZone: '危险操作',
       checkingInstalled: '正在检查已安装内容…',
-      uninstallHermes: '卸载 Hermes',
+      uninstallMoor: '卸载 Moor',
       chooseHowMuch: '选择要删除的内容。应用会关闭以完成卸载；随时重新打开安装程序即可恢复。',
       confirmUninstall: '确认卸载',
       confirmBody: what => `这将删除${what}。此操作无法撤销。`,
@@ -1183,18 +1183,18 @@ export const zh = defineLocale({
       options: {
         gui: {
           title: '仅卸载聊天图形界面',
-          description: '仅移除此桌面应用。Hermes 智能体、你的配置和聊天记录都会保留。',
+          description: '仅移除此桌面应用。Moor 智能体、你的配置和聊天记录都会保留。',
           consequence: '桌面聊天图形界面（此应用及其数据）'
         },
         lite: {
           title: '卸载图形界面和智能体，保留数据',
-          description: '移除应用和 Hermes 智能体，但保留配置、聊天记录和密钥，以便将来重新安装。',
-          consequence: '聊天图形界面和 Hermes 智能体（配置、聊天记录和密钥会保留）'
+          description: '移除应用和 Moor 智能体，但保留配置、聊天记录和密钥，以便将来重新安装。',
+          consequence: '聊天图形界面和 Moor 智能体（配置、聊天记录和密钥会保留）'
         },
         full: {
           title: '全部卸载',
           description: '移除应用、智能体和所有用户数据——配置、聊天记录、定时任务、密钥和日志。',
-          consequence: '全部内容——聊天图形界面、Hermes 智能体以及你的所有配置、聊天记录、密钥和日志'
+          consequence: '全部内容——聊天图形界面、Moor 智能体以及你的所有配置、聊天记录、密钥和日志'
         }
       }
     },
@@ -1256,7 +1256,7 @@ export const zh = defineLocale({
     config: {
       minimizeToTrayTitle: '最小化到托盘',
       minimizeToTrayDesc:
-        '最小化窗口或关闭主窗口时，将其隐藏到系统托盘（macOS 上为菜单栏），让 Hermes 继续运行。通过托盘菜单中的“退出 Hermes”或 Cmd+Q 退出。默认关闭，仅适用于此设备。',
+        '最小化窗口或关闭主窗口时，将其隐藏到系统托盘（macOS 上为菜单栏），让 Moor 继续运行。通过托盘菜单中的“退出 Moor”或 Cmd+Q 退出。默认关闭，仅适用于此设备。',
       minimizeToTrayUnavailable: '系统托盘不可用。窗口将正常最小化和关闭。关闭此选项后重新开启即可重试。',
       none: '无',
       noneParen: '(无)',
@@ -1296,24 +1296,24 @@ export const zh = defineLocale({
       title: '轻按唤出 HUD',
       description:
         '在 Mac 上按下并松开 ⌘ + Option，在 Windows/Linux 上按下并松开 Ctrl + Alt，即可从任意应用将 HUD 置于前台。默认关闭，仅适用于此设备。',
-      permission: '请在系统设置 → 隐私与安全性 → 输入监控中允许 Hermes，然后重试。此手势不会记录按键或截取屏幕。',
-      unavailable: 'HUD 手势辅助程序无法启动或意外停止。请重试或重启 Hermes。Hermes 内原有的 HUD 快捷键仍可使用。',
-      missingHelper: '此 Hermes 安装缺少 HUD 手势辅助程序。请更新或重新安装 Hermes，然后重试。',
+      permission: '请在系统设置 → 隐私与安全性 → 输入监控中允许 Moor，然后重试。此手势不会记录按键或截取屏幕。',
+      unavailable: 'HUD 手势辅助程序无法启动或意外停止。请重试或重启 Moor。Moor 内原有的 HUD 快捷键仍可使用。',
+      missingHelper: '此 Moor 安装缺少 HUD 手势辅助程序。请更新或重新安装 Moor，然后重试。',
       unsupportedSession: '此桌面会话不支持全局修饰键轻按事件。Linux 需要 X11；不支持 Wayland。'
     },
     screenshot: {
       enabledTitle: '截图快捷键',
       enabledDesc:
-        '在任意应用中同时按下左右两个 Command 键，即可截取最前面的窗口并附加到当前 Hermes 草稿。绝不会自动发送。默认关闭，仅适用于这台 Mac。窗口可能包含敏感内容，请在发送前检查附件。',
+        '在任意应用中同时按下左右两个 Command 键，即可截取最前面的窗口并附加到当前 Moor 草稿。绝不会自动发送。默认关闭，仅适用于这台 Mac。窗口可能包含敏感内容，请在发送前检查附件。',
       statusTitle: '截图快捷键状态',
       checking: '正在检查截图快捷键…',
       disabled: '截图快捷键已关闭。',
       starting: '正在启动快捷键监听，尚未就绪。',
       ready: '快捷键已就绪。截图会附加到当前草稿，不会发送。',
       inputPermission:
-        '输入监控权限允许 Hermes 在其他应用处于活动状态时检测两个 Command 键。请在系统设置 → 隐私与安全性 → 输入监控中允许 Hermes，然后返回此处重试。',
+        '输入监控权限允许 Moor 在其他应用处于活动状态时检测两个 Command 键。请在系统设置 → 隐私与安全性 → 输入监控中允许 Moor，然后返回此处重试。',
       screenPermission:
-        '屏幕录制权限允许 Hermes 在你使用此快捷键时截取最前面的应用窗口。请在系统设置 → 隐私与安全性 → 屏幕录制中允许 Hermes，然后返回此处重试。如果 macOS 提示，请重启 Hermes。',
+        '屏幕录制权限允许 Moor 在你使用此快捷键时截取最前面的应用窗口。请在系统设置 → 隐私与安全性 → 屏幕录制中允许 Moor，然后返回此处重试。如果 macOS 提示，请重启 Moor。',
       openSettings: '打开系统设置',
       retry: '重试',
       unavailable: '截图快捷键不可用。请重试或将其关闭。',
@@ -1814,11 +1814,11 @@ export const zh = defineLocale({
       usageLabel: label => `${label}用量`,
       freeTier: {
         signIn: '登录',
-        title: '你正在使用 Nous 免费服务',
-        message: '登录 Nous 账户以解锁更多模型和工具。',
-        caption: '使用 nous/welcome，包含连接器。登录后会保留连接器，并增加需要账户的工具和其他所有模型。',
-        name: 'Nous · 免费服务',
-        footnote: '免费服务没有余额，无需支付。登录 Nous 账户后才会显示支付与用量。',
+        title: '你正在使用 Moor 免费服务',
+        message: '登录 Moor 账户以解锁更多模型和工具。',
+        caption: '使用 moor/welcome，包含连接器。登录后会保留连接器，并增加需要账户的工具和其他所有模型。',
+        name: 'Moor · 免费服务',
+        footnote: '免费服务没有余额，无需支付。登录 Moor 账户后才会显示支付与用量。',
         plan: '免费服务',
         model: '模型',
         connectors: '连接器',
@@ -1917,8 +1917,8 @@ export const zh = defineLocale({
       state: {
         notice: {
           loggedOut: {
-            title: '连接你的 Nous 账户',
-            message: '登录你的 Nous 账户，即可在此查看余额、套餐和用量。',
+            title: '连接你的 Moor 账户',
+            message: '登录你的 Moor 账户，即可在此查看余额、套餐和用量。',
             action: '登录'
           },
           openPortal: '打开门户 ↗',
@@ -1997,7 +1997,7 @@ export const zh = defineLocale({
         sessionRevoked: { title: '会话已登出', message: '你的会话已登出。请从“设置 → 网关”重新登录。' },
         cliBillingDisabled: {
           title: '远程支出已关闭',
-          message: '此账户的远程支出已关闭，账单管理员可在门户的 Hermes Agent 页面开启。'
+          message: '此账户的远程支出已关闭，账单管理员可在门户的 Moor Agent 页面开启。'
         },
         roleRequired: {
           title: '需要管理员权限',
@@ -2305,8 +2305,8 @@ export const zh = defineLocale({
       uninstalledDesktop: (name: string) => `${name} 已卸载。`,
       deepLinkErrorTitle: '插件安装链接已拒绝',
       deepLinkCatalogInvalidName: '链接中的目录名称缺失或无效。',
-      deepLinkCatalogUnknown: (name: string) => `“${name}”不在 Hermes 插件目录中。未安装任何内容。`,
-      deepLinkCatalogUnavailable: '无法加载 Hermes 插件目录。请检查网络连接后重新打开链接。'
+      deepLinkCatalogUnknown: (name: string) => `“${name}”不在 Moor 插件目录中。未安装任何内容。`,
+      deepLinkCatalogUnavailable: '无法加载 Moor 插件目录。请检查网络连接后重新打开链接。'
     },
     officialCatalog: '可安装',
     officialPill: '官方',
@@ -2521,7 +2521,7 @@ export const zh = defineLocale({
     },
     nav: {
       newChat: { title: '新建会话', detail: '开始一个新会话' },
-      settings: { title: '设置', detail: '配置 Hermes 桌面端' },
+      settings: { title: '设置', detail: '配置 Moor 桌面端' },
       capabilities: { title: '技能与工具', detail: '启用技能、工具集与提供方' },
       messaging: { title: '消息平台', detail: '配置 Telegram、Slack、Discord 等' },
       artifacts: { title: '产物', detail: '浏览生成的输出' }
@@ -2904,12 +2904,12 @@ export const zh = defineLocale({
       onGateway: (name, gateway) => `${name} · ${gateway}`,
       switchTo: (name, gateway) => `切换到 ${gateway} 上的 ${name}`,
       deleteOn: gateway => `（位于 ${gateway}）`,
-      localDevice: '此设备（本地后端——若未安装 Hermes 则会安装，否则打开一个新会话）',
+      localDevice: '此设备（本地后端——若未安装 Moor 则会安装，否则打开一个新会话）',
       switchDeviceTitle: '切换到此设备？',
       switchDeviceDesc: '这会在这台电脑上打开一个新会话。当前对话仍留在另一个网关上。',
       switchDeviceConfirm: '切换',
       installDeviceTitle: '切换到此设备？',
-      installDeviceDesc: '这将在本地安装 Hermes，然后在这台电脑上打开一个新会话。确认之前不会开始安装。',
+      installDeviceDesc: '这将在本地安装 Moor，然后在这台电脑上打开一个新会话。确认之前不会开始安装。',
       installDeviceConfirm: '本地安装',
       connectExistingInstead: '改为连接现有环境'
     },
@@ -2950,7 +2950,7 @@ export const zh = defineLocale({
     setAsDefault: '设为默认',
     defaultProfile: '默认配置档案',
     defaultSet: name => `${name} 已设为默认`,
-    defaultDescription: '用于 Hermes 启动和新建聊天。现有会话仍保留在各自的配置档案中。',
+    defaultDescription: '用于 Moor 启动和新建聊天。现有会话仍保留在各自的配置档案中。',
     failedSetDefault: '无法设置默认配置档案',
     setColor: color => `设置颜色 ${color}`,
     autoColor: '自动',
@@ -3020,7 +3020,7 @@ export const zh = defineLocale({
   },
 
   modelAssignment: {
-    saveFailed: 'Hermes 未保存该模型更改。',
+    saveFailed: 'Moor 未保存该模型更改。',
     confirmTitle: '模型选择警告',
     confirmDetail: '仅在你接受此权衡时确认。',
     confirmAction: '确认',
@@ -3505,7 +3505,7 @@ export const zh = defineLocale({
       '/resume': '恢复已保存的会话',
       '/details': '控制对话记录的详细程度',
       '/copy': '复制所选内容或最后一条助手消息',
-      '/quit': '退出 hermes',
+      '/quit': '退出 moor',
       '/start': '确认平台启动请求，不发送回复',
       '/new': '开始新的桌面对话',
       '/topic': '启用或查看 Telegram 私聊话题会话',
@@ -3529,19 +3529,19 @@ export const zh = defineLocale({
       '/journey': '打开记忆图谱 — 查看技能与记忆随时间的变化',
       '/queue': '排队、查看、编辑、移除、移动或清空下一轮提示词',
       '/steer': '在下一次工具调用后插入消息，不会中断当前工作',
-      '/goal': '设置持续目标，让 Hermes 跨回合工作直到完成',
+      '/goal': '设置持续目标，让 Moor 跨回合工作直到完成',
       '/heartbeat': '设置周期性提示词，在空闲时重新进入此会话',
       '/refine': '立即检查此对话，并将心得保存到记忆或技能',
       '/review': '生成独立子代理，审查刚才讨论的工作（PR、代码、文档）',
       '/loop': '在此会话中以固定间隔重新运行提示词',
-      '/plan': '将 Markdown 实施计划写入 .hermes/plans/，不执行任何操作',
+      '/plan': '将 Markdown 实施计划写入 .moor/plans/，不执行任何操作',
       '/moa': '使用默认的 Mixture of Agents 组合运行提示词，完成后还原模型',
       '/subgoal': '添加或管理活跃目标的额外条件',
       '/status': '显示当前会话状态',
       '/egress': '显示 Docker 对外连接代理状态',
       '/context': '显示详细的上下文窗口，包括用量、分类明细、压缩统计与吞吐量',
       '/whoami': '显示你的斜线命令访问权限（admin / user）',
-      '/profile': '切换活跃的 Hermes 配置档案',
+      '/profile': '切换活跃的 Moor 配置档案',
       '/codex-runtime': '切换 OpenAI/Codex 模型使用的 Codex app-server runtime',
       '/personality': '设置预定义人格',
       '/battery': '切换状态栏中的彩色电池指示器',
@@ -3565,10 +3565,10 @@ export const zh = defineLocale({
       '/browser': '管理浏览器 CDP 连接 [connect|disconnect|status]（仅限本地 gateway）',
       '/palette': '打开模糊搜索命令面板（也可使用 Ctrl+P）',
       '/usage': '显示 Token 用量与速率限制；`reset` 可兑换保留的 Codex 限额重置',
-      '/subscription': '查看你的 Nous 方案，并在浏览器中更改',
-      '/topup': '显示你的 Nous 余额，并在 Portal 管理账务',
+      '/subscription': '查看你的 Moor 方案，并在浏览器中更改',
+      '/topup': '显示你的 Moor 余额，并在 Portal 管理账务',
       '/platform': '暂停、恢复或列出故障的网关平台',
-      '/version': '显示 Hermes Agent 版本',
+      '/version': '显示 Moor Agent 版本',
       '/debug': '上传调试报告（系统信息与日志），并获取可分享链接',
       '/model': '切换此会话的模型'
     },
@@ -3839,12 +3839,12 @@ export const zh = defineLocale({
   },
 
   updates: {
-    discontinuedTitle: '此版本的 Hermes 已停止支持',
-    discontinuedBody: '此版本的 Hermes 已停止支持，可能无法正常运行——请卸载。您的数据仍保留在磁盘上。',
+    discontinuedTitle: '此版本的 Moor 已停止支持',
+    discontinuedBody: '此版本的 Moor 已停止支持，可能无法正常运行——请卸载。您的数据仍保留在磁盘上。',
     channels: { stable: '稳定版', canary: '预览版' },
     bundleSwapPending: '重启以完成更新',
-    bundleSwapPendingDesc: '更新后的应用已安装完成，只需重启 Hermes 即可加载新版本。聊天记录和设置不会受到影响。',
-    bundleSwapPendingAction: '重启 Hermes',
+    bundleSwapPendingDesc: '更新后的应用已安装完成，只需重启 Moor 即可加载新版本。聊天记录和设置不会受到影响。',
+    bundleSwapPendingAction: '重启 Moor',
     stages: {
       idle: '准备中…',
       prepare: '准备中…',
@@ -3865,7 +3865,7 @@ export const zh = defineLocale({
     notAvailableTitle: '更新不可用',
     unsupportedMessage: '此版本的 Moor 无法在应用内自行更新。',
     connectionRetry: '请检查网络连接后重试。',
-    gitUnusable: 'Hermes 无法在这台电脑上运行 Git，因此无法检查更新。',
+    gitUnusable: 'Moor 无法在这台电脑上运行 Git，因此无法检查更新。',
     latestBody: '你正在运行最新版本。',
     latestBodyBackend: '后端正在运行最新版本。',
     allSetTitle: '已是最新',
@@ -3874,7 +3874,7 @@ export const zh = defineLocale({
     availableTitleBackend: '后端有可用更新',
     availableBodyBackend: '已连接的 Moor 后端有新版本可安装。',
     availableBodyNoChangelog: '已有新版本可用。此安装方式无法显示更新日志。',
-    availableBodyAppInstaller: 'Hermes 新版本已就绪。Hermes 会关闭，Windows 完成更新后自动重新打开。',
+    availableBodyAppInstaller: 'Moor 新版本已就绪。Moor 会关闭，Windows 完成更新后自动重新打开。',
     updateNow: '立即更新',
     maybeLater: '稍后再说',
     moreChanges: count => `另有 ${count} 项更改。`,
@@ -3888,13 +3888,13 @@ export const zh = defineLocale({
     copied: '已复制',
     done: '完成',
     applyingBody:
-      'Hermes 更新器会在自己的窗口中接管，并在完成后自动重新打开 Hermes。更新期间请不要自行重新打开 Hermes。',
-    applyingBodyBackend: '远程后端正在应用更新并将重启。恢复后 Hermes 会自动重新连接。',
-    applyingClose: '此窗口会在更新期间关闭，随后 Hermes 会自动重新打开。',
-    applyingBodyAppInstaller: 'Hermes 会关闭，Windows 会完成更新，然后 Hermes 自动重新打开——无需任何操作。',
-    applyingCloseAppInstaller: '此窗口会关闭，Windows 完成更新后 Hermes 自动重新打开。',
+      'Moor 更新器会在自己的窗口中接管，并在完成后自动重新打开 Moor。更新期间请不要自行重新打开 Moor。',
+    applyingBodyBackend: '远程后端正在应用更新并将重启。恢复后 Moor 会自动重新连接。',
+    applyingClose: '此窗口会在更新期间关闭，随后 Moor 会自动重新打开。',
+    applyingBodyAppInstaller: 'Moor 会关闭，Windows 会完成更新，然后 Moor 自动重新打开——无需任何操作。',
+    applyingCloseAppInstaller: '此窗口会关闭，Windows 完成更新后 Moor 自动重新打开。',
     checkUnknownTitleAppInstaller: '无法检查更新',
-    checkUnknownBodyAppInstaller: 'Windows 目前无法检查更新。重启 Hermes 时也会自动安装更新。',
+    checkUnknownBodyAppInstaller: 'Windows 目前无法检查更新。重启 Moor 时也会自动安装更新。',
     errorTitle: '更新未完成',
     errorBody: '没有数据丢失。你可以现在重试。',
     blockerTitle: '关闭本地预览以更新 Moor？',
@@ -3932,7 +3932,7 @@ export const zh = defineLocale({
       noReturn: '后端未恢复在线。更新可能未完成——请检查后端主机。'
     },
     // Update-status overlay + version-details (mechanism-aware update UI).
-    appName: 'Hermes',
+    appName: 'Moor',
     version: value => `版本 ${value}`,
     versionUnavailable: '版本不可用',
     checkNow: '立即检查',
@@ -3953,7 +3953,7 @@ export const zh = defineLocale({
     daysAgo: count => `${count} 天前`,
     justNowSuffix: ' · 刚刚',
     bundleOutOfSync: '应用版本过旧',
-    bundleOutOfSyncDesc: 'Hermes 运行时已更新，但桌面应用仍是较旧的构建。请更新以获取最新修复。',
+    bundleOutOfSyncDesc: 'Moor 运行时已更新，但桌面应用仍是较旧的构建。请更新以获取最新修复。',
     bundleOutOfSyncAction: '获取安装程序',
     checkingShort: '检查中…',
     releaseAvailable: tag => `版本 ${tag} 可用。`,
@@ -3967,9 +3967,9 @@ export const zh = defineLocale({
     versionDetailsDistributionDesktopMsix: '桌面应用 (MSIX)',
     versionDetailsDistributionDesktopInstaller: '桌面应用（安装器）',
     versionDetailsDistributionSourceInstaller: '源码（安装脚本）',
-    versionDetailsDistributionSourceInstallerDesktop: '源码（安装脚本）+ hermes desktop',
+    versionDetailsDistributionSourceInstallerDesktop: '源码（安装脚本）+ moor desktop',
     versionDetailsDistributionSource: '源码',
-    versionDetailsDistributionSourceDesktop: '源码 + hermes desktop',
+    versionDetailsDistributionSourceDesktop: '源码 + moor desktop',
     versionDetailsDistributionStore: 'Microsoft Store',
     versionDetailsRuntime: '运行时',
     versionDetailsRuntimeEmbedded: '嵌入式（捆绑）',
@@ -4003,16 +4003,16 @@ export const zh = defineLocale({
     connectExistingTitle: '连接到现有 Moor',
     connectExistingShort: '连接现有环境',
     connectExistingDesc: '使用会话令牌或浏览器登录连接远程后端。不会启动本地安装。',
-    setupChoiceDescLocal: '在这台电脑上安装 Hermes，或连接到已在运行的 Hermes 网关。',
+    setupChoiceDescLocal: '在这台电脑上安装 Moor，或连接到已在运行的 Moor 网关。',
 
-    installLocalTitle: '本地安装 Hermes',
-    installLocalDesc: '下载 Hermes，创建 Python 环境，并在这台电脑上运行后端。',
-    useLocalTitle: '使用这台电脑上的 Hermes',
-    useLocalDesc: '此电脑已安装 Hermes 运行时——一键启动，无需下载。',
-    bundledLocalDesc: '此应用自带 Hermes 运行时——捆绑后端即本地安装。',
-    localStartUnavailable: '无法启动本地安装。请重启 Hermes Desktop 后重试。',
-    remoteSetupTitle: '连接到现有 Hermes',
-    remoteSetupDesc: '输入网关 URL。Hermes Desktop 会检测需要令牌还是浏览器登录。',
+    installLocalTitle: '本地安装 Moor',
+    installLocalDesc: '下载 Moor，创建 Python 环境，并在这台电脑上运行后端。',
+    useLocalTitle: '使用这台电脑上的 Moor',
+    useLocalDesc: '此电脑已安装 Moor 运行时——一键启动，无需下载。',
+    bundledLocalDesc: '此应用自带 Moor 运行时——捆绑后端即本地安装。',
+    localStartUnavailable: '无法启动本地安装。请重启 Moor Desktop 后重试。',
+    remoteSetupTitle: '连接到现有 Moor',
+    remoteSetupDesc: '输入网关 URL。Moor Desktop 会检测需要令牌还是浏览器登录。',
     remoteUrlTitle: '网关 URL',
     remoteUrlDesc: '使用 Moor 网关的基础 URL；远程地址请包含 https://。',
     remoteUrlPlaceholder: 'https://gateway.example.com/moor',
@@ -4268,7 +4268,7 @@ export const zh = defineLocale({
       update: '更新',
       updateInProgress: '正在更新',
       commitsBehind: (count, branch) => `落后 ${branch} ${count} 个提交`,
-      desktopVersion: version => `Hermes Desktop v${version}`,
+      desktopVersion: version => `Moor Desktop v${version}`,
       releaseAvailable: tag => `版本 ${tag} 可用。`,
       backendVersion: version => `后端 v${version}`,
       clientLabel: version => `客户端 v${version}`,
@@ -4520,11 +4520,11 @@ export const zh = defineLocale({
 
   interfaceMode: {
     title: '界面模式',
-    hint: '只改变显示的内容，不改变 Hermes 的能力。',
+    hint: '只改变显示的内容，不改变 Moor 的能力。',
     sessionNote: '由简洁模式设定。此处的更改仅在本次会话内生效；切换到高级模式即可保留为你的设置。',
     simple: {
       label: '简洁',
-      description: '用于与 Hermes 对话。只有侧边栏和聊天；没有终端、文件或差异面板。'
+      description: '用于与 Moor 对话。只有侧边栏和聊天；没有终端、文件或差异面板。'
     },
     advanced: {
       label: '高级',
@@ -4628,9 +4628,9 @@ export const zh = defineLocale({
       dismissError: '关闭错误',
       errorGenericProvider: 'AI 服务',
       errorLayerBodies: {
-        generic: 'Hermes 回复时出现问题。请重试；若问题持续，请复制错误详情。',
+        generic: 'Moor 回复时出现问题。请重试；若问题持续，请复制错误详情。',
         provider: 'AI 服务无法完成此请求。请稍后重试或切换服务商。',
-        endpoint: 'Hermes 无法连接到你的自定义模型服务器。请确认它正在运行，然后重新发送消息。',
+        endpoint: 'Moor 无法连接到你的自定义模型服务器。请确认它正在运行，然后重新发送消息。',
         streaming: '回复完成前连接已断开。请重试以重新发送。'
       },
       errorCodes: {
@@ -4648,7 +4648,7 @@ export const zh = defineLocale({
         },
         invalid_response: {
           title: 'AI 服务返回了无法读取的回复',
-          body: provider => `${provider} 返回了 Hermes 无法读取的内容。请稍后重试。`
+          body: provider => `${provider} 返回了 Moor 无法读取的内容。请稍后重试。`
         },
         empty_response: {
           title: 'AI 服务返回了空回复',
@@ -4676,7 +4676,7 @@ export const zh = defineLocale({
         },
         ssl_cert_verification: {
           title: '安全连接失败',
-          body: provider => `Hermes 无法验证与 ${provider} 的安全连接。请检查网络或代理设置，或切换服务商后重新发送。`
+          body: provider => `Moor 无法验证与 ${provider} 的安全连接。请检查网络或代理设置，或切换服务商后重新发送。`
         }
       },
       errorLayers: {
@@ -4896,7 +4896,7 @@ export const zh = defineLocale({
     sudoDesc: '输入 sudo 密码前，请先检查命令。密码会发送给执行命令的 agent，并在本次会话中缓存。',
     sudoCommandUnavailable: '此 agent 未提供命令。如果无法在对话中确认，请取消。',
     sudoInstallDesc:
-      'Hermes 需要你的 sudo 密码，以在网关主机上安装 Bot Screen 软件包（TigerVNC + Xfce）。它只会发送到该主机。',
+      'Moor 需要你的 sudo 密码，以在网关主机上安装 Bot Screen 软件包（TigerVNC + Xfce）。它只会发送到该主机。',
     sudoPlaceholder: 'sudo 密码',
     secretTitle: '需要密钥',
     secretDesc: 'Moor 需要一个凭据才能继续。',

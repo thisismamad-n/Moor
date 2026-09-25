@@ -274,8 +274,8 @@ class TestPipeToShellNameCoverage:
         """End to end through check_all_command_guards: `curl | zsh` must reach the
         approval callback carrying the pipe description, not just the pattern scan."""
         from tools.approval import check_all_command_guards
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-        monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
+        monkeypatch.setenv("MOOR_INTERACTIVE", "1")
+        monkeypatch.delenv("MOOR_CRON_SESSION", raising=False)
         monkeypatch.setattr(
             "tools.tirith_security.check_command_security",
             lambda _command: {"action": "allow", "findings": [], "summary": ""},

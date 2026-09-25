@@ -13,14 +13,14 @@ from moor_cli.skin_engine import (
 
 
 def test_banner_artwork_branding():
-    """Verify ASCII top banner and hero art contain Moor assets and zero Hermes art."""  # LEGACY-REBRAND-TEST: doc
-    # Top banner must not contain old HERMES lettering  # LEGACY-REBRAND-TEST: negative check
-    assert "HERMES" not in MOOR_AGENT_LOGO  # LEGACY-REBRAND-TEST: negative check
+    """Verify ASCII top banner and hero art contain Moor assets and zero Moor art."""  # LEGACY-REBRAND-TEST: doc
+    # Top banner must not contain old MOOR lettering  # LEGACY-REBRAND-TEST: negative check
+    assert "MOOR" not in MOOR_AGENT_LOGO  # LEGACY-REBRAND-TEST: negative check
     assert "██╗  ██╗███████╗" not in MOOR_AGENT_LOGO
     # Must use Electric Cobalt & Cyan colors
     assert "#38bdf8" in MOOR_AGENT_LOGO or "#2563eb" in MOOR_AGENT_LOGO
 
-    # Hero art must be the cyber-ant, not the Hermes caduceus  # LEGACY-REBRAND-TEST: negative check
+    # Hero art must be the cyber-ant, not the Moor caduceus  # LEGACY-REBRAND-TEST: negative check
     assert "cyber-ant online" in MOOR_ANT_HERO
     assert "⬡" in MOOR_ANT_HERO
     assert "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀" not in MOOR_ANT_HERO
@@ -88,12 +88,12 @@ def test_persona_branding_and_zero_emojis():
 def test_portal_tags_legacy_aliases():
     """Verify legacy provider plugin compatibility aliases are exported."""
     from agent.portal_tags import (
-        nous_portal_tags,  # LEGACY-REBRAND-TEST: legacy export
-        nous_client_tag,  # LEGACY-REBRAND-TEST: legacy export
+        moor_portal_tags,  # LEGACY-REBRAND-TEST: legacy export
+        moor_client_tag,  # LEGACY-REBRAND-TEST: legacy export
         moor_portal_tags,
         moor_client_tag,
     )
 
-    assert nous_portal_tags() == moor_portal_tags()  # LEGACY-REBRAND-TEST: legacy alias test
-    assert nous_client_tag() == moor_client_tag()  # LEGACY-REBRAND-TEST: legacy alias test
-    assert any("product=moor-agent" in tag for tag in nous_portal_tags())  # LEGACY-REBRAND-TEST: legacy alias test
+    assert moor_portal_tags() == moor_portal_tags()  # LEGACY-REBRAND-TEST: legacy alias test
+    assert moor_client_tag() == moor_client_tag()  # LEGACY-REBRAND-TEST: legacy alias test
+    assert any("product=moor-agent" in tag for tag in moor_portal_tags())  # LEGACY-REBRAND-TEST: legacy alias test

@@ -5,11 +5,11 @@ Channel storage — per install, never home-global::
     update:
       installs:
         a4f3b2c1d0e9f8a7:                      # install id (sha16 of the
-          path: /home/u/.hermes/hermes-agent   #   canonical install root)
+          path: /home/u/.moor/moor-agent   #   canonical install root)
           channel: canary
 
 One config.yaml serves many installs (host + docker gateway + desktop all
-bind-mount one ``~/.hermes``), so a home-global ``update.channel`` key is
+bind-mount one ``~/.moor``), so a home-global ``update.channel`` key is
 UNSAFE and does not exist: setting canary for a dev checkout must not
 flip the desktop app's feed. The id is sha16 of the canonical
 install-root PATH — the same key that names the ``installs/<sha16>/``
@@ -18,21 +18,21 @@ inlined below until that module lands). Path-derived on purpose: an
 electron-updater update replaces the artifact (new stamp bytes) at the
 same path, and the channel opt-in must survive that.
 
-* Written by ``hermes update --set-channel <x>`` from inside an install
+* Written by ``moor update --set-channel <x>`` from inside an install
   (it knows its own id — the user never types a sha).
-* Shown by ``hermes update --install-id`` and the desktop About page.
+* Shown by ``moor update --install-id`` and the desktop About page.
 * Source installs select an R2 channel name, or use an explicit branch override.
   Bundles derive their channel from their baked identity, never these records.
   ``external`` installs have no configurable channel; the steward owns updates.
 
-Pure-stdlib leaf module (plus hermes-internal imports done lazily): the
+Pure-stdlib leaf module (plus moor-internal imports done lazily): the
 installers and boot paths read it before the full config machinery loads.
 """
 
 from __future__ import annotations
 
 from pm.environments import install_key, installs_root
-from hermes_cli.release_channels import validate_name
+from moor_cli.release_channels import validate_name
 from contextlib import contextmanager
 import logging
 import os
@@ -109,7 +109,7 @@ def install_id(project_root: Optional[Path] = None) -> str:
 
 def _read_stamp(root: Path) -> dict:
     """The install stamp of ``root``, or ``{}`` (tolerant, like steward.py)."""
-    from hermes_cli.steward import read_install_stamp
+    from moor_cli.steward import read_install_stamp
 
     return read_install_stamp(root)
 
@@ -186,7 +186,7 @@ def set_install_channel(
     including Microsoft Store, rather than this configuration.
     Raises ``ValueError`` for an invalid channel or an OS-owned install.
     """
-    from hermes_cli.update_contract import COMMIT_BUILD_UPDATE_MESSAGE, is_commit_build
+    from moor_cli.update_contract import COMMIT_BUILD_UPDATE_MESSAGE, is_commit_build
 
     root = Path(project_root) if project_root is not None else install_root()
     if is_commit_build(root):
@@ -229,7 +229,7 @@ def handle_metadata_args(args, project_root: Path) -> bool:
 @contextmanager
 def _channel_write_lock(config_path: Path):
     """Serialize channel selection and retirement across CLI processes."""
-    from hermes_cli.config import _CONFIG_LOCK
+    from moor_cli.config import _CONFIG_LOCK
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     with _CONFIG_LOCK, config_path.with_suffix(".channels.lock").open("a+b") as lock:
@@ -265,7 +265,7 @@ def adopt_retired_channel(request: dict) -> bool:
 
 def _write_channel_record(sha16: str, path: str, channel: str, *,
                           expected: dict | None = None, config_path: Path | None = None) -> bool:
-    from hermes_cli.config import get_config_path
+    from moor_cli.config import get_config_path
 
     config_path = config_path if config_path is not None else get_config_path()
     with _channel_write_lock(config_path):
@@ -278,15 +278,15 @@ def _write_channel_record_locked(sha16: str, path: str, channel: str,
 
     Persists through the shared comment-preserving atomic writer
     (:func:`utils.atomic_roundtrip_yaml_update` — the same ruamel round-trip
-    path ``hermes config set`` uses), fail-closed via
-    :func:`hermes_cli.config.require_readable_config_before_write`. Malformed
+    path ``moor config set`` uses), fail-closed via
+    :func:`moor_cli.config.require_readable_config_before_write`. Malformed
     ``update`` / ``update.installs`` values are refused, never replaced —
     the dotted writer would otherwise turn a scalar into a mapping and
     destroy whatever the user had there.
     """
     from utils import atomic_roundtrip_yaml_update
 
-    from hermes_cli.config import require_readable_config_before_write
+    from moor_cli.config import require_readable_config_before_write
     existing = require_readable_config_before_write(config_path)
     update_cfg = existing.get("update")
     if update_cfg is not None and not isinstance(update_cfg, dict):

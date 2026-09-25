@@ -27,11 +27,11 @@ from rich import box as rich_box
 from rich.markup import escape as _escape
 from rich.panel import Panel
 
-from hermes_constants import display_hermes_home
-from hermes_state_ids import new_session_id as mint_session_id
+from moor_constants import display_moor_home
+from moor_state_ids import new_session_id as mint_session_id
 from agent.turn_context import extract_api_content_sidecar
-from hermes_cli.cli_agent_setup_mixin import _retire_agent
-from hermes_cli.browser_connect import (
+from moor_cli.cli_agent_setup_mixin import _retire_agent
+from moor_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL, discover_local_cdp_url, find_free_debug_port, is_browser_debug_ready,
     launch_chrome_debug, local_port_in_use, manual_chrome_debug_command)
 
@@ -1005,7 +1005,7 @@ class CLICommandsMixin:
         doesn't fire for image-only clipboard content (e.g., VSCode terminal,
         Windows Terminal with WSL2).
         """
-        from hermes_cli.clipboard import has_clipboard_image
+        from moor_cli.clipboard import has_clipboard_image
         if not has_clipboard_image():
             _cp(_dim_line('(._.) No image found in clipboard'))
         elif self._try_attach_clipboard_image():
@@ -1414,7 +1414,7 @@ class CLICommandsMixin:
                 parent_prompt = (self._session_db.get_session(parent_session_id) or {}).get("system_prompt")
         try:
             self._session_db.create_session(
-                session_id=new_session_id, source=os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+                session_id=new_session_id, source=os.environ.get("MOOR_SESSION_SOURCE", "cli"),
                 model=self.model, parent_session_id=parent_session_id, system_prompt=parent_prompt or None,
                 model_config={"max_iterations": self.max_turns, "reasoning_config": self.reasoning_config,
                               "_branched_from": parent_session_id})
@@ -1690,7 +1690,7 @@ class CLICommandsMixin:
         result = _cron_api(action="list")
         jobs = result.get("jobs", []) if result.get("success") else []
         if jobs:
-            from hermes_cli.cron import _next_run_row
+            from moor_cli.cron import _next_run_row
             _pr("  Current Jobs:", "  " + "-" * 63)
             for job in jobs:
                 print(f"    {job['job_id'][:12]:<12} | {job['schedule']:<15} | {job.get('repeat', '?'):<8}")
@@ -1711,7 +1711,7 @@ class CLICommandsMixin:
         jobs = result.get("jobs", []) if result.get("success") else []
         if not jobs:
             return print("(._.) No scheduled jobs.")
-        from hermes_cli.cron import _next_run_row
+        from moor_cli.cron import _next_run_row
         print()
         _pr("Scheduled Jobs:", "-" * 80)
         for job in jobs:
@@ -1808,7 +1808,7 @@ class CLICommandsMixin:
         if action == "resume":
             print(f"  Next run: {job.get('next_run_at')}")
         elif action == "run":
-            from hermes_cli.cron import _run_outcome
+            from moor_cli.cron import _run_outcome
             print(f"  {_run_outcome(job)}")
 
     # ---- delegating handlers: /suggestions, /blueprint, /curator, /kanban, /skills, /memory --

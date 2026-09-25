@@ -6,7 +6,7 @@ model id such as MLX Core's ``peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
 strand ``❯`` on a row of its own when selected, and lose its indent when not.
 """
 from cli import _panel_box_width
-from hermes_cli.cli_tui_mixin import CLITuiMixin
+from moor_cli.cli_tui_mixin import CLITuiMixin
 
 LONG_LABEL = "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e-MTP"
 PICKER_TITLE = "⚙ Model Picker — MLX Core (LAN)"

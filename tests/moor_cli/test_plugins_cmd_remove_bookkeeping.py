@@ -1,15 +1,15 @@
 """``plugins remove`` (CLI, dashboard, ``plugins.manage`` RPC) leaves no config residue and never
 follows a symlink (#54336, plugin-scan L2-F1/F2/F5).
 
-Real removal core against a temp HERMES_HOME; the RPC path goes through ``tui_gateway.server``.
+Real removal core against a temp MOOR_HOME; the RPC path goes through ``tui_gateway.server``.
 """
 
 from __future__ import annotations
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_cli import plugins_cmd
+from moor_cli import plugins_cmd
 from tui_gateway import server
 
 
@@ -23,10 +23,10 @@ def _write_plugin(root, rel, name, extra=""):
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes-home"
-    (hermes_home / "plugins").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    return hermes_home
+    moor_home = tmp_path / "moor-home"
+    (moor_home / "plugins").mkdir(parents=True)
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
+    return moor_home
 
 
 def _config(home):

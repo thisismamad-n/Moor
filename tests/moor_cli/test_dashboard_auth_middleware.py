@@ -274,7 +274,7 @@ def test_bearer_401_audits_client_facing_reason(gated_app, tmp_path):
     body = response.json()
     assert body["reason"] == "invalid_or_expired_session"
 
-    log_path = tmp_path / "hermes_test" / "logs" / "dashboard-auth.log"
+    log_path = tmp_path / "moor_test" / "logs" / "dashboard-auth.log"
     raw = log_path.read_text(encoding="utf-8")
     assert bearer not in raw
     rejected = [

@@ -20,11 +20,11 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from hermes_cli.main_dashboard import _find_stale_dashboard_pids
-from hermes_cli.dashboard_procs import _kill_stale_dashboard_processes
-from hermes_cli import dashboard_procs
-from hermes_cli import main_dashboard
-from hermes_cli import update_cmd_maint
+from moor_cli.main_dashboard import _find_stale_dashboard_pids
+from moor_cli.dashboard_procs import _kill_stale_dashboard_processes
+from moor_cli import dashboard_procs
+from moor_cli import main_dashboard
+from moor_cli import update_cmd_maint
 
 
 @pytest.fixture(autouse=True)
@@ -237,11 +237,11 @@ class TestKillStaleDashboardPosix:
             raise AssertionError(f"unexpected subprocess.run call: {args}")
 
         with patch("subprocess.run", side_effect=fake_run), \
-             patch("hermes_cli.main_dashboard._find_stale_dashboard_pids", return_value=[]), \
+             patch("moor_cli.main_dashboard._find_stale_dashboard_pids", return_value=[]), \
              patch("os.kill") as kill:
             _kill_stale_dashboard_processes(restart_managed=True)
 
-        assert ["systemctl", "--user", "restart", "hermes-dashboard.service"] in calls
+        assert ["systemctl", "--user", "restart", "moor-dashboard.service"] in calls
         assert all(call[:1] != ["sudo"] and call[:2] == ["systemctl", "--user"] for call in calls)
         kill.assert_not_called()
 
@@ -286,7 +286,7 @@ class TestDashboardUpdateCleanup:
 
     def test_all_failed_stops_do_not_claim_the_dashboard_was_stopped(self, capsys, monkeypatch, tmp_path):
         own_home = tmp_path / "profiles" / "work"
-        monkeypatch.setenv("HERMES_HOME", str(own_home))
+        monkeypatch.setenv("MOOR_HOME", str(own_home))
         with patch(
             "moor_cli.main._kill_stale_dashboard_processes",
             return_value={"matched": [12345], "killed": [], "failed": [(12345, "denied")],
@@ -472,7 +472,7 @@ class TestManualBackendRespawn:
         with patch.object(live.subprocess, "Popen", side_effect=OSError("no such file")):
             failed = live._respawn_dashboard_processes([["moor", "serve"]])
 
-        assert failed == [["hermes", "serve"]]
+        assert failed == [["moor", "serve"]]
 
 
 class TestFilterDashboardRespawnCandidates:
@@ -730,15 +730,15 @@ class TestPostUpdateDashboardCleanupIsolation:
         """A failure inside the dashboard scan (#112604) must not abort the fleet-verification
         tail (matrix, reconciliation, inner receipt finalize): contained, visible, recorded as
         a failed step on the open receipt."""
-        import hermes_cli.update_receipt as ur
+        import moor_cli.update_receipt as ur
 
         ur._current.set(None)
         try:
             ur.begin_update_receipt()
             with patch(
-                "hermes_cli.main._kill_stale_dashboard_processes",
+                "moor_cli.main._kill_stale_dashboard_processes",
                 side_effect=AttributeError(
-                    "module 'hermes_cli.main_dashboard' has no attribute '_loaded_launchd_backend_jobs'"
+                    "module 'moor_cli.main_dashboard' has no attribute '_loaded_launchd_backend_jobs'"
                 ),
             ):
                 update_cmd_maint._refresh_dashboard_after_update()  # must not raise
@@ -820,11 +820,11 @@ class TestLaunchdSupervisedBackends:
         ancestor (exec-less ``/bin/sh -c`` wrapper plist) or by exact argv (the detached copy),
         never otherwise."""
         uid = 501
-        backend_argv = ["/opt/hermes/venv/bin/python", "-m", "hermes_cli.main", "dashboard", "--port", "9119"]
-        serve_argv = ["/opt/hermes/venv/bin/python", "-m", "hermes_cli.main", "serve", "--port", "8642"]
+        backend_argv = ["/opt/moor/venv/bin/python", "-m", "moor_cli.main", "dashboard", "--port", "9119"]
+        serve_argv = ["/opt/moor/venv/bin/python", "-m", "moor_cli.main", "serve", "--port", "8642"]
         jobs = [
-            (f"user/{uid}", "ai.hermes.dashboard", backend_argv, 4242),
-            ("system", "ai.hermes.serve", serve_argv, None),
+            (f"user/{uid}", "ai.moor.dashboard", backend_argv, 4242),
+            ("system", "ai.moor.serve", serve_argv, None),
         ]
 
         owning = main_dashboard._launchd_job_owning_backend

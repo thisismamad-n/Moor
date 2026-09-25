@@ -71,8 +71,8 @@ def test_bare_root_probe_resolves_to_the_v1_base_that_served_models(route, monke
     """A custom endpoint typed without ``/v1`` (#65488): the probe must fall through to
     ``{base}/v1/models`` AND report that base as ``resolved_base_url`` so the Desktop persists a URL
     the runtime can POST ``/chat/completions`` to — detection green + every chat 404 is the bug."""
-    import hermes_cli.web_routers.config_env as mod
-    from hermes_cli.web_models import CustomEndpointUpdate, EnvVarUpdate
+    import moor_cli.web_routers.config_env as mod
+    from moor_cli.web_models import CustomEndpointUpdate, EnvVarUpdate
 
     class _Resp:
         def __init__(self, status):
@@ -112,8 +112,8 @@ def test_bare_root_probe_resolves_to_the_v1_base_that_served_models(route, monke
 def test_bare_root_probe_reports_the_v1_key_rejection_not_the_root_404(route, monkeypatch):
     """Server lives at ``/v1`` and wants a key: typed root 404s, ``/v1/models`` answers 401. The
     verdict must be the key rejection from the candidate that produced it, not the first 404."""
-    import hermes_cli.web_routers.config_env as mod
-    from hermes_cli.web_models import CustomEndpointUpdate, EnvVarUpdate
+    import moor_cli.web_routers.config_env as mod
+    from moor_cli.web_models import CustomEndpointUpdate, EnvVarUpdate
 
     class _Resp:
         def __init__(self, status):

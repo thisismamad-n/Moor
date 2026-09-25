@@ -20,9 +20,9 @@ def test_historical_payload_maps_to_takeover_request_schema(tmp_path, desktop, r
     checkout already swapped (post_swap_7006.json on the rehearsal host)."""
     source = Path(__file__).resolve().parents[2]
     root = tmp_path / "updated checkout"
-    package = root / "hermes_cli"
+    package = root / "moor_cli"
     package.mkdir(parents=True)
-    shutil.copy2(source / "hermes_cli/_old_updater.py", package / "_old_updater.py")
+    shutil.copy2(source / "moor_cli/_old_updater.py", package / "_old_updater.py")
     (package / "_update_takeover.py").write_text(
         "import json, os, sys\nfrom pathlib import Path\n"
         "request = json.loads(Path(sys.argv[1]).read_text())\n"
@@ -52,24 +52,24 @@ def test_historical_payload_maps_to_takeover_request_schema(tmp_path, desktop, r
         payload["windows_gateway_resume"] = resume
     # The retired updater reaches the takeover through the NEW tree's hand-off module; this
     # checkout is the whole tree the child sees (CI has no editable finder for the source).
-    shutil.copy2(source / "hermes_cli/update_handoff.py", package / "update_handoff.py")
-    # write_handoff resolves the home through hermes_constants; the child tree is the whole
+    shutil.copy2(source / "moor_cli/update_handoff.py", package / "update_handoff.py")
+    # write_handoff resolves the home through moor_constants; the child tree is the whole
     # sys.path (CI has no editable finder), so give it the one name the hand-off reads.
-    (root / "hermes_constants.py").write_text(
+    (root / "moor_constants.py").write_text(
         "import os\nfrom pathlib import Path\n"
-        "def get_hermes_home():\n    return Path(os.environ['HERMES_HOME'])\n", encoding="utf-8",
+        "def get_moor_home():\n    return Path(os.environ['MOOR_HOME'])\n", encoding="utf-8",
     )
     program = root / "historical.py"
     program.write_text(
         "import os\n"
-        "from hermes_cli.update_handoff import continue_update_in_fresh_interpreter\n"
+        "from moor_cli.update_handoff import continue_update_in_fresh_interpreter\n"
         "code = continue_update_in_fresh_interpreter(\n"
         f"    {payload!r}, argv_tail=['update', '--yes', '--gateway', '--branch', 'main'])\n"
         "raise SystemExit(code)\n", encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(('HERMES_', 'PYTHON', 'UV_'))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(('MOOR_', 'PYTHON', 'UV_'))}
+    env.update(HOME=str(home), MOOR_HOME=str(home))
     result = subprocess.run([sys.executable, "-B", str(program)], env=env,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -80,7 +80,7 @@ def test_historical_payload_maps_to_takeover_request_schema(tmp_path, desktop, r
 
 @pytest.mark.live_system_guard_bypass
 def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
-    """The 2026.9.21 updater starts HEAD as ``hermes update <flags> --post-swap FILE``.
+    """The 2026.9.21 updater starts HEAD as ``moor update <flags> --post-swap FILE``.
 
     That command must reach the historical takeover before current launch preparation or
     argparse: both belong to the replacement updater and may require dependencies the old
@@ -88,14 +88,14 @@ def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
     """
     source = Path(__file__).resolve().parents[2]
     root = tmp_path / "updated checkout"
-    package = root / "hermes_cli"
+    package = root / "moor_cli"
     package.mkdir(parents=True)
     (package / "__init__.py").write_text("", encoding="utf-8")
     (package / "main.py").write_text(
-        "import hermes_bootstrap\nraise AssertionError('current CLI parsed a legacy continuation')\n",
+        "import moor_bootstrap\nraise AssertionError('current CLI parsed a legacy continuation')\n",
         encoding="utf-8",
     )
-    for relative in ("hermes_bootstrap.py", "hermes_cli/update_handoff.py", "hermes_cli/_old_updater.py"):
+    for relative in ("moor_bootstrap.py", "moor_cli/update_handoff.py", "moor_cli/_old_updater.py"):
         shutil.copy2(source / relative, root / relative)
     (package / "_update_takeover.py").write_text(
         "import json, sys\nfrom pathlib import Path\n"
@@ -120,10 +120,10 @@ def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
     }
     handoff.write_text(json.dumps(payload), encoding="utf-8")
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(("MOOR_", "PYTHON", "UV_"))}
+    env.update(HOME=str(home), MOOR_HOME=str(home))
     result = subprocess.run(
-        [sys.executable, "-B", "-m", "hermes_cli.main", "update", "--yes",
+        [sys.executable, "-B", "-m", "moor_cli.main", "update", "--yes",
          "--no-gateway-restart", "--branch", "main", "--post-swap", str(handoff)],
         cwd=root, env=env, capture_output=True, text=True, timeout=30,
     )
@@ -137,9 +137,9 @@ def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
 def test_takeover_waits_propagates_status_and_never_reenters_old_code(tmp_path, status, encoding, desktop):
     source = Path(__file__).resolve().parents[2]
     root = tmp_path / "updated checkout"
-    package = root / "hermes_cli"
+    package = root / "moor_cli"
     package.mkdir(parents=True)
-    shutil.copy2(source / "hermes_cli/_old_updater.py", package / "_old_updater.py")
+    shutil.copy2(source / "moor_cli/_old_updater.py", package / "_old_updater.py")
     # This is the process seam, not a counterfeit installer. Actual PM and
     # product construction are exercised separately against local packages.
     (package / "_update_takeover.py").write_text(
@@ -153,7 +153,7 @@ def test_takeover_waits_propagates_status_and_never_reenters_old_code(tmp_path, 
         "assert request['pre_update_snapshot_id'] == 'preserve-snapshot'\n"
         "assert request['gateway_mode'] == True\n"
         "assert request['pre_update_version'] == 'old-version'\n"
-        "assert request['home'] == os.environ['HERMES_HOME']\n"
+        "assert request['home'] == os.environ['MOOR_HOME']\n"
         "with Path(request['home'], 'runs').open('a') as stream: stream.write('child\\n')\n"
         f"Path(sys.argv[2]).write_text(json.dumps({{'resume_handled': True}}), encoding={encoding!r})\n"
         f"raise SystemExit({status})\n", encoding="utf-8",
@@ -164,7 +164,7 @@ def test_takeover_waits_propagates_status_and_never_reenters_old_code(tmp_path, 
     program.write_text(
         "import atexit, json, os, sys, types\nfrom pathlib import Path\n"
         "sys.modules['old_only'] = types.ModuleType('old_only')\n"
-        "from hermes_cli._old_updater import stop_for_relaunch\n"
+        "from moor_cli._old_updater import stop_for_relaunch\n"
         "_windows_gateway_resume = {'resume_needed': True, 'profiles': {'work': 'old-pid'}}\n"
         # The June updater reaches the takeover before it declares this local.
         f"if {desktop!r} is not None:\n    had_desktop_app_before_update = {desktop!r}\n"
@@ -173,21 +173,21 @@ def test_takeover_waits_propagates_status_and_never_reenters_old_code(tmp_path, 
         "def cleanup():\n"
         "    assert not _windows_gateway_resume['resume_needed']\n"
         "    assert 'old_only' in sys.modules\n"
-        "    Path(os.environ['HERMES_HOME'], 'cleanup').write_text('ran')\n"
+        "    Path(os.environ['MOOR_HOME'], 'cleanup').write_text('ran')\n"
         "atexit.register(cleanup)\n"
         "try:\n    stop_for_relaunch()\n"
         "finally:\n    stop_for_relaunch()\n"
         "raise AssertionError('old updater resumed')\n", encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(('HERMES_', 'PYTHON', 'UV_'))}
-    env.update(HOME=str(home), HERMES_HOME=str(home), PYTHONPATH="/not/the/new/source")
+           if not key.startswith(('MOOR_', 'PYTHON', 'UV_'))}
+    env.update(HOME=str(home), MOOR_HOME=str(home), PYTHONPATH="/not/the/new/source")
     result = subprocess.run([sys.executable, "-B", str(program)], env=env,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == status, result.stdout + result.stderr
     assert (home / "runs").read_text() == "child\n"
     assert (home / "cleanup").read_text() == "ran"
-    assert "run `hermes` again" not in result.stderr
+    assert "run `moor` again" not in result.stderr
 
 
 # Only the copied shim and JSON probe run; this temp checkout has no real updater.
@@ -197,10 +197,10 @@ def test_takeover_waits_propagates_status_and_never_reenters_old_code(tmp_path, 
 def test_only_known_early_updater_restarts_with_original_arguments(tmp_path, post_pull, module_name):
     source = Path(__file__).resolve().parents[2]
     root = tmp_path / "updated checkout"
-    package = root / "hermes_cli"
+    package = root / "moor_cli"
     package.mkdir(parents=True)
     for name in ("_old_updater.py", "old_updater_deps.py"):
-        shutil.copy2(source / "hermes_cli" / name, package / name)
+        shutil.copy2(source / "moor_cli" / name, package / name)
     (package / "_update_takeover.py").write_text(
         "import json, sys\nfrom pathlib import Path\n"
         "request = json.loads(Path(sys.argv[1]).read_text())\n"
@@ -211,7 +211,7 @@ def test_only_known_early_updater_restarts_with_original_arguments(tmp_path, pos
     # after pulling, the *same* frame reaches a dependency hook. The wrapper
     # must not make that post-pull invocation look like another early update.
     (package / f"{module_name}.py").write_text(
-        "from hermes_cli.old_updater_deps import _capture_active_lazy_features, _update_node_dependencies\n"
+        "from moor_cli.old_updater_deps import _capture_active_lazy_features, _update_node_dependencies\n"
         "def _cmd_update_impl(post_pull):\n"
         "    if not post_pull:\n        _capture_active_lazy_features()\n"
         "    pre_update_version = None\n"
@@ -223,13 +223,13 @@ def test_only_known_early_updater_restarts_with_original_arguments(tmp_path, pos
     argv = [str(root / "historical.py"), "--profile", "work profile", "update", "--yes",
             "--keep-stash", "--switch-branch", "--force", "--gateway"]
     Path(argv[0]).write_text(
-        f"from hermes_cli.{module_name} import cmd_update\n"
+        f"from moor_cli.{module_name} import cmd_update\n"
         f"cmd_update({post_pull!r})\n"
         "raise AssertionError('old updater resumed')\n", encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(("MOOR_", "PYTHON", "UV_"))}
+    env.update(HOME=str(home), MOOR_HOME=str(home))
     result = subprocess.run([sys.executable, "-B", *argv], env=env,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -243,10 +243,10 @@ def test_only_known_early_updater_restarts_with_original_arguments(tmp_path, pos
 def test_atexit_recovers_only_stopped_serves_after_cached_update(tmp_path, acknowledged, cleanup_status):
     source = Path(__file__).resolve().parents[2]
     root = tmp_path / "updated checkout"
-    package = root / "hermes_cli"
+    package = root / "moor_cli"
     package.mkdir(parents=True)
     for name in ("_old_updater.py", "old_updater_deps.py"):
-        shutil.copy2(source / "hermes_cli" / name, package / name)
+        shutil.copy2(source / "moor_cli" / name, package / name)
     (package / "_update_takeover.py").write_text(
         "import json, sys\nfrom pathlib import Path\n"
         "request = json.loads(Path(sys.argv[1]).read_text())\n"
@@ -266,8 +266,8 @@ def test_atexit_recovers_only_stopped_serves_after_cached_update(tmp_path, ackno
     program = root / "historical.py"
     program.write_text(
         "import atexit, json, os\nfrom pathlib import Path\n"
-        "from hermes_cli._old_updater import stop_for_relaunch\n"
-        "from hermes_cli.old_updater_deps import _relaunch_stopped_serves\n"
+        "from moor_cli._old_updater import stop_for_relaunch\n"
+        "from moor_cli.old_updater_deps import _relaunch_stopped_serves\n"
         "token = {'pending': True, 'entries': [{'purpose': 'serve', 'profile': 'work profile',"
         " 'host': '127.0.0.1', 'port': 8119}]}\n"
         "def cleanup():\n"
@@ -275,14 +275,14 @@ def test_atexit_recovers_only_stopped_serves_after_cached_update(tmp_path, ackno
         "        _relaunch_stopped_serves(token)\n"
         "        if not token['pending']:\n            _relaunch_stopped_serves(token)\n"
         "    finally:\n"
-        "        Path(os.environ['HERMES_HOME'], 'token.json').write_text(json.dumps(token))\n"
+        "        Path(os.environ['MOOR_HOME'], 'token.json').write_text(json.dumps(token))\n"
         "atexit.register(cleanup)\n"
         "stop_for_relaunch()\n"
         "raise AssertionError('old updater resumed')\n", encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(("MOOR_", "PYTHON", "UV_"))}
+    env.update(HOME=str(home), MOOR_HOME=str(home))
     result = subprocess.run([sys.executable, "-B", str(program)], env=env,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 7, result.stdout + result.stderr
@@ -308,7 +308,7 @@ def test_serve_resume_child_reuses_respawn_without_updater_or_supervisors(tmp_pa
         entries += [
             dict(entries[0]),
             {"purpose": "serve", "profile": "desktop", "port": 0},
-            {"purpose": "serve", "profile": "foreign", "port": 8121, "hermes_home": str(tmp_path / "foreign")},
+            {"purpose": "serve", "profile": "foreign", "port": 8121, "moor_home": str(tmp_path / "foreign")},
             {"purpose": "gateway", "profile": "not-serve", "port": 8122},
             {"purpose": "serve", "profile": "boolean-port", "port": True},
             {"purpose": "serve", "profile": "invalid-port", "port": 65536},
@@ -326,24 +326,24 @@ def test_serve_resume_child_reuses_respawn_without_updater_or_supervisors(tmp_pa
         "    calls.append(command)\n"
         f"    if {spawn_fails!r}:\n        raise OSError('probe spawn failed')\n"
         "subprocess.Popen = spawn\nsubprocess.run = os.system = os.kill = forbidden\n"
-        f"sys.argv = [{str(root / 'hermes_cli/update_serve_resume.py')!r}, {str(context)!r}, {str(result_path)!r}]\n"
+        f"sys.argv = [{str(root / 'moor_cli/update_serve_resume.py')!r}, {str(context)!r}, {str(result_path)!r}]\n"
         "try:\n    runpy.run_path(sys.argv[0], run_name='__main__')\n"
         "finally:\n"
-        "    assert not any(name in sys.modules for name in ('hermes_cli.update_cmd', 'hermes_cli.update_receipt', 'hermes_cli.main'))\n"
-        "    Path(os.environ['HERMES_HOME'], 'commands.json').write_text(json.dumps(calls))\n",
+        "    assert not any(name in sys.modules for name in ('moor_cli.update_cmd', 'moor_cli.update_receipt', 'moor_cli.main'))\n"
+        "    Path(os.environ['MOOR_HOME'], 'commands.json').write_text(json.dumps(calls))\n",
         encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(("MOOR_", "PYTHON", "UV_"))}
+    env.update(HOME=str(home), MOOR_HOME=str(home))
     result = subprocess.run([sys.executable, "-I", "-B", "-X", "utf8", str(program)],
                             env=env, capture_output=True, text=True, timeout=30)
     assert result.returncode == int(spawn_fails or discarded), result.stdout + result.stderr
     assert json.loads(result_path.read_text()) == {"serves_handled": True}
     commands = json.loads((home / "commands.json").read_text())
     assert commands == [
-        [sys.executable, str(root / "hermes"), "serve", "--host", "127.0.0.1", "--port", "8119"],
-        [sys.executable, str(root / "hermes"), "--profile", "ops team 日本", "dashboard",
+        [sys.executable, str(root / "moor"), "serve", "--host", "127.0.0.1", "--port", "8119"],
+        [sys.executable, str(root / "moor"), "--profile", "ops team 日本", "dashboard",
          "--host", "::1", "--port", "8120", "--no-open"],
     ]
     assert ("probe spawn failed" in result.stdout) is spawn_fails
@@ -355,12 +355,12 @@ def test_serve_resume_child_leaves_token_unhandled_when_imports_fail(tmp_path):
     context.write_text(json.dumps({"root": str(tmp_path), "home": str(tmp_path),
                                   "stopped_serves": {"pending": True, "entries": []}}))
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(tmp_path), HERMES_HOME=str(tmp_path))
+           if not key.startswith(("MOOR_", "PYTHON", "UV_"))}
+    env.update(HOME=str(tmp_path), MOOR_HOME=str(tmp_path))
     # -S and an empty checkout make application imports genuinely unavailable;
     # this is not a mocked exception or a path into the real update machinery.
     result = subprocess.run(
-        [sys.executable, "-I", "-S", "-B", "-X", "utf8", str(root / "hermes_cli/update_serve_resume.py"),
+        [sys.executable, "-I", "-S", "-B", "-X", "utf8", str(root / "moor_cli/update_serve_resume.py"),
          str(context), str(result_path)], env=env, capture_output=True, text=True, timeout=30,
     )
     assert result.returncode == 1
@@ -373,10 +373,10 @@ def test_serve_resume_child_leaves_token_unhandled_when_imports_fail(tmp_path):
 def test_completed_serve_token_is_acknowledged_without_preparation(tmp_path, encoding, entrypoint):
     source = Path(__file__).resolve().parents[2]
     root = tmp_path / "checkout 日本 café"
-    package = root / "hermes_cli"
+    package = root / "moor_cli"
     package.mkdir(parents=True)
     for name in ("_update_takeover.py", "update_serve_resume.py"):
-        shutil.copy2(source / "hermes_cli" / name, package / name)
+        shutil.copy2(source / "moor_cli" / name, package / name)
     # Only selection is supplied. The two real entrypoints must carry the
     # request without importing PM or launching any completed backend twice.
     (package / "_launchers.py").write_text(
@@ -412,7 +412,7 @@ def test_bootstrap_lock_remains_live_without_application_dependencies(tmp_path):
     prelude = (
         "import os, sys\nfrom pathlib import Path\n"
         f"sys.path.insert(0, {str(root)!r})\n"
-        "from hermes_cli.update_lock import UpdateLock\n"
+        "from moor_cli.update_lock import UpdateLock\n"
         f"lock = UpdateLock(path=Path({str(lock)!r}))\n"
     )
     holder = subprocess.Popen(

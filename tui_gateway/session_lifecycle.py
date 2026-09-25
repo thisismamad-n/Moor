@@ -15,7 +15,7 @@ from .method_ctx import bind_module
 @contextlib.contextmanager
 def _session_turn_admission(session: dict):
     """Hold process admission until the history-locked running claim is visible to idle probes."""
-    from hermes_cli.backend_retirement import retirement
+    from moor_cli.backend_retirement import retirement
 
     with retirement.work() as admitted, session["history_lock"]:
         yield admitted
@@ -24,7 +24,7 @@ def _session_turn_admission(session: dict):
 def _start_session_work(target, *, name: str, session: dict | None = None):
     """Reserve before spawning; release only after the worker (including cleanup) has unwound."""
     from agent.memory_provider import spawn_context_thread
-    from hermes_cli.backend_retirement import retirement
+    from moor_cli.backend_retirement import retirement
 
     if not retirement.acquire():
         return None
@@ -112,7 +112,7 @@ def _install_borrowed_lease(sid: str, session: dict, frame: dict) -> None:
     key = str(session.get("session_key") or "")
     if not key or str(vouch.get("session_id") or "") != key:
         return
-    from hermes_cli.active_sessions import ActiveSessionLease
+    from moor_cli.active_sessions import ActiveSessionLease
     session["active_session_lease"] = ActiveSessionLease(
         lease_id=f"borrowed:{vouch.get('lease_id') or sid}", session_id=key,
         surface=str(frame.get("source") or "desktop"), enabled=False)
@@ -131,7 +131,7 @@ def _ensure_active_session_slot(sid: str, session: dict) -> str | None:
     if limit_message is None:
         _attach_lease(session, lease)
         return None
-    from hermes_cli.active_sessions import SESSION_NOT_OWNED
+    from moor_cli.active_sessions import SESSION_NOT_OWNED
     if getattr(limit_message, "reason", None) == SESSION_NOT_OWNED and _take_over_detached_runtime_lease(sid, session, key):
         return None
     return limit_message
@@ -167,7 +167,7 @@ def _take_over_detached_runtime_lease(sid: str, session: dict, key: str) -> bool
     A live foreign pid, a sibling that still has a client, or a same-id runtime of another profile keeps
     refusing — cross-process, multi-window and cross-profile (#100029) exclusivity are untouched. See #104691.
     """
-    from hermes_cli.active_sessions import transfer_active_session
+    from moor_cli.active_sessions import transfer_active_session
     with _session_resume_lock, _sessions_lock:
         if (found := _detached_lease_holder(session, key)) is None:
             return False
@@ -284,7 +284,7 @@ def _transfer_active_session_slot(sid: str, session: dict, *, new_session_id: st
     if lease is None:
         return True
     try:
-        from hermes_cli.active_sessions import transfer_active_session
+        from moor_cli.active_sessions import transfer_active_session
         if transfer_active_session(lease, session_id=new_session_id, metadata=_lease_metadata(sid)):
             return True
     except Exception:

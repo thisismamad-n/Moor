@@ -187,7 +187,7 @@ def test_prefer_api_key_honors_profile_scope_only_key(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# #116155: `hermes auth remove xai` suppresses env:XAI_API_KEY, but a stale value
+# #116155: `moor auth remove xai` suppresses env:XAI_API_KEY, but a stale value
 # still inherited by the gateway process environment overrode the working
 # xai-oauth grant for x_search (prefer_api_key=True).
 # ---------------------------------------------------------------------------
@@ -197,7 +197,7 @@ def _write_auth_store(tmp_path, monkeypatch, suppressed):
     import json
     import time
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     (tmp_path / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {"xai-oauth": {"tokens": {
@@ -213,7 +213,7 @@ def _write_auth_store(tmp_path, monkeypatch, suppressed):
     ({}, "xai"),                                    # control: the env key still wins when not removed
 ])
 def test_suppressed_env_key_does_not_override_oauth(tmp_path, monkeypatch, suppressed, expected_provider):
-    from hermes_cli.config import invalidate_env_cache
+    from moor_cli.config import invalidate_env_cache
     from tools.xai_http import resolve_xai_http_credentials
 
     _write_auth_store(tmp_path, monkeypatch, suppressed)

@@ -6,8 +6,8 @@ from pathlib import Path
 import subprocess
 import sys
 
-from hermes_cli.source_completion import complete_source_checkout
-from hermes_cli.source_stamp import write_source_stamp
+from moor_cli.source_completion import complete_source_checkout
+from moor_cli.source_stamp import write_source_stamp
 
 
 def _repo(tmp_path: Path) -> Path:
@@ -19,8 +19,8 @@ def _repo(tmp_path: Path) -> Path:
         subprocess.run(["git", *args], cwd=root, env=env, check=True, capture_output=True)
 
     git("init", "-q")
-    git("config", "user.name", "Hermes Test")
-    git("config", "user.email", "hermes@example.invalid")
+    git("config", "user.name", "Moor Test")
+    git("config", "user.email", "moor@example.invalid")
     (root / "tracked").write_text("release\n", encoding="utf-8")
     git("add", "tracked")
     git("commit", "-qm", "release")
@@ -29,9 +29,9 @@ def _repo(tmp_path: Path) -> Path:
 
 
 def _completion_dependencies(monkeypatch, maintenance):
-    monkeypatch.setattr("hermes_cli.venv_sync.publish_launchers", lambda root: None)
-    monkeypatch.setattr("hermes_cli.source_build.build_update_products", lambda root, *, desktop: None)
-    monkeypatch.setattr("hermes_cli.update_cmd_maint._run_post_update_maintenance", maintenance)
+    monkeypatch.setattr("moor_cli.venv_sync.publish_launchers", lambda root: None)
+    monkeypatch.setattr("moor_cli.source_build.build_update_products", lambda root, *, desktop: None)
+    monkeypatch.setattr("moor_cli.update_cmd_maint._run_post_update_maintenance", maintenance)
 
 
 def test_successful_source_completion_writes_checkout_identity(tmp_path, monkeypatch):
@@ -58,7 +58,7 @@ def test_failed_source_completion_does_not_publish_identity(tmp_path, monkeypatc
 def _verify_bootstrap_receipt(root: Path) -> subprocess.CompletedProcess:
     """The same verifier the Windows install/update E2E runs after an update."""
     script = Path(__file__).resolve().parents[2] / "scripts" / "verify-bootstrap-version-stamp.py"
-    return subprocess.run([sys.executable, "-B", str(script), "--stamp", str(root / ".hermes-bootstrap-complete"),
+    return subprocess.run([sys.executable, "-B", str(script), "--stamp", str(root / ".moor-bootstrap-complete"),
                            "--repo", str(root)], capture_output=True, text=True, encoding="utf-8")
 
 
@@ -69,7 +69,7 @@ def test_publishing_checkout_identity_moves_an_installer_receipt_to_head(tmp_pat
     release = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, encoding="utf-8", check=True).stdout.strip()
     branch = subprocess.run(["git", "branch", "--show-current"], cwd=root, capture_output=True, text=True, encoding="utf-8", check=True).stdout.strip()
     # What install.sh / install.ps1's complete stage leaves behind at the installed release.
-    (root / ".hermes-bootstrap-complete").write_text(json.dumps({
+    (root / ".moor-bootstrap-complete").write_text(json.dumps({
         "schemaVersion": 1, "pinnedCommit": release, "pinnedBranch": branch, "completedAt": "2026-06-19T00:00:00.000Z",
     }), encoding="utf-8")
     subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "update"], cwd=root, check=True, capture_output=True,
@@ -85,13 +85,13 @@ def test_publishing_checkout_identity_never_invents_an_installer_receipt(tmp_pat
     root = _repo(tmp_path)
 
     assert write_source_stamp(root) is not None
-    assert not (root / ".hermes-bootstrap-complete").exists()
+    assert not (root / ".moor-bootstrap-complete").exists()
 
 
 def test_shallow_checkout_publishes_its_release_after_fetching_the_commit_graph(tmp_path):
     # Pre-PM installers cloned --depth 1; the completion fetches commits (not trees) so
     # the stamp can still name the release the checkout is built on.
-    from hermes_cli.gitlock import fetch_full_commit_graph
+    from moor_cli.gitlock import fetch_full_commit_graph
 
     server = _repo(tmp_path)
     subprocess.run(["git", "config", "uploadpack.allowFilter", "true"], cwd=server, check=True)
@@ -111,7 +111,7 @@ def test_shallow_checkout_publishes_its_release_after_fetching_the_commit_graph(
 
 
 def test_full_checkout_refreshes_release_tags_before_publishing_identity(tmp_path):
-    from hermes_cli.gitlock import fetch_full_commit_graph
+    from moor_cli.gitlock import fetch_full_commit_graph
 
     server = _repo(tmp_path)
     env = {"HOME": str(tmp_path), "PATH": os.environ["PATH"]}

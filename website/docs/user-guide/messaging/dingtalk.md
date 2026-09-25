@@ -8,9 +8,9 @@ description: "Set up Moor Agent as a DingTalk chatbot"
 
 Python dependency commands on this page use a
 [PM-prepared source checkout](../../reference/package-management.md#developer-workflow).
-After a dependency change, reactivate the checkout and restart Hermes.
+After a dependency change, reactivate the checkout and restart Moor.
 
-Hermes Agent integrates with DingTalk (钉钉) as a chatbot, letting you chat with your AI assistant through direct messages or group chats. The bot connects via DingTalk's Stream Mode — a long-lived WebSocket connection that requires no public URL or webhook server — and replies using markdown-formatted messages through DingTalk's session webhook API.
+Moor Agent integrates with DingTalk (钉钉) as a chatbot, letting you chat with your AI assistant through direct messages or group chats. The bot connects via DingTalk's Stream Mode — a long-lived WebSocket connection that requires no public URL or webhook server — and replies using markdown-formatted messages through DingTalk's session webhook API.
 
 Before setup, here's the part most people want to know: how Moor behaves once it's in your DingTalk workspace.
 
@@ -48,10 +48,10 @@ This guide walks you through the full setup process — from creating your DingT
 Install the required Python packages:
 
 ```bash
-cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['dingtalk'], explicit=True)"
+cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['dingtalk'], explicit=True)"
 ```
 
-This extra supplies the SDKs alongside core Hermes dependencies:
+This extra supplies the SDKs alongside core Moor dependencies:
 
 - `dingtalk-stream` — DingTalk's official SDK for Stream Mode (WebSocket-based real-time messaging)
 - `httpx` — async HTTP client used for sending replies via session webhooks

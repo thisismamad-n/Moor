@@ -280,7 +280,7 @@ def _detect_profile(mode: str, platform: str, cwd: Path) -> ContextProfile:
 def _enabled_mcp_servers(config: Optional[dict[str, Any]]) -> list[str]:
     """Names of MCP servers the user has enabled — kept in the coding posture."""
     try:
-        from hermes_cli.config import read_raw_config
+        from moor_cli.config import read_raw_config
         from tools.mcp_tool_common import mcp_server_enabled
         servers = read_raw_config().get("mcp_servers") or {}
         return [

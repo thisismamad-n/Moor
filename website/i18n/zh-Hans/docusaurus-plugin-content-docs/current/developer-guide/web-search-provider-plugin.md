@@ -9,7 +9,7 @@ description: "如何为 Moor Agent 构建网页搜索/提取/爬取后端插件"
 网页搜索提供商插件注册一个后端，用于处理 `web_search`、`web_extract` 以及（可选的）深度爬取工具调用。内置提供商——Firecrawl、SearXNG、Tavily、Exa、Parallel、Brave Search（免费层）和 DDGS——均以插件形式存放于 `plugins/web/<name>/` 目录下。你可以在该目录旁新建一个目录来添加新提供商，或覆盖已有的内置提供商。
 
 :::tip
-网页搜索是 Hermes 支持的多种**后端插件**之一。其他插件（各有其 ABC）包括：[图像生成提供商插件](./image-gen-provider-plugin.md)、[视频生成提供商插件](./video-gen-provider-plugin.md)、[记忆提供商插件](./memory-provider-plugin.md)、[上下文引擎插件](./context-engine-plugin.md)和[模型提供商插件](./model-provider-plugin.md)。通用工具/hook/CLI 插件请参阅[构建 Hermes 插件](./plugins/index.md)。
+网页搜索是 Moor 支持的多种**后端插件**之一。其他插件（各有其 ABC）包括：[图像生成提供商插件](./image-gen-provider-plugin.md)、[视频生成提供商插件](./video-gen-provider-plugin.md)、[记忆提供商插件](./memory-provider-plugin.md)、[上下文引擎插件](./context-engine-plugin.md)和[模型提供商插件](./model-provider-plugin.md)。通用工具/hook/CLI 插件请参阅[构建 Moor 插件](./plugins/index.md)。
 :::
 
 ## 发现机制
@@ -140,8 +140,8 @@ requires_env:
 | 键 | 用途 |
 |---|---|
 | `kind: backend` | 将插件路由至后端加载路径 |
-| `provides_web_providers` | 该插件注册的提供商 `name` 列表——在 `register()` 运行之前，加载器即可通过此字段在 `hermes tools` 中公示插件 |
-| `requires_env` | 在 `hermes plugins install` 期间进行交互式凭据提示（富格式说明参见[构建 Hermes 插件](./plugins/index.md#根据环境变量决定是否启用)） |
+| `provides_web_providers` | 该插件注册的提供商 `name` 列表——在 `register()` 运行之前，加载器即可通过此字段在 `moor tools` 中公示插件 |
+| `requires_env` | 在 `moor plugins install` 期间进行交互式凭据提示（富格式说明参见[构建 Moor 插件](./plugins/index.md#根据环境变量决定是否启用)） |
 
 ## ABC 参考
 
@@ -233,7 +233,7 @@ web:
 
 ## 懒加载可选依赖
 
-对于 Hermes 已声明的 SDK extra，在 `search()` 或 `extract()` 的实际操作中调用
+对于 Moor 已声明的 SDK extra，在 `search()` 或 `extract()` 的实际操作中调用
 `pm.ensure_import("extra-name")`。`is_available()` 必须保持只读，可使用 `pm.available`，
 不能通过它安装依赖。`pm.InstallError` 可以表示依赖不可用或新环境需要重启。
 第三方目录插件在自己的 `pyproject.toml` 或 `plugin.yaml` 中声明依赖，由 PM 统一准备。
@@ -261,4 +261,4 @@ my-backend-web = "my_backend_web_package"
 
 - [网页搜索](../user-guide/features/web-search.md) — 面向用户的功能文档及各后端配置说明
 - [插件概览](../user-guide/features/plugins.md) — 所有插件类型一览
-- [构建 Hermes 插件](./plugins/index.md) — 通用工具/hook/斜杠命令指南
+- [构建 Moor 插件](./plugins/index.md) — 通用工具/hook/斜杠命令指南

@@ -16,7 +16,7 @@ import types
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
 from moor_cli import profiles
@@ -37,7 +37,7 @@ from moor_cli.profiles import (
     remove_wrapper_script,
     rename_profile,
     export_profile,
-    _get_default_hermes_home,
+    _get_default_moor_home,
     NO_BUNDLED_SKILLS_MARKER,
     backfill_profile_envs,
     profiles_to_serve,
@@ -150,13 +150,13 @@ class TestCreateProfile:
         """
         default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text(
-            "model:\n  provider: nous\n  default: some/model\n", encoding="utf-8"
+            "model:\n  provider: moor\n  default: some/model\n", encoding="utf-8"
         )
 
         profile_dir = create_profile("coder", no_alias=True)
 
         cfg = yaml.safe_load((profile_dir / "config.yaml").read_text(encoding="utf-8-sig"))
-        assert cfg["model"]["provider"] == "nous"
+        assert cfg["model"]["provider"] == "moor"
         assert cfg["model"]["default"] == "some/model"
 
 
@@ -166,7 +166,7 @@ class TestCreateProfile:
         "Unknown provider 'my-gateway'" on its first turn (#101885 / #94071 class); the provider
         definition must travel with the model it backs, and nothing else from `providers:` does.
         """
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text(
             "model:\n  provider: my-gateway\n  default: my-finetune\n"
             "providers:\n  my-gateway:\n    api: https://llm.internal.example.com/v1\n    key_env: GW_KEY\n"
@@ -187,7 +187,7 @@ class TestCreateProfile:
         """
         default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text(
-            "model:\n  provider: nous\n  default: some/model\n", encoding="utf-8"
+            "model:\n  provider: moor\n  default: some/model\n", encoding="utf-8"
         )
         profile_dir = create_profile("coder", no_alias=True)
 
@@ -196,7 +196,7 @@ class TestCreateProfile:
         )
 
         cfg = yaml.safe_load((profile_dir / "config.yaml").read_text(encoding="utf-8-sig"))
-        assert cfg["model"]["provider"] == "nous"
+        assert cfg["model"]["provider"] == "moor"
         assert cfg["model"]["default"] == "some/model"
 
 
@@ -223,12 +223,12 @@ class TestCreateProfile:
         so the clone booted with memory silently unavailable. Only the ACTIVE provider's
         ``<provider>/`` dir / ``<provider>.json`` travels; another provider's leftovers stay behind."""
         tmp_path = profile_env
-        default_home = tmp_path / ".hermes"
+        default_home = tmp_path / ".moor"
         (default_home / "config.yaml").write_text("memory:\n  provider: hindsight\n")
         (default_home / "hindsight").mkdir()
-        payload = '{"mode": "local_embedded", "bank_id": "hermes", "apiKey": "hs-secret"}'
+        payload = '{"mode": "local_embedded", "bank_id": "moor", "apiKey": "hs-secret"}'
         (default_home / "hindsight" / "config.json").write_text(payload)
-        (default_home / "mem0.json").write_text('{"agent_id": "hermes"}')
+        (default_home / "mem0.json").write_text('{"agent_id": "moor"}')
 
         profile_dir = create_profile("coder", clone_config=True, no_alias=True)
 
@@ -242,7 +242,7 @@ class TestCreateProfile:
     def test_clone_config_ignores_unsafe_memory_provider_names(self, profile_env, provider):
         """A hand-edited ``memory.provider`` must never aim the copy outside the source profile."""
         tmp_path = profile_env
-        default_home = tmp_path / ".hermes"
+        default_home = tmp_path / ".moor"
         (default_home / "config.yaml").write_text(f"memory:\n  provider: {provider!r}\n")
         (tmp_path / "outside").mkdir()
         (tmp_path / "outside" / "config.json").write_text("{}")
@@ -261,7 +261,7 @@ class TestCreateProfile:
         else changes: the clone still gets its own config/skills copies, never a live link."""
         from moor_cli.agent_import_sync import SYNC_MANIFEST_NAME, load_sync_manifest
 
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
         manifest = {"version": 1, "agents": {"claude-code": {
             "source": str(profile_env / ".claude"), "digest": "d", "overwrite": False,
@@ -280,7 +280,7 @@ class TestCreateProfile:
     @staticmethod
     def _home_with_linked_skill(profile_env):
         """Source home: ``skills/foo`` links into an ``external_dirs`` root, ``skills/local`` is physical."""
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         external = profile_env / "agents-skills"
         (external / "foo").mkdir(parents=True)
         (external / "foo" / "SKILL.md").write_text("# external foo\n", encoding="utf-8")
@@ -338,7 +338,7 @@ class TestCreateProfile:
     def test_clone_all_does_not_copy_cron_jobs(self, profile_env):
         # Cron jobs are scheduled work bound to the source profile + origin channel; a clone
         # that inherits jobs.json fires every job twice (two gateways, same job ids).
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
         (default_home / "cron").mkdir()
         (default_home / "cron" / "jobs.json").write_text(json.dumps({"jobs": [{"id": "abc123def456"}]}), encoding="utf-8")
@@ -352,7 +352,7 @@ class TestCreateProfile:
 
     def test_clone_all_does_not_inherit_the_source_screen_or_browser_process_artifacts(self, profile_env):
         """A clone keeps browser data, never the source's screen or Chromium runtime files."""
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
         bd = default_home / "bot-desktop"
         browser_profile = bd / "browser-profile"
@@ -379,7 +379,7 @@ class TestCreateProfile:
         """Copied Chromium markers must not route the clone through the source profile's CDP port."""
         from tools.bot_desktop.browser import running_instance_cdp_port
 
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
         browser_profile = default_home / "bot-desktop" / "browser-profile"
         browser_profile.mkdir(parents=True)
@@ -402,7 +402,7 @@ class TestCreateProfile:
     def test_clone_all_skips_special_files(self, profile_env):
         # A live source profile holds special files copytree cannot copy (e.g. a suffixless
         # agent-browser control socket); one of them must not abort the whole clone.
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
         browser_dir = default_home / "home" / ".agent-browser"
         browser_dir.mkdir(parents=True)
@@ -455,7 +455,7 @@ class TestBackfillProfileEnvs:
     def test_copies_default_env_into_envless_profiles(self, profile_env):
         import stat
         tmp_path = profile_env
-        (tmp_path / ".hermes" / ".env").write_text("OPENROUTER_API_KEY=root-key\n", encoding="utf-8")
+        (tmp_path / ".moor" / ".env").write_text("OPENROUTER_API_KEY=root-key\n", encoding="utf-8")
         p1 = create_profile("old1", no_alias=True)
         p2 = create_profile("old2", no_alias=True)
         # Simulate pre-#44792 profiles: no .env
@@ -516,14 +516,14 @@ class TestDeleteProfile:
         enters the routing index, resolves a profile whose directory is gone, and logs
         ``Profile '<name>' does not exist`` on every subsequent event.
         """
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
         import time
 
         tmp_path = profile_env
         create_profile("gone", no_alias=True)
         create_profile("keepme", no_alias=True)
-        scope = str(tmp_path / ".hermes" / "sessions")
-        db = SessionDB(tmp_path / ".hermes" / "state.db")
+        scope = str(tmp_path / ".moor" / "sessions")
+        db = SessionDB(tmp_path / ".moor" / "state.db")
         db.save_gateway_routing_entry(
             "agent:gone:feishu:dm:chatA",
             json.dumps({"session_key": "agent:gone:feishu:dm:chatA",
@@ -543,11 +543,11 @@ class TestDeleteProfile:
         db.close()
 
         # No live multiplexer: nothing else owns the store, so this process purges the durable rows.
-        with patch("hermes_cli.profiles._cleanup_gateway_service"), \
-             patch("hermes_cli.profiles._live_default_multiplexer", return_value=False):
+        with patch("moor_cli.profiles._cleanup_gateway_service"), \
+             patch("moor_cli.profiles._live_default_multiplexer", return_value=False):
             delete_profile("gone", yes=True)
 
-        check = SessionDB(tmp_path / ".hermes" / "state.db")
+        check = SessionDB(tmp_path / ".moor" / "state.db")
         try:
             assert set(check.load_gateway_routing_entries(scope=scope)) == {
                 "agent:keepme:feishu:dm:chatB"}
@@ -567,21 +567,21 @@ class TestDeleteProfile:
         would be undone by its next save. When it cannot be reached the delete is NOT a clean
         success: the identity settlement is reported as pending, with the retry named.
         """
-        from hermes_state import SessionDB
-        from hermes_cli.profiles import ProfileIdentitySettlementPending
+        from moor_state import SessionDB
+        from moor_cli.profiles import ProfileIdentitySettlementPending
 
         tmp_path = profile_env
         create_profile("gone", no_alias=True)
-        scope = str(tmp_path / ".hermes" / "sessions")
-        db = SessionDB(tmp_path / ".hermes" / "state.db")
+        scope = str(tmp_path / ".moor" / "sessions")
+        db = SessionDB(tmp_path / ".moor" / "state.db")
         db.save_gateway_routing_entry(
             "agent:gone:feishu:dm:chatA",
             json.dumps({"session_key": "agent:gone:feishu:dm:chatA"}),
             scope=scope)
         db.close()
 
-        with patch("hermes_cli.profiles._cleanup_gateway_service"), \
-             patch("hermes_cli.profiles._live_default_multiplexer", return_value=True):
+        with patch("moor_cli.profiles._cleanup_gateway_service"), \
+             patch("moor_cli.profiles._live_default_multiplexer", return_value=True):
             with pytest.raises(ProfileIdentitySettlementPending,
                                match="identity settlement is still pending") as ei:
                 delete_profile("gone", yes=True)
@@ -589,12 +589,12 @@ class TestDeleteProfile:
         # Typed partial success: the filesystem delete completed, the identity did not, and the
         # payload carries what a surfacing caller needs to report it and retry.
         assert ei.value.profile == "gone"
-        assert ei.value.retry_command == "hermes profile purge-identity gone"
+        assert ei.value.retry_command == "moor profile purge-identity gone"
         assert not ei.value.path.exists()
         assert isinstance(ei.value, RuntimeError)  # the CLI handler catches RuntimeError
 
-        assert "hermes profile purge-identity gone" in capsys.readouterr().err
-        check = SessionDB(tmp_path / ".hermes" / "state.db")
+        assert "moor profile purge-identity gone" in capsys.readouterr().err
+        check = SessionDB(tmp_path / ".moor" / "state.db")
         try:
             # The CLI left the identity alone rather than racing the live owner.
             assert set(check.load_gateway_routing_entries(scope=scope)) == {
@@ -812,7 +812,7 @@ class TestListProfiles:
         import threading
         import tui_gateway.server as srv
 
-        skills = profile_env / ".hermes" / "skills" / "cat"
+        skills = profile_env / ".moor" / "skills" / "cat"
         for i in range(3):
             (skills / f"s{i}").mkdir(parents=True)
             (skills / f"s{i}" / "SKILL.md").write_text("# s\n", encoding="utf-8")
@@ -832,21 +832,21 @@ class TestListProfiles:
             return srv._methods["profiles.list"](1, {"include_sessions": False})["result"]["profiles"]
 
         first = _rpc()
-        assert walks == [] or set(walks) == {"hermes-skill-count"}
+        assert walks == [] or set(walks) == {"moor-skill-count"}
         assert first[0]["skill_count"] in (0, 3)  # 0 until the refresh lands, never a stall
         for t in threading.enumerate():
-            if t.name == "hermes-skill-count":
+            if t.name == "moor-skill-count":
                 t.join(timeout=10)
-        assert walks == ["hermes-skill-count"]
+        assert walks == ["moor-skill-count"]
         assert _rpc()[0]["skill_count"] == 3
         assert list_profiles(lazy_skill_count=True)[0].skill_count == 3
-        assert walks == ["hermes-skill-count"]  # a second poll inside the window schedules nothing
+        assert walks == ["moor-skill-count"]  # a second poll inside the window schedules nothing
 
         # GET /api/profiles (the router's own ``lazy_skill_count=True`` call) and the per-keystroke
         # ``@<profile>`` completion must be just as walk-free: same spy, still one background walk.
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
-        from hermes_cli.web_routers import profiles as profiles_router
+        from moor_cli.web_routers import profiles as profiles_router
         from tui_gateway import methods_complete
         app = FastAPI()
         app.include_router(profiles_router.router)
@@ -855,9 +855,9 @@ class TestListProfiles:
         resp = TestClient(app).get("/api/profiles")
         assert resp.status_code == 200
         assert resp.json()["profiles"][0]["name"] == "default"
-        assert walks == ["hermes-skill-count"]
+        assert walks == ["moor-skill-count"]
         assert any(i["text"] == "@default" for i in methods_complete._profile_mention_items("def"))
-        assert walks == ["hermes-skill-count"]
+        assert walks == ["moor-skill-count"]
 
         # Control: the detail/CLI path counts synchronously on the caller's thread.
         profiles._SKILL_COUNT_CACHE.clear()
@@ -867,7 +867,7 @@ class TestListProfiles:
     def test_skill_count_survives_subtree_vanishing_mid_walk(self, profile_env, monkeypatch):
         """A skill removed while the tree is being counted (concurrent install/update) must
         degrade the count, not abort profile enumeration with ``FileNotFoundError``."""
-        skills = profile_env / ".hermes" / "skills" / "cat"
+        skills = profile_env / ".moor" / "skills" / "cat"
         for i in range(4):
             (skills / f"s{i}" / "references").mkdir(parents=True)
             (skills / f"s{i}" / "SKILL.md").write_text("# s\n", encoding="utf-8")
@@ -903,7 +903,7 @@ class TestListProfiles:
             return _Listing(entries)
 
         monkeypatch.setattr(os, "scandir", vanishing_scandir)
-        assert profiles._count_skills(profile_env / ".hermes") == 3
+        assert profiles._count_skills(profile_env / ".moor") == 3
         assert [p.name for p in list_profiles()] == ["default"]
 
 
@@ -975,7 +975,7 @@ class TestAliasCollision:
         wrapper_dir = profile_env / ".local" / "bin"
         wrapper_dir.mkdir(parents=True, exist_ok=True)
         bat_path = wrapper_dir / "mybot.bat"
-        bat_path.write_text("@echo off\r\nhermes -p mybot %*\r\n", encoding="utf-8")
+        bat_path.write_text("@echo off\r\nmoor -p mybot %*\r\n", encoding="utf-8")
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0, stdout=str(bat_path),
@@ -1012,7 +1012,7 @@ class TestWrapperScript:
 
     @pytest.mark.platforms("windows")
     def test_remove_finds_bat_on_windows(self, profile_env):
-        from hermes_cli.profiles import create_wrapper_script
+        from moor_cli.profiles import create_wrapper_script
         wrapper = create_wrapper_script("mybot")
         assert wrapper is not None
         assert wrapper.exists()
@@ -1131,9 +1131,9 @@ class TestRenameProfile:
             rename_profile("ssi_health", "heimdall")
 
         cfg = json.loads(honcho_path.read_text(encoding="utf-8-sig"))
-        assert "hermes.ssi_health" not in cfg["hosts"]
-        assert cfg["hosts"]["hermes_heimdall"]["aiPeer"] == "ssi_health"
-        assert cfg["hosts"]["hermes_heimdall"]["peerName"] == "user-peer"
+        assert "moor.ssi_health" not in cfg["hosts"]
+        assert cfg["hosts"]["moor_heimdall"]["aiPeer"] == "ssi_health"
+        assert cfg["hosts"]["moor_heimdall"]["peerName"] == "user-peer"
 
     def test_multiplexed_rename_unroutes_old_then_hot_serves_new(self, profile_env):
         """Under a live multiplexer the old name is tombstoned + unrouted BEFORE the directory
@@ -1301,7 +1301,7 @@ class TestRenameProfile:
     def test_rename_accumulates_previous_names(self, profile_env):
         create_profile("firstname", no_alias=True)
 
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("moor_cli.profiles.check_alias_collision", return_value="skip"):
             rename_profile("firstname", "secondname")
             rename_profile("secondname", "thirdname")
 
@@ -1312,8 +1312,8 @@ class TestRenameProfile:
         create_profile("oldname", no_alias=True)
 
         # The history write is best-effort: it must never fail the rename.
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"), \
-             patch("hermes_cli.profiles.write_profile_meta", side_effect=OSError("disk full")):
+        with patch("moor_cli.profiles.check_alias_collision", return_value="skip"), \
+             patch("moor_cli.profiles.write_profile_meta", side_effect=OSError("disk full")):
             new_dir = rename_profile("oldname", "newname")
 
         assert new_dir.is_dir()
@@ -1339,7 +1339,7 @@ class TestExportImport:
         # Write through MOOR_HOME, not get_profile_dir("default"): the latter resolves to the
         # OPERATOR's real install whenever basetest sits inside it, so this test used to
         # overwrite the live config.yaml / .env / MEMORY.md with its fixtures.
-        default_dir = profile_env / ".hermes"
+        default_dir = profile_env / ".moor"
         (default_dir / "config.yaml").write_text("model: test", encoding="utf-8")
         (default_dir / ".env").write_text("KEY=val", encoding="utf-8")
         (default_dir / "SOUL.md").write_text("Be nice.", encoding="utf-8")
@@ -1369,7 +1369,7 @@ class TestExportImport:
         symlinks; the link and its target are both retained.
         """
         # Same reason as above: never resolve the operator's real default home from a test.
-        default_dir = profile_env / ".hermes"
+        default_dir = profile_env / ".moor"
         (default_dir / "config.yaml").write_text("ok", encoding="utf-8")
         # Place broken symlink *inside* the allowed ``skills/`` tree so the
         # root-level allow-list passes the directory through; the
@@ -1466,7 +1466,7 @@ class TestWriteProfileMetaDurability:
     def _interrupted_write(profile_dir):
         """Run a ``write_profile_meta`` whose serialization fails mid-call.
 
-        ``utils.atomic_yaml_write`` serializes through ``hermes_yaml.safe_dump``.
+        ``utils.atomic_yaml_write`` serializes through ``moor_yaml.safe_dump``.
         Breaking that seam measures durability rather than the choice of writer. A
         scoped ``MonkeyPatch.context`` is used instead of the fixture so the
         patch is reverted immediately, without touching the session-wide env
@@ -1665,10 +1665,10 @@ class TestProfilesToServe:
         """The default profile IS the host: the key is ignored (still served, never
         standalone) with exactly one warning per process."""
         profiles._STANDALONE_WARNED = False
-        default_home = _get_default_hermes_home()
+        default_home = _get_default_moor_home()
         (default_home / "config.yaml").write_text("gateway:\n  standalone: true\n", encoding="utf-8")
         caplog.clear()
-        with caplog.at_level("WARNING", logger="hermes_cli.profiles"):
+        with caplog.at_level("WARNING", logger="moor_cli.profiles"):
             serve = dict(profiles_to_serve(multiplex=True))
             assert profiles.profile_is_standalone(default_home) is False
             assert profiles.profile_is_standalone(default_home) is False
@@ -1689,7 +1689,7 @@ class TestProfilesToServe:
 
     @pytest.mark.parametrize("failure_at", ["stat", "read", "decode"])
     def test_standalone_io_failure_is_bounded_and_recovers(self, profile_env, monkeypatch, caplog, failure_at):
-        from hermes_cli import config
+        from moor_cli import config
 
         create_profile("solo", no_alias=True)
         home = get_profile_dir("solo")
@@ -1755,7 +1755,7 @@ class TestResolveProfileEnvSpelling:
         never fall back to the platform default.
         """
         root = tmp_path / "configured-root"
-        custom = tmp_path / "custom-hermes"
+        custom = tmp_path / "custom-moor"
         for profile_dir in (root / "profiles" / "beta", root / "profiles" / "coder", custom / "profiles" / "beta"):
             profile_dir.mkdir(parents=True)
             (profile_dir / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker: a bare dir does not resolve
@@ -1813,8 +1813,8 @@ def test_profile_delete_and_rename_stop_the_profiles_bot_desktop(profile_env, op
     (profile_dir / "bot-desktop" / "lease.json").write_text(
         json.dumps({"holder": "human", "viewer_id": "gone", "since": 1.0, "epoch": 3, "reason": ""}), encoding="utf-8")
     try:
-        with patch("hermes_cli.profiles._cleanup_gateway_service"), \
-             patch("hermes_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("moor_cli.profiles._cleanup_gateway_service"), \
+             patch("moor_cli.profiles.check_alias_collision", return_value="skip"):
             if op == "delete":
                 delete_profile("coder", yes=True)
             else:
@@ -1909,7 +1909,7 @@ class TestCloneAllExcludesRuntimeTrees:
 def test_count_skills_publishes_timestamp_after_the_walk(tmp_path, monkeypatch):
     """A scan longer than the TTL must not publish an already-expired cache entry (#107151):
     the cached timestamp is taken after _walk_skill_count returns, not before it starts."""
-    from hermes_cli import profiles as mod
+    from moor_cli import profiles as mod
 
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()

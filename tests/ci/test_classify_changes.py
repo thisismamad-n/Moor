@@ -282,8 +282,8 @@ CASES = {
         ["scripts/install.sh"],
         _lanes(python=True, bootstrap=True, python_prod=True),
     ),
-    "setup-hermes.sh → bootstrap lane": (
-        ["setup-hermes.sh"],
+    "setup-moor.sh → bootstrap lane": (
+        ["setup-moor.sh"],
         _lanes(python=True, bootstrap=True, python_prod=True),
     ),
     "tauri installer source → bootstrap + rust": (
@@ -316,7 +316,7 @@ _REPO = Path(__file__).resolve().parents[2]
 
 
 def _yaml(rel: str) -> dict:
-    yaml = pytest.importorskip("hermes_yaml")
+    yaml = pytest.importorskip("moor_yaml")
     return yaml.safe_load((_REPO / rel).read_text(encoding="utf-8"))
 
 

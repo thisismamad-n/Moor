@@ -1,5 +1,5 @@
 /**
- * Two remote hosts can share the same `~/.hermes` path, so a `display.*` event
+ * Two remote hosts can share the same `~/.moor` path, so a `display.*` event
  * matched on `profile_key` alone would let host B's take-over repaint host A's
  * screen pane. The event must also have arrived on the bot's own connection.
  */
@@ -11,7 +11,7 @@ import type { RosterRow } from './types'
 
 const routeMock = vi.fn<() => { connectionId: string; profile: string } | null>(() => null)
 
-vi.mock('@hermes/plugin-sdk', () => ({
+vi.mock('@moor/plugin-sdk', () => ({
   host: { requestProfile: vi.fn() },
   resolveSiblingWsUrl: vi.fn()
 }))
@@ -44,13 +44,13 @@ vi.mock('./routing', async importOriginal => {
   }
 })
 
-import { host } from '@hermes/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 
 import { displayRequest, isEventForBotScreen } from './screen-connection'
 
 const bot = { name: 'ops' } as RosterRow
 const orphan = { name: 'ops', remoteSource: true } as RosterRow
-const key = '/home/hermes/.hermes'
+const key = '/home/moor/.moor'
 
 describe('isEventForBotScreen', () => {
   it('ignores a same-profile-path event that arrived from another host', () => {

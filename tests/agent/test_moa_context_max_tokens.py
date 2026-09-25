@@ -33,7 +33,7 @@ def moor_home(tmp_path, monkeypatch):
     monkeypatch.setenv("MOOR_HOME", str(home))
     return home
 
-def test_aggregator_call_never_receives_reference_max_tokens(hermes_home, monkeypatch):
+def test_aggregator_call_never_receives_reference_max_tokens(moor_home, monkeypatch):
     """reference_max_tokens must cap only the reference fan-out — the
     aggregator's own call_llm invocation must not receive max_tokens at all
     (call_llm omits it entirely when None; see its own docstring)."""

@@ -13,7 +13,7 @@ SUBSCRIPTION_URL = os.getenv("MOOR_SUBSCRIPTION_URL", f"{DEFAULT_PORTAL_URL}/man
 DOCS_URL = "https://github.com/thisismamad-n/Moor/tree/master/website/docs/user-guide/features/tool-gateway"
 # Static `portal tools` catalog — the partners Tool Gateway routes to today: (key, label, partner).
 _CATALOG = [
-    ("web", "Web search & extract", "Nous-managed"),
+    ("web", "Web search & extract", "Moor-managed"),
     ("image_gen", "Image generation", "FAL"),
     ("tts", "Text-to-speech", "OpenAI TTS"),
     ("browser", "Browser automation", "Browser Use"),

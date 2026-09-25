@@ -6,7 +6,7 @@ from moor_cli.local_runtime.estimator import HardwareBudget, ModelProfile
 
 
 def test_preset_roundtrip_keeps_refusals_and_dense_spill(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     mdir = tmp_path / "modèles"
     mdir.mkdir()
     for name in ("allowed", "refused"):

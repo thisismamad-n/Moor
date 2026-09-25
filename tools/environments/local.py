@@ -19,10 +19,10 @@ from pathlib import Path
 from moor_constants import get_process_moor_home
 from tools.environments.base import BaseEnvironment
 from tools.environments.base_output import _pipe_stdin
-from hermes_cli._subprocess_compat import windows_hide_flags
-from tools.environments.local_env_policy import (  # noqa: F401 — _HERMES_PROVIDER_ENV_BLOCKLIST stays importable from here
-    _ALWAYS_STRIP_KEYS, _HERMES_PROVIDER_ENV_BLOCKLIST, _HERMES_PROVIDER_ENV_FORCE_PREFIX,
-    _is_hermes_internal_secret, _is_provider_env_blocklisted, _is_terminal_first_party_env,
+from moor_cli._subprocess_compat import windows_hide_flags
+from tools.environments.local_env_policy import (  # noqa: F401 — _MOOR_PROVIDER_ENV_BLOCKLIST stays importable from here
+    _ALWAYS_STRIP_KEYS, _MOOR_PROVIDER_ENV_BLOCKLIST, _MOOR_PROVIDER_ENV_FORCE_PREFIX,
+    _is_moor_internal_secret, _is_provider_env_blocklisted, _is_terminal_first_party_env,
     _matches_terminal_first_party_prefix, _plugin_terminal_env_strip_keys, strip_profile_gate_env)
 from tools.environments.local_pythonpath import (
     _build_moor_repo_root_aliases, _strip_moor_owned_pythonpath_and_runtime_markers)
@@ -60,7 +60,7 @@ def cleanup_terminal_temp_cache(max_age_hours: float = TERMINAL_TEMP_MAX_IDLE_HO
     directory's subtree; the kwarg name is the ``cleanup_*_cache`` signature the gateway
     housekeeping loop calls every entry with); return count.
     Only the managed default dir is pruned — never a user-pointed ``terminal.temp_dir``."""
-    from hermes_constants_scratch import subtree_touched_since
+    from moor_constants_scratch import subtree_touched_since
 
     root = _default_terminal_temp_dir()
     if root is None:
@@ -258,7 +258,7 @@ def _filter_secret_env(
             if not _is_moor_internal_secret(key):
                 out[key] = value
             continue
-        if _is_hermes_internal_secret(key) or key.upper() in plugin_strip_folded:
+        if _is_moor_internal_secret(key) or key.upper() in plugin_strip_folded:
             continue
         first_party = _is_terminal_first_party_env(key)
         passthrough = is_env_passthrough(key)
@@ -311,7 +311,7 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
                          _plugin_terminal_env_strip_keys(), lambda p: p)
 
 
-def hermes_subprocess_env(
+def moor_subprocess_env(
     *, inherit_credentials: bool = False, base_env: dict[str, str] | None = None
 ) -> dict[str, str]:
     """Sanitize a non-terminal child's environment (no skill passthrough).
@@ -336,8 +336,8 @@ def _scrub_credentials(env: dict, *, inherit_credentials: bool) -> dict:
     for key in list(env):
         if (key.upper() in strip_folded
                 or (not inherit_credentials and _is_provider_env_blocklisted(key))
-                or key.startswith(_HERMES_PROVIDER_ENV_FORCE_PREFIX)
-                or _is_hermes_internal_secret(key)):
+                or key.startswith(_MOOR_PROVIDER_ENV_FORCE_PREFIX)
+                or _is_moor_internal_secret(key)):
             del env[key]
     return env
 
@@ -350,7 +350,7 @@ def build_subprocess_env(
     ``scrub_secrets=True`` -> :func:`_sanitize_subprocess_env` (profile home inherent,
     ``inherit_profile_home`` ignored). ``scrub_secrets=False`` keeps the base
     byte-for-byte (git credential flows, ``bws``/``op``); ``inherit_profile_home``
-    bridges HERMES_HOME + HOME and ``extra`` is applied last so caller overrides win.
+    bridges MOOR_HOME + HOME and ``extra`` is applied last so caller overrides win.
     ``strip_launch_profile`` drops the LAUNCH profile's ``.env`` residue from the base first
     (:func:`strip_launch_profile_env`; a no-op unless a routed home is active) so a child that
     acts for a routed profile sees only that profile's declared names, never the launch profile's."""
@@ -388,11 +388,11 @@ def served_profile_child_env(
     ``moor_subprocess_env`` snapshot."""
     from agent.secret_scope import (
         UnscopedSecretError, build_profile_secret_scope, current_secret_scope, is_multiplex_active)
-    from hermes_constants import apply_scratch_tmp_env, get_hermes_home_override
-    env = dict(base) if base is not None else hermes_subprocess_env(inherit_credentials=inherit_credentials)
-    target = str(target_home or get_hermes_home_override() or "")
+    from moor_constants import apply_scratch_tmp_env, get_moor_home_override
+    env = dict(base) if base is not None else moor_subprocess_env(inherit_credentials=inherit_credentials)
+    target = str(target_home or get_moor_home_override() or "")
     if target:
-        env["HERMES_HOME"] = target
+        env["MOOR_HOME"] = target
         apply_scratch_tmp_env(env)  # TMPDIR follows the served home, like HOME does
         if _is_routed_home(target):
             strip_launch_profile_env(env, target)
@@ -415,11 +415,11 @@ def _is_routed_home(target_home: "str | Path") -> bool:
     """True when ``target_home`` is not the process's own (launch) home.
 
     Same launch-home identity as ``agent.secret_scope.serves_routed_profile()``: under a host that
-    mirrors the served profile into ``HERMES_HOME``, the live env var names the served home and the
+    mirrors the served profile into ``MOOR_HOME``, the live env var names the served home and the
     launch residue would never be stripped from that profile's child env."""
-    from hermes_constants import get_routing_process_hermes_home
+    from moor_constants import get_routing_process_moor_home
     try:
-        return Path(target_home).resolve() != get_routing_process_hermes_home().resolve()
+        return Path(target_home).resolve() != get_routing_process_moor_home().resolve()
     except OSError:
         return True
 
@@ -439,8 +439,8 @@ def strip_launch_profile_env(env: dict, target_home: "str | Path | None" = None)
     target = target_home or get_moor_home_override()
     if not target or not _is_routed_home(target):
         return env
-    launch_home = get_process_hermes_home()
-    from hermes_cli.config import TERMINAL_CONFIG_ENV_MAP
+    launch_home = get_process_moor_home()
+    from moor_cli.config import TERMINAL_CONFIG_ENV_MAP
     # Folded strip: on Windows the env block is case-insensitive, so residue
     # stored under a variant casing is the same variable and must go too. The
     # selection folds the same way so a lowercase ``path`` in .env is still
@@ -459,7 +459,7 @@ def strip_launch_profile_env(env: dict, target_home: "str | Path | None" = None)
 
 # --- Shell discovery ---
 def _find_bash() -> str:
-    """Resolve the shell Hermes runs commands with. Owned by pm (the store
+    """Resolve the shell Moor runs commands with. Owned by pm (the store
     is the authority on bundled bash); this is a thin wrapper over
     pm.shell() for callers that need a bash binary."""
     import pm.shell
@@ -468,8 +468,8 @@ def _find_bash() -> str:
     if bash:
         return bash
     raise RuntimeError(
-        "No shell found. Hermes needs bash (Git for Windows on Windows). "
-        "Run `hermes pm install` or reinstall the bundle."
+        "No shell found. Moor needs bash (Git for Windows on Windows). "
+        "Run `moor pm install` or reinstall the bundle."
     )
 
 
@@ -575,31 +575,31 @@ def _prepend_moor_bin_dir(existing_path: str) -> str:
 
 
 def _managed_runtime_path_entries() -> list[str]:
-    """Return existing Hermes-managed runtime dirs for the terminal subshell PATH.
+    """Return existing moor-managed runtime dirs for the terminal subshell PATH.
 
     The terminal tool spawns a subshell whose PATH is the agent process's PATH
-    plus ``_SANE_PATH``. Neither carries the runtimes Hermes installs for
-    itself, so on a machine where Hermes provisioned its own toolchain a
+    plus ``_SANE_PATH``. Neither carries the runtimes Moor installs for
+    itself, so on a machine where Moor provisioned its own toolchain a
     command the agent runs resolves a system copy instead — or nothing at all:
 
     - the pm store's node/npm entries — installed to satisfy the desktop and
       browser toolchain. ``tools/browser_tool.py`` already does this for its own
       subprocesses; the agent's shell deserves the same.
-    - ``$HERMES_HOME/bin`` — the managed ``uv``. ``install.sh`` writes it there
+    - ``$MOOR_HOME/bin`` — the managed ``uv``. ``install.sh`` writes it there
       and nothing has ever put that directory on PATH, so an install whose only
       uv is the managed one looks uv-less to both the agent and the model.
 
     Resolved per call rather than cached in a module constant because
-    ``get_hermes_home()`` is profile-scoped and a managed runtime can appear
+    ``get_moor_home()`` is profile-scoped and a managed runtime can appear
     mid-process (a lazy pm install, a first browser install).
     """
     try:
         import pm
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         env = pm.env_for("npm", base_env={"PATH": ""})
         managed = [Path(d) for d in env.get("PATH", "").split(os.pathsep) if d]
-        candidates = [*managed, get_hermes_home() / "bin"]
+        candidates = [*managed, get_moor_home() / "bin"]
         return [str(d) for d in candidates if d.is_dir()]
     except Exception:
         return []
@@ -852,8 +852,8 @@ class LocalEnvironment(BaseEnvironment):
 
     def get_temp_dir(self) -> str:
         """Shell-safe writable temp dir. Precedence: ``TERMINAL_TEMP_DIR``, TMPDIR/TMP/TEMP
-        (Termux has no system temp dir), ``HERMES_HOME/cache/terminal`` (real storage: a
-        tmpfs system temp dir fills under Hermes load; pruned by ``cleanup_terminal_temp_cache``),
+        (Termux has no system temp dir), ``MOOR_HOME/cache/terminal`` (real storage: a
+        tmpfs system temp dir fills under Moor load; pruned by ``cleanup_terminal_temp_cache``),
         ``tempfile.gettempdir()``; backend env before process env so terminal.env
         overrides work. Windows: ``%TEMP%`` often has spaces that break unquoted bash,
         so always the MOOR_HOME cache dir with forward slashes (bash- and Python-valid)."""
@@ -951,7 +951,7 @@ class LocalEnvironment(BaseEnvironment):
         if _IS_WINDOWS:  # already a forced tree kill
             return self._kill_process(proc)
         with contextlib.suppress(OSError):
-            pgid = getattr(proc, "_hermes_pgid", None) or os.getpgid(proc.pid)
+            pgid = getattr(proc, "_moor_pgid", None) or os.getpgid(proc.pid)
             if pgid != os.getpgrp():  # never our own group (see _kill_process_group_posix)
                 os.killpg(pgid, signal.SIGKILL)  # windows-footgun: ok — POSIX only (_IS_WINDOWS returned above)
         with contextlib.suppress(OSError):

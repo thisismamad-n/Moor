@@ -11,7 +11,7 @@ import pm
 from pm import paths, registry
 from pm.lock import Facts, Lockfile
 from pm.packages import LlamaCppCpu
-from tests.hermes_cli.test_local_download_jobs import client, poll  # noqa: F401
+from tests.moor_cli.test_local_download_jobs import client, poll  # noqa: F401
 from tests.pm._range_server import RangeHandler, dl_server, url  # noqa: F401
 from tests.pm.test_install_download_control import archive
 
@@ -22,7 +22,7 @@ class ArchiveEngine(LlamaCppCpu):
 
 @pytest.mark.parametrize("endpoint", ["runtime/install", "quickstart"])
 def test_component_job_pause_retains_pin_and_stops_sequence(client, monkeypatch, tmp_path, dl_server, endpoint):
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.web_routers import local_models as lm
 
     package = ArchiveEngine()
     monkeypatch.setitem(registry._packages, package.name, package)

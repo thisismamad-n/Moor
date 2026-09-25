@@ -253,7 +253,7 @@ describe('routing', () => {
     const { formatGroupChatLine } = await import('./group-round-prompt')
     const local: GroupMember = { connectionId: 'central', connectionLabel: 'Central', name: 'default', title: '' }
 
-    room.rounds.sendToGroupChat('Core', [local], '@hermes status?')
+    room.rounds.sendToGroupChat('Core', [local], '@moor status?')
     await settle(room, 'Core')
 
     const reply = log(room, 'Core').find(entry => entry.from.kind === 'member')
@@ -278,11 +278,11 @@ describe('routing', () => {
     const room = await loadRoom({ turn: ({ n }) => `Reply ${n} from this device.` })
     const local: GroupMember = { connectionId: 'local', connectionLabel: 'This device', name: 'default', title: '' }
 
-    room.rounds.sendToGroupChat('Core', [local], '@hermes status?')
+    room.rounds.sendToGroupChat('Core', [local], '@moor status?')
     await settle(room, 'Core')
 
     expect(room.gateway.calls).toHaveLength(1)
-    expect(log(room, 'Core').map(entry => entry.text)).toEqual(['@hermes status?', 'Reply 1 from this device.'])
+    expect(log(room, 'Core').map(entry => entry.text)).toEqual(['@moor status?', 'Reply 1 from this device.'])
   })
 
   // Two Desktops label the same gateway differently ("Central" here, "Studio"
@@ -299,7 +299,7 @@ describe('routing', () => {
       title: ''
     }
 
-    room.rounds.sendToGroupChat('Core', [local], '@hermes status?')
+    room.rounds.sendToGroupChat('Core', [local], '@moor status?')
     await settle(room, 'Core')
 
     const reply = log(room, 'Core').find(entry => entry.from.kind === 'member') as GroupMessage
@@ -820,7 +820,7 @@ describe('turn prompt', () => {
   })
 
   // #89720: a renamed primary is @bobby to the roster, autocomplete and the
-  // mention resolver; introducing it to itself as @hermes made it treat
+  // mention resolver; introducing it to itself as @moor made it treat
   // `@bobby …` as someone else's message and pass.
   it('introduces a renamed primary by the same @tag the room resolves', async () => {
     const { rounds } = await loadRoom()

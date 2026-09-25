@@ -1,5 +1,5 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_hermes-python" "$0" "$@"'
-"""Drive the Hermes TUI under HERMES_DEV_PERF and summarize the pipeline.
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_moor-python" "$0" "$@"'
+"""Drive the Moor TUI under MOOR_DEV_PERF and summarize the pipeline.
 
 Usage:
   scripts/profile-tui.py [--session SID] [--hold KEY] [--seconds N] [--rate HZ]

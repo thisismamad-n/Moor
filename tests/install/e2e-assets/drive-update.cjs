@@ -4,7 +4,7 @@
 //
 // Run the current CI checkout's entrypoint with its locked driver deps:
 //
-//   node <this file> <path-to-Hermes.exe> <proof-dir> <old-sha> [--native-handoff]
+//   node <this file> <path-to-Moor.exe> <proof-dir> <old-sha> [--native-handoff]
 // --native-handoff leaves the native UIA caller in charge of clicking Update.
 //
 // Exit codes: 0 = update hand-off started and the app quit (the detached
@@ -28,8 +28,8 @@ const proofDir = process.argv[3]
 const oldSha = process.argv[4]
 const nativeHandoff = process.argv[5] === '--native-handoff'
 
-if (!exePath || !proofDir || !oldSha || !process.env.HERMES_E2E_MOCK_URL) {
-  console.error('usage: node drive-update.cjs <Hermes.exe> <proof-dir> <old-sha> [--native-handoff]; HERMES_E2E_MOCK_URL required')
+if (!exePath || !proofDir || !oldSha || !process.env.MOOR_E2E_MOCK_URL) {
+  console.error('usage: node drive-update.cjs <Moor.exe> <proof-dir> <old-sha> [--native-handoff]; MOOR_E2E_MOCK_URL required')
   process.exit(1)
 }
 
@@ -63,16 +63,16 @@ async function main() {
   const { runUpdateWindowChat } = await import('./update-window-chat.mjs')
   const { isolateUpdateWindowEnvironment, isolatedElectronArgs, updateWindowEnvironment } = await import('./smoke-env.mjs')
   const origin = nativeHandoff ? 'bundled' : 'source'
-  const root = nativeHandoff ? path.join(path.dirname(exePath), 'resources', 'agent-payload') : path.join(process.env.HERMES_HOME, 'hermes-agent')
+  const root = nativeHandoff ? path.join(path.dirname(exePath), 'resources', 'agent-payload') : path.join(process.env.MOOR_HOME, 'moor-agent')
   const launchEnv = isolateUpdateWindowEnvironment(updateWindowEnvironment(process.env, root, origin))
-  const userData = launchEnv.HERMES_DESKTOP_USER_DATA_DIR
+  const userData = launchEnv.MOOR_DESKTOP_USER_DATA_DIR
   log(`launching ${exePath}`)
 
   const app = await _electron.launch({
     executablePath: exePath,
     args: isolatedElectronArgs(['--disable-gpu', '--no-sandbox', '--force-renderer-accessibility'], userData),
     cwd: path.dirname(exePath),
-    // Inherit the driver's env: HERMES_HOME (isolated install) and
+    // Inherit the driver's env: MOOR_HOME (isolated install) and
     // GIT_CONFIG_GLOBAL (URL redirect to the staged serve repo) MUST reach
     // the main process so its update check fetches from the staged repo.
     env: launchEnv,
@@ -81,7 +81,7 @@ async function main() {
   const child = app.process()
 
   const waitForProcessClose = observeProcessClose(child)
-  // On Windows Playwright's child is a shell wrapper, not Hermes.exe.
+  // On Windows Playwright's child is a shell wrapper, not Moor.exe.
   const appPid = await app.evaluate(() => process.pid)
   log(`launched Electron pid=${appPid}`)
 
@@ -91,7 +91,7 @@ async function main() {
   log('[zoom] app window prepared at 100%')
 
   await runUpdateWindowChat(app, page, {
-    mockUrl: process.env.HERMES_E2E_MOCK_URL, outDir: proofDir,
+    mockUrl: process.env.MOOR_E2E_MOCK_URL, outDir: proofDir,
     expectCommit: oldSha,
     origin, root, executable: exePath, userData,
   })

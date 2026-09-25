@@ -44,8 +44,8 @@ def _make_codex_agent(
     (tmp_path / "config.yaml").write_text("{}\n", encoding="utf-8")
     # Every test here reasons about the built-in TTFB defaults; a developer shell override
     # must not leak in (tests that need an override setenv it after this).
-    for name in ("HERMES_CODEX_TTFB_TIMEOUT_SECONDS", "HERMES_CODEX_TTFB_MAX_SECONDS",
-                 "HERMES_CODEX_TTFB_DISABLE_ABOVE_TOKENS", "HERMES_CODEX_TTFB_STRICT"):
+    for name in ("MOOR_CODEX_TTFB_TIMEOUT_SECONDS", "MOOR_CODEX_TTFB_MAX_SECONDS",
+                 "MOOR_CODEX_TTFB_DISABLE_ABOVE_TOKENS", "MOOR_CODEX_TTFB_STRICT"):
         monkeypatch.delenv(name, raising=False)
     from run_agent import AIAgent
 
@@ -75,7 +75,7 @@ def _shorten_implicit_idle_watchdog(monkeypatch, helpers, timeout=2.0, **overrid
     """Keep the resolver on its implicit branch while scaling time for tests.
 
     ``timeout`` shortens ``idle_timeout``; ``overrides`` set any other resolved field."""
-    monkeypatch.delenv("HERMES_CODEX_EVENT_STALE_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.delenv("MOOR_CODEX_EVENT_STALE_TIMEOUT_SECONDS", raising=False)
     original = helpers._resolve_nonstream_watchdogs
 
     def resolve(agent, api_kwargs):
@@ -113,7 +113,7 @@ def test_local_endpoint_ttfb_default_uses_local_stale_ceiling(tmp_path, monkeypa
     prefill grace); hosted endpoints keep the 120s default."""
     from agent import chat_completion_helpers as h
 
-    monkeypatch.setenv("HERMES_LOCAL_STREAM_STALE_TIMEOUT", "600")
+    monkeypatch.setenv("MOOR_LOCAL_STREAM_STALE_TIMEOUT", "600")
     local = _make_codex_agent(tmp_path, monkeypatch, provider="custom", base_url="http://127.0.0.1:11434/v1")
     hosted = _make_codex_agent(tmp_path, monkeypatch, provider="custom", base_url="https://api.example.com/v1")
     kwargs = {"model": "qwen3-27b", "input": "hi"}
@@ -123,12 +123,12 @@ def test_local_endpoint_ttfb_default_uses_local_stale_ceiling(tmp_path, monkeypa
 
 
 def test_local_endpoint_ttfb_explicit_env_still_wins(tmp_path, monkeypatch):
-    """An operator-set HERMES_CODEX_TTFB_TIMEOUT_SECONDS is honoured verbatim on local endpoints."""
+    """An operator-set MOOR_CODEX_TTFB_TIMEOUT_SECONDS is honoured verbatim on local endpoints."""
     from agent import chat_completion_helpers as h
 
-    monkeypatch.setenv("HERMES_LOCAL_STREAM_STALE_TIMEOUT", "600")
+    monkeypatch.setenv("MOOR_LOCAL_STREAM_STALE_TIMEOUT", "600")
     local = _make_codex_agent(tmp_path, monkeypatch, provider="custom", base_url="http://127.0.0.1:11434/v1")
-    monkeypatch.setenv("HERMES_CODEX_TTFB_TIMEOUT_SECONDS", "45")
+    monkeypatch.setenv("MOOR_CODEX_TTFB_TIMEOUT_SECONDS", "45")
 
     assert h._resolve_nonstream_watchdogs(local, {"model": "qwen3-27b", "input": "hi"}).ttfb_timeout == 45.0
 
@@ -667,13 +667,13 @@ def test_large_request_keeps_scaled_ttfb_instead_of_recapping(tmp_path, monkeypa
 
 
 def test_explicit_ttfb_max_seconds_still_caps(tmp_path, monkeypatch):
-    """An explicit HERMES_CODEX_TTFB_MAX_SECONDS override still bounds the
+    """An explicit MOOR_CODEX_TTFB_MAX_SECONDS override still bounds the
     scaled cutoff."""
     from agent import chat_completion_helpers as h
 
     agent = _make_codex_agent(tmp_path, monkeypatch)
     agent.reasoning_config = {"enabled": False}
-    monkeypatch.setenv("HERMES_CODEX_TTFB_MAX_SECONDS", "90")
+    monkeypatch.setenv("MOOR_CODEX_TTFB_MAX_SECONDS", "90")
 
     huge_input = "x" * 440_000
     wd = h._resolve_nonstream_watchdogs(agent, {"model": "gpt-5.5", "input": huge_input})

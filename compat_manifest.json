@@ -4065,7 +4065,7 @@
    "target": "(deleted; BASE body restored)"
   },
   {
-   "facade": "hermes_cli.models",
+   "facade": "moor_cli.models",
    "name": "lmstudio_model_reasoning_options",
    "kind": "moved-lazy",
    "target": "moor_cli.models_local"
@@ -5469,7 +5469,7 @@
    "target": "binascii"
   },
   {
-   "facade": "hermes_cli.web_server",
+   "facade": "moor_cli.web_server",
    "name": "bulk_delete_sessions_endpoint",
    "kind": "moved-lazy",
    "target": "moor_cli.web_routers.sessions"
@@ -6681,7 +6681,7 @@
    "target": "moor_cli.web_routers.ops"
   },
   {
-   "facade": "hermes_cli.web_server",
+   "facade": "moor_cli.web_server",
    "name": "resolve_gateway_liveness",
    "kind": "moved-lazy",
    "target": "gateway.status"

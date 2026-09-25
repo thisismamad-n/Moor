@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from tests.docker.conftest import docker_exec_sh, start_container
 
-def test_puid_pgid_remaps_hermes_user(
+def test_puid_pgid_remaps_moor_user(
     built_image: str, container_name: str,
 ) -> None:
     """PUID=1000 PGID=1000 must remap the moor user to UID 1000."""
@@ -43,7 +43,7 @@ def test_puid_pgid_remaps_hermes_user(
         timeout=10,
     )
     assert "WRITE_OK" in r.stdout, (
-        f"hermes user cannot write to /opt/data after remap: {r.stdout}"
+        f"moor user cannot write to /opt/data after remap: {r.stdout}"
     )
 
 def test_nas_low_uid_accepted(

@@ -34,7 +34,7 @@ describe('voiceFieldVisible', () => {
   })
 
   it('falls back to backend defaults when provider is unset so model fields stay visible', () => {
-    const unset = { tts: {}, stt: { enabled: true } } as unknown as HermesConfigRecord
+    const unset = { tts: {}, stt: { enabled: true } } as unknown as MoorConfigRecord
     expect(voiceFieldVisible('tts.edge.voice', unset)).toBe(true)
     expect(voiceFieldVisible('tts.openai.voice', unset)).toBe(false)
     expect(voiceFieldVisible('stt.local.model', unset)).toBe(true)

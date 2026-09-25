@@ -37,8 +37,8 @@ def worker_env(monkeypatch, tmp_path):
         run_id = kb._current_run_id(conn, tid)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", tid)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run_id))
+    monkeypatch.setenv("MOOR_KANBAN_TASK", tid)
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(run_id))
     return tid
 
 

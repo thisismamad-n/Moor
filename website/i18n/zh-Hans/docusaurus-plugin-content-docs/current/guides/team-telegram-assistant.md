@@ -24,7 +24,7 @@ description: "逐步指南：为整个团队搭建一个 Telegram 机器人，�
 
 开始前，请确保你已具备：
 
-- **已在服务器或 VPS 上安装 Hermes Agent**（不是你的笔记本——机器人需要持续运行）。如尚未安装，请参阅[安装指南](../getting-started/installation.md)。
+- **已在服务器或 VPS 上安装 Moor Agent**（不是你的笔记本——机器人需要持续运行）。如尚未安装，请参阅[安装指南](../getting-started/installation.md)。
 - **一个 Telegram 账号**（机器人所有者）
 - **已配置 LLM 提供商**——至少在 `~/.moor/.env` 中配置了 OpenAI、Anthropic 或其他受支持提供商的 API 密钥
 
@@ -291,7 +291,7 @@ display:
 
 通过编辑 `~/.moor/SOUL.md` 自定义机器人的沟通方式：
 
-完整指南请参阅[在 Hermes 中使用 SOUL.md](./use-soul-with-hermes.md)。
+完整指南请参阅[在 Moor 中使用 SOUL.md](./use-soul-with-moor.md)。
 
 ```markdown
 # Soul

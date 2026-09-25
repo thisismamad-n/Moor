@@ -11,7 +11,7 @@ API 服务器将 moor-agent 作为 OpenAI 兼容的 HTTP 端点暴露出来。�
 你的 agent 使用完整工具集（终端、文件操作、网络搜索、记忆、技能）处理请求，并返回最终响应。在流式传输时，工具进度指示器会内联显示，让前端能够展示 agent 正在执行的操作。
 
 :::tip 一个后端同时覆盖模型与工具
-Hermes 本身需要配置好 provider（提供商）和工具后端，API 服务器才能发挥作用。[Nous Portal](./tool-gateway.md) 订阅同时处理两者——300+ 个模型，以及通过 Tool Gateway 提供的网络/图像/TTS/浏览器功能。在启动 API 服务器之前运行一次 `hermes setup --portal`，Open WebUI 或 LobeChat 等前端即可获得一个完整配备工具的后端。
+Moor 本身需要配置好 provider（提供商）和工具后端，API 服务器才能发挥作用。[Moor Portal](./tool-gateway.md) 订阅同时处理两者——300+ 个模型，以及通过 Tool Gateway 提供的网络/图像/TTS/浏览器功能。在启动 API 服务器之前运行一次 `moor setup --portal`，Open WebUI 或 LobeChat 等前端即可获得一个完整配备工具的后端。
 :::
 
 ## 快速开始
@@ -109,8 +109,8 @@ curl http://localhost:8642/v1/chat/completions \
 **流式传输**（`"stream": true`）：返回逐 token 响应块的 Server-Sent Events（SSE）。对于 **Chat Completions**，流使用标准 `chat.completion.chunk` 事件，以及 Moor 自定义的 `moor.tool.progress` 事件用于工具启动的 UX 展示。对于 **Responses**，流使用 OpenAI Responses 事件类型，如 `response.created`、`response.output_text.delta`、`response.output_item.added`、`response.output_item.done` 和 `response.completed`。
 
 **流中的工具进度：**
-- **Chat Completions**：Hermes 发出 `event: hermes.tool.progress` 以提供工具启动可见性，同时不污染持久化的 assistant 文本。
-- **Responses**：Hermes 在 SSE 流期间发出符合规范的 `function_call` 和 `function_call_output` 输出项，让客户端能够实时渲染结构化工具 UI。
+- **Chat Completions**：Moor 发出 `event: moor.tool.progress` 以提供工具启动可见性，同时不污染持久化的 assistant 文本。
+- **Responses**：Moor 在 SSE 流期间发出符合规范的 `function_call` 和 `function_call_output` 输出项，让客户端能够实时渲染结构化工具 UI。
 **模型推理**（仅当模型确实产生了推理内容且解析后的 `reasoning` 配置允许时才会发出；输入侧的关闭方式是 `model_options.reasoning.enabled: false`）：
 - **Chat Completions**：推理增量以 `choices[0].delta.reasoning_content` 块的形式到达（DeepSeek 风格的字段，Open WebUI、opencode 和 Vercel AI SDK 会将其渲染为思考块）；回答文本仍留在 `delta.content` 中。
 - **Responses**：每一段思考都是一个符合规范的 `reasoning` 输出项——`response.output_item.added`（`item.type: "reasoning"`）、`response.reasoning_summary_part.added`、`response.reasoning_summary_text.delta` … `response.reasoning_summary_text.done`、`response.reasoning_summary_part.done`、`response.output_item.done`——在下一个 message 或 `function_call` 项打开之前关闭，并在 `response.completed` 的 output 中以 `{"id": "rs_…", "type": "reasoning", "status": "completed", "summary": [{"type": "summary_text", "text": "…"}]}` 的形式回显。`sequence_number` 在推理、文本和工具事件之间保持单调递增。
@@ -202,7 +202,7 @@ OpenAI Responses API 格式。通过 `previous_response_id` 支持服务端对�
 
 ### GET /v1/models
 
-将 agent 列为可用模型。广播的模型名称默认为 [profile](../profiles.md) 名称（默认 profile 则为 `hermes-agent`）。大多数前端进行模型发现时需要此端点。
+将 agent 列为可用模型。广播的模型名称默认为 [profile](../profiles.md) 名称（默认 profile 则为 `moor-agent`）。大多数前端进行模型发现时需要此端点。
 
 ### GET /v1/capabilities
 
@@ -417,7 +417,7 @@ API_SERVER_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 ## 使用 Profiles 的多用户设置
 
-要为多个用户提供各自隔离的 Hermes 实例（独立的配置、记忆、技能），请使用 [profiles](../profiles.md)：
+要为多个用户提供各自隔离的 Moor 实例（独立的配置、记忆、技能），请使用 [profiles](../profiles.md)：
 
 ```bash
 # 为每个用户创建 profile
@@ -448,7 +448,7 @@ moor -p bob gateway &
 - `http://localhost:8643/v1/models` → 模型 `alice`
 - `http://localhost:8644/v1/models` → 模型 `bob`
 
-在 Open WebUI 中，将每个添加为单独的连接。模型下拉列表显示 `alice` 和 `bob` 作为不同模型，每个均由完全隔离的 Hermes 实例支持。详见 [Open WebUI 指南](../messaging/open-webui.md#multi-user-setup-with-profiles)。
+在 Open WebUI 中，将每个添加为单独的连接。模型下拉列表显示 `alice` 和 `bob` 作为不同模型，每个均由完全隔离的 Moor 实例支持。详见 [Open WebUI 指南](../messaging/open-webui.md#multi-user-setup-with-profiles)。
 
 ## 限制
 

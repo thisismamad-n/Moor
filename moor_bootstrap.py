@@ -1,4 +1,4 @@
-"""Process bootstrap for Hermes entry points: Windows UTF-8 stdio and ANSI console, import-path
+"""Process bootstrap for Moor entry points: Windows UTF-8 stdio and ANSI console, import-path
 hardening, durable lazy-install target, and dual-stack (Happy Eyeballs) connects.
 
 Windows binds stdio to the console code page (cp1252), so ``print("café")`` raises
@@ -10,7 +10,7 @@ process still needs an explicit ``encoding="utf-8"`` (ruff ``PLW1514``). POSIX i
 alone deliberately — users' ``LANG``/``LC_*`` choices are respected.
 
 Stdlib only: entry points import this before ``harden_import_path()`` runs, so nothing
-here may pull in a Hermes package that a project-local directory could shadow.
+here may pull in a Moor package that a project-local directory could shadow.
 """
 
 from __future__ import annotations
@@ -148,7 +148,7 @@ def _happy_eyeballs_create_connection(address: tuple[str, int], timeout: float |
 
 def _patch_urllib3_create_connection(module) -> None:
     """Point ``urllib3.util.connection.create_connection`` (its own serial walker) at the racer."""
-    if getattr(module.create_connection, "_hermes_happy_eyeballs", False):
+    if getattr(module.create_connection, "_moor_happy_eyeballs", False):
         return
     urllib3_sentinel = module._DEFAULT_TIMEOUT
 
@@ -159,14 +159,14 @@ def _patch_urllib3_create_connection(module) -> None:
         return _happy_eyeballs_create_connection(
             address, effective, source_address=source_address, socket_options=tuple(socket_options or ()))
 
-    _urllib3_racer._hermes_happy_eyeballs = True  # type: ignore[attr-defined]
+    _urllib3_racer._moor_happy_eyeballs = True  # type: ignore[attr-defined]
     module.create_connection = _urllib3_racer
 
 
 class _Urllib3ConnectionPatcher(importlib.abc.MetaPathFinder, importlib.abc.Loader):
     """One-shot import hook: patch urllib3's connect walker the moment the module loads.
 
-    Importing urllib3 eagerly costs ~50 ms on every CLI start, and ``hermes`` / the TUI
+    Importing urllib3 eagerly costs ~50 ms on every CLI start, and ``moor`` / the TUI
     gateway never load it unless something actually calls ``requests``.
     """
 
@@ -202,7 +202,7 @@ def install_happy_eyeballs_socket_connect() -> None:
     results serially — on a network whose advertised IPv6 route is blackholed, each AAAA
     record burns the full connect timeout before IPv4 answers. Idempotent, best-effort.
     """
-    if getattr(socket.create_connection, "_hermes_happy_eyeballs", False):
+    if getattr(socket.create_connection, "_moor_happy_eyeballs", False):
         return
 
     def _socket_racer(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, source_address=None, *, all_errors=False):
@@ -214,7 +214,7 @@ def install_happy_eyeballs_socket_connect() -> None:
         # racer bug and must surface rather than silently fall back to the serial stall.
         return _happy_eyeballs_create_connection(address, effective, source_address=source_address)
 
-    _socket_racer._hermes_happy_eyeballs = True  # type: ignore[attr-defined]
+    _socket_racer._moor_happy_eyeballs = True  # type: ignore[attr-defined]
     socket.create_connection = _socket_racer
 
     urllib3_connection = sys.modules.get(_URLLIB3_CONNECTION_MODULE)
@@ -259,8 +259,8 @@ _ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
 def enable_windows_vt(streams=None) -> bool:
     """Opt the console behind stdout/stderr in to ANSI escape processing.
 
-    ``hermes_cli.colors`` and the skins emit raw SGR codes whenever stdout is a TTY. A
-    conhost console (PowerShell 5.1, cmd.exe, the installer's ``hermes setup``) prints
+    ``moor_cli.colors`` and the skins emit raw SGR codes whenever stdout is a TTY. A
+    conhost console (PowerShell 5.1, cmd.exe, the installer's ``moor setup``) prints
     them as ``←[35m`` until the output handle has ENABLE_VIRTUAL_TERMINAL_PROCESSING, and
     shells hand native children a console with it off. The mode belongs to the console
     buffer, so setting it here also covers the relaunched child. Handles that are not a
@@ -339,8 +339,8 @@ def install_never_free_environ() -> None:
     On glibc < 2.41 adding a name reallocs ``environ`` and frees the old array while a
     thread that dropped the GIL (``getaddrinfo``, OpenSSL's ``SSL_CERT_FILE`` lookup) may
     still be walking it; the freed slots hold tcache pointers, so the walk segfaults the
-    whole process. Hermes writes new names at runtime from many places (``session.create``
-    turns on gateway prompts, the agent build sets ``HERMES_SESSION_ID``) while background
+    whole process. Moor writes new names at runtime from many places (``session.create``
+    turns on gateway prompts, the agent build sets ``MOOR_SESSION_ID``) while background
     threads fetch catalogs, so the tui_gateway died with SIGSEGV. This is glibc 2.41's own
     fix: entry strings are cached per ``NAME=value`` and never freed; a new name is
     appended in place to an array with spare room, and only a full array is replaced by
@@ -352,7 +352,7 @@ def install_never_free_environ() -> None:
     ``getenv`` that started walking that array before our swap can still fault. None of
     the gateway's crash paths do this.
     """
-    if getattr(os.putenv, "_hermes_never_free_environ", False) or not _glibc_frees_environ():
+    if getattr(os.putenv, "_moor_never_free_environ", False) or not _glibc_frees_environ():
         return
     import _thread
     import ctypes
@@ -426,8 +426,8 @@ def install_never_free_environ() -> None:
             real_unsetenv(key)
             gen[0] += 1
 
-    _putenv._hermes_never_free_environ = True  # type: ignore[attr-defined]
-    _unsetenv._hermes_never_free_environ = True  # type: ignore[attr-defined]
+    _putenv._moor_never_free_environ = True  # type: ignore[attr-defined]
+    _unsetenv._moor_never_free_environ = True  # type: ignore[attr-defined]
     os.putenv, os.unsetenv = _putenv, _unsetenv
 
 
@@ -454,22 +454,22 @@ def harden_import_path(src_root: str | None = None) -> None:
 
 
 def export_scratch_tmp_env() -> None:
-    """Point ``TMPDIR``/``TMP``/``TEMP`` at ``HERMES_HOME/cache/scratch`` unless the user set them.
+    """Point ``TMPDIR``/``TMP``/``TEMP`` at ``MOOR_HOME/cache/scratch`` unless the user set them.
 
-    System temp is tmpfs on most Linux hosts and containers; Hermes' browser profiles, PTY
+    System temp is tmpfs on most Linux hosts and containers; Moor' browser profiles, PTY
     probes and every ``tempfile`` default a child script makes would eat RAM there. Runs at
-    import so every entry point and every child they spawn inherits it; ``hermes_cli.main``
+    import so every entry point and every child they spawn inherits it; ``moor_cli.main``
     re-runs it after ``--profile`` re-homes the process. Never raises.
     """
     try:
-        from hermes_constants import export_scratch_tmp_env as _export
+        from moor_constants import export_scratch_tmp_env as _export
         _export()
     except Exception:
         pass  # a missing/unwritable home just leaves the system temp dir in place
 
 
-# Apply on import — entry points just need ``import hermes_bootstrap``
-# (or ``from hermes_bootstrap import apply_windows_utf8_bootstrap``) at
+# Apply on import — entry points just need ``import moor_bootstrap``
+# (or ``from moor_bootstrap import apply_windows_utf8_bootstrap``) at
 # the very top of their module, before importing anything else.  The
 # import side effect does the right thing.
 apply_windows_utf8_bootstrap()
@@ -502,7 +502,7 @@ def _legacy_post_swap_invocation(argv: list[str]) -> tuple[Path, list[str]] | No
     return Path(argv[marker + 1]), argv[1:marker]
 
 
-# Everything below imports Hermes packages, so the root goes on sys.path first. A venv
+# Everything below imports Moor packages, so the root goes on sys.path first. A venv
 # editable-installed from a pre-PM tree maps only the top-level packages it knew then:
 # without this, ``pm`` is unimportable and the launch silently skips PM adoption.
 harden_import_path(str(_root))
@@ -512,21 +512,21 @@ if _legacy_post_swap is not None:
     # This continuation exists precisely because the replacement tree may not
     # run under the old release's dependency graph. Take it over before PM
     # activation, launch preparation, or argparse imports any of that graph.
-    from hermes_cli.update_handoff import _continue_legacy_post_swap
+    from moor_cli.update_handoff import _continue_legacy_post_swap
 
     _handoff_path, _argv_tail = _legacy_post_swap
     raise SystemExit(_continue_legacy_post_swap(_handoff_path, argv_tail=_argv_tail))
 
 
 from pm.environments import activate_dependencies
-from hermes_cli._early_recovery import recover_if_needed
+from moor_cli._early_recovery import recover_if_needed
 
-from hermes_cli._parser import command_argv
+from moor_cli._parser import command_argv
 
 # Repair needs only stdlib. Do not activate the damaged tree to reach it.
 _pm_repair = command_argv(sys.argv[1:])[:2] == ["pm", "repair"]
 if not _pm_repair:
-    from hermes_cli.venv_sync import prepare_launch, relaunch_command
+    from moor_cli.venv_sync import prepare_launch, relaunch_command
 
     try:
         _launch_python = prepare_launch(_root, sys.argv[1:])
@@ -544,17 +544,17 @@ if not _pm_repair:
     except Exception as exc:
         # Degrade, never brick the CLI: the previous dependency generation is still selected
         # (a failed sync commits nothing), so an offline or half-finished update leaves a
-        # usable Hermes plus a warning. Activation below is the real gate — a tree whose
+        # usable Moor plus a warning. Activation below is the real gate — a tree whose
         # dependencies cannot load still exits with the repair remedy.
-        print(f"hermes: source-update completion failed: {exc}; "
-              "running with the previous dependencies — run `hermes update` to finish it",
+        print(f"moor: source-update completion failed: {exc}; "
+              "running with the previous dependencies — run `moor update` to finish it",
               file=sys.stderr)
     recover_if_needed(_root)
     try:
         activate_dependencies(_root)
     except (RuntimeError, OSError) as exc:
         if command_argv(sys.argv[1:])[:1] != ["pm"]:
-            print(f"hermes: {exc}; run `hermes pm repair`", file=sys.stderr)
+            print(f"moor: {exc}; run `moor pm repair`", file=sys.stderr)
             raise SystemExit(1) from None
 install_happy_eyeballs_socket_connect()
 export_scratch_tmp_env()

@@ -6,9 +6,9 @@ description: "Hands-free 'Hey Moor' wake word — start a voice session by speak
 
 # Wake Word ("Hey Moor")
 
-The wake word turns Hermes into a hands-free assistant across the CLI, TUI, and
-desktop app: with one setting on, Hermes listens in the background for a spoken
-trigger phrase. Say it, and Hermes starts a fresh session, opens the microphone,
+The wake word turns Moor into a hands-free assistant across the CLI, TUI, and
+desktop app: with one setting on, Moor listens in the background for a spoken
+trigger phrase. Say it, and Moor starts a fresh session, opens the microphone,
 captures your command via the normal [voice pipeline](./voice-mode.md),
 and answers — exactly like "Hey Siri" or "Alexa". Use `surface` to pick which
 one listens.
@@ -76,7 +76,7 @@ backend process.
 
 | Engine | Cost | API key | Notes |
 |--------|------|---------|-------|
-| **openWakeWord** | Free | None | TFLite through `pyopen-wakeword`. Includes the **"hey hermes"** model. Custom models require a `.tflite` file. Not available on Intel macOS or native Windows ARM64. |
+| **openWakeWord** | Free | None | TFLite through `pyopen-wakeword`. Includes the **"hey moor"** model. Custom models require a `.tflite` file. Not available on Intel macOS or native Windows ARM64. |
 | **sherpa** | Free | None | Open-vocabulary detection for typed phrases. Downloads an English model on first use. Supports native Windows ARM64. |
 | **Porcupine** | Free tier / paid | `PORCUPINE_ACCESS_KEY` | Picovoice engine; built-in keywords + custom `.ppn` files |
 
@@ -89,27 +89,27 @@ that of the Python backend, not a remote desktop client:
   (free, no key).
 
 An explicit provider stays selected, even if this platform does not support it.
-Hermes reports the requirement error instead of silently switching engines.
+Moor reports the requirement error instead of silently switching engines.
 Existing explicit settings are not migrated. To opt into automatic selection,
-run `hermes config set wake_word.provider auto`. Wake detection stays **off**
+run `moor config set wake_word.provider auto`. Wake detection stays **off**
 until you enable it.
 
-The default phrase label is **"hey hermes"**. For openWakeWord, Hermes includes
+The default phrase label is **"hey moor"**. For openWakeWord, Moor includes
 its trained TFLite model.
 The `pyopen-wakeword` package includes the shared feature-extraction models, so
 this engine does not download models when it starts.
 
-If the selected engine is missing, Hermes requests its PM extra when you enable
+If the selected engine is missing, Moor requests its PM extra when you enable
 wake-word detection. `security.allow_lazy_installs` controls this installation.
-A new dependency environment can require a Hermes restart before the engine loads.
+A new dependency environment can require a Moor restart before the engine loads.
 Packaged builds include the engine dependencies supported by their target.
 
 The `pyopen-wakeword` macOS
-wheel contains an ARM64-only library despite its `universal2` label. Hermes
+wheel contains an ARM64-only library despite its `universal2` label. Moor
 excludes that engine on Intel Macs and native Windows ARM64. Sherpa provides
 keyless detection on both targets.
 
-Porcupine's default keyword is **"jarvis"**, not "hey hermes". Its `phrase`
+Porcupine's default keyword is **"jarvis"**, not "hey moor". Its `phrase`
 setting is only a display label; choose a built-in keyword or supply a custom
 `.ppn` model to change what it detects. Get an access key at
 [console.picovoice.ai](https://console.picovoice.ai) and store
@@ -117,7 +117,7 @@ setting is only a display label; choose a built-in keyword or supply a custom
 
 The supported `pyopen-wakeword` wheels target Apple Silicon with macOS 15 or
 later, glibc Linux 2.35 or later, and Windows x64. These requirements apply to
-that engine, not every Hermes feature. Termux's core/ACP package does not
+that engine, not every Moor feature. Termux's core/ACP package does not
 include this wake stack.
 
 ## Quick start
@@ -150,12 +150,12 @@ wake_word:
   input_device: null           # PortAudio input index or device-name substring; null = process default
   capture: auto               # auto | local | client — where PCM is captured (see Remote desktop)
   provider: auto              # auto | openwakeword | sherpa | porcupine (requires an access key)
-  phrase: "hey hermes"        # cosmetic label only — detection is keyed by the model/keyword below
+  phrase: "hey moor"        # cosmetic label only — detection is keyed by the model/keyword below
   sensitivity: 0.6            # 0.0-1.0 — higher = stricter (fewer false triggers), consistent across all engines
   confirmation_frames: 3      # openWakeWord only — consecutive over-threshold frames required to fire
   start_new_session: true     # start a fresh session on wake vs. continue the current one
   openwakeword:
-    model: hey_hermes         # bundled default, or an absolute path to a custom .tflite
+    model: hey_moor         # bundled default, or an absolute path to a custom .tflite
   porcupine:
     keyword: jarvis           # built-in keyword OR path to a custom .ppn
 ```
@@ -196,8 +196,8 @@ don't have the single-frame-spike problem and ignore `confirmation_frames`
 
 The `openwakeword` provider name now selects
 [pyopen-wakeword](https://github.com/rhasspy/pyopen-wakeword). Its wheel includes
-the TFLite library and shared feature models. Hermes uses the bundled
-`hey_hermes.tflite` model by default. ONNX wake models and the
+the TFLite library and shared feature models. Moor uses the bundled
+`hey_moor.tflite` model by default. ONNX wake models and the
 `inference_framework` setting are no longer supported.
 
 ### Surfaces (CLI, TUI, GUI)
@@ -223,7 +223,7 @@ command records.
 
 ## Using a different phrase
 
-"Hey Hermes" is the default detection phrase with openWakeWord and sherpa.
+"Hey Moor" is the default detection phrase with openWakeWord and sherpa.
 Porcupine uses its configured keyword instead ("jarvis" by default).
 To wake on something else, the easiest path on supported platforms is the
 open-vocabulary engine:
@@ -268,7 +268,7 @@ degrade accuracy — tune per-profile `sensitivity` if needed.
 ### Option B — openWakeWord (free, trained model)
 
 For a different phrase, obtain or train a compatible openWakeWord TFLite model.
-Set its absolute path in the configuration. Hermes does not resolve built-in
+Set its absolute path in the configuration. Moor does not resolve built-in
 names such as `hey_jarvis` or download their models for you.
 
 ```yaml

@@ -85,7 +85,7 @@ describe('ComposerDirectiveActions', () => {
   it('sends the pill to the system browser on the platform open-elsewhere modifier', () => {
     const openExternal = vi.fn().mockResolvedValue(undefined)
 
-    desktopWindow.hermesDesktop = { openExternal } as unknown as Window['hermesDesktop']
+    desktopWindow.moorDesktop = { openExternal } as unknown as Window['moorDesktop']
 
     const editor = mountEditor([{ kind: 'url', value: 'https://example.com/docs' }])
 

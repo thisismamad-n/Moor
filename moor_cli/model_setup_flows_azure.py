@@ -56,9 +56,9 @@ def _azure_entra_preflight(current_entra: dict):
     if not has_azure_identity_installed():
         _say("◐ The 'azure-identity' package is not installed yet.",
              "  The preflight requests it through PM if lazy installs are enabled.",
-             "  To install explicitly, run from the Hermes environment:",
+             "  To install explicitly, run from the Moor environment:",
              f"    {install_hint('azure-identity')}",
-             "  Then restart Hermes.")
+             "  Then restart Moor.")
 
     # Only the optional scope override is persisted; identity selection (tenant,
     # user-assigned MI, workload identity, SP) stays in AZURE_* SDK env vars.

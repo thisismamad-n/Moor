@@ -143,13 +143,13 @@ class TestPreUpdateBackupIntegrityGuard:
         assert "integrity check FAILED" in out
         assert "Snapshot copy is valid" in out
 
-    def test_failed_snapshot_is_loud_and_update_continues(self, hermes_home, capsys, monkeypatch):
+    def test_failed_snapshot_is_loud_and_update_continues(self, moor_home, capsys, monkeypatch):
         """Best-effort by design, but never silent: a snapshot helper that raises (or captures
         nothing) prints a stdout warning and returns None so the receipt records a failed step."""
         from argparse import Namespace
 
-        import hermes_cli.backup as backup_mod
-        from hermes_cli.update_cmd import _run_pre_update_backup
+        import moor_cli.backup as backup_mod
+        from moor_cli.update_cmd import _run_pre_update_backup
 
         def boom(**kwargs):
             raise PermissionError("state-snapshots is read-only")

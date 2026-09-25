@@ -61,7 +61,7 @@ def _make_args(**kwargs):
 
 def _seed_config(tmp_path: Path, mcp_servers: dict):
     """Write a config.yaml with the given mcp_servers."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     config = {"mcp_servers": mcp_servers, "_config_version": 9}
     config_path = tmp_path / "config.yaml"
@@ -283,28 +283,28 @@ class TestMcpTest:
     def test_exit_codes_distinguish_failure_from_unknown_server(self, tmp_path, capsys, monkeypatch):
         """0 connected, 1 connection failed, 3 not in config — never argparse's 2, never a silent 0."""
         _seed_config(tmp_path, {"ink": {"url": "https://mcp.ml.ink/mcp"}})
-        from hermes_cli.mcp_config import cmd_mcp_test
+        from moor_cli.mcp_config import cmd_mcp_test
 
-        monkeypatch.setattr("hermes_cli.mcp_config._probe_single_server", lambda name, cfg, **kw: [])
+        monkeypatch.setattr("moor_cli.mcp_config._probe_single_server", lambda name, cfg, **kw: [])
         assert cmd_mcp_test(_make_args(name="ink")) == 0
 
         def failing_probe(name, cfg, **kw):
             raise RuntimeError("Server returned an error response")
 
-        monkeypatch.setattr("hermes_cli.mcp_config._probe_single_server", failing_probe)
+        monkeypatch.setattr("moor_cli.mcp_config._probe_single_server", failing_probe)
         assert cmd_mcp_test(_make_args(name="ink")) == 1
         assert cmd_mcp_test(_make_args(name="doesnotexist")) == 3
         assert "not found in config" in capsys.readouterr().out
 
     def test_cli_dispatcher_forwards_test_exit_code(self, tmp_path, monkeypatch):
-        """``hermes mcp test`` reaches ``main()`` with the handler's code (the dispatcher used to drop it)."""
+        """``moor mcp test`` reaches ``main()`` with the handler's code (the dispatcher used to drop it)."""
         _seed_config(tmp_path, {"ink": {"url": "https://mcp.ml.ink/mcp"}})
-        from hermes_cli.main import cmd_mcp
+        from moor_cli.main import cmd_mcp
 
         def failing_probe(name, cfg, **kw):
             raise RuntimeError("boom")
 
-        monkeypatch.setattr("hermes_cli.mcp_config._probe_single_server", failing_probe)
+        monkeypatch.setattr("moor_cli.mcp_config._probe_single_server", failing_probe)
         assert cmd_mcp(_make_args(name="ink", mcp_action="test")) == 1
         assert cmd_mcp(_make_args(name="doesnotexist", mcp_action="test")) == 3
         assert cmd_mcp(_make_args(mcp_action="list")) is None
@@ -312,7 +312,7 @@ class TestMcpTest:
     def test_probe_uses_configured_connect_timeout(self, monkeypatch):
         """OAuth-capable probes must not hard-code a short 30s timeout."""
         import asyncio
-        from hermes_cli import mcp_config
+        from moor_cli import mcp_config
         from tools import mcp_tool_discovery as _mcp_discovery
         from tools import mcp_tool_lifecycle as _mcp_lifecycle
         from tools import mcp_tool_loop as _mcp_loop
@@ -536,12 +536,12 @@ class TestProbeEnvResolution:
         assert seen["config"]["headers"]["Authorization"] == "Bearer jwt-token-xyz"
 
     def test_probe_propagates_explicit_connect_timeout_to_config(self, monkeypatch):
-        """An explicit `connect_timeout=` override (e.g. `hermes mcp login`'s 315s, extended so a
+        """An explicit `connect_timeout=` override (e.g. `moor mcp login`'s 315s, extended so a
         user has time to finish an OAuth browser flow) must reach `config["connect_timeout"]` —
         that's what tools/mcp_tool_transport.py::_negotiate_session bounds session.initialize()
         with. Left stale at its unrelated 60s default, the still-pending OAuth callback wait gets
         cancelled mid-flow well before the caller's intended deadline."""
-        import hermes_cli.mcp_config as mc
+        import moor_cli.mcp_config as mc
 
         seen = {}
 
@@ -842,8 +842,8 @@ class TestMcpLogin:
             (token_dir / "tv.json").write_text('{"access_token": "fresh"}', encoding="utf-8")
             return [("a", "d")]
 
-        monkeypatch.setattr("hermes_cli.mcp_config._probe_single_server", mock_probe)
-        from hermes_cli.mcp_config import cmd_mcp_login
+        monkeypatch.setattr("moor_cli.mcp_config._probe_single_server", mock_probe)
+        from moor_cli.mcp_config import cmd_mcp_login
 
         cmd_mcp_login(_make_args(name="tv"))
 

@@ -10,7 +10,7 @@ import venv
 
 import pytest
 
-from hermes_cli import update_completion
+from moor_cli import update_completion
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def transition(tmp_path):
     root.mkdir()
     home = tmp_path / "home"
     home.mkdir()
-    package = root / "hermes_cli"
+    package = root / "moor_cli"
     package.mkdir()
     (package / "__init__.py").write_text("")
     pm_package = root / "pm"
@@ -37,7 +37,7 @@ def transition(tmp_path):
     old = git("rev-parse", "HEAD")
     # Deliberately incompatible: a cached OLD_API-only PM cannot prepare this tree.
     (root / "pm/__init__.py").write_text(
-        "from hermes_cli.probe import event\n"
+        "from moor_cli.probe import event\n"
         "def sync_venv(*, explicit, project_root, evict_incompatible_plugins):\n"
         "    assert explicit and evict_incompatible_plugins\n"
         "    event('prepare')\n"
@@ -50,7 +50,7 @@ def transition(tmp_path):
         "    assert data['update_id'] == update_id\n"
     )
     (root / "pm/client.py").write_text(
-        "from hermes_cli.probe import event\n"
+        "from moor_cli.probe import event\n"
         "ensure_tools_for_sync = lambda: event('tools')\n"
     )
     (package / "probe.py").write_text(
@@ -69,29 +69,29 @@ def transition(tmp_path):
         f"project_python = lambda root: Path({str(selected_python)!r})\n"
         "activation_environment = lambda root: {**os.environ, 'PYTHONPATH': str(root)}\n"
         "def activate_dependencies(root):\n"
-        "    from hermes_cli.probe import event\n"
+        "    from moor_cli.probe import event\n"
         "    event('activate')\n"
     )
-    (root / "hermes_constants.py").write_text("")
+    (root / "moor_constants.py").write_text("")
     (package / "venv_sync.py").write_text(
-        "from hermes_cli.probe import event\n"
+        "from moor_cli.probe import event\n"
         "publish_launchers = lambda root: event('launchers')\n"
         "refuse_foreign_owned_venv = lambda root: None\n"
         "from pathlib import Path\n"
         "import os\n"
         "def arm_completion(root):\n"
-        "    path = Path(os.environ['HERMES_HOME']) / 'completion-pending'\n"
+        "    path = Path(os.environ['MOOR_HOME']) / 'completion-pending'\n"
         "    path.write_text('owed')\n"
         "    return path\n"
         "def clear_completion(root):\n"
-        "    (Path(os.environ['HERMES_HOME']) / 'completion-pending').unlink()\n"
+        "    (Path(os.environ['MOOR_HOME']) / 'completion-pending').unlink()\n"
     )
     (package / "source_build.py").write_text(
-        "from hermes_cli.probe import event\n"
+        "from moor_cli.probe import event\n"
         "def build_update_products(root, *, desktop): event('build', desktop=desktop)\n"
     )
     (package / "source_stamp.py").write_text(
-        "from hermes_cli.probe import event\n"
+        "from moor_cli.probe import event\n"
         "write_source_stamp = lambda root: event('stamp')\n"
     )
     # The shared completion tail is part of the NEW tree the child runs from.
@@ -103,14 +103,14 @@ def transition(tmp_path):
         "from types import SimpleNamespace\nRuntimeRecord = UpdatePlan = SimpleNamespace\n"
     )
     (package / "update_cmd_maint.py").write_text(
-        "from hermes_cli.probe import event\n"
+        "from moor_cli.probe import event\n"
         "def _run_post_update_maintenance(**kwargs):\n"
-        "    from hermes_cli.update_cmd_config import _LAST_SIBLING_SNAPSHOTS\n"
+        "    from moor_cli.update_cmd_config import _LAST_SIBLING_SNAPSHOTS\n"
         "    event('maintenance', snapshots=_LAST_SIBLING_SNAPSHOTS, **kwargs)\n"
         "    return True\n"
     )
     (package / "update_cmd.py").write_text(
-        "from hermes_cli.probe import event\n"
+        "from moor_cli.probe import event\n"
         "_invalidate_update_cache = lambda: event('cache')\n"
         "_sweep_bytecode_after_update = lambda branch: event('bytecode')\n"
         "_write_fleet_restart_pending_marker = lambda **kw: event('pending')\n"
@@ -127,7 +127,7 @@ def transition(tmp_path):
         "        token['resume_needed'] = False\n"
         "        event('emergency_resume')\n"
         "def _verify_fleet_after_update(out, **kw):\n"
-        "    from hermes_cli.update_receipt import finalize_pending_update_receipt\n"
+        "    from moor_cli.update_receipt import finalize_pending_update_receipt\n"
         "    event('verify')\n"
         "    finalize_pending_update_receipt(0, 'verified')\n"
     )
@@ -139,7 +139,7 @@ def transition(tmp_path):
         "    r = _current.get()\n"
         "    if r is None: return\n"
         "    r.data.update(exit_code=code, outcome='success' if code == 0 else 'failed', finished_at='now')\n"
-        "    path = pathlib.Path(os.environ['HERMES_HOME']) / 'logs/update_receipts'\n"
+        "    path = pathlib.Path(os.environ['MOOR_HOME']) / 'logs/update_receipts'\n"
         "    path.mkdir(parents=True, exist_ok=True)\n"
         "    path = path / ('update_test_' + r.correlation_id + '.json')\n"
         "    path.write_text(json.dumps(r.data, ensure_ascii=False), encoding=r.data.get('encoding', 'utf-8'))\n"
@@ -163,14 +163,14 @@ def transition(tmp_path):
 
 @pytest.mark.parametrize("bom_boundary", [None, "request", "receipt"])
 def test_old_process_new_git_tree_completes_in_fresh_python(transition, tmp_path, bom_boundary):
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, git, old, new, request = transition
     request["pre_update_version"] = "日本 café"
     if bom_boundary == "receipt":
         request["receipt"]["encoding"] = "utf-8-sig"
     # Copy executable code, not its text shape: the process exercises the real transport.
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
     git("add", ".")
     git("-c", "commit.gpgsign=false", "commit", "-m", "completion entrypoint")
     new = git("rev-parse", "HEAD")
@@ -189,7 +189,7 @@ def test_old_process_new_git_tree_completes_in_fresh_python(transition, tmp_path
     )
     result = subprocess.run(
         [sys.executable, "-c", driver, update_completion.__file__, new, json.dumps(request)],
-        cwd=root, env={**os.environ, "PYTHONPATH": str(root), "HERMES_HOME": request["home"]},
+        cwd=root, env={**os.environ, "PYTHONPATH": str(root), "MOOR_HOME": request["home"]},
         capture_output=True, text=True, timeout=30,
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -214,11 +214,11 @@ def test_old_process_new_git_tree_completes_in_fresh_python(transition, tmp_path
 @pytest.mark.parametrize("code", [0, 23])
 def test_missing_child_result_fails_boundary_receipt_and_releases_lock(transition, monkeypatch, code):
     from types import SimpleNamespace
-    from hermes_cli import main, update_cmd, update_receipt, update_lock
+    from moor_cli import main, update_cmd, update_receipt, update_lock
 
     root, git, old, new, request = transition
-    (root / "hermes_cli/update_completion.py").write_text(f"import os\nos._exit({code})\n")
-    monkeypatch.setenv("HERMES_HOME", request["home"])
+    (root / "moor_cli/update_completion.py").write_text(f"import os\nos._exit({code})\n")
+    monkeypatch.setenv("MOOR_HOME", request["home"])
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
     monkeypatch.setattr(main, "_install_hangup_protection", lambda **kw: None)
     monkeypatch.setattr(main, "_finalize_update_output", lambda state: None)
@@ -247,17 +247,17 @@ def test_missing_child_result_fails_boundary_receipt_and_releases_lock(transitio
 def test_interrupt_after_child_success_demotes_gateway_marker_at_boundary(transition, monkeypatch, cleanup_failure):
     import io
     from types import SimpleNamespace
-    from hermes_cli import main, update_cmd, update_lock, update_receipt
+    from moor_cli import main, update_cmd, update_lock, update_receipt
 
     root, git, old, new, request = transition
     marker = Path(request["home"]) / ".update_exit_code"
-    (root / "hermes_cli/update_completion.py").write_text(
+    (root / "moor_cli/update_completion.py").write_text(
         "import os, pathlib, time\n"
-        "(pathlib.Path(os.environ['HERMES_HOME']) / '.update_exit_code').write_text('0\\n')\n"
+        "(pathlib.Path(os.environ['MOOR_HOME']) / '.update_exit_code').write_text('0\\n')\n"
         "print('SUCCESS_PUBLISHED', flush=True)\n"
         "time.sleep(30)\n"
     )
-    monkeypatch.setenv("HERMES_HOME", request["home"])
+    monkeypatch.setenv("MOOR_HOME", request["home"])
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
     monkeypatch.setattr(main, "_install_hangup_protection", lambda **kw: None)
     monkeypatch.setattr(main, "_finalize_update_output", lambda state: None)
@@ -331,11 +331,11 @@ def test_interrupt_after_child_success_demotes_gateway_marker_at_boundary(transi
 
 @pytest.mark.platforms("posix")
 def test_killed_selected_python_returns_signal_exit_status(transition):
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, git, old, new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
-    (root / "hermes_cli/source_build.py").write_text(
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
+    (root / "moor_cli/source_build.py").write_text(
         "import os, signal\n"
         "def build_update_products(*a, **kw): os.kill(os.getpid(), signal.SIGKILL)\n"
     )
@@ -345,11 +345,11 @@ def test_killed_selected_python_returns_signal_exit_status(transition):
 
 
 def test_failed_build_preserves_exit_status_without_maintenance(transition):
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, git, old, new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
-    (root / "hermes_cli/source_build.py").write_text(
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
+    (root / "moor_cli/source_build.py").write_text(
         "import subprocess\n"
         "def build_update_products(*a, **kw): raise subprocess.CalledProcessError(23, ['builder'])\n"
     )
@@ -365,16 +365,16 @@ def test_failed_build_preserves_exit_status_without_maintenance(transition):
 
 def test_prepare_failure_preserves_correlated_pm_receipt(transition, monkeypatch):
     from types import SimpleNamespace
-    from hermes_cli import main, update_cmd, update_completion, update_receipt
+    from moor_cli import main, update_cmd, update_completion, update_receipt
 
     root, git, old, new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
     (root / "pm/__init__.py").write_text(
         "def sync_venv(**kw): raise RuntimeError('dependency refused')\n"
     )
     with (root / "pm/receipt.py").open("a") as stream:
         stream.write("last_for_update = lambda update_id: {'update_id': update_id, 'outcome': 'refused', 'refusal': {'reason': 'dependency refused'}}\n")
-    monkeypatch.setenv("HERMES_HOME", request["home"])
+    monkeypatch.setenv("MOOR_HOME", request["home"])
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
     monkeypatch.setattr(main, "_install_hangup_protection", lambda **kw: None)
     monkeypatch.setattr(main, "_finalize_update_output", lambda state: None)
@@ -395,10 +395,10 @@ def test_prepare_failure_preserves_correlated_pm_receipt(transition, monkeypatch
 
 
 def test_bootstrap_does_not_initialize_old_site_packages(transition, tmp_path, monkeypatch):
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, git, old, new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
     obsolete = tmp_path / "obsolete-python"
     venv.EnvBuilder(with_pip=False).create(obsolete)
     site = obsolete / ("Lib/site-packages" if os.name == "nt" else
@@ -415,10 +415,10 @@ def test_bootstrap_does_not_initialize_old_site_packages(transition, tmp_path, m
 def test_progress_is_forwarded_before_held_stage_is_released(transition, monkeypatch, stage):
     import io
     import threading
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, git, old, new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
     release = root / "release"
     released = root / "released"
     held_body = (
@@ -431,7 +431,7 @@ def test_progress_is_forwarded_before_held_stage_is_released(transition, monkeyp
     )
     module, definition = (
         ("pm/__init__.py", "def sync_venv(**kw):\n") if stage == "prepare" else
-        ("hermes_cli/source_build.py", "def build_update_products(*a, **kw):\n")
+        ("moor_cli/source_build.py", "def build_update_products(*a, **kw):\n")
     )
     (root / module).write_text("import time\nfrom pathlib import Path\n" + definition + held_body)
     observed = threading.Event()
@@ -474,12 +474,12 @@ def test_interactive_configuration_keeps_terminal_input(transition):
     import select
     import signal
     import time
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, git, old, new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
-    (root / "hermes_cli/update_cmd_maint.py").write_text(
-        "import sys\nfrom hermes_cli.probe import event\n"
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
+    (root / "moor_cli/update_cmd_maint.py").write_text(
+        "import sys\nfrom moor_cli.probe import event\n"
         "def _run_post_update_maintenance(**kw):\n"
         "    assert sys.stdin.isatty() and sys.stdout.isatty()\n"
         "    event('answer', value=input('CONFIG? '))\n"
@@ -514,10 +514,10 @@ def test_interrupt_reaps_completion_descendants_before_return(transition, monkey
     import io
     import psutil
     import time
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, git, old, new, request = transition
-    (root / "hermes_cli/update_completion.py").write_text(
+    (root / "moor_cli/update_completion.py").write_text(
         "import subprocess, sys, time\n"
         "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(600)'])\n"
         "print('READY ' + str(child.pid), flush=True)\n"
@@ -555,9 +555,9 @@ def test_interrupt_reaps_completion_descendants_before_return(transition, monkey
 def test_taskkill_failure_still_reaps_child_and_preserves_interrupt(tmp_path, monkeypatch, failure):
     """Only native Windows exercises taskkill dispatch and retained-handle kill."""
     import io
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
-    package = tmp_path / "hermes_cli"
+    package = tmp_path / "moor_cli"
     package.mkdir()
     (package / "update_completion.py").write_text(
         "import time\nprint('READY', flush=True)\ntime.sleep(60)\n"
@@ -624,12 +624,12 @@ def test_taskkill_failure_still_reaps_child_and_preserves_interrupt(tmp_path, mo
 @pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig"])
 @pytest.mark.parametrize("correlated", [False, True])
 def test_only_correlated_terminal_receipt_can_acknowledge_success(transition, encoding, correlated):
-    from hermes_cli.update_completion import run_completion
+    from moor_cli.update_completion import run_completion
 
     root, git, old, new, request = transition
     receipt = {"update_id": request["receipt"]["update_id"] if correlated else "wrong",
                "outcome": "success", "finished_at": "now", "detail": "日本 café"}
-    (root / "hermes_cli/update_completion.py").write_text(
+    (root / "moor_cli/update_completion.py").write_text(
         "import json, pathlib, sys\n"
         "request = json.loads(pathlib.Path(sys.argv[1]).read_text())\n"
         "pathlib.Path(sys.argv[2]).write_text(json.dumps(dict(\n"

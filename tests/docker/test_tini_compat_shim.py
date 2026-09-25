@@ -9,7 +9,7 @@ import subprocess
 
 
 def test_legacy_tini_entrypoint_boots(built_image: str) -> None:
-    """``--entrypoint /usr/bin/tini <image> -g -- --help`` must run hermes.
+    """``--entrypoint /usr/bin/tini <image> -g -- --help`` must run moor.
 
     Regression for #34192 / #66679: orchestration templates (e.g.
     Hostinger's 'Moor WebUI' catalog, NAS compose projects that keep

@@ -31,7 +31,7 @@ from moor_cli.profile_distribution import (
     _looks_like_git_url,
     _parse_semver,
     _stage_source,
-    check_hermes_requires,
+    check_moor_requires,
     describe_distribution,
     install_distribution,
     plan_install,
@@ -238,7 +238,7 @@ class TestLooksLikeGitUrl:
                 )
             )
 
-        monkeypatch.setattr("hermes_cli.profile_distribution._git_clone", clone_local)
+        monkeypatch.setattr("moor_cli.profile_distribution._git_clone", clone_local)
 
         workdir = tmp_path / "work"
         workdir.mkdir()
@@ -403,10 +403,10 @@ class TestInstall:
             plan_install(str(bogus), tmp_path / "work", override_name="x")
 
 
-    def test_install_enforces_hermes_requires(self, profile_env, monkeypatch):
-        # Pin current Hermes version to something well below the requirement
+    def test_install_enforces_moor_requires(self, profile_env, monkeypatch):
+        # Pin current Moor version to something well below the requirement
         monkeypatch.setattr(
-            "hermes_cli.version_info.get_version_info",
+            "moor_cli.version_info.get_version_info",
             lambda: SimpleNamespace(base_version="0.1.0"),
         )
 

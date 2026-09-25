@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import type { RosterRow } from './types'
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { useStore } = await import('@nanostores/react')
   const { onGatewayEvent } = await import('../../contrib/events')
 
@@ -40,7 +40,7 @@ vi.mock('./i18n', () => ({
 }))
 vi.mock('./screen-open', () => ({ openBotScreen: vi.fn() }))
 
-import { host } from '@hermes/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 
 // Exercise the real event bus in this integration test, not a copied dispatcher.
 // eslint-disable-next-line no-restricted-imports
@@ -58,7 +58,7 @@ const botB: RosterRow = { ...botA, connectionId: 'host-b' }
 
 const status: DisplayStatus = {
   profile: 'default',
-  profile_key: '/home/hermes/.hermes',
+  profile_key: '/home/moor/.moor',
   supported: true,
   installed: true,
   missing: [],

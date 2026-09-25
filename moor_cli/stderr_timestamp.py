@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import BinaryIO, Sequence, TextIO
 
 EXTERNAL_SUPERVISOR_FLAG = "--external-supervisor"
-_LAUNCHD_LABEL_ENV = "HERMES_LAUNCHD_LABEL"
+_LAUNCHD_LABEL_ENV = "MOOR_LAUNCHD_LABEL"
 # gateway.restart.GATEWAY_FATAL_CONFIG_EXIT_CODE. This wrapper is a launcher boot
 # file: it runs from a source slice and stays stdlib-only.
 _GATEWAY_FATAL_CONFIG_EXIT_CODE = 78
@@ -54,7 +54,7 @@ def _install_signal_forwarders(proc: subprocess.Popen[bytes]) -> dict[int, objec
 
     previous: dict[int, object] = {}
     # SIGUSR1 is the gateway's drain-aware restart request. launchd owns THIS wrapper's PID,
-    # so `hermes update` signals us, not the gateway; an unforwarded SIGUSR1 kills the wrapper
+    # so `moor update` signals us, not the gateway; an unforwarded SIGUSR1 kills the wrapper
     # (Python's default action), launchd tears the group down with SIGTERM and applies its
     # ~60 s crash back-off per sibling profile (#101426). SIGUSR2 is the gateway's
     # faulthandler stack-dump request (gateway/run_startup.py); unforwarded it terminates
@@ -96,13 +96,13 @@ def _child_launchd_label_env(environ: Mapping[str, str] | None = None) -> dict[s
     interactive shell has none, the grandchild sees ``XPC_SERVICE_NAME=0``). Re-exporting the
     label lets the gateway resolve its job without it (the stop-drain cap reading the live
     ``ExitTimeOut``, the exit-75 restart route, the control-socket supervisor declaration — all
-    via ``gateway.restart.launchd_job_label``). Only ``ai.hermes.*`` labels are exported;
+    via ``gateway.restart.launchd_job_label``). Only ``ai.moor.*`` labels are exported;
     app-coalition labels are meaningless as a job identity.
     """
     env = os.environ if environ is None else environ
     for variable in ("XPC_SERVICE_NAME", _LAUNCHD_LABEL_ENV):
         label = str(env.get(variable, "") or "").strip()
-        if label.startswith("ai.hermes"):
+        if label.startswith("ai.moor"):
             return {_LAUNCHD_LABEL_ENV: label}
     return {}
 
@@ -132,7 +132,7 @@ def _child_returncode_for_supervisor(command: Sequence[str], returncode: int) ->
     """
     if returncode < 0:
         return 128 + abs(returncode)
-    if returncode == _GATEWAY_FATAL_CONFIG_EXIT_CODE and _is_hermes_gateway_run_argv(command):
+    if returncode == _GATEWAY_FATAL_CONFIG_EXIT_CODE and _is_moor_gateway_run_argv(command):
         return 0
     return returncode
 

@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 # The installers run this file directly under an isolated interpreter, which
-# leaves the checkout off sys.path. Same idiom as hermes_cli/_launchers.py.
+# leaves the checkout off sys.path. Same idiom as moor_cli/_launchers.py.
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -42,9 +42,9 @@ def complete_source_checkout(
     Returns the SQLite runtime verdict: a positive unsafe-runtime probe withholds
     success here exactly as it does at the end of an update.
     """
-    from hermes_cli.source_build import build_update_products
-    from hermes_cli.update_cmd_maint import _run_post_update_maintenance
-    from hermes_cli.venv_sync import publish_launchers
+    from moor_cli.source_build import build_update_products
+    from moor_cli.update_cmd_maint import _run_post_update_maintenance
+    from moor_cli.venv_sync import publish_launchers
 
     root = Path(root)
     publish_launchers(root)
@@ -60,7 +60,7 @@ def complete_source_checkout(
         completion_message=completion_message,
     )
     if complete:
-        from hermes_cli.source_stamp import write_source_stamp
+        from moor_cli.source_stamp import write_source_stamp
 
         try:
             write_source_stamp(root)
@@ -92,8 +92,8 @@ def main(argv: list[str] | None = None) -> int:
                              "same launchers/products/maintenance with update wording.")
     args = parser.parse_args([argument for argument in argv if argument != _PREPARED])
     root = args.source.resolve()
-    if not (root / "hermes_cli/source_completion.py").is_file():
-        print(f"✗ {root} is not a Hermes source checkout", file=sys.stderr)
+    if not (root / "moor_cli/source_completion.py").is_file():
+        print(f"✗ {root} is not a Moor source checkout", file=sys.stderr)
         return 1
 
     if prepared:
@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         activate_dependencies(root)
         if args.finish_update:
             # A source update that never reached its own completion -- a
-            # pre-handoff release cannot flip during `hermes update`, so its
+            # pre-handoff release cannot flip during `moor update`, so its
             # update ends with the tree at HEAD and nothing built -- lands here
             # on the next ordinary startup. Same tail as an install, so the two
             # states cannot drift apart.

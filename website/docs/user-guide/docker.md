@@ -56,7 +56,7 @@ docker run -it --rm \
 This drops you into the setup wizard, which will prompt you for your API keys and write them to `~/.moor/.env`. You only need to do this once. It is highly recommended to set up a chat system for the gateway to work with at this point.
 
 :::tip
-Inside the container, run `hermes setup --portal` once — the refresh token persists in the mounted `~/.hermes` volume. See [Nous Portal](../integrations/nous-portal.md).
+Inside the container, run `moor setup --portal` once — the refresh token persists in the mounted `~/.moor` volume. See [Moor Portal](../integrations/moor-portal.md).
 :::
 
 ## Running in gateway mode
@@ -464,16 +464,16 @@ services:
     restart: unless-stopped
     command: gateway run
     volumes:
-      - ~/.hermes:/opt/data
-      - /run/user/${HERMES_UID}/pulse:/run/user/${HERMES_UID}/pulse
+      - ~/.moor:/opt/data
+      - /run/user/${MOOR_UID}/pulse:/run/user/${MOOR_UID}/pulse
       # no-tmp: ok — path inside the container
       - ~/.config/pulse/cookie:/tmp/pulse-cookie:ro
       - ./asound.conf:/etc/asound.conf:ro
     environment:
-      - HERMES_UID=${HERMES_UID}
-      - HERMES_GID=${HERMES_GID}
-      - XDG_RUNTIME_DIR=/run/user/${HERMES_UID}
-      - PULSE_SERVER=unix:/run/user/${HERMES_UID}/pulse/native
+      - MOOR_UID=${MOOR_UID}
+      - MOOR_GID=${MOOR_GID}
+      - XDG_RUNTIME_DIR=/run/user/${MOOR_UID}
+      - PULSE_SERVER=unix:/run/user/${MOOR_UID}/pulse/native
       # no-tmp: ok — path inside the container
       - PULSE_COOKIE=/tmp/pulse-cookie
 ```
@@ -521,18 +521,18 @@ The image uses Debian 13.4 and includes:
 
 
 - A Python 3.14 environment synchronized from the committed `uv.lock`, followed
-  by a no-dependency editable install of Hermes.
+  by a no-dependency editable install of Moor.
 - The curated extras `all`, `messaging`, `otlp`, `anthropic`, `bedrock`,
   `azure-identity`, and `matrix`. This is not `--all-extras`.
 - Node.js 26 and npm from the digest-pinned Node source image.
-- PM-pinned uv, full Chromium, FFmpeg, and ripgrep in `/opt/hermes/tools`.
+- PM-pinned uv, full Chromium, FFmpeg, and ripgrep in `/opt/moor/tools`.
 - System Git, OpenSSH, Docker CLI, and Chromium shared libraries.
 - Prebuilt TUI/dashboard assets and baked Photon sidecar dependencies.
 - s6-overlay for supervision and zombie-process cleanup.
 
 Chromium is staged through PM, not `npx playwright install`. The build records
-its resolved executable in `/etc/hermes/agent-browser-executable-path`.
-`PLAYWRIGHT_BROWSERS_PATH` names `/opt/hermes/tools`, outside the data mount.
+its resolved executable in `/etc/moor/agent-browser-executable-path`.
+`PLAYWRIGHT_BROWSERS_PATH` names `/opt/moor/tools`, outside the data mount.
 
 Every image, including the unsuffixed (non-`-desktop`) tags, carries the full
 Chromium build rather than Playwright's lighter headless shell: one pinned,
@@ -543,17 +543,17 @@ shell earlier images shipped.
 Opt-in backend SDKs (Edge TTS, Firecrawl, Exa, platform adapters, plugin
 dependencies) install on first use into PM dependency generations under
 `/opt/data/installs`, so they survive container recreation and image updates.
-The image's own `/opt/hermes/.venv` is never modified. On each boot the
+The image's own `/opt/moor/.venv` is never modified. On each boot the
 container re-resolves the recorded selection against the new image's lock
 before services start; if that fails (for example offline), it boots the
 image's own environment and keeps the recorded extras for the next boot or
 install. Set `security.allow_lazy_installs: false` to refuse on-demand
 installs. The old `lazy-packages` overlay is not used.
 
-Image provenance lives at `/etc/hermes/image-provenance.json`, outside both the
-source and data mounts. The build stamp lives at `/opt/hermes/install-stamp.json`.
+Image provenance lives at `/etc/moor/image-provenance.json`, outside both the
+source and data mounts. The build stamp lives at `/opt/moor/install-stamp.json`.
 A local build without a supplied stamp reports an unknown revision rather than
-inventing a commit. `hermes update` refuses image-owned code changes; replace
+inventing a commit. `moor update` refuses image-owned code changes; replace
 the image to update the application.
 
 The container's `ENTRYPOINT` is a small dispatcher (`docker/entrypoint-dispatch.sh`). When the container owns PID 1 (normal Docker / Podman), it exec's s6-overlay's `/init` and you get the full supervision tree described below. When a platform wraps the image entrypoint under its own PID-1 init (Fly.io Machines, `docker run --init`, some Nomad/Kubernetes setups), `/init` would abort with `s6-overlay-suexec: fatal: can only run as pid 1` — so the dispatcher instead runs the stage2 bootstrap directly and exec's the main wrapper without s6. On that fallback path the requested command still runs, but supervised services (dashboard, per-profile gateways) are unavailable.
@@ -595,7 +595,7 @@ services:
 
 ### `docker exec` automatically drops to the `moor` user
 
-`docker exec hermes <cmd>` defaults to running as root inside the container, but the image ships a thin shim at `/opt/hermes/bin/hermes` (earliest on PATH) that detects root callers and transparently re-execs through `s6-setuidgid hermes`. So `docker exec hermes hermes login`, `docker exec hermes hermes profile create …`, `docker exec hermes hermes setup`, etc. all write files owned by UID 10000 — i.e. readable by the supervised gateway — with no extra `--user` flag needed. Non-root callers (the supervised processes themselves, `docker exec --user hermes`, kanban subagents inside the container) hit a short-circuit that exec's the venv binary directly, so there's no overhead on the hot paths.
+`docker exec moor <cmd>` defaults to running as root inside the container, but the image ships a thin shim at `/opt/moor/bin/moor` (earliest on PATH) that detects root callers and transparently re-execs through `s6-setuidgid moor`. So `docker exec moor moor login`, `docker exec moor moor profile create …`, `docker exec moor moor setup`, etc. all write files owned by UID 10000 — i.e. readable by the supervised gateway — with no extra `--user` flag needed. Non-root callers (the supervised processes themselves, `docker exec --user moor`, kanban subagents inside the container) hit a short-circuit that exec's the venv binary directly, so there's no overhead on the hot paths.
 
 If you specifically need a `docker exec` that retains root semantics (diagnostic sessions, inspecting root-only state, files outside `/opt/data` that root happens to own), opt out per invocation:
 
@@ -734,7 +734,7 @@ From inside the Moor container, the sidecar is reachable at `http://my-tool:<por
 
 ### Broadly useful tools — open an issue or pull request
 
-If a tool is likely to be useful to most Moor Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [moor-agent repository](https://github.com/NousResearch/hermes-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
+If a tool is likely to be useful to most Moor Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [moor-agent repository](https://github.com/thisismamad-n/Moor) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
 
 ## Connecting to local inference servers (vLLM, Ollama, etc.)
 
@@ -937,7 +937,7 @@ docker restart moor
 ### Checking container health
 
 ```sh
-docker logs --tail 50 hermes          # Recent logs
+docker logs --tail 50 moor          # Recent logs
 docker run -it --rm nousresearch/hermes-agent:latest --version   # Verify version
-docker stats hermes                    # Resource usage
+docker stats moor                    # Resource usage
 ```

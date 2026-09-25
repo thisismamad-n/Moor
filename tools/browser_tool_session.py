@@ -25,7 +25,7 @@ from tools import browser_tool_real_profile as _real_profile
 from tools import browser_tool_snapshot as _snapshot
 
 _DOCKER_PULL = "docker pull ghcr.io/nousresearch/hermes-agent:latest"
-_CHROMIUM_INSTALL = "hermes pm install chromium (system libraries: npx playwright install-deps chromium)"
+_CHROMIUM_INSTALL = "moor pm install chromium (system libraries: npx playwright install-deps chromium)"
 _CHROMIUM_MISSING_DOCKER_HINT = ("Chromium browser is missing. You're running in Docker — pull the latest image "
                                  f"to get the bundled Chromium: {_DOCKER_PULL}")
 _CHROMIUM_MISSING_HINT = f"Chromium browser is missing. Install it with: {_CHROMIUM_INSTALL}"
@@ -162,7 +162,7 @@ def _agent_browser_command_env(socket_dir: str) -> Dict[str, str]:
     env = _bt._build_browser_env()
     env["PATH"] = _install._merge_browser_path(env.get("PATH", ""))
     env = env_for("agent-browser", base_env=env)
-    from hermes_cli.browser_runtime import chromium_executable
+    from moor_cli.browser_runtime import chromium_executable
 
     executable = chromium_executable()
     if executable:
@@ -180,7 +180,7 @@ def _daemon_idle_timeout_seconds() -> int:
     """The daemon's self-termination idle timer. The bot's headed Chromium on the Bot Desktop screen is
     shared with a human who may take the lease to log in: the agent is idle by definition then, so the
     daemon's own timer must not decide (it cannot see the lease); the lease-aware Python janitor owns that
-    browser's lifetime, and a crashed hermes leaves it to the orphan reaper (#110064)."""
+    browser's lifetime, and a crashed moor leaves it to the orphan reaper (#110064)."""
     if _cloud._is_headed_mode():
         from tools.bot_desktop.runtime import published_env
         if published_env().get("DISPLAY"):
@@ -686,7 +686,7 @@ def run_fenced_pair(session_info: Dict[str, Any], fn: Callable[[], "tuple[str, D
 
 def _shares_bot_desktop_browser(session_info: Dict[str, Any]) -> bool:
     """Decided by provenance, not transport: every LOCAL session (plain ``--session``, real-profile CDP
-    attach, Lightpanda) is a browser Hermes launched with this profile's Bot Desktop DISPLAY, so it is the
+    attach, Lightpanda) is a browser Moor launched with this profile's Bot Desktop DISPLAY, so it is the
     screen a human who took over is typing into. Cloud / user-supplied CDP sessions are another browser.
     A human lease with the screen already gone (dead Xvnc) still fences — computer_use does the same."""
     if not (session_info.get("features") or {}).get("local"):

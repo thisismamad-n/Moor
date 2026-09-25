@@ -31,13 +31,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENTRYPOINT="$(basename "$0")"
 # The minimal entrypoint is an alias, but its existing data and app identity stay separate.
 if [ "$ENTRYPOINT" = dev-minimal-sandbox.sh ]; then
-  DEFAULT_DIR=.hermes-minimal-sandbox
-  APP_PREFIX=HermesMinimalSandbox
-  TEMP_PREFIX=hermes-minimal-sandbox
+  DEFAULT_DIR=.moor-minimal-sandbox
+  APP_PREFIX=MoorMinimalSandbox
+  TEMP_PREFIX=moor-minimal-sandbox
 else
-  DEFAULT_DIR=.hermes-sandbox
-  APP_PREFIX=HermesSandbox
-  TEMP_PREFIX=hermes-sandbox
+  DEFAULT_DIR=.moor-sandbox
+  APP_PREFIX=MoorSandbox
+  TEMP_PREFIX=moor-sandbox
 fi
 
 print_help() {
@@ -58,13 +58,13 @@ Options:
   -h, --help      Show this help message.
 
 Environment:
-  HERMES_DEV_SANDBOX_NAME  Override the app name (default prefix: $APP_PREFIX)
-  HERMES_DEV_SANDBOX_DIR   Override the persistent dir name (default: $DEFAULT_DIR)
+  MOOR_DEV_SANDBOX_NAME  Override the app name (default prefix: $APP_PREFIX)
+  MOOR_DEV_SANDBOX_DIR   Override the persistent dir name (default: $DEFAULT_DIR)
 
 Examples:
-  $ENTRYPOINT hermes desktop
-  $ENTRYPOINT --persistent hermes desktop
-  $ENTRYPOINT --from ~/.hermes hermes desktop
+  $ENTRYPOINT moor desktop
+  $ENTRYPOINT --persistent moor desktop
+  $ENTRYPOINT --from ~/.moor moor desktop
   $ENTRYPOINT -- npm run dev
 EOF
 }
@@ -128,7 +128,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 
-SANDBOX_DIR_NAME="${HERMES_DEV_SANDBOX_DIR:-$DEFAULT_DIR}"
+SANDBOX_DIR_NAME="${MOOR_DEV_SANDBOX_DIR:-$DEFAULT_DIR}"
 GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$SCRIPT_DIR/..")"
 GIT_ROOT="$(cd "$GIT_ROOT" && pwd)"
 PERSISTENT_SANDBOX_ROOT="$GIT_ROOT/$SANDBOX_DIR_NAME"

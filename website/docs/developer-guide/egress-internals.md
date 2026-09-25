@@ -305,9 +305,9 @@ scripts/run_tests.sh tests/agent/test_iron_proxy.py tests/moor_cli/test_iron_pro
 # Live E2E (real binary, real curl, real CONNECT tunnel)
 MOOR_RUN_E2E=1 scripts/run_tests.sh tests/agent/test_iron_proxy_e2e.py
 
-# Live PTY smoke against `hermes egress`
-HERMES_HOME=$HOME/.hermes/cache/scratch/hermes-egress-test python3 -m hermes_cli.main egress --help
-HERMES_HOME=$HOME/.hermes/cache/scratch/hermes-egress-test python3 -m hermes_cli.main egress setup --help
+# Live PTY smoke against `moor egress`
+MOOR_HOME=$HOME/.moor/cache/scratch/moor-egress-test python3 -m moor_cli.main egress --help
+MOOR_HOME=$HOME/.moor/cache/scratch/moor-egress-test python3 -m moor_cli.main egress setup --help
 ```
 
 The CLI uses argparse, so `--help` is a good first probe for "did my new flag register correctly".

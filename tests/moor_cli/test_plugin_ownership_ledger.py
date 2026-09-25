@@ -8,7 +8,7 @@ from threading import Event
 from time import monotonic, sleep
 from types import MethodType
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 
 def _write_plugin(moor_home: Path) -> None:

@@ -8,17 +8,17 @@
 
 # moor_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
 try:
-    import hermes_bootstrap  # noqa: F401
-except ModuleNotFoundError as exc:  # partial `hermes update` left the bootstrap unregistered
-    if exc.name != "hermes_bootstrap":
+    import moor_bootstrap  # noqa: F401
+except ModuleNotFoundError as exc:  # partial `moor update` left the bootstrap unregistered
+    if exc.name != "moor_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import sys
 
-# `hermes-agent` runs this module without hermes_cli.main, which repairs a `hermes update` killed
+# `moor-agent` runs this module without moor_cli.main, which repairs a `moor update` killed
 # while git wrote the new tree; do it here, before importing anything else from the checkout.
-if "hermes_cli.main" not in sys.modules:
-    from hermes_cli import _early_recovery
+if "moor_cli.main" not in sys.modules:
+    from moor_cli import _early_recovery
 
     if _early_recovery.restore_interrupted_pull():
         _early_recovery.relaunch_after_restore()
@@ -53,15 +53,15 @@ def _launch_cwd_for_session(source: str) -> Optional[str]:
         return None
 
 
-# Sources that label the human conversation an interactive UI transport hosts. A finite ``hermes chat -q`` /
-# one-shot child spawned from such a session inherits HERMES_SESSION_SOURCE (the terminal tool bridges the
+# Sources that label the human conversation an interactive UI transport hosts. A finite ``moor chat -q`` /
+# one-shot child spawned from such a session inherits MOOR_SESSION_SOURCE (the terminal tool bridges the
 # session env into child processes) but is NOT that conversation: labelling it ``tui``/``desktop`` lists it
-# in the TUI/WebUI pickers as a resumable chat and lets ``hermes -c`` in the TUI continue it (#112550).
+# in the TUI/WebUI pickers as a resumable chat and lets ``moor -c`` in the TUI continue it (#112550).
 # Automation sources (kanban, tool, cron, a2a, ...) are inherited on purpose.
 _UI_TRANSPORT_SOURCES = frozenset({"tui", "desktop"})
 
-# Finite non-interactive CLI runs (``hermes chat -q``/``--oneshot``, ``hermes -z``) get their own source so human
-# pickers hide them without title/cwd heuristics; ``hermes -c`` still treats them as CLI history.
+# Finite non-interactive CLI runs (``moor chat -q``/``--oneshot``, ``moor -z``) get their own source so human
+# pickers hide them without title/cwd heuristics; ``moor -c`` still treats them as CLI history.
 ONESHOT_SOURCE = "oneshot"
 CLI_FAMILY_SOURCES = frozenset({"cli", ONESHOT_SOURCE})
 
@@ -71,9 +71,9 @@ def _session_source_for_agent(platform: Optional[str]) -> str:
         from gateway.session_context import get_session_env
     except Exception:
         get_session_env = os.environ.get
-    source = str(get_session_env("HERMES_SESSION_SOURCE", "") or "").strip()
-    single_query = get_session_env("HERMES_SINGLE_QUERY_SESSION", "") == "1"
-    explicit = get_session_env("HERMES_SESSION_SOURCE_EXPLICIT", "") == "1"
+    source = str(get_session_env("MOOR_SESSION_SOURCE", "") or "").strip()
+    single_query = get_session_env("MOOR_SINGLE_QUERY_SESSION", "") == "1"
+    explicit = get_session_env("MOOR_SESSION_SOURCE_EXPLICIT", "") == "1"
     if single_query and not explicit and source in _UI_TRANSPORT_SOURCES:
         source = ""
     if single_query and not source and (platform or "cli") == "cli":
@@ -685,7 +685,7 @@ class AIAgent(
         # family and have no ``responses`` attribute, so neither primary routing nor GPT-5
         # fallback activation may upgrade them. Keyed on the profile's auth_type: every
         # external-process provider, not one vendor's names.
-        from hermes_cli.runtime_provider_backends import _is_external_process_provider
+        from moor_cli.runtime_provider_backends import _is_external_process_provider
         if _is_external_process_provider(normalized_provider):
             return False
         if normalized_provider == "copilot":
@@ -1353,7 +1353,7 @@ class AIAgent(
             # would pin those frames via its traceback, so that path leaves the flag for the
             # next completed batch (agent/tool_executor.py, #70684).
             self._trim_after_tool_batch = False
-            from hermes_cli.mem_trim import trim_memory
+            from moor_cli.mem_trim import trim_memory
             trim_memory(reason="large tool result")
 
     def _dispatch_delegate_task(self, function_args: dict) -> str:
@@ -1534,7 +1534,7 @@ def main(
 
     # One TLS authority: trust the OS store before any outbound call (bare
     # requests/urllib included) resolves a CA bundle — see agent/ssl_verify.py.
-    # The `hermes` CLI does this in hermes_cli.main; this console script
+    # The `moor` CLI does this in moor_cli.main; this console script
     # bypasses it. Never raises.
     from agent.ssl_verify import install_truststore
 

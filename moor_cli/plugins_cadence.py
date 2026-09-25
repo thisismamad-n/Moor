@@ -23,11 +23,11 @@ _DEFAULT_INTERVAL_HOURS = 24
 
 def _marker_path() -> Path:
     """The last-run marker, resolved per call (tests monkeypatch
-    get_hermes_home). Derivation only — NO mkdir: a due-check or any
+    get_moor_home). Derivation only — NO mkdir: a due-check or any
     read path must not create user state."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    return get_hermes_home() / _MARKERS_DIR / "last-run"
+    return get_moor_home() / _MARKERS_DIR / "last-run"
 
 
 def _markers_dir() -> Path:
@@ -65,7 +65,7 @@ def auto_apply_enabled(config_get: Callable = None) -> bool:
 
 def _default_config_get(section: str, key: str):
     try:
-        from hermes_cli.config import cfg_get, load_config_readonly
+        from moor_cli.config import cfg_get, load_config_readonly
 
         return cfg_get(load_config_readonly(), section, key, default=None)
     except Exception:
@@ -166,15 +166,15 @@ def _run_check_locked(
     if updates:
         names = ", ".join(r.name for r in updates)
         log.info(
-            "plugin updates available: %s — run `hermes plugins check-updates` "
-            "and `hermes plugins update <name>`",
+            "plugin updates available: %s — run `moor plugins check-updates` "
+            "and `moor plugins update <name>`",
             names,
         )
     if needs_fixing:
         names = ", ".join(r.name for r in needs_fixing)
         log.warning(
             "plugin update_url mismatches need attention: %s — run "
-            "`hermes plugins trust-update-url <name>` after review",
+            "`moor plugins trust-update-url <name>` after review",
             names,
         )
 
@@ -215,9 +215,9 @@ def maybe_run_gateway_check(
 
     Fills in the REAL seams ``run_scheduled_check`` leaves injectable:
     the same read-only ``plugins_updates.run_checks`` the manual
-    ``hermes plugins check-updates`` uses (urllib feed fetch, git
+    ``moor plugins check-updates`` uses (urllib feed fetch, git
     ls-remote, PyPI latest), the real plugins dir, and the manual
-    ``hermes plugins update <name>`` flow as the opt-in apply path —
+    ``moor plugins update <name>`` flow as the opt-in apply path —
     auto-apply rides the identical security/consent/scan pipeline.
 
     Returns the check results, or None when not due / disabled. Due-gated
@@ -225,19 +225,19 @@ def maybe_run_gateway_check(
     costs one warning and a stamped marker — never an apply.
     """
     if plugins_dir is None:
-        from hermes_cli import plugins_cmd
+        from moor_cli import plugins_cmd
 
         plugins_dir = plugins_cmd._plugins_dir()
     if run_checks_fn is None:
         # ONE shared network-default implementation — plugins_updates
         # owns default_fetch / default_ls_remote / _default_pypi_latest;
-        # the manual `hermes plugins check-updates` passes the same
+        # the manual `moor plugins check-updates` passes the same
         # defaults. No boilerplate re-derivation here.
-        from hermes_cli.plugins_updates import run_checks
+        from moor_cli.plugins_updates import run_checks
 
         run_checks_fn = run_checks
     if apply_updates_fn is None:
-        from hermes_cli import plugins_cmd
+        from moor_cli import plugins_cmd
 
         from functools import partial
         apply_updates_fn = partial(plugins_cmd.cmd_update, interactive=False)

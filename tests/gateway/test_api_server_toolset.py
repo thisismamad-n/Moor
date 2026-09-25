@@ -1,4 +1,4 @@
-"""Tests for hermes-api-server toolset and API server tool availability."""
+"""Tests for moor-api-server toolset and API server tool availability."""
 
 class TestApiServerPlatformConfig:
 

@@ -16,10 +16,10 @@ model-visible tools array by three bridge tools, and the model loads each
 specific tool's schema on demand.
 
 :::info Built-in tools and explicit deferral
-Hermes keeps its working-set core tools (`terminal`, `read_file`, `write_file`,
+Moor keeps its working-set core tools (`terminal`, `read_file`, `write_file`,
 `patch`, `search_files`, `todo`, `memory`, `browser_*`, `web_search`,
 `web_extract`, `clarify`, `execute_code`, `delegate_task`, and the rest of
-`_HERMES_CORE_TOOLS`) loaded directly by default. Cold, event-triggered built-ins
+`_MOOR_CORE_TOOLS`) loaded directly by default. Cold, event-triggered built-ins
 may be deferred when they are named in `tools.tool_search.defer`; the shipped
 curated list covers tools such as `computer_use`, `session_search`, and selected
 desktop helpers. MCP and non-core plugin tools remain eligible automatically.
@@ -117,7 +117,7 @@ tools:
 ```
 
 The default `defer` list also includes the selected desktop GUI helpers listed
-in `hermes_cli/config_defaults.py`. It is the single source of truth for the
+in `moor_cli/config_defaults.py`. It is the single source of truth for the
 shipped curated set; the runtime fallback uses the same value.
 
 | Key | Default | Meaning |

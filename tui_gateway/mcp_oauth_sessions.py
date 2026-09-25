@@ -41,7 +41,7 @@ def register_flow(flow, *, httpd=None) -> Dict[str, Any]:
     rec = {
         "session_id": flow.flow_id,
         "server_name": flow.server_name,
-        "hermes_home": flow.hermes_home,
+        "moor_home": flow.moor_home,
         "flow": flow,
         "httpd": httpd,
         "created_at": time.time(),
@@ -81,12 +81,12 @@ def start_flow(
 
     session_id = secrets.token_urlsafe(24)
     flow = DashboardOAuthFlow(
-        flow_id=session_id, server_name=server_name, profile=None, hermes_home=hermes_home,
+        flow_id=session_id, server_name=server_name, profile=None, moor_home=moor_home,
         redirect_uri="", reconnect_live=reconnect_live)
     httpd = choose_callback_receiver(flow, cfg, client_redirect_uri)
     rec = register_flow(flow, httpd=httpd)
     threading.Thread(
-        target=run_worker, args=(hermes_home, server_name, dict(cfg), reconnect_live),
+        target=run_worker, args=(moor_home, server_name, dict(cfg), reconnect_live),
         kwargs={"flow": flow, "on_done": lambda: _shutdown_listener(rec)},
         daemon=True, name=f"mcp-oauth-{server_name}").start()
     try:

@@ -18,7 +18,7 @@ from rich import box as rich_box
 from rich.panel import Panel
 from typing import Optional
 
-from hermes_cli.cli_agent_setup_mixin import _retire_agent
+from moor_cli.cli_agent_setup_mixin import _retire_agent
 
 
 class CLIChatTurnMixin:
@@ -36,8 +36,8 @@ class CLIChatTurnMixin:
         from cli import logger
         try:
             from gateway.run import GatewayRunner
-            from hermes_cli.config_effective import load_user_config_effective
-            from hermes_cli.fallback_config import get_fallback_chain
+            from moor_cli.config_effective import load_user_config_effective
+            from moor_cli.fallback_config import get_fallback_chain
             self._fallback_model = get_fallback_chain(load_user_config_effective(fail_closed=True))
         except Exception as e:
             logger.debug("fallback chain sync skipped (keeping current chain): %s", e)
@@ -398,7 +398,7 @@ class CLIChatTurnMixin:
 
     def _chat_monitor_agent_thread(self, turn, agent_thread):
         """Poll the interrupt queue while the agent thread runs; returns the interrupting message (or None)."""
-        from cli import _cprint, _hermes_home, logger
+        from cli import _cprint, _moor_home, logger
         # Ambient "thinking" blips in voice mode; skipped per-blip while TTS speaks, the mic
         # records or a barge capture is live. voice.thinking_sound gates it (default on).
         if self._voice_mode:

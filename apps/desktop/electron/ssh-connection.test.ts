@@ -577,7 +577,7 @@ test('open() records what the failed ssh did in the desktop log (#80836)', async
       args.includes('check') ? { code: 255, stderr: 'no control path' } : { signal: 'SIGTERM', stderr: '' }
     )
 
-    const controlDir = path.join(os.tmpdir(), `hermes-ssh-connect-log-${process.pid}-${Date.now()}`)
+    const controlDir = path.join(os.tmpdir(), `moor-ssh-connect-log-${process.pid}-${Date.now()}`)
 
     const conn = new SshConnection(
       { host: 'box', user: 'me' },

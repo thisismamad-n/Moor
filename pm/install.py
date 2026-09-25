@@ -127,24 +127,24 @@ def _identity(lockfile: Lockfile, name: str, target: str):
 def lazy_installs_allowed() -> bool:
     """Policy: may pm install things on demand right now?
 
-    HERMES_DISABLE_LAZY_INSTALLS is an internal bridge var set by the
+    MOOR_DISABLE_LAZY_INSTALLS is an internal bridge var set by the
     official Docker image and the hermetic test harness. The user-facing
     setting is security.allow_lazy_installs in config.yaml; a config
-    system that fails to load counts as ALLOWED only when hermes_cli is
+    system that fails to load counts as ALLOWED only when moor_cli is
     genuinely absent (bootstrap) — config errors fail closed.
     """
     import os
 
-    if os.environ.get("HERMES_DISABLE_LAZY_INSTALLS", "").strip().lower() in (
+    if os.environ.get("MOOR_DISABLE_LAZY_INSTALLS", "").strip().lower() in (
         "1",
         "true",
         "yes",
     ):
         return False
     try:
-        from hermes_cli.config import cfg_get, load_config_readonly, require_readable_config_before_write
+        from moor_cli.config import cfg_get, load_config_readonly, require_readable_config_before_write
     except ModuleNotFoundError as exc:
-        return exc.name in {"hermes_cli", "hermes_cli.config"}
+        return exc.name in {"moor_cli", "moor_cli.config"}
     except ImportError:
         return False
     try:
@@ -178,7 +178,7 @@ def _refuse_lazy(name: str, what: str) -> InstallError:
     error = InstallError(
         name,
         f"not installed and lazy installs are disabled: {what}",
-        "enable security.allow_lazy_installs or run `hermes pm install`",
+        "enable security.allow_lazy_installs or run `moor pm install`",
     )
     receipt.record_refusal("lazy-install", str(error))
     return error
@@ -326,7 +326,7 @@ def _install(
     version = lockfile.version(package.name)
     if version is None:
         raise InstallError(
-            package.name, "not in the lockfile", "add it with `hermes pm lock --bump`"
+            package.name, "not in the lockfile", "add it with `moor pm lock --bump`"
         )
 
     reason = package.missing_reason(target)
@@ -356,7 +356,7 @@ def _install(
             raise InstallError(
                 package.name,
                 f"no artifact for {target} in the lockfile",
-                "run `hermes pm lock --bump` for this package",
+                "run `moor pm lock --bump` for this package",
             )
         with store.scratch() as scratch:
             staged = scratch / "tree"
@@ -443,8 +443,8 @@ def ensure(
     download_progress: ProgressFn | None = None,
     _operation: _InstallOperation | None = None,
 ) -> Runner:
-    """``explicit`` marks a deliberate install command (`hermes pm
-    install`, `hermes pm bundle`) — those ARE the remedy the lazy-install
+    """``explicit`` marks a deliberate install command (`moor pm
+    install`, `moor pm bundle`) — those ARE the remedy the lazy-install
     policy names, so the policy does not apply to them.
 
     ``verify`` re-hashes an already-recorded entry and repairs it when the
@@ -596,7 +596,7 @@ def _feature_policy(extras: Optional[list[str]], *, repair: bool) -> tuple[list[
 def _venv_install_lock(*, patient: bool):
     """Hold the dependency lock, or refuse when an impatient caller would queue."""
     from pm import receipt
-    from hermes_cli.runtime_state import INSTALL_LOCK_TIMEOUT_SECONDS, runtime_lock
+    from moor_cli.runtime_state import INSTALL_LOCK_TIMEOUT_SECONDS, runtime_lock
 
     # Holding this lock means rebuilding the whole dependency environment, which takes tens of
     # seconds on a bundle. Only an install the user asked for may queue for it; an opportunistic
@@ -606,8 +606,8 @@ def _venv_install_lock(*, patient: bool):
         if not held:
             error = InstallError(
                 "venv",
-                f"another Hermes process is installing dependencies (waited {INSTALL_LOCK_TIMEOUT_SECONDS:.0f}s)",
-                "retry in a moment, or run `hermes pm install` to install explicitly",
+                f"another Moor process is installing dependencies (waited {INSTALL_LOCK_TIMEOUT_SECONDS:.0f}s)",
+                "retry in a moment, or run `moor pm install` to install explicitly",
             )
             receipt.record_refusal("install-busy", str(error))
             raise error
@@ -628,7 +628,7 @@ def _publication(plugins: PluginInput | None):
 def _publish_inactive(change) -> None:
     """A disabled plugin's code changes without touching the dependency environment."""
     from pm import receipt
-    from hermes_cli.runtime_state import finish_publication, recover_publication
+    from moor_cli.runtime_state import finish_publication, recover_publication
 
     try:
         change.publish(paths.repo_root())
@@ -659,7 +659,7 @@ def _commit_selection(package, facts: Facts, change, *, enabled: list[str], stam
                       current: bool, repair: bool, explicit: bool, skip_invalid_secondary: bool = False) -> None:
     """Build (unless current), publish the plugin change, then record the selection."""
     from pm import receipt
-    from hermes_cli.runtime_state import finish_publication, recover_publication
+    from moor_cli.runtime_state import finish_publication, recover_publication
 
     try:
         result = {} if current else (package.apply(enabled, explicit=explicit,
@@ -688,8 +688,8 @@ def sync_venv(extras: Optional[list[str]] = None, *, explicit: bool = False,
     the installed state (one ledger); no-op when the stamp already matches.
     ``repair`` restores the recorded dependency graph into a fresh generation,
     bypassing both that shortcut and config discovery. It cannot add features.
-    ``explicit`` marks a deliberate install command (`hermes pm install`,
-    `hermes update`) — those are the remedy the lazy-install policy points
+    ``explicit`` marks a deliberate install command (`moor pm install`,
+    `moor update`) — those are the remedy the lazy-install policy points
     at, so the policy does not apply to them. ``plugins`` names the one
     source of plugin members (see pm.plugin_inputs); None discovers them from config.
     ``evict_incompatible_plugins`` is the update's contract: a discovered plugin that
@@ -719,7 +719,7 @@ def sync_venv(extras: Optional[list[str]] = None, *, explicit: bool = False,
             raise ValueError("only an explicit sync of the discovered plugin selection may disable plugins")
         shipped, frozen = _feature_policy(extras, repair=repair)
         package = get_package("venv")
-        from hermes_cli.runtime_state import recover_publication
+        from moor_cli.runtime_state import recover_publication
         from pm.publication import StagedPlugin
         with _venv_install_lock(patient=explicit or repair):
             recover_publication(paths.repo_root())

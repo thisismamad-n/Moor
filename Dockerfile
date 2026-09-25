@@ -52,13 +52,13 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # The pm-pinned full Chromium lives in the managed tool store at
-# /opt/hermes/tools — outside the /opt/data volume mount, so the
+# /opt/moor/tools — outside the /opt/data volume mount, so the
 # build-time install survives the volume overlay at runtime. pm's
 # chromium package fact exports the same value (PLAYWRIGHT_BROWSERS_PATH
 # at the store root); the image ENV names the same directory so
 # Playwright and the browser tool resolve the pinned build even before pm
 # composes tool env.
-ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/tools
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/moor/tools
 
 # Install system dependencies in one layer, clear APT cache.
 # tini was previously PID 1 to reap orphaned zombie processes (MCP stdio
@@ -66,13 +66,13 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/tools
 # ran as PID 1. See #15012. Phase 2 of the s6-overlay supervision plan
 # replaces tini with s6-overlay's /init (PID 1 = s6-svscan), which reaps
 # zombies non-blockingly on SIGCHLD and additionally supervises the main
-# hermes process, the dashboard, and per-profile gateways.
+# moor process, the dashboard, and per-profile gateways.
 # The second package list is the shared libraries the pinned Chromium links
 # against. `npx playwright install --with-deps` used to apt-install them as
 # a side effect; pm stages the pinned browser instead (below), so the libs
 # must be declared here. The list is the `ldd ... | grep "not found"` set of
 # the pinned chrome binary in this base image, mapped to trixie package
-# names (see .hermes/plans/termux-removal-commit-spec.md).
+# names (see .moor/plans/termux-removal-commit-spec.md).
 RUN apt-get -o Acquire::Retries=3 update && \
     apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
     ca-certificates curl iputils-ping python3 python-is-python3 gcc g++ make cmake python3-dev python3-venv libffi-dev libolm-dev libatomic1 procps git openssh-client docker-cli xz-utils \
@@ -88,9 +88,9 @@ RUN apt-get -o Acquire::Retries=3 update && \
 # build, and cannot apt at run time either (unprivileged, no sudo). Only this
 # build step needs root —
 # Xvnc is a userspace X server, so the runtime user can drive it.
-#   docker build --build-arg HERMES_BOT_DESKTOP=1 .
-ARG HERMES_BOT_DESKTOP=0
-RUN if [ "$HERMES_BOT_DESKTOP" = "1" ]; then \
+#   docker build --build-arg MOOR_BOT_DESKTOP=1 .
+ARG MOOR_BOT_DESKTOP=0
+RUN if [ "$MOOR_BOT_DESKTOP" = "1" ]; then \
         apt-get -o Acquire::Retries=3 update && \
         DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
         tigervnc-standalone-server xfce4-panel xfwm4 xfdesktop4 xfce4-settings xfce4-terminal \
@@ -186,7 +186,7 @@ WORKDIR /opt/moor
 # stages the pinned uv + full Chromium (sha256-verified at
 # download — the same code path pm.sh/pm.ps1 and the desktop payload use)
 # into the image's own runtime dir, a self-contained store baked under
-# /opt/hermes, outside the /opt/data volume so it survives the overlay.
+# /opt/moor, outside the /opt/data volume so it survives the overlay.
 # PM alone resolves the pinned uv for dependency preparation; build consumers
 # receive Python environments, never an installer executable.
 #
@@ -194,19 +194,19 @@ WORKDIR /opt/moor
 # here rather than by `npx playwright install`,
 # which fetched whatever revision the npm-resolved playwright wanted,
 # unverified, and recorded no fact. The resolved browser binary path is
-# baked to /etc/hermes/agent-browser-executable-path for stage2-hook.sh:
+# baked to /etc/moor/agent-browser-executable-path for stage2-hook.sh:
 # the layout differs per arch (chrome-linux64/chrome on amd64,
 # chromium-linux-arm64/chromium on arm64), so it is resolved at build time
 # and never hunted at boot.
-ENV HERMES_RUNTIME_DIR=/opt/hermes/tools
+ENV MOOR_RUNTIME_DIR=/opt/moor/tools
 COPY pm/ pm/
-# pm's lazy imports resolve get_default_hermes_root()/project_venv_dir()
-# from hermes_constants (stdlib-only) at install time — a sealed-stage
+# pm's lazy imports resolve get_default_moor_root()/project_venv_dir()
+# from moor_constants (stdlib-only) at install time — a sealed-stage
 # `python3 -m pm.cli install` fails with "No module named
-# 'hermes_constants'" without it on the path. Copy the module next to pm.
-COPY hermes_constants.py hermes_constants.py
+# 'moor_constants'" without it on the path. Copy the module next to pm.
+COPY moor_constants.py moor_constants.py
 # PM imports the shared stdlib locking owner before deps exist.
-COPY hermes_cli/__init__.py hermes_cli/runtime_state.py hermes_cli/
+COPY moor_cli/__init__.py moor_cli/runtime_state.py moor_cli/
 COPY scripts/bundles/payload.py scripts/bundles/payload.py
 RUN set -eu; \
     python3 -c 'from pm import ensure; [ensure(name, explicit=True) for name in ("uv", "chromium", "npm", "ffmpeg", "ripgrep")]'; \
@@ -217,15 +217,15 @@ RUN set -eu; \
     browser_bin="$(python3 -c 'from pm import installed_package; print(installed_package("chromium").binary)')"; \
     test -n "$browser_bin"; \
     "$browser_bin" --version; \
-    mkdir -p /etc/hermes; \
-    printf '%s' "$browser_bin" > /etc/hermes/agent-browser-executable-path
+    mkdir -p /etc/moor; \
+    printf '%s' "$browser_bin" > /etc/moor/agent-browser-executable-path
 
 # PM is resident too: never borrow application libraries or create its worker
 # environment under /root (unreachable to the runtime UID).
-RUN python3 -c 'from pathlib import Path; from pm import stage_manager_runtime; from scripts.bundles.payload import seal_pm_runtime; root = Path("/opt/hermes"); python = Path("/usr/local/bin/python3").resolve(); stage_manager_runtime(python=python, destination=root / "pm-runtime", project=root / "pm"); seal_pm_runtime(root, python)'
+RUN python3 -c 'from pathlib import Path; from pm import stage_manager_runtime; from scripts.bundles.payload import seal_pm_runtime; root = Path("/opt/moor"); python = Path("/usr/local/bin/python3").resolve(); stage_manager_runtime(python=python, destination=root / "pm-runtime", project=root / "pm"); seal_pm_runtime(root, python)'
 
 # JS build helpers use the prepared interpreter without an installer parent.
-ENV HERMES_PYTHON=/usr/local/bin/python3
+ENV MOOR_PYTHON=/usr/local/bin/python3
 # The standalone interpreter records its builder's clang toolchain;
 # native extensions must use the compiler installed in this image.
 ENV CC=gcc CXX=g++
@@ -255,9 +255,9 @@ FROM runtime_base AS python_deps
 # so Docker users can use these providers without requiring runtime
 # lazy-install access to PyPI (often blocked in containerized envs).
 #
-# The [otlp] extra contains the SDK/exporter imported by Hermes when Gateway
+# The [otlp] extra contains the SDK/exporter imported by Moor when Gateway
 # Health export is enabled. Collector and observability-backend dependencies
-# remain external and are not part of the Hermes production image.
+# remain external and are not part of the Moor production image.
 #
 # The Matrix gateway's deps ([matrix] extra) are baked in because
 # python-olm (transitive via mautrix[encryption]) builds from source on
@@ -273,8 +273,8 @@ FROM runtime_base AS python_deps
 # Source binding is created after the source copy below.
 COPY pyproject.toml uv.lock ./
 RUN touch ./README.md
-RUN python3 -m pm.build_env --source /opt/hermes --python /usr/local/bin/python3 \
-    --out /opt/hermes/.venv --no-install-project --sealed \
+RUN python3 -m pm.build_env --source /opt/moor --python /usr/local/bin/python3 \
+    --out /opt/moor/.venv --no-install-project --sealed \
     --extra all --extra messaging --extra otlp --extra anthropic --extra bedrock \
     --extra azure-identity --extra matrix --extra google-chat
 
@@ -284,18 +284,18 @@ RUN python3 -m pm.build_env --source /opt/hermes --python /usr/local/bin/python3
 FROM python_deps AS icons
 COPY scripts/generate_icons.py scripts/
 COPY assets/ assets/
-RUN /opt/hermes/.venv/bin/python -I scripts/generate_icons.py --source /opt/hermes --out /tmp/hermes-icons
+RUN /opt/moor/.venv/bin/python -I scripts/generate_icons.py --source /opt/moor --out /tmp/moor-icons
 
 # Frontend dependencies never enter the runtime layers.
 FROM runtime_base AS frontend_build
 COPY package.json package-lock.json ./
 COPY web/package.json web/
 COPY ui-tui/package.json ui-tui/
-COPY ui-tui/packages/hermes-ink/ ui-tui/packages/hermes-ink/
+COPY ui-tui/packages/moor-ink/ ui-tui/packages/moor-ink/
 COPY apps/shared/ apps/shared/
 COPY scripts/build/node-deps.mjs scripts/build/node-deps.mjs
 ENV npm_config_install_links=false
-RUN node scripts/build/node-deps.mjs --source /opt/hermes --workspace ui-tui --workspace web
+RUN node scripts/build/node-deps.mjs --source /opt/moor --workspace ui-tui --workspace web
 
 COPY pyproject.toml uv.lock ./
 COPY web/ web/
@@ -303,15 +303,15 @@ COPY ui-tui/ ui-tui/
 COPY scripts/build/*.mjs scripts/build/
 COPY scripts/generate-icons.mjs scripts/generate_icons.py scripts/
 COPY assets/ assets/
-COPY --from=icons /tmp/hermes-icons /tmp/hermes-icons
-RUN node scripts/build/tui.mjs --source /opt/hermes --out /opt/products/tui && \
-    node scripts/build/web.mjs --source /opt/hermes --icons /tmp/hermes-icons --out /opt/products/web
+COPY --from=icons /tmp/moor-icons /tmp/moor-icons
+RUN node scripts/build/tui.mjs --source /opt/moor --out /opt/products/tui && \
+    node scripts/build/web.mjs --source /opt/moor --icons /tmp/moor-icons --out /opt/products/web
 
 FROM python_deps AS runtime
 # Standalone TypeScript linting is a runtime feature; Vite/esbuild are not.
-COPY --from=frontend_build /opt/hermes/node_modules/typescript /opt/hermes/node_modules/typescript
-RUN mkdir -p /opt/hermes/node_modules/.bin && \
-    ln -s ../typescript/bin/tsc /opt/hermes/node_modules/.bin/tsc
+COPY --from=frontend_build /opt/moor/node_modules/typescript /opt/moor/node_modules/typescript
+RUN mkdir -p /opt/moor/node_modules/.bin && \
+    ln -s ../typescript/bin/tsc /opt/moor/node_modules/.bin/tsc
 
 # ---------- Photon iMessage sidecar deps (baked, NS-606) ----------
 # The photon plugin's Node sidecar needs its own node_modules
@@ -330,16 +330,16 @@ RUN cd plugins/platforms/photon/sidecar && \
     npm cache clean --force
 
 # Shared product outputs are independent of application dependency assembly.
-COPY --from=frontend_build /opt/products/tui /opt/hermes/ui-tui
-COPY --from=frontend_build /opt/products/web /opt/hermes/hermes_cli/web_dist
+COPY --from=frontend_build /opt/products/tui /opt/moor/ui-tui
+COPY --from=frontend_build /opt/products/web /opt/moor/moor_cli/web_dist
 # ---------- Bot Screen X socket directory ----------
 # Xvnc would create this itself (/tmp is 1777); pre-creating it keeps ownership
-# deterministic when HERMES_UID is remapped between boots.
+# deterministic when MOOR_UID is remapped between boots.
 RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
 # XDG_RUNTIME_DIR (set below) sits under a predictable name in world-writable /tmp.
 # Shipping it root-owned means stage2 finds a directory it trusts and chowns it.
-RUN mkdir -p /tmp/hermes-runtime && chmod 0700 /tmp/hermes-runtime
+RUN mkdir -p /tmp/moor-runtime && chmod 0700 /tmp/moor-runtime
 
 # ---------- Source code ----------
 # .dockerignore excludes node_modules, so the installs above survive.
@@ -352,11 +352,11 @@ RUN mkdir -p /tmp/hermes-runtime && chmod 0700 /tmp/hermes-runtime
 COPY --link --chmod=a+rX,go-w . .
 
 # The shared assembler binds the prepared environment and frontend products.
-RUN /opt/hermes/.venv/bin/python -m docker.build_agent
+RUN /opt/moor/.venv/bin/python -m docker.build_agent
 
-# Wire the exec shim and install-method stamp.  Files under /opt/hermes are
+# Wire the exec shim and install-method stamp.  Files under /opt/moor are
 # already root-owned (COPY, dep assembly, npm install all run as root) and
-# read-only for the hermes user (go-w from the --chmod above).
+# read-only for the moor user (go-w from the --chmod above).
 
 USER root
 RUN mkdir -p /opt/moor/bin && \
@@ -377,10 +377,10 @@ RUN mkdir -p /opt/moor/bin && \
 # ---------- Image provenance + install stamp ----------
 # CI (.github/workflows/docker.yml) runs scripts/write_install_stamp.py
 # before `docker build`, so the bulk `COPY . .` above already placed a
-# full-provenance /opt/hermes/install-stamp.json next to the code.
+# full-provenance /opt/moor/install-stamp.json next to the code.
 # .dockerignore excludes .git, so the stamp is the only commit channel the
-# image carries: hermes_cli/version_info.py reads it at runtime (stamp
-# first, live git second, unknown third), and both `hermes dump` and
+# image carries: moor_cli/version_info.py reads it at runtime (stamp
+# first, live git second, unknown third), and both `moor dump` and
 # banner.get_git_banner_state() consume it through version_info.
 #
 # A local `docker build` without CI gets the minimal all-zero fallback
@@ -390,18 +390,18 @@ RUN mkdir -p /opt/moor/bin && \
 #
 # The versioned, non-secret provenance marker is the authoritative runtime
 # signal that this filesystem came from an immutable image.  It deliberately
-# lives outside both /opt/hermes (which operators sometimes bind-mount as a
-# checkout) and /opt/data (the mutable HERMES_HOME volume).  Its `revision`
+# lives outside both /opt/moor (which operators sometimes bind-mount as a
+# checkout) and /opt/data (the mutable MOOR_HOME volume).  Its `revision`
 # is read from the install stamp; the fallback stamp's all-zero commit maps
 # to null.
 RUN set -eu; \
-    if [ ! -f /opt/hermes/install-stamp.json ]; then \
+    if [ ! -f /opt/moor/install-stamp.json ]; then \
         printf '{"schemaVersion":2,"commit":"0000000000000000000000000000000000000000","distribution":"docker","source":"fallback","updateMechanism":"external"}\n' \
-            > /opt/hermes/install-stamp.json; \
+            > /opt/moor/install-stamp.json; \
     fi; \
-    python3 -c 'import json; from pathlib import Path; path = Path("/opt/hermes/install-stamp.json"); stamp = json.loads(path.read_text()); stamp["pmRuntime"] = "/opt/hermes/pm-runtime"; path.write_text(json.dumps(stamp) + "\n")'; \
-    mkdir -p /etc/hermes; \
-    python3 -c 'import json, pathlib, tomllib; project = tomllib.loads(pathlib.Path("/opt/hermes/pyproject.toml").read_text(encoding="utf-8"))["project"]; stamp = json.loads(pathlib.Path("/opt/hermes/install-stamp.json").read_text(encoding="utf-8")); commit = stamp.get("commit"); revision = commit if commit and set(commit) != {"0"} else None; marker = pathlib.Path("/etc/hermes/image-provenance.json"); marker.write_text(json.dumps({"schema": 1, "deployment_kind": "image", "manager": "docker", "image": "nousresearch/hermes-agent", "version": project["version"], "revision": revision}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"); marker.chmod(0o444)'
+    python3 -c 'import json; from pathlib import Path; path = Path("/opt/moor/install-stamp.json"); stamp = json.loads(path.read_text()); stamp["pmRuntime"] = "/opt/moor/pm-runtime"; path.write_text(json.dumps(stamp) + "\n")'; \
+    mkdir -p /etc/moor; \
+    python3 -c 'import json, pathlib, tomllib; project = tomllib.loads(pathlib.Path("/opt/moor/pyproject.toml").read_text(encoding="utf-8"))["project"]; stamp = json.loads(pathlib.Path("/opt/moor/install-stamp.json").read_text(encoding="utf-8")); commit = stamp.get("commit"); revision = commit if commit and set(commit) != {"0"} else None; marker = pathlib.Path("/etc/moor/image-provenance.json"); marker.write_text(json.dumps({"schema": 1, "deployment_kind": "image", "manager": "docker", "image": "nousresearch/hermes-agent", "version": project["version"], "revision": revision}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"); marker.chmod(0o444)'
 
 # ---------- s6-overlay service wiring ----------
 # Static services declared at build time: main-moor + dashboard.
@@ -444,11 +444,11 @@ ENV MOOR_WEB_DIST=/opt/moor/moor_cli/web_dist
 # embedded-chat (/api/pty) connections → ENOTEMPTY → the chat tab dies with a
 # 502 / "[session ended]". Pointing at the prebuilt bundle sidesteps the whole
 # check. (A separate launcher hardening is tracked independently.)
-ENV HERMES_TUI_DIR=/opt/hermes/ui-tui
-ENV HERMES_HOME=/opt/data
-ENV HERMES_WRITE_SAFE_ROOT=/opt/data
+ENV MOOR_TUI_DIR=/opt/moor/ui-tui
+ENV MOOR_HOME=/opt/data
+ENV MOOR_WRITE_SAFE_ROOT=/opt/data
 # Opt-in backend SDKs install on first use into PM dependency generations under
-# /opt/data/installs (the sealed /opt/hermes/.venv is never written); stage2
+# /opt/data/installs (the sealed /opt/moor/.venv is never written); stage2
 # re-resolves them against each new image. security.allow_lazy_installs: false
 # turns this off.
 
@@ -456,7 +456,7 @@ ENV HERMES_WRITE_SAFE_ROOT=/opt/data
 # to create /run/user/<uid>. The default fallback ($HOME/.cache) is the /opt/data
 # volume, which a host-side install may share — two instances would then contend
 # for one lock. Container-scoped instead; seeded 0700 by docker/stage2-hook.sh.
-ENV XDG_RUNTIME_DIR=/tmp/hermes-runtime
+ENV XDG_RUNTIME_DIR=/tmp/moor-runtime
 
 # `docker exec` privilege-drop shim. When operators run
 # `docker exec <c> moor ...` they default to root, and any file the
@@ -483,13 +483,13 @@ COPY --chmod=0755 docker/entrypoint-dispatch.sh /opt/moor/docker/entrypoint-disp
 # shim wins PATH resolution. The shim's last act is to exec the venv
 # binary by absolute path, so this PATH ordering is transparent to
 # every other consumer.
-ENV PATH="/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:${PATH}"
+ENV PATH="/opt/moor/bin:/opt/moor/.venv/bin:/opt/data/.local/bin:${PATH}"
 # PM's atomic writer creates private facts for source installs. In the
 # image these are shared, non-secret package metadata, read by UID 10000.
 # uv's environment locks are build-only and may be world-writable. Remove
 # them after all builds; never relax permissions on mutable PM/home state.
-RUN mkdir -p /opt/data && chmod 0644 /opt/hermes/tools/facts.json && \
-    rm -f /opt/hermes/.venv/.lock /opt/hermes/pm-runtime/.lock
+RUN mkdir -p /opt/data && chmod 0644 /opt/moor/tools/facts.json && \
+    rm -f /opt/moor/.venv/.lock /opt/moor/pm-runtime/.lock
 VOLUME [ "/opt/data" ]
 
 # The image ENTRYPOINT is a tiny dispatcher rather than `/init` directly.

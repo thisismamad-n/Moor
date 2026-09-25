@@ -180,7 +180,7 @@ class TestStdioReconfigureErrorHandling:
 
 
 @pytest.mark.parametrize("path", [
-    "hermes_cli/main.py", "run_agent.py", "acp_adapter/entry.py",
+    "moor_cli/main.py", "run_agent.py", "acp_adapter/entry.py",
     "gateway/run.py", "batch_runner.py", "cli.py",
 ])
 def test_entrypoint_executes_bootstrap_before_application_imports(tmp_path, path):
@@ -205,7 +205,7 @@ def guarded(name, globals=None, locals=None, fromlist=(), level=0):
         if name == '__future__':
             return real_import(name, globals, locals, fromlist, level)
         if not seen:
-            assert name == 'hermes_bootstrap', name
+            assert name == 'moor_bootstrap', name
             module = real_import(name, globals, locals, fromlist, level)
             assert module._pm_repair is True
             assert module._bootstrap_applied is (sys.platform == 'win32')
@@ -217,36 +217,36 @@ builtins.__import__ = guarded
 try:
     runpy.run_path(entry, run_name='__main__')
 except Boundary:
-    assert seen == ['hermes_bootstrap']
+    assert seen == ['moor_bootstrap']
     print('bootstrap-before-app')
 else:
     raise AssertionError('entrypoint never reached the application import boundary')
 """
     result = subprocess.run([sys.executable, "-I", "-S", "-c", program, str(root), str(entry)],
-                            cwd=tmp_path, env={**os.environ, "HERMES_HOME": str(tmp_path / "home")},
+                            cwd=tmp_path, env={**os.environ, "MOOR_HOME": str(tmp_path / "home")},
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "bootstrap-before-app"
 
 
-# "any": the OS lanes select only platforms-marked tests, and Windows is where hermes_cli's
+# "any": the OS lanes select only platforms-marked tests, and Windows is where moor_cli's
 # stdio repair fires on a cp1252 pipe.
 @pytest.mark.platforms("any")
 def test_library_imports_of_dual_use_entry_modules_stay_side_effect_free(tmp_path):
-    # The codex hermes-tools MCP server and the compute host are ``python -m`` entry points
+    # The codex moor-tools MCP server and the compute host are ``python -m`` entry points
     # that agent/gateway code and tests also import; there the bootstrap exported TMPDIR and
-    # HERMES_SCRATCH_DIR into every importer (gateway.relay's read-only routing included).
+    # MOOR_SCRATCH_DIR into every importer (gateway.relay's read-only routing included).
     code = textwrap.dedent("""
         import json, os, sys
         before = dict(os.environ)
         import agent.auxiliary_client, gateway.relay, tui_gateway.compute_host  # noqa: F401
         changed = sorted(k for k in before.keys() | os.environ.keys() if before.get(k) != os.environ.get(k))
-        print(json.dumps({"bootstrapped": "hermes_bootstrap" in sys.modules, "changed": changed}))
+        print(json.dumps({"bootstrapped": "moor_bootstrap" in sys.modules, "changed": changed}))
     """)
     repo = Path(__file__).resolve().parents[1]
     env = {k: os.environ[k] for k in ("PATH", "SYSTEMROOT", "WINDIR") if k in os.environ}
     env.update({"HOME": str(tmp_path), "USERPROFILE": str(tmp_path), "PYTHONPATH": str(repo),
-                "HERMES_HOME": str(tmp_path / "home"), "PYTHONDONTWRITEBYTECODE": "1"})
+                "MOOR_HOME": str(tmp_path / "home"), "PYTHONDONTWRITEBYTECODE": "1"})
     child = subprocess.run([sys.executable, "-c", code], cwd=str(tmp_path), env=env,
                            capture_output=True, text=True, timeout=120)
     assert child.returncode == 0, child.stderr
@@ -258,7 +258,7 @@ def test_pre_pm_editable_venv_reaches_pm_through_the_bootstrap(tmp_path):
 
     setuptools' flat-layout editable finder maps only the top-level names it saw at
     install time (no ``pm``) and never puts the checkout on ``sys.path``. The console
-    script imports ``hermes_cli`` first, then ``hermes_cli.main`` imports the bootstrap;
+    script imports ``moor_cli`` first, then ``moor_cli.main`` imports the bootstrap;
     both must load, and the bootstrap must reach ``pm``, or PM adoption never runs.
     """
     root = Path(__file__).resolve().parents[1]
@@ -268,34 +268,34 @@ from importlib.abc import MetaPathFinder
 root = sys.argv[1]
 class PrePMEditableFinder(MetaPathFinder):
     def find_spec(self, name, path=None, target=None):
-        if name == 'hermes_cli':
-            pkg = os.path.join(root, 'hermes_cli')
+        if name == 'moor_cli':
+            pkg = os.path.join(root, 'moor_cli')
             return importlib.util.spec_from_file_location(
                 name, os.path.join(pkg, '__init__.py'), submodule_search_locations=[pkg])
-        if name == 'hermes_bootstrap':
-            return importlib.util.spec_from_file_location(name, os.path.join(root, 'hermes_bootstrap.py'))
+        if name == 'moor_bootstrap':
+            return importlib.util.spec_from_file_location(name, os.path.join(root, 'moor_bootstrap.py'))
         return None
 sys.meta_path.append(PrePMEditableFinder())
-sys.argv = ['hermes', 'pm', 'repair']
-import hermes_cli
-import hermes_bootstrap
-assert hermes_bootstrap._pm_repair is True
+sys.argv = ['moor', 'pm', 'repair']
+import moor_cli
+import moor_bootstrap
+assert moor_bootstrap._pm_repair is True
 print('reached-pm')
 """
     result = subprocess.run([sys.executable, "-I", "-S", "-c", program, str(root)],
-                            cwd=tmp_path, env={**os.environ, "HERMES_HOME": str(tmp_path / "home")},
+                            cwd=tmp_path, env={**os.environ, "MOOR_HOME": str(tmp_path / "home")},
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "reached-pm"
 
 
 @pytest.mark.parametrize("path", [
-    "hermes_cli/main.py", "run_agent.py", "acp_adapter/entry.py",
+    "moor_cli/main.py", "run_agent.py", "acp_adapter/entry.py",
     "gateway/run.py", "batch_runner.py", "cli.py",
 ])
 @pytest.mark.parametrize("bootstrap,expected", [
     (None, "proceeded"),
-    ("import hermes_missing_dependency_probe\n", "raised hermes_missing_dependency_probe"),
+    ("import moor_missing_dependency_probe\n", "raised moor_missing_dependency_probe"),
 ])
 def test_entrypoint_tolerates_only_an_absent_bootstrap(tmp_path, path, bootstrap, expected):
     """The entry-point guard covers a bootstrap a partial update left unregistered.
@@ -309,7 +309,7 @@ def test_entrypoint_tolerates_only_an_absent_bootstrap(tmp_path, path, bootstrap
     fake_root = tmp_path / "root"
     fake_root.mkdir()
     if bootstrap is not None:
-        (fake_root / "hermes_bootstrap.py").write_text(bootstrap)
+        (fake_root / "moor_bootstrap.py").write_text(bootstrap)
     program = r"""
 import builtins, runpy, sys
 fake_root, entry = sys.argv[1:]
@@ -317,7 +317,7 @@ sys.path.insert(0, fake_root)
 real_import = builtins.__import__
 class Boundary(BaseException): pass
 def guarded(name, globals=None, locals=None, fromlist=(), level=0):
-    if globals and globals.get('__file__') == entry and name not in ('__future__', 'hermes_bootstrap'):
+    if globals and globals.get('__file__') == entry and name not in ('__future__', 'moor_bootstrap'):
         raise Boundary()
     return real_import(name, globals, locals, fromlist, level)
 builtins.__import__ = guarded
@@ -400,7 +400,7 @@ class TestHardenImportPath:
 
 
 class TestEnableWindowsVt:
-    """Hermes prints raw SGR codes; a conhost console renders them only with VT on."""
+    """Moor prints raw SGR codes; a conhost console renders them only with VT on."""
 
     @pytest.mark.platforms("windows")
     def test_turns_vt_on_for_a_console_that_has_it_off(self):
@@ -410,14 +410,14 @@ class TestEnableWindowsVt:
             import ctypes, msvcrt, sys
             from ctypes import wintypes
             sys.path.insert(0, sys.argv[1])
-            import hermes_bootstrap
+            import moor_bootstrap
             kernel32 = ctypes.WinDLL("kernel32")
             handle = msvcrt.get_osfhandle(sys.stdout.fileno())
             mode = wintypes.DWORD()
             if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
                 sys.exit(4)
             kernel32.SetConsoleMode(handle, mode.value & ~0x0004)
-            ok = hermes_bootstrap.enable_windows_vt()
+            ok = moor_bootstrap.enable_windows_vt()
             kernel32.GetConsoleMode(handle, ctypes.byref(mode))
             sys.exit(0 if ok and mode.value & 0x0004 else 3)
         """).strip()
@@ -433,12 +433,12 @@ class TestEnableWindowsVt:
 
     @pytest.mark.platforms("windows")
     def test_leaves_non_console_handles_and_colour_alone(self, tmp_path, monkeypatch):
-        # Redirected output must neither fail nor flip Hermes to NO_COLOR.
+        # Redirected output must neither fail nor flip Moor to NO_COLOR.
         monkeypatch.delenv("NO_COLOR", raising=False)
-        import hermes_bootstrap
+        import moor_bootstrap
 
         with open(tmp_path / "out.txt", "w", encoding="utf-8") as stream:
-            assert hermes_bootstrap.enable_windows_vt([stream]) is True
+            assert moor_bootstrap.enable_windows_vt([stream]) is True
         assert "NO_COLOR" not in os.environ
 
 
@@ -481,7 +481,7 @@ class TestHappyEyeballsSocketConnect:
         hb = _fresh_import()
         assert socket.create_connection.__module__ == hb.__name__
         # urllib3 keeps its own serial connect walker; it is patched once imported (lazily).
-        assert getattr(urllib3_connection.create_connection, "_hermes_happy_eyeballs", False)
+        assert getattr(urllib3_connection.create_connection, "_moor_happy_eyeballs", False)
         # Re-importing the bootstrap (or importing it after urllib3) never wraps the racer twice.
         racer = socket.create_connection
         _fresh_import()
@@ -489,10 +489,10 @@ class TestHappyEyeballsSocketConnect:
         # The bootstrap must not pay urllib3's import (~50 ms) on every process start: a fresh
         # interpreter gets the patch the moment urllib3 loads, not before.
         subprocess.run([sys.executable, "-c", textwrap.dedent("""
-            import sys, hermes_bootstrap
+            import sys, moor_bootstrap
             assert "urllib3" not in sys.modules, "bootstrap imported urllib3 eagerly"
             import urllib3.util.connection as c
-            assert c.create_connection._hermes_happy_eyeballs
+            assert c.create_connection._moor_happy_eyeballs
         """)], check=True, cwd=str(Path(hb.__file__).parent), timeout=60)
 
         listener = socket.socket()
@@ -581,7 +581,7 @@ class TestHappyEyeballsSocketConnect:
             raise RuntimeError("racer bug")
 
         for racer in (socket.create_connection, urllib3_connection.create_connection):
-            assert getattr(racer, "_hermes_happy_eyeballs", False)
+            assert getattr(racer, "_moor_happy_eyeballs", False)
             monkeypatch.setitem(racer.__globals__, "_happy_eyeballs_create_connection", boom)
             with pytest.raises(RuntimeError, match="racer bug"):
                 racer(("127.0.0.1", 1), 1.0)
@@ -598,7 +598,7 @@ class TestNeverFreeEnviron:
     def test_arrays_superseded_by_new_names_stay_intact(self):
         # Fresh interpreter: the test process's own environ history must not matter.
         subprocess.run([sys.executable, "-c", textwrap.dedent("""
-            import ctypes, os, hermes_bootstrap
+            import ctypes, os, moor_bootstrap
             environ = ctypes.c_void_p.in_dll(ctypes.CDLL(None), "environ")
             def snapshot(addr):
                 array, out = ctypes.cast(addr, ctypes.POINTER(ctypes.c_void_p)), []
@@ -608,24 +608,24 @@ class TestNeverFreeEnviron:
             seen, junk = {}, []
             for i in range(80):
                 seen.setdefault(environ.value, snapshot(environ.value))
-                os.environ[f"HERMES_ENVIRON_PROBE_{i}"] = "1"
+                os.environ[f"MOOR_ENVIRON_PROBE_{i}"] = "1"
                 junk.append(os.urandom(40))  # interleave heap chunks so a realloc must move
             assert len(seen) > 1, "environ never moved; the probe proves nothing"
             # Compare raw words only: dereferencing a freed slot would crash the probe itself.
             for addr, entries in seen.items():
                 words = ctypes.cast(addr, ctypes.POINTER(ctypes.c_void_p))
                 assert [words[i] for i in range(len(entries))] == entries, "a superseded environ array was freed"
-            assert os.environ["HERMES_ENVIRON_PROBE_79"] == "1"
+            assert os.environ["MOOR_ENVIRON_PROBE_79"] == "1"
         """)], check=True, cwd=str(Path(__file__).resolve().parents[1]), timeout=60)
 
     def test_concurrent_writers_lose_no_name_in_the_c_environ(self):
         # Unserialized writers each copied the live array; the later publish dropped the others' names.
         subprocess.run([sys.executable, "-c", textwrap.dedent("""
-            import ctypes, os, sys, threading, hermes_bootstrap
+            import ctypes, os, sys, threading, moor_bootstrap
             getenv = ctypes.CDLL(None).getenv
             getenv.restype, getenv.argtypes = ctypes.c_char_p, [ctypes.c_char_p]
             sys.setswitchinterval(1e-6)
-            batches = [[f"HERMES_ENVIRON_RACE_{t}_{i}" for i in range(200)] for t in range(8)]
+            batches = [[f"MOOR_ENVIRON_RACE_{t}_{i}" for i in range(200)] for t in range(8)]
             barrier = threading.Barrier(len(batches))
             def write(batch):
                 barrier.wait()
@@ -640,13 +640,13 @@ class TestNeverFreeEnviron:
     def test_set_del_churn_of_the_same_names_keeps_memory_bounded(self):
         # Kanban ticks, the spinner pause and _restore_env set and pop the same names forever.
         subprocess.run([sys.executable, "-c", textwrap.dedent("""
-            import os, tracemalloc, hermes_bootstrap
+            import os, tracemalloc, moor_bootstrap
             def churn(cycles):
                 for _ in range(cycles):
                     for k in range(4):
-                        os.environ[f"HERMES_ENVIRON_CHURN_{k}"] = "1"
+                        os.environ[f"MOOR_ENVIRON_CHURN_{k}"] = "1"
                     for k in range(4):
-                        del os.environ[f"HERMES_ENVIRON_CHURN_{k}"]
+                        del os.environ[f"MOOR_ENVIRON_CHURN_{k}"]
             churn(50)
             tracemalloc.start()
             before = tracemalloc.get_traced_memory()[0]

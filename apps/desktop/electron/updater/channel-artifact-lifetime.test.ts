@@ -20,7 +20,7 @@ afterEach(async (): Promise<void> => {
 })
 
 test('ordinary Windows preparation owns temporary bytes while a resumable download retains its durable file', async (): Promise<void> => {
-  const directory: string = await mkdtemp(path.join(os.tmpdir(), 'hermes-artifact-lifetime-'))
+  const directory: string = await mkdtemp(path.join(os.tmpdir(), 'moor-artifact-lifetime-'))
   directories.push(directory)
   const bytes: Buffer = Buffer.from('digest-bound download')
 
@@ -41,12 +41,12 @@ test('ordinary Windows preparation owns temporary bytes while a resumable downlo
   const identity = {
     token: 'a'.repeat(16),
     displayName: 'Preview',
-    appId: 'chat.nous.preview',
+    appId: 'chat.moor.preview',
     appNamePascal: 'Preview',
     artifactNamePascal: 'Preview',
     cliName: 'preview',
     windowsExecutableName: 'preview',
-    msixAppIdWithOrg: 'NousResearch.Preview'
+    msixAppIdWithOrg: 'Moor inc..Preview'
   }
 
   const target: ChannelTarget = {

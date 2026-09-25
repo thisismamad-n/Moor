@@ -6,13 +6,13 @@ import {
   JSON_RPC_METHOD_NOT_FOUND,
   JsonRpcGatewayError,
   reconnectBackoffDelayMs
-} from '@hermes/shared'
+} from '@moor/shared'
 import { useEffect, useRef } from 'react'
 
 import { createGatewayEventDedupe } from '@/app/gateway/gateway-event-dedupe'
 import { shouldApplyPostBootProgressError } from '@/components/boot-failure-reauth'
-import type { DesktopBootProgress, HermesConnection, HermesWindowState } from '@/global'
-import { HermesGateway } from '@/hermes'
+import type { DesktopBootProgress, MoorConnection, MoorWindowState } from '@/global'
+import { MoorGateway } from '@/moor'
 import { translateNow } from '@/i18n'
 import { desktopDefaultCwd } from '@/lib/desktop-fs'
 import {
@@ -220,9 +220,9 @@ export function useGatewayBoot({
     // chrome state into each descriptor at mint time, so a toggle that happens
     // AFTER the mint but BEFORE the renderer publishes it is newer than the
     // snapshot and would otherwise be lost until the next toggle (#108641).
-    let pendingWindowState: HermesWindowState | null = null
+    let pendingWindowState: MoorWindowState | null = null
 
-    const publish = (next: HermesConnection | null) => {
+    const publish = (next: MoorConnection | null) => {
       if (next && pendingWindowState) {
         next = { ...next, ...pendingWindowState }
         pendingWindowState = null
@@ -266,7 +266,7 @@ export function useGatewayBoot({
     // signals that fire around wake (power resume, network online, the window
     // becoming visible).
     let bootCompleted = false
-    // The other way a cold boot concludes. Main keeps startHermes() available
+    // The other way a cold boot concludes. Main keeps startMoor() available
     // after the renderer gave up, and every later getConnection() caller
     // re-enters it, replaying `backend.resolve` (running:true) then
     // `backend.remote` (error:null) onto a renderer whose boot is over. Without
@@ -638,7 +638,7 @@ export function useGatewayBoot({
     // session id against the wrong backend — the HUD then falls back to the
     // default profile's last session (#82285). The override wins over the
     // stored preference; absent, behavior is unchanged.
-    async function getWindowBackend(startup = false): Promise<HermesConnection> {
+    async function getWindowBackend(startup = false): Promise<MoorConnection> {
       const profile = windowProfileOverride()
       const peer = isPeerInstanceWindow()
 
@@ -658,7 +658,7 @@ export function useGatewayBoot({
     }
 
     async function adoptPrimaryProfile(
-      connection: HermesConnection,
+      connection: MoorConnection,
       shouldPublish: () => boolean = () => true
     ): Promise<boolean> {
       // The resolved descriptor reflects the explicit startup default. The
@@ -747,7 +747,7 @@ export function useGatewayBoot({
         const conn = await withTimeout(
           getWindowBackend(),
           BACKEND_BOOT_WAIT_TIMEOUT_MS,
-          'Timed out reconnecting to Hermes backend'
+          'Timed out reconnecting to Moor backend'
         )
 
         if (!ownsSwitch()) {
@@ -841,7 +841,7 @@ export function useGatewayBoot({
         return
       }
 
-      // Soft switch / post-boot startHermes re-emits progress — ignore so the
+      // Soft switch / post-boot startMoor re-emits progress — ignore so the
       // cold-boot CONNECTING overlay stays down. A boot that ended in failure
       // is concluded too: replaying its steps would take the recovery overlay
       // back down. Post-boot errors are gated:
@@ -1115,7 +1115,7 @@ export function useGatewayBoot({
         activeGateway()?.close()
 
         if (!(await ensureActiveGatewayOpen({ explicit: true }))) {
-          throw new Error('Hermes gateway is not connected')
+          throw new Error('Moor gateway is not connected')
         }
 
         return
@@ -1316,7 +1316,7 @@ export function useGatewayBoot({
         const conn = await withTimeout(
           getWindowBackend(true),
           BACKEND_BOOT_WAIT_TIMEOUT_MS,
-          'Timed out connecting to Hermes backend'
+          'Timed out connecting to Moor backend'
         )
 
         if (cancelled) {

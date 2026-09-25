@@ -140,7 +140,7 @@ def _watched_sqlite_sidecar_paths(db_path) -> Dict[str, str]:
     literal = (literal_base + "-wal", literal_base + "-shm")
     watched = {canonical_sqlite_path(path): path for path in literal}
     # /proc reports the kernel-resolved dentry, so the watched canonicals must also resolve
-    # symlinks -- with abspath alone a symlinked HERMES_HOME makes every deleted sidecar
+    # symlinks -- with abspath alone a symlinked MOOR_HOME makes every deleted sidecar
     # invisible to the scan. Both spellings are watched: the fully resolved path, which is
     # where current SQLite places -wal/-shm when the database file itself is a symlink, and
     # the realpath'd parent with the literal basename, which is where they land when SQLite

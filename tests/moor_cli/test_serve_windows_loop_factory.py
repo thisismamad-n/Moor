@@ -41,7 +41,7 @@ async def _noop():
 
 
 def test_proactor_factory_is_overridden_to_selector(monkeypatch):
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     captured = _capture_runner(monkeypatch)
     web_server._run_serve(_noop, _ProactorConfig(), "127.0.0.1", 0)
@@ -57,7 +57,7 @@ def test_proactor_factory_is_overridden_to_selector(monkeypatch):
 
 
 def test_selector_factory_passes_through(monkeypatch):
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     captured = _capture_runner(monkeypatch)
     web_server._run_serve(_noop, _SelectorConfig(), "127.0.0.1", 0)

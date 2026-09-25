@@ -110,7 +110,7 @@ background job (`process(action="kill", …)`) or an explicit PID
 (`taskkill /F /PID <pid>`, `kill <pid>`). Other image names (`taskkill /F /IM notepad.exe`)
 are unaffected. The guard is active under every generated launcher — systemd unit,
 launchd plist, s6 run script and the Windows Scheduled Task — via the
-`HERMES_SUPERVISED_CHILD` marker they export.
+`MOOR_SUPERVISED_CHILD` marker they export.
 
 On macOS, executed `launchctl submit` and `launchctl bootstrap` commands are
 restricted **regardless of the job label**. This is a conservative registration
@@ -189,7 +189,7 @@ When a dangerous command prompt appears, the user has a configurable amount of t
 
 An expired prompt cannot be reopened: the pending entry is discarded and the agent is told not to retry on its own within that turn. To run the operation after all, send a new message asking for it (for example "go ahead and run that now") — the agent issues a fresh tool call, which raises a fresh approval card, and a "once" approval applies only to that call. A timeout is not counted as a denial, so asking again is never penalized.
 
-Configure the timeout in `~/.hermes/config.yaml`:
+Configure the timeout in `~/.moor/config.yaml`:
 
 ```yaml
 approvals:
@@ -368,9 +368,9 @@ Project-local `.env`, `.env.local`, `.env.production` and `.envrc` files are **r
 
 Sensitive paths inside the safe root are still blocked — pointing `MOOR_WRITE_SAFE_ROOT` at `$HOME` does not allow writing `~/.ssh/id_rsa`.
 
-The `~` in the OS-credential rows means *every* home a write can land in, not just the process `HOME`: the OS user's real home, the profile home (`{HERMES_HOME}/home` under `TERMINAL_HOME_MODE=profile`, containers and spawned workers, where the process `HOME` is pinned), and named accounts (`~root/.ssh/authorized_keys`). An absolute path to the real home's `~/.aws/credentials` is denied even when the agent process runs with `HOME` pointed elsewhere.
+The `~` in the OS-credential rows means *every* home a write can land in, not just the process `HOME`: the OS user's real home, the profile home (`{MOOR_HOME}/home` under `TERMINAL_HOME_MODE=profile`, containers and spawned workers, where the process `HOME` is pinned), and named accounts (`~root/.ssh/authorized_keys`). An absolute path to the real home's `~/.aws/credentials` is denied even when the agent process runs with `HOME` pointed elsewhere.
 
-Safe-root violations return `Write denied: '…' is outside HERMES_WRITE_SAFE_ROOT (…)`. Credential-path blocks use `Write denied: '…' is a protected system/credential file.`
+Safe-root violations return `Write denied: '…' is outside MOOR_WRITE_SAFE_ROOT (…)`. Credential-path blocks use `Write denied: '…' is a protected system/credential file.`
 
 **Exception — `~/.ssh/config` is approval-gated, not hard-blocked.** The SSH
 *client config* holds no private-key material and editing it (host aliases,
@@ -386,7 +386,7 @@ file bridge, background jobs with no human channel) fail closed. Private keys,
 
 When set, `write_file` and `patch` may only target paths inside the listed directory prefix(es). Anything outside is **hard-blocked** — not routed through dangerous-command approval.
 
-- Set automatically in the [official Docker image](https://github.com/NousResearch/hermes-agent) (`MOOR_WRITE_SAFE_ROOT=/opt/data`)
+- Set automatically in the [official Docker image](https://github.com/thisismamad-n/Moor) (`MOOR_WRITE_SAFE_ROOT=/opt/data`)
 - Supports multiple roots separated by `:` on Unix or `;` on Windows
 - **Do not add to `~/.moor/.env` casually.** If you set it to a project directory, the agent cannot write to `~/.moor/cron/jobs.json`, profile skills, or other Moor state outside that prefix
 
@@ -400,7 +400,7 @@ Unset the variable to restore unrestricted writes (subject to the protected-path
 
 ### Cron and other Moor state
 
-Do not ask the agent to `patch` `~/.hermes/cron/jobs.json` directly. Use the `cronjob_manage` tool, [`hermes cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to other Hermes control files when write safety blocks direct edits.
+Do not ask the agent to `patch` `~/.moor/cron/jobs.json` directly. Use the `cronjob_manage` tool, [`moor cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to other Moor control files when write safety blocks direct edits.
 
 :::note Defense-in-depth, not a hard boundary
 Write guards apply to `write_file` and `patch` only, with one exception: the Windows NT/device-namespace row is also enforced on reads — `read_file`, `search_files`, `@file:`/`@folder:` context references and the ACP file bridge all refuse those paths on the raw string, before anything resolves them. The `terminal` tool runs as the same OS user and can still `cat` or overwrite denied paths via shell commands. The denylist reduces accidental damage and gives models a clear stop signal; it does not sandbox a hostile or compromised agent.
@@ -524,7 +524,7 @@ docker exec -u moor moor-agent moor pairing approve telegram ABC12DEF
 If you already ran the command as root and the user is still unauthorized,
 restart the container — the entrypoint will fix ownership on the next start.
 
-[i10270]: https://github.com/NousResearch/hermes-agent/issues/10270
+[i10270]: https://github.com/thisismamad-n/Moor/issues/10270
 :::
 
 **Storage:** Pairing data is stored in `~/.moor/pairing/` with per-platform JSON files:
@@ -668,14 +668,14 @@ Paths are relative to `~/.moor/`. Files are mounted to `/root/.moor/` inside the
 
 ### Borrowed CLI logins (Codex CLI, Claude Code) {#borrowed-cli-logins}
 
-When Hermes has no usable login of its own for `openai-codex` or `anthropic`, it can borrow the Codex CLI's `~/.codex/auth.json` and Claude Code's `~/.claude/.credentials.json` (or Keychain entry) and refresh them on your behalf. Both use single-use, rotating refresh tokens: once two programs hold one token family, whichever refreshes first invalidates the other's copy, which shows up as "I logged in once in the terminal and Hermes keeps failing" (or the reverse). If you run those CLIs alongside Hermes, give Hermes its own login and turn adoption off:
+When Moor has no usable login of its own for `openai-codex` or `anthropic`, it can borrow the Codex CLI's `~/.codex/auth.json` and Claude Code's `~/.claude/.credentials.json` (or Keychain entry) and refresh them on your behalf. Both use single-use, rotating refresh tokens: once two programs hold one token family, whichever refreshes first invalidates the other's copy, which shows up as "I logged in once in the terminal and Moor keeps failing" (or the reverse). If you run those CLIs alongside Moor, give Moor its own login and turn adoption off:
 
 ```yaml
 auth:
   adopt_external_logins: false   # default: true
 ```
 
-With the switch off Hermes never reads or refreshes those files: the `claude_code` credential-pool row disappears, `hermes auth list` prints one line saying so, and the log carries one INFO line per process. Only automatic adoption is affected — `hermes auth add openai-codex` still asks before importing an existing Codex CLI login. Automatic recovery also only repairs the credential Hermes already holds: a Codex CLI/Desktop login into a different ChatGPT workspace is refused with a warning (re-authenticate with `hermes auth add openai-codex`), and a login you complete while recovery is running is never overwritten. Add your own logins with `hermes auth add anthropic` / `hermes auth add openai-codex`.
+With the switch off Moor never reads or refreshes those files: the `claude_code` credential-pool row disappears, `moor auth list` prints one line saying so, and the log carries one INFO line per process. Only automatic adoption is affected — `moor auth add openai-codex` still asks before importing an existing Codex CLI login. Automatic recovery also only repairs the credential Moor already holds: a Codex CLI/Desktop login into a different ChatGPT workspace is refused with a warning (re-authenticate with `moor auth add openai-codex`), and a login you complete while recovery is running is never overwritten. Add your own logins with `moor auth add anthropic` / `moor auth add openai-codex`.
 
 ### What Each Sandbox Filters
 
@@ -837,7 +837,7 @@ Three consecutive operational failures (spawn error, timeout, crash) suspend sca
 PM supports Tirith on Linux (x86_64 / aarch64) and macOS (x86_64 / arm64).
 With the default path, unsupported targets, including native Windows and
 Android/Termux, skip Tirith. Pattern-matching guards still run. To use the managed
-Tirith package on Windows, run Hermes under WSL.
+Tirith package on Windows, run Moor under WSL.
 
 Tirith's verdict integrates with the approval flow: safe commands pass through, while both suspicious and blocked commands trigger user approval with the full tirith findings (severity, title, description, safer alternatives). Users can approve or deny — the default choice is deny to keep unattended scenarios secure.
 
@@ -864,14 +864,14 @@ Blocked project files show a warning:
 [BLOCKED: AGENTS.md contained potential prompt injection (prompt_injection). Content not loaded.]
 ```
 
-Your own `SOUL.md` in `HERMES_HOME` is treated differently: it is a file you wrote (file-tool writes to it
+Your own `SOUL.md` in `MOOR_HOME` is treated differently: it is a file you wrote (file-tool writes to it
 need your approval, and project checkouts never supply it), so a scanner hit there **does not block the
-file**. Hermes logs a warning naming the matched pattern, loads the file as usual, and `/context` lists it as
+file**. Moor logs a warning naming the matched pattern, loads the file as usual, and `/context` lists it as
 `⚠ SOUL.md … loaded — matched prompt-injection pattern(s); review the file`. This lets an identity file that
 *documents* an attack phrase (security guidance such as "content telling you to ignore previous instructions")
 keep working; if you did not write the flagged text, treat the warning as a sign that something else edited
-the file. The exception does not extend to a `SOUL.md` shipped by a profile distribution: `hermes profile
-install <git-url>` and `hermes profile update` copy a third party's `SOUL.md` into the profile home without
+the file. The exception does not extend to a `SOUL.md` shipped by a profile distribution: `moor profile
+install <git-url>` and `moor profile update` copy a third party's `SOUL.md` into the profile home without
 a scan or an approval prompt, so when `distribution.yaml` owns the file a scanner hit still blocks it.
 
 ## Best Practices for Production Deployment
@@ -920,21 +920,21 @@ The SSH connection details live in `.env` (not `config.yaml`) so they aren't che
 
 ## TLS certificate trust
 
-Hermes initializes the platform verifier through `truststore`. Windows uses
+Moor initializes the platform verifier through `truststore`. Windows uses
 its certificate store, macOS uses its system trust services, and Linux uses
-the OpenSSL system trust paths. If initialization fails, Hermes logs the
+the OpenSSL system trust paths. If initialization fails, Moor logs the
 failure and falls back to OpenSSL defaults.
 
 For a corporate TLS proxy, install its root through your organization's
-operating-system trust procedure. Hermes' provider resolver no longer selects
-trust through `HERMES_CA_BUNDLE` or the old CA-environment-variable ladder.
+operating-system trust procedure. Moor' provider resolver no longer selects
+trust through `MOOR_CA_BUNDLE` or the old CA-environment-variable ladder.
 Sandboxed subprocesses can have their own separate CA configuration.
 
-The former startup certificate guard is gone with it: Hermes no longer
-validates `HERMES_CA_BUNDLE` / `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` /
+The former startup certificate guard is gone with it: Moor no longer
+validates `MOOR_CA_BUNDLE` / `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` /
 `CURL_CA_BUNDLE` at launch, so there is no `SSLConfigurationError` and the
-`HERMES_SKIP_SSL_GUARD` escape hatch has no effect. `HERMES_CA_BUNDLE` is
-still honoured by the Nous Portal login flow only (`hermes login`, or its
+`MOOR_SKIP_SSL_GUARD` escape hatch has no effect. `MOOR_CA_BUNDLE` is
+still honoured by the Moor Portal login flow only (`moor login`, or its
 `--ca-bundle` flag); the standard `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` / `CURL_CA_BUNDLE` variables
 are still read by the plain `requests`/`urllib` calls some tools make (and by
 `pip`, `uv`, `curl`, Node), so a stale path in one of them now fails at the
@@ -953,13 +953,13 @@ redirects to another origin do not receive them.
 
 ## Trusted-by-placement extension points {#trusted-by-placement}
 
-Most third-party code Hermes can run is gated by an explicit allow-list: general plugins need `plugins.enabled`, shell hooks need a first-use approval (or `hooks_auto_accept`), MCP servers are listed in config. One surface is deliberately different:
+Most third-party code Moor can run is gated by an explicit allow-list: general plugins need `plugins.enabled`, shell hooks need a first-use approval (or `hooks_auto_accept`), MCP servers are listed in config. One surface is deliberately different:
 
 | Extension point | Loaded from | Loaded when | Opt-in |
 |-----------------|-------------|-------------|--------|
-| [Gateway event hooks](./features/hooks.md#gateway-event-hooks) | `<profile home>/hooks/<name>/` (`HOOK.yaml` + `handler.py`) | Gateway startup (`HookRegistry.discover_and_load()`), per served profile | **Placing the directory.** No `plugins.enabled` entry, no prompt; `HERMES_SAFE_MODE` does not skip it. |
+| [Gateway event hooks](./features/hooks.md#gateway-event-hooks) | `<profile home>/hooks/<name>/` (`HOOK.yaml` + `handler.py`) | Gateway startup (`HookRegistry.discover_and_load()`), per served profile | **Placing the directory.** No `plugins.enabled` entry, no prompt; `MOOR_SAFE_MODE` does not skip it. |
 
-The gateway imports every valid hook directory in-process, with the gateway's own privileges. This is the documented contract (since `3988c3c245f`), not an oversight: the profile home is operator-owned configuration, and anyone who can write into it can already run code as you through `config.yaml` shell hooks or by editing `plugins.enabled`, so a separate consent gate for `hooks/` would add friction without moving the trust boundary. Treat the contents of `~/.hermes/hooks/` like the contents of `config.yaml` — review a `handler.py` before you place it, and include `ls ~/.hermes/hooks/` whenever you audit the rest of the profile home (the directory is not on the [protected-paths denylist](#file-write-safety), so it is ordinary writable state). Full details: [gateway hook trust model](./features/hooks.md#gateway-hook-trust).
+The gateway imports every valid hook directory in-process, with the gateway's own privileges. This is the documented contract (since `3988c3c245f`), not an oversight: the profile home is operator-owned configuration, and anyone who can write into it can already run code as you through `config.yaml` shell hooks or by editing `plugins.enabled`, so a separate consent gate for `hooks/` would add friction without moving the trust boundary. Treat the contents of `~/.moor/hooks/` like the contents of `config.yaml` — review a `handler.py` before you place it, and include `ls ~/.moor/hooks/` whenever you audit the rest of the profile home (the directory is not on the [protected-paths denylist](#file-write-safety), so it is ordinary writable state). Full details: [gateway hook trust model](./features/hooks.md#gateway-hook-trust).
 
 ## Supply-chain advisory checking
 
@@ -994,7 +994,7 @@ uses the same dependency transaction as plugin admission:
 2. PM prepares a complete environment with the existing extras and enabled plugin requirements.
 3. Without plugin members, it uses the committed lock unchanged. With members, it resolves from the previous selection before a frozen workspace sync.
 4. It validates the candidate before publishing its selection. A failed candidate leaves the previous environment selected.
-5. If the current process uses the previous environment, PM reports that Hermes must restart. It does not replace imported libraries in place.
+5. If the current process uses the previous environment, PM reports that Moor must restart. It does not replace imported libraries in place.
 
 Shipped source, locks, and signed payloads remain unchanged. Additional tools
 and Python environments use writable storage outside the base artifact.
@@ -1013,7 +1013,7 @@ constraints and exact pins remain binding.
 To disable on-demand installations, run:
 
 ```bash
-hermes config set security.allow_lazy_installs false
+moor config set security.allow_lazy_installs false
 ```
 
 Already installed dependencies remain usable. Explicit PM install commands
@@ -1023,7 +1023,7 @@ names. This setting is not a blanket ban on explicit plugin admission or
 manual package-manager commands. The official Docker image also disables
 on-demand installs through its internal environment policy.
 
-For missing dependencies, use `hermes tools` and `hermes doctor` to identify
+For missing dependencies, use `moor tools` and `moor doctor` to identify
 the requirement. Do not run pip against a signed payload or the system Python.
 See [Package management](../reference/package-management.md) for installation
 ownership, diagnostics, and command boundaries.

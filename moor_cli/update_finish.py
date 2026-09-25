@@ -10,7 +10,7 @@ def finish_update(*, root, assume_yes, gateway_mode, pre_update_snapshot_id,
                   had_desktop_app_before_update, pre_update_version,
                   plan, windows_resume) -> None:
     """Finish the selected checkout; never fetch, switch branches or restore a stash."""
-    from hermes_cli.update_cmd import (
+    from moor_cli.update_cmd import (
         _run_post_update_maintenance,
         _restart_gateway_fleet_after_update, _verify_fleet_after_update,
         _write_gateway_update_exit_code, _resume_windows_gateways_and_merge_outcome,
@@ -23,7 +23,7 @@ def finish_update(*, root, assume_yes, gateway_mode, pre_update_snapshot_id,
         pre_update_version=pre_update_version,
     )
     if complete:
-        from hermes_cli.source_stamp import write_source_stamp
+        from moor_cli.source_stamp import write_source_stamp
 
         write_source_stamp(Path(root))
     # Restart can kill this process's gateway cgroup; record its result first.
@@ -39,7 +39,7 @@ def _restore_plan(data):
     if not data:
         return None
     from dataclasses import fields
-    from hermes_cli.update_inventory import RuntimeRecord, UpdatePlan
+    from moor_cli.update_inventory import RuntimeRecord, UpdatePlan
 
     values = {field.name: data[field.name] for field in fields(UpdatePlan) if field.name in data}
     names = {field.name for field in fields(RuntimeRecord)}
@@ -52,7 +52,7 @@ def main(context: Path, result: Path) -> int:
     request = json.loads(context.read_text(encoding="utf-8-sig"))
     root = Path(request["root"])
     sys.path.insert(0, str(root))
-    from hermes_cli import update_receipt
+    from moor_cli import update_receipt
 
     token = request.get("windows_resume")
     resume = None
@@ -72,14 +72,14 @@ def main(context: Path, result: Path) -> int:
         # Preparation has already committed the dependency generation and
         # selected store Python. Bootstrap must run before any app imports;
         # its ordinary currency check is now a no-op, not another update.
-        sys.argv = list(request["argv"]) if restarting else [str(root / "hermes"), "update"]
-        import hermes_bootstrap  # noqa: F401
+        sys.argv = list(request["argv"]) if restarting else [str(root / "moor"), "update"]
+        import moor_bootstrap  # noqa: F401
         # Import failures are update failures too: keep the original receipt
         # open before importing the application graph from the new checkout.
-        from hermes_cli import main as cli
-        from hermes_cli.source_build import build_update_products
-        from hermes_cli.update_lock import UpdateLock, describe_holder
-        from hermes_cli.update_cmd_windows import _resume_windows_gateways_after_update
+        from moor_cli import main as cli
+        from moor_cli.source_build import build_update_products
+        from moor_cli.update_lock import UpdateLock, describe_holder
+        from moor_cli.update_cmd_windows import _resume_windows_gateways_after_update
 
         cli.PROJECT_ROOT = root
         if restarting:
@@ -100,7 +100,7 @@ def main(context: Path, result: Path) -> int:
                 if desktop is None:
                     # Historical hooks can precede Desktop detection. Resolve
                     # only that unknown state, in the freshly bootstrapped app.
-                    from hermes_cli.main_desktop import _desktop_dist_exists, _desktop_packaged_executable
+                    from moor_cli.main_desktop import _desktop_dist_exists, _desktop_packaged_executable
 
                     desktop_dir = root / "apps" / "desktop"
                     desktop = (_desktop_packaged_executable(desktop_dir) is not None
@@ -122,10 +122,10 @@ def main(context: Path, result: Path) -> int:
     finally:
         if code and request.get("gateway_mode"):
             # Even an application import failure must wake the gateway watcher.
-            from hermes_constants import get_hermes_home
-            from hermes_cli.runtime_state import _atomic_bytes
+            from moor_constants import get_moor_home
+            from moor_cli.runtime_state import _atomic_bytes
 
-            _atomic_bytes(get_hermes_home() / ".update_exit_code", b"1")
+            _atomic_bytes(get_moor_home() / ".update_exit_code", b"1")
         if restarting and not cli_started:
             # Startup failed before the replacement command could own a
             # receipt. Preserve the original handoff, just like preparation.

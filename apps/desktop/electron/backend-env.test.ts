@@ -8,7 +8,7 @@ import { test } from 'vitest'
 import {
   appendUniquePathEntries,
   buildDesktopBackendEnv,
-  normalizeHermesHomeRoot,
+  normalizeMoorHomeRoot,
   pathEnvKey,
   POSIX_SANE_PATH_ENTRIES,
   profileBackendParentEnv
@@ -69,23 +69,23 @@ test('buildDesktopBackendEnv forces PYTHONUTF8 unless the user set it explicitly
   assert.equal(optedOut.PYTHONUTF8, '0')
 })
 
-test('normalizeHermesHomeRoot expands a literal leading ~ against the home directory, not cwd', () => {
+test('normalizeMoorHomeRoot expands a literal leading ~ against the home directory, not cwd', () => {
   assert.equal(
-    normalizeHermesHomeRoot('~/.hermes', { pathModule: path.posix, homedir: '/Users/test' }),
-    '/Users/test/.hermes'
+    normalizeMoorHomeRoot('~/.moor', { pathModule: path.posix, homedir: '/Users/test' }),
+    '/Users/test/.moor'
   )
   assert.equal(
-    normalizeHermesHomeRoot('~/.hermes/profiles/oracle', { pathModule: path.posix, homedir: '/Users/test' }),
-    '/Users/test/.hermes'
+    normalizeMoorHomeRoot('~/.moor/profiles/oracle', { pathModule: path.posix, homedir: '/Users/test' }),
+    '/Users/test/.moor'
   )
   assert.equal(
-    normalizeHermesHomeRoot('~\\.hermes', { pathModule: path.win32, homedir: 'C:\\Users\\test' }),
-    'C:\\Users\\test\\.hermes'
+    normalizeMoorHomeRoot('~\\.moor', { pathModule: path.win32, homedir: 'C:\\Users\\test' }),
+    'C:\\Users\\test\\.moor'
   )
-  assert.equal(normalizeHermesHomeRoot('~', { pathModule: path.posix, homedir: '/Users/test' }), '/Users/test')
+  assert.equal(normalizeMoorHomeRoot('~', { pathModule: path.posix, homedir: '/Users/test' }), '/Users/test')
 })
 
-test('normalizeHermesHomeRoot maps profile homes back to the global Hermes root', () => {
+test('normalizeMoorHomeRoot maps profile homes back to the global Moor root', () => {
   assert.equal(
     normalizeMoorHomeRoot('/Users/test/.moor/profiles/oracle', { pathModule: path.posix }),
     '/Users/test/.moor'
@@ -108,10 +108,10 @@ test('appendUniquePathEntries flattens, dedupes, and preserves first occurrence'
   assert.equal(appendUniquePathEntries(['/a:/b', ['/b', '/c'], '', null], { delimiter: ':' }), '/a:/b:/c')
 })
 
-// `hermes desktop` loads its launch profile's .env/.op.env into os.environ and
+// `moor desktop` loads its launch profile's .env/.op.env into os.environ and
 // hands that env to Electron; these cover what a profile backend inherits (#68367).
-function withHermesRoot(files: Record<string, string>, run: (root: string) => void) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-profile-env-'))
+function withMoorRoot(files: Record<string, string>, run: (root: string) => void) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-profile-env-'))
 
   try {
     for (const [rel, contents] of Object.entries(files)) {
@@ -141,9 +141,9 @@ const ROOT_LAUNCHED_ENV = {
 }
 
 test('a named profile backend does not inherit secrets the root .env/.op.env loaded into Desktop', () => {
-  withHermesRoot(ROOT_SCOPE_FILES, root => {
+  withMoorRoot(ROOT_SCOPE_FILES, root => {
     const env = profileBackendParentEnv({
-      hermesHome: root,
+      moorHome: root,
       profile: 'urbot',
       currentEnv: ROOT_LAUNCHED_ENV,
       platform: 'linux'
@@ -155,10 +155,10 @@ test('a named profile backend does not inherit secrets the root .env/.op.env loa
 })
 
 test('the launch profile backend inherits the Desktop env unchanged', () => {
-  withHermesRoot(ROOT_SCOPE_FILES, root => {
+  withMoorRoot(ROOT_SCOPE_FILES, root => {
     for (const profile of ['default', null, undefined]) {
       assert.deepEqual(
-        profileBackendParentEnv({ hermesHome: root, profile, currentEnv: ROOT_LAUNCHED_ENV, platform: 'linux' }),
+        profileBackendParentEnv({ moorHome: root, profile, currentEnv: ROOT_LAUNCHED_ENV, platform: 'linux' }),
         ROOT_LAUNCHED_ENV
       )
     }
@@ -166,8 +166,8 @@ test('the launch profile backend inherits the Desktop env unchanged', () => {
 })
 
 test('a primary backend without an explicit profile follows the sticky active_profile', () => {
-  withHermesRoot({ ...ROOT_SCOPE_FILES, active_profile: 'urbot\n' }, root => {
-    const env = profileBackendParentEnv({ hermesHome: root, profile: null, currentEnv: ROOT_LAUNCHED_ENV })
+  withMoorRoot({ ...ROOT_SCOPE_FILES, active_profile: 'urbot\n' }, root => {
+    const env = profileBackendParentEnv({ moorHome: root, profile: null, currentEnv: ROOT_LAUNCHED_ENV })
 
     assert.equal(env.TLON_SHIP_CODE, undefined)
     assert.equal(env.OP_SERVICE_ACCOUNT_TOKEN, undefined)
@@ -176,30 +176,30 @@ test('a primary backend without an explicit profile follows the sticky active_pr
 })
 
 test('Desktop launched from a named profile keeps that profile out of the default backend', () => {
-  withHermesRoot(
+  withMoorRoot(
     {
       '.env': 'OPENAI_API_KEY=root-key\n',
       'profiles/work/.env': 'TLON_SHIP_CODE=work-code\nOP_SERVICE_ACCOUNT_TOKEN=work-op\n'
     },
     root => {
       const currentEnv = {
-        HERMES_HOME: path.join(root, 'profiles', 'work'),
+        MOOR_HOME: path.join(root, 'profiles', 'work'),
         TLON_SHIP_CODE: 'work-code',
         OP_SERVICE_ACCOUNT_TOKEN: 'work-op',
         OPENAI_API_KEY: 'shell-key'
       }
 
-      assert.deepEqual(profileBackendParentEnv({ hermesHome: root, profile: 'default', currentEnv }), {
-        HERMES_HOME: currentEnv.HERMES_HOME,
+      assert.deepEqual(profileBackendParentEnv({ moorHome: root, profile: 'default', currentEnv }), {
+        MOOR_HOME: currentEnv.MOOR_HOME,
         OPENAI_API_KEY: 'shell-key'
       })
-      assert.deepEqual(profileBackendParentEnv({ hermesHome: root, profile: 'work', currentEnv }), currentEnv)
+      assert.deepEqual(profileBackendParentEnv({ moorHome: root, profile: 'work', currentEnv }), currentEnv)
     }
   )
 })
 
 test('Windows matches profile homes and dotenv names case-insensitively', () => {
-  const root = 'C:\\Users\\test\\AppData\\Local\\hermes'
+  const root = 'C:\\Users\\test\\AppData\\Local\\moor'
   const files = { [`${root}\\.env`]: 'TELEGRAM_BOT_TOKEN=root-token\r\n' }
 
   const fsModule = {
@@ -213,14 +213,14 @@ test('Windows matches profile homes and dotenv names case-insensitively', () => 
   }
 
   const currentEnv = {
-    HERMES_HOME: 'c:\\users\\test\\appdata\\local\\HERMES',
+    MOOR_HOME: 'c:\\users\\test\\appdata\\local\\MOOR',
     Path: 'C:\\Windows',
     Telegram_Bot_Token: 'root-token'
   }
 
   const scoped = (profile: string) =>
-    profileBackendParentEnv({ hermesHome: root, profile, currentEnv, platform: 'win32', fsModule })
+    profileBackendParentEnv({ moorHome: root, profile, currentEnv, platform: 'win32', fsModule })
 
   assert.deepEqual(scoped('default'), currentEnv)
-  assert.deepEqual(scoped('urbot'), { HERMES_HOME: currentEnv.HERMES_HOME, Path: 'C:\\Windows' })
+  assert.deepEqual(scoped('urbot'), { MOOR_HOME: currentEnv.MOOR_HOME, Path: 'C:\\Windows' })
 })

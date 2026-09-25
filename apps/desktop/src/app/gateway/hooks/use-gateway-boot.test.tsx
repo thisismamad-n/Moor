@@ -378,7 +378,7 @@ async function flushAsync() {
 it('loads and tracks saved gateways without mounting the statusbar or Settings', async () => {
   const desktop = fakeDesktop()
   const bootFetch = deferred<void>()
-  type Listener = Parameters<NonNullable<Window['hermesDesktop']['connections']['onChanged']>>[0]
+  type Listener = Parameters<NonNullable<Window['moorDesktop']['connections']['onChanged']>>[0]
   const listeners = new Set<Listener>()
 
   let registry: DesktopConnectionsRegistry = {
@@ -405,7 +405,7 @@ it('loads and tracks saved gateways without mounting the statusbar or Settings',
       }
     }
   })
-  ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+  ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
   // Only the real gateway lifecycle mounts; no optional UI can load the cache.
   const view = render(<Harness refreshSessions={() => bootFetch.promise} />)
@@ -467,7 +467,7 @@ describe('default-route profile adoption', () => {
       getGatewayWsUrlFor: vi.fn(async () => coderConn.wsUrl)
     }
 
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
     try {
       render(<Harness />)
@@ -500,7 +500,7 @@ describe('default-route profile adoption', () => {
         profile: { ...base.profile, getDefault: vi.fn(async () => route) }
       }
 
-      ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+      ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
       render(<Harness />)
       await flushAsync()
 
@@ -520,7 +520,7 @@ describe('default-route profile adoption', () => {
     const desktop = fakeDesktop()
     desktop.getConnection.mockResolvedValue({ ...primaryConn, profile: 'research' })
     desktop.profile.get.mockResolvedValue({ profile: 'old-last-used' })
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     render(<Harness />)
     await flushAsync()
     expect($connection.get()?.profile).toBe('research')
@@ -643,7 +643,7 @@ describe('primary failure foreground isolation', () => {
       remoteKind: 'cloud',
       authMode: 'oauth'
     } as typeof primaryConn)
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     render(<Harness />)
     await flushAsync()
     let opening!: Promise<boolean>
@@ -826,7 +826,7 @@ describe('shared host backend event provenance', () => {
 
     desktop.getConnection.mockResolvedValue(sharedPrimaryConn)
     desktop.getGatewayWsUrl.mockResolvedValue(sharedPrimaryConn.wsUrl)
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
     render(<Harness />)
     await flushAsync()
@@ -864,7 +864,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
   it('parks rejected primary auth across timers and wake signals until explicit recovery', async () => {
     const desktop = fakeDesktop()
     desktop.getConnection.mockResolvedValue({ ...primaryConn, authMode: 'oauth' })
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     render(<Harness />)
     await flushAsync()
     desktop.getGatewayWsUrl.mockRejectedValue(Object.assign(new Error('Sign in again'), { needsOauthLogin: true }))
@@ -889,7 +889,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     expect($desktopBoot.get().error).toBeNull()
   })
 
-  it('INITIAL boot against a dead VPS: getConnection hangs (waitForHermes) → app sits in the connecting combo, then fails', async () => {
+  it('INITIAL boot against a dead VPS: getConnection hangs (waitForMoor) → app sits in the connecting combo, then fails', async () => {
     // The report's actual path: a fresh launch pointed at an unreachable VPS.
     // startMoor()'s remote branch awaits waitForMoor() for 45s before it
     // throws, so the renderer's `await desktop.getConnection()` stays pending
@@ -2355,7 +2355,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
   })
 
   it('a failed cold boot keeps its recovery surface while main replays cold-boot progress behind it (#112899)', async () => {
-    // Main keeps startHermes() available after the renderer's boot concluded
+    // Main keeps startMoor() available after the renderer's boot concluded
     // in failure; any later getConnection() caller re-enters it and replays
     // `backend.resolve` (running:true — hides BootFailureOverlay) then
     // `backend.remote` (error:null — the store's late-progress guard only
@@ -2364,10 +2364,10 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     // ~45s readiness wait, indefinitely.
     const desktop = fakeDesktop()
     desktop.getConnection = vi.fn(async () => {
-      throw new Error('Hermes backend did not become ready: getaddrinfo ENOTFOUND gateway.tailnet.example')
+      throw new Error('Moor backend did not become ready: getaddrinfo ENOTFOUND gateway.tailnet.example')
     })
     desktop.getBootProgress = vi.fn(async () => ({
-      error: 'Hermes backend did not become ready: getaddrinfo ENOTFOUND gateway.tailnet.example',
+      error: 'Moor backend did not become ready: getaddrinfo ENOTFOUND gateway.tailnet.example',
       fakeMode: false,
       message: 'Desktop boot failed',
       phase: 'backend.error',
@@ -2376,7 +2376,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
       running: false,
       timestamp: Date.now()
     }))
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
     render(<Harness />)
     await flushAsync()
@@ -2389,7 +2389,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
         desktop.emitBootProgress({
           error: null,
           fakeMode: false,
-          message: 'Resolving Hermes backend',
+          message: 'Resolving Moor backend',
           phase: 'backend.resolve',
           progress: 8,
           running: true,
@@ -2398,7 +2398,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
         desktop.emitBootProgress({
           error: null,
           fakeMode: false,
-          message: 'Connecting to remote Hermes backend at https://gateway.tailnet.example:8443',
+          message: 'Connecting to remote Moor backend at https://gateway.tailnet.example:8443',
           phase: 'backend.remote',
           progress: 24,
           running: true,
@@ -2439,7 +2439,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
       running: false,
       timestamp: Date.now()
     }))
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
     render(<Harness />)
     await flushAsync()
@@ -2460,7 +2460,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
       desktop.emitBootProgress({
         error: null,
         fakeMode: false,
-        message: 'Resolving Hermes backend',
+        message: 'Resolving Moor backend',
         phase: 'backend.resolve',
         progress: 8,
         running: true,
@@ -2675,7 +2675,7 @@ describe('window-state IPC before the first connection publishes (#108641)', () 
       })
     }
 
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
     render(<Harness />)
     await flushAsync()

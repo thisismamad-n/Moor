@@ -48,7 +48,7 @@ export function getGlobalModelOptions(
     params.set('explicit_only', '1')
   }
 
-  return window.hermesDesktop.api<ModelOptionsResult>({
+  return window.moorDesktop.api<ModelOptionsResult>({
     ...capabilityScoped(profile),
     path: params.size > 0 ? `/api/model/options?${params.toString()}` : '/api/model/options',
     timeoutMs: STARTUP_REQUEST_TIMEOUT_MS
@@ -66,7 +66,7 @@ export interface RecommendedDefaultModel {
 // curation `moor model` does — for Moor it honors the free/paid tier so a
 // free user gets a free model instead of a paid default.
 export function getRecommendedDefaultModel(provider: string, profile?: ProfileScope): Promise<RecommendedDefaultModel> {
-  return window.hermesDesktop.api<RecommendedDefaultModel>({
+  return window.moorDesktop.api<RecommendedDefaultModel>({
     ...capabilityScoped(profile),
     path: `/api/model/recommended-default?provider=${encodeURIComponent(provider)}`
   })
@@ -118,7 +118,7 @@ export function setModelAssignment(
   body: ModelAssignmentRequest,
   profile?: ProfileScope
 ): Promise<ModelAssignmentResponse> {
-  return window.hermesDesktop.api<ModelAssignmentResponse>({
+  return window.moorDesktop.api<ModelAssignmentResponse>({
     ...capabilityScoped(profile),
     path: '/api/model/set',
     method: 'POST',

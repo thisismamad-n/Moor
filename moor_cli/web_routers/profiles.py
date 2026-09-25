@@ -27,10 +27,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, Query
 
-from hermes_cli.web_deps import late
-from hermes_cli.config import get_process_hermes_home
-from hermes_cli.profiles import ProfileIdentitySettlementPending
-from hermes_cli.web_server_config import (
+from moor_cli.web_deps import late
+from moor_cli.config import get_process_moor_home
+from moor_cli.profiles import ProfileIdentitySettlementPending
+from moor_cli.web_server_config import (
     _apply_main_model_assignment, _normalize_main_model_assignment, _validated_main_model_selection,
 )
 from moor_cli.web_server_gateway import _strip_session_list_rows
@@ -38,14 +38,14 @@ from moor_cli.web_routers._common import _CONFIG_MUTATION_LOCK
 from moor_cli.web_server_profiles import (
     _fallback_profile_dicts, _hub_action_name, _write_profile_mcp_servers,
 )
-from hermes_cli.web_server_sessions import _open_session_db_at_path
-from hermes_state_health import STORAGE_CORRUPT, note_storage_error, storage_state
+from moor_cli.web_server_sessions import _open_session_db_at_path
+from moor_state_health import STORAGE_CORRUPT, note_storage_error, storage_state
 from starlette.concurrency import run_in_threadpool
 from moor_cli.web_models import (
     ProfileCreate, ProfileActiveUpdate, ProfileExport, ProfileImport, ProfileRename,
     ProfileSoulUpdate, ProfileDescriptionUpdate, ProfileModelUpdate, ProfileDescribeAuto,
     SessionPrScanBody)
-from hermes_cli.web_server_profiles import _config_profile_scope, _hermes_home_scope
+from moor_cli.web_server_profiles import _config_profile_scope, _moor_home_scope
 
 # Same logger the handlers used before extraction (identical logger object).
 _log = logging.getLogger("moor_cli.web_server")
@@ -105,14 +105,14 @@ def _profile_setup_command(name: str) -> str:
 def _scope_profile_name(path: Path) -> Optional[str]:
     """Map a profile directory onto the query name ``_config_profile_scope`` expects: None for
     the process home (current-profile semantics: launch secret scope, no home override),
-    ``"default"`` for the default root (its basename -- ``.hermes`` or a custom root -- is not a
+    ``"default"`` for the default root (its basename -- ``.moor`` or a custom root -- is not a
     profile name; launched from ``profiles/<name>`` the root is a *different* profile), the
     directory name for ``profiles/<name>``."""
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
     resolved = path.resolve()
-    if resolved == get_process_hermes_home().resolve():
+    if resolved == get_process_moor_home().resolve():
         return None
-    if resolved == get_default_hermes_root().resolve():
+    if resolved == get_default_moor_root().resolve():
         return "default"
     return path.name
 
@@ -130,7 +130,7 @@ def _write_profile_model(profile_dir: Path, provider: str, model: str, validate_
     once the dashboard has served a secondary profile, ``switch_model``'s ``key_env`` probe goes
     through ``get_secret``, which fails closed without a scope and reports the provider as
     unconnected (UnscopedSecretError class, #114676)."""
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
     with _config_profile_scope(_scope_profile_name(validate_in or profile_dir)):
         provider, model = _normalize_main_model_assignment(provider, model)
         result = _validated_main_model_selection(load_config(), provider, model)
@@ -171,7 +171,7 @@ _MISSING = object()
 @contextlib.contextmanager
 def _profile_errors(log_msg: str, *args, not_found=(FileNotFoundError,),
                     bad_request=(ValueError,)):
-    """Map hermes_cli.profiles exceptions to HTTP: ``not_found`` -> 404, ``bad_request`` -> 400
+    """Map moor_cli.profiles exceptions to HTTP: ``not_found`` -> 404, ``bad_request`` -> 400
     (in that order), anything else is logged with ``log_msg`` -> 500. HTTPException passes, and so
     does ``ProfileIdentitySettlementPending`` — a typed partial success the calling endpoint (the
     delete route) owns; it must not flatten into the generic 500."""
@@ -213,7 +213,7 @@ def _profile_targets(log_label: str) -> List[Tuple[str, Path]]:
     ``profiles_to_serve`` (pure directory read) instead of ``list_profiles``, which parses
     config/meta and probes gateways per profile — every caller here is a polled sidebar
     fan-out that only needs name/path (#114041)."""
-    from hermes_cli import profiles as profiles_mod
+    from moor_cli import profiles as profiles_mod
     try:
         targets = list(profiles_mod.profiles_to_serve(multiplex=True, include_standalone=True, include_parked=True))
     except Exception:
@@ -282,7 +282,7 @@ def _read_profile_db(name: str, home, errors: Optional[List[Dict[str, str]]],
 
 def _corrupt_profile_stores(targets) -> Dict[str, str]:
     """``{profile: "corrupt"}`` for every scanned profile whose state.db this process has latched
-    as structurally corrupt (``hermes_state_health``). Lets Desktop tell an empty or partial list
+    as structurally corrupt (``moor_state_health``). Lets Desktop tell an empty or partial list
     from a damaged store, including when some reads still succeed (#72046)."""
     return {name: STORAGE_CORRUPT for name, home in targets
             if storage_state(Path(home) / "state.db") == STORAGE_CORRUPT}
@@ -875,7 +875,7 @@ async def delete_profile_endpoint(name: str):
     and the retry command: the profile directory is already gone, and folding that state into
     the generic 500 made a dashboard client read a completed delete as a failure (its retry
     then 404'd)."""
-    from hermes_cli import profiles as profiles_mod
+    from moor_cli import profiles as profiles_mod
     try:
         with _profile_errors("DELETE /api/profiles/%s failed", name):
             # Polls a running gateway's PID for up to 10 s, then rmtree()s the directory; on the

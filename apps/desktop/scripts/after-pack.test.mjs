@@ -15,7 +15,7 @@ async function configuredHook(context) {
   await hook.default(context)
 }
 
-function context(appOutDir, productFilename = 'Hermes Preview') {
+function context(appOutDir, productFilename = 'Moor Preview') {
   // Use electron-builder's real bundle path resolution, including branding.
   const packager = Object.assign(Object.create(PlatformPackager.prototype), {
     platform: Platform.MAC,
@@ -26,7 +26,7 @@ function context(appOutDir, productFilename = 'Hermes Preview') {
 }
 
 it('restores app localizations from the filtered framework without copying locale data', async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'hermes-locale-pack-'))
+  const root = await mkdtemp(path.join(os.tmpdir(), 'moor-locale-pack-'))
   try {
     const ctx = context(root)
     const framework = ctx.packager.getMacOsElectronFrameworkResourcesDir(root)
@@ -49,7 +49,7 @@ it('restores app localizations from the filtered framework without copying local
 })
 
 it('leaves Linux alone and reports a missing framework without failing packaging', async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'hermes-locale-pack-'))
+  const root = await mkdtemp(path.join(os.tmpdir(), 'moor-locale-pack-'))
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   try {
     // win32 is not a no-op here: the same hook sanitizes and batch-signs the PE tree.

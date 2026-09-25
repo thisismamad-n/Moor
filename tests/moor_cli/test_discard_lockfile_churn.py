@@ -1,4 +1,4 @@
-"""`hermes update` lockfile-churn cleanup must respect npm workspace ownership (#112378).
+"""`moor update` lockfile-churn cleanup must respect npm workspace ownership (#112378).
 
 The single root ``package-lock.json`` spans every workspace declared in the root ``package.json``
 ``workspaces`` globs, so a dirty workspace manifest (``apps/desktop/package.json``) protects it;
@@ -9,7 +9,7 @@ import json
 import os
 import subprocess
 
-from hermes_cli.update_cmd_git import _discard_lockfile_churn
+from moor_cli.update_cmd_git import _discard_lockfile_churn
 
 _GIT_ENV = {
     **os.environ,

@@ -24,7 +24,7 @@ function markerStartedAt(home: string): number {
 }
 
 function runPosix(installRoot: string, startedAt?: string) {
-  const env: NodeJS.ProcessEnv = { ...process.env, HERMES_HOME: path.dirname(installRoot) }
+  const env: NodeJS.ProcessEnv = { ...process.env, MOOR_HOME: path.dirname(installRoot) }
 
   if (startedAt === undefined) {
     delete env.MOOR_UPDATE_STARTED_AT

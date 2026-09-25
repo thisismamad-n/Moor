@@ -11,18 +11,18 @@ import sys
 
 import pytest
 
-from hermes_cli.post_update import step_adopt_blessed_checkout
+from moor_cli.post_update import step_adopt_blessed_checkout
 
 
 @pytest.fixture
 def blessed_checkout(tmp_path, monkeypatch):
-    """A .git checkout at the blessed $HERMES_HOME/hermes-agent root."""
-    home = tmp_path / ".hermes"
-    root = home / "hermes-agent"
+    """A .git checkout at the blessed $MOOR_HOME/moor-agent root."""
+    home = tmp_path / ".moor"
+    root = home / "moor-agent"
     root.mkdir(parents=True)
     (root / ".git").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(root))
     return root
 
 
@@ -56,13 +56,13 @@ def test_existing_stamp_is_never_touched(blessed_checkout):
 
 def test_non_blessed_checkout_untouched(tmp_path, monkeypatch):
     """.git anywhere else → never adopted."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    dev = tmp_path / "src" / "hermes-agent"
+    dev = tmp_path / "src" / "moor-agent"
     dev.mkdir(parents=True)
     (dev / ".git").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(dev))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(dev))
     result = step_adopt_blessed_checkout()
     assert result.get("skipped") == "not-a-blessed-root"
     assert not (dev / "install-stamp.json").exists()
@@ -71,11 +71,11 @@ def test_non_blessed_checkout_untouched(tmp_path, monkeypatch):
 def test_sealed_tree_untouched(tmp_path, monkeypatch):
     """No .git → not a checkout, nothing to adopt (sealed trees always
     ship stamps anyway)."""
-    home = tmp_path / ".hermes"
-    root = home / "hermes-agent"
+    home = tmp_path / ".moor"
+    root = home / "moor-agent"
     root.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(root))
     result = step_adopt_blessed_checkout()
     assert result.get("skipped") == "not-a-checkout"
     assert not (root / "install-stamp.json").exists()
@@ -98,7 +98,7 @@ def test_read_only_tree_fails_soft(blessed_checkout):
 def test_adoption_keeps_the_steward_verdict_checkout(blessed_checkout):
     """End to end: the adopted stamp changes update admission, never the
     steward ladder — a .git tree stays a checkout (sealed_steward None)."""
-    from hermes_cli.steward import sealed_steward
+    from moor_cli.steward import sealed_steward
 
     assert sealed_steward(blessed_checkout) is None
     step_adopt_blessed_checkout()
@@ -114,8 +114,8 @@ def test_adoption_of_real_checkout_records_full_identity(tmp_path, monkeypatch):
 
     git_env = {"HOME": str(tmp_path), "PATH": os.environ["PATH"]}
 
-    home = tmp_path / ".hermes"
-    root = home / "hermes-agent"
+    home = tmp_path / ".moor"
+    root = home / "moor-agent"
     root.mkdir(parents=True)
 
     def git(*args: str) -> None:
@@ -123,14 +123,14 @@ def test_adoption_of_real_checkout_records_full_identity(tmp_path, monkeypatch):
                        capture_output=True)
 
     git("init", "-q")
-    git("config", "user.name", "Hermes Test")
-    git("config", "user.email", "hermes@example.invalid")
+    git("config", "user.name", "Moor Test")
+    git("config", "user.email", "moor@example.invalid")
     (root / "tracked").write_text("release\n", encoding="utf-8")
     git("add", "tracked")
     git("commit", "-qm", "release")
     git("tag", "v0.21.4")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_INSTALL_ROOT", str(root))
 
     result = step_adopt_blessed_checkout()
 

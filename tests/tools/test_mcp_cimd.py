@@ -83,11 +83,11 @@ def private_ports(monkeypatch):
 # The published document and the code must agree
 # ---------------------------------------------------------------------------
 
-def test_document_client_id_is_the_url_hermes_sends():
+def test_document_client_id_is_the_url_moor_sends():
     """A CIMD document is only valid when its client_id is its own URL."""
     assert _document()["client_id"] == _CIMD_CLIENT_METADATA_URL
 
-def test_document_declares_every_callback_hermes_can_build(tmp_path, monkeypatch):
+def test_document_declares_every_callback_moor_can_build(tmp_path, monkeypatch):
     """Every loopback URI a CIMD flow could produce must be registered.
 
     Exact string matching means one missing entry is a hard auth failure on

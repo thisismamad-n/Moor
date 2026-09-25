@@ -24,12 +24,12 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Mapping, Optional, 
 
 from moor_constants import get_moor_home, reset_moor_home_override, set_moor_home_override
 from registration_lifecycle import replacement_coordinator
-from hermes_cli.plugins_discovery import ENTRY_POINTS_GROUP, _select_entry_point_group
-from hermes_cli.plugins_manifest import PluginManifest, manifest_key, portable_mcp_server_name, validate_config_schema
-from hermes_cli.plugins_state import _plugin_settings_entry
+from moor_cli.plugins_discovery import ENTRY_POINTS_GROUP, _select_entry_point_group
+from moor_cli.plugins_manifest import PluginManifest, manifest_key, portable_mcp_server_name, validate_config_schema
+from moor_cli.plugins_state import _plugin_settings_entry
 
 if TYPE_CHECKING:  # pragma: no cover
-    from hermes_cli.plugins import LoadedPlugin, PluginContext
+    from moor_cli.plugins import LoadedPlugin, PluginContext
 
 logger = logging.getLogger("moor_cli.plugins")
 
@@ -63,7 +63,7 @@ def _resolve_plugin_load_timeout() -> float:
     loads inline with no deadline; clamped to ``_MAX_LOAD_TIMEOUT_SECS``)."""
     default = _LOAD_TIMEOUT_SECS
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         plugins_cfg = (load_config_readonly() or {}).get("plugins")
         if not isinstance(plugins_cfg, dict) or plugins_cfg.get("load_timeout_seconds") is None:
             return default
@@ -93,14 +93,14 @@ def _reserve_abandoned_loader_slot() -> None:
             return
     raise PluginLoadTimeout(
         f"not loaded: {_MAX_ABANDONED_LOADERS} abandoned plugin loader thread(s) are still running "
-        f"(plugins.load_timeout_seconds); restart Hermes to retry"
+        f"(plugins.load_timeout_seconds); restart Moor to retry"
     )
 
 
 def run_with_load_deadline(plugin_key: str, ctx: "PluginContext", fn: Callable[[], Any]) -> Any:
     """Run ``fn`` (a plugin's import + ``register()``) under the per-plugin deadline.
 
-    The worker inherits the caller's context (the Hermes-home override is a ContextVar). On timeout the
+    The worker inherits the caller's context (the moor-home override is a ContextVar). On timeout the
     worker is abandoned as a daemon, ``ctx`` is marked so any registration it still attempts is ignored,
     and :class:`PluginLoadTimeout` is raised on the calling thread so the usual failure path records the
     reason and disposes whatever was registered before the hang.
@@ -187,11 +187,11 @@ class PluginLoaderMixin:
         """Subscribe to "a discovery sweep loaded plugins this process did not have": fires from INSIDE
         :meth:`discover_and_load` (never emitted by an install RPC) with one
         ``{name, key, activated_now, deferred}`` summary per NEWLY loaded plugin — every plugin at boot,
-        just the newcomer after a mid-run ``hermes plugins install/enable``, Desktop / dashboard /
+        just the newcomer after a mid-run ``moor plugins install/enable``, Desktop / dashboard /
         ``plugins.manage`` install-enable-update, a tool-triggered force re-discovery or the gateway's
         ``reload-plugins`` verb (all of which run ``discover_plugins(force=True)``; a non-forced call
         short-circuits on ``_discovered`` and never fires). See
-        :func:`hermes_cli.plugins_activation.plugin_activation_summary` for the payload: ``activated_now``
+        :func:`moor_cli.plugins_activation.plugin_activation_summary` for the payload: ``activated_now``
         (gateway commands/transforms/hooks/callbacks, live at once) vs ``deferred`` (``tools``/``prompt``
         until the next session, ``mcp_servers`` — the plugin's mcp.json server names — until ``mcp.reload``).
         Listeners belong to the process (gateway runner, TUI server), not to a plugin, so ``unload()``
@@ -214,7 +214,7 @@ class PluginLoaderMixin:
         ``loaded_before``; nothing new = no event. One raising listener never starves the rest."""
         if not self._plugin_loaded_listeners:
             return
-        from hermes_cli.plugins_activation import activation_summaries
+        from moor_cli.plugins_activation import activation_summaries
         summaries = [s for s in activation_summaries(self) if s["key"] not in loaded_before]
         if not summaries:
             return
@@ -353,7 +353,7 @@ class PluginLoaderMixin:
                 registered,
             )
         except (Exception, SystemExit) as exc:
-            # Tools registered before the raise are live: credit them or `hermes plugins list` under-reports
+            # Tools registered before the raise are live: credit them or `moor plugins list` under-reports
             # (and _load_plugin's later diff would miss them too). Never break discovery (the platform stays
             # deferred), but a broken tools.py IS the symptom, so warn — and say where it failed first.
             partial, total = _credit(), len(declared)
@@ -382,8 +382,8 @@ class PluginLoaderMixin:
         if missing:
             logger.warning(
                 "Plugin %s declares Python dependencies that are not "
-                "installed: %s. For an enabled plugin, run hermes pm repair, "
-                "then restart Hermes. Discovery does not install dependencies.",
+                "installed: %s. For an enabled plugin, run moor pm repair, "
+                "then restart Moor. Discovery does not install dependencies.",
                 key, ", ".join(missing),
             )
         else:
@@ -564,8 +564,8 @@ class PluginLoaderMixin:
                     ctx.register_skill(skill.name, skill.skill_md, skill.description, skill.frontmatter)
                 except Exception as exc:
                     logger.warning("Agent Plugin '%s' skill '%s' skipped: %s", lookup_key, skill.name, exc)
-            from hermes_cli.agent_plugins import _clear_liveness, _set_liveness
-            from hermes_platform import declaration
+            from moor_cli.agent_plugins import _clear_liveness, _set_liveness
+            from moor_platform import declaration
             registered: list[str] = []
             try:
                 for server_name, config in package.mcp_servers.items():

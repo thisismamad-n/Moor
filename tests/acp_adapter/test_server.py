@@ -26,7 +26,7 @@ from acp.schema import (
 )
 from acp_adapter.auth import TERMINAL_SETUP_AUTH_METHOD_ID
 from acp_adapter.server import (
-    HermesACPAgent,
+    MoorACPAgent,
 )
 from acp_adapter.session import SessionManager
 
@@ -193,8 +193,8 @@ class TestSessionOps:
         }
 
         with (
-            patch("hermes_cli.inventory.load_picker_context", return_value=picker_context),
-            patch("hermes_cli.inventory.build_models_payload", return_value=payload),
+            patch("moor_cli.inventory.load_picker_context", return_value=picker_context),
+            patch("moor_cli.inventory.build_models_payload", return_value=payload),
         ):
             resp = await acp_agent.new_session(cwd="/tmp")
 
@@ -467,7 +467,7 @@ class TestPrompt:
                 raise RuntimeError("executor blew up")
             return {"final_response": "ok", "messages": []}
 
-        with patch.object(HermesACPAgent, "_run_agent_turn", side_effect=_turn):
+        with patch.object(MoorACPAgent, "_run_agent_turn", side_effect=_turn):
             started = asyncio.get_running_loop().time()
             response = await asyncio.wait_for(
                 agent.prompt(prompt=[TextContentBlock(type="text", text="hi")], session_id=resp.session_id),
@@ -754,7 +754,7 @@ class TestDisabledToolsetsFilterToolSurface:
     def test_cmd_tools_strips_configured_disabled_toolsets(self, agent, mock_manager):
         """``/tools`` lists what the session can call: a config-disabled toolset is absent (real get_tool_definitions)."""
         state = mock_manager.create_session(cwd="/tmp")
-        state.agent.enabled_toolsets = ["hermes-acp"]
+        state.agent.enabled_toolsets = ["moor-acp"]
         state.agent._memory_manager = None
 
         def listed() -> set:

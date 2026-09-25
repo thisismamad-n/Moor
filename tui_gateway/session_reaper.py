@@ -108,7 +108,7 @@ def _flush_sessions_before_exit(budget_s: float | None = None) -> int:
     if result["flushed"] < flushable:
         logger.warning(
             "Exit flush persisted %d of %d in-memory session transcript(s) within %.1fs; the rest "
-            "may have been lost (HERMES_TUI_EXIT_FLUSH_BUDGET_S)",
+            "may have been lost (MOOR_TUI_EXIT_FLUSH_BUDGET_S)",
             result["flushed"], flushable, budget)
     return result["flushed"]
 

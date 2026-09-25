@@ -23,8 +23,8 @@ import {
   PALETTE_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
   translateNow
-} from '@hermes/plugin-sdk'
-import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@hermes/plugin-sdk'
+} from '@moor/plugin-sdk'
+import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@moor/plugin-sdk'
 
 import { startFaceClock, stopFaceClock } from './avatar'
 import {

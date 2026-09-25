@@ -34,7 +34,7 @@ def stale_tcc_grant_hint(*missing: str) -> str:
     if not resets:
         return ""
     return ("If System Settings already shows CuaDriver ON, the stored grant is stale (it no longer matches the installed "
-            f"driver's signature): run `{resets}`, then `hermes computer-use permissions grant`.")
+            f"driver's signature): run `{resets}`, then `moor computer-use permissions grant`.")
 
 def _child_env() -> Dict[str, str]:
     """cua-driver child env (telemetry policy + provider secrets stripped); ``os.environ`` on import error.

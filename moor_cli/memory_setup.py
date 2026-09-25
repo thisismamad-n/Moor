@@ -53,7 +53,7 @@ def _prompt(label: str, default: str | None = None, secret: bool = False) -> str
 
 def memory_provider_dependency_inputs(provider_name: str) -> tuple[dict, dict]:
     """Read one candidate declaration for preparation and passive readiness."""
-    from hermes_cli.plugins_cmd import PluginOperationError, _read_manifest_for_install
+    from moor_cli.plugins_cmd import PluginOperationError, _read_manifest_for_install
     from pm.package import InstallError
     from pm.plugin_inputs import Candidates
     from pm.workspace import _is_member_candidate
@@ -100,7 +100,7 @@ def _install_dependencies(provider_name: str) -> None:
     if status:
         print(f"  ✓ Dependencies prepared for {provider_name}")
         if status == "restart_required":
-            print("  Restart Hermes to use the prepared dependencies.")
+            print("  Restart Moor to use the prepared dependencies.")
 
     # Also show external (non-pip) dependencies that are missing.
     for dep in meta.get("external_dependencies", []):
@@ -309,11 +309,11 @@ def _write_env_vars(
     env_writes: dict, moor_home: str | os.PathLike[str] | None = None) -> None:
     """Persist memory-provider env vars through the canonical ``.env`` writer.
 
-    Delegates to ``hermes_cli.config.save_env_value`` so every key flows
+    Delegates to ``moor_cli.config.save_env_value`` so every key flows
     through the same input-validation gate as every other ``.env`` writer:
     the ``_ENV_VAR_NAME_RE`` regex (no malformed identifiers), the
     ``_ENV_VAR_NAME_DENYLIST`` (no ``LD_PRELOAD`` / ``PYTHONPATH`` /
-    ``HERMES_HOME`` / etc.), CR/LF stripping on the value, and the atomic
+    ``MOOR_HOME`` / etc.), CR/LF stripping on the value, and the atomic
     0o600-from-creation write (no TOCTOU permission window).
 
     Validation failures (``ValueError`` from ``save_env_value`` — a
@@ -324,9 +324,9 @@ def _write_env_vars(
     intentionally NOT caught — those indicate the wizard cannot safely
     persist any subsequent key either and should propagate.
 
-    ``hermes_home`` may be supplied by plugin ``post_setup`` hooks that
+    ``moor_home`` may be supplied by plugin ``post_setup`` hooks that
     already received an explicit home directory (e.g. a non-default
-    profile). It is applied through the context-local Hermes home override
+    profile). It is applied through the context-local Moor home override
     so ``save_env_value`` still owns the validation, sanitization, and
     atomic-write path without mutating global ``os.environ``.
     """

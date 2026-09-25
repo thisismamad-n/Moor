@@ -172,7 +172,7 @@ class MCPServerRunMixin:
 
     def _log_park(self, msg: str, *args) -> None:
         """Park chatter control (#115713): re-parking a server that never revived is not a state
-        transition — ``hermes mcp list`` already surfaces the parked state, so one identical
+        transition — ``moor mcp list`` already surfaces the parked state, so one identical
         WARNING per self-probe carries no new information. The first park (and the revived line
         in ``_mark_session_proven``) stays a WARNING; an identical repeat while still parked is
         demoted to DEBUG so a long-lived gateway's error log is not flooded (10k+ identical
@@ -213,7 +213,7 @@ class MCPServerRunMixin:
             # OAuth setup for a server the user turned off, every interval, for the life of
             # the process (background loops that do not run the gateway reconcile tick
             # never learn the entry changed). An explicit reconnect request — manual
-            # refresh or `hermes mcp login` — still revives immediately regardless of the
+            # refresh or `moor mcp login` — still revives immediately regardless of the
             # config gate; only the unattended probe honours it. Announce the pause once:
             # a line per skipped wake would be the very flood this gate exists to stop.
             if outcome == "self-probe" and not self._still_configured_enabled():

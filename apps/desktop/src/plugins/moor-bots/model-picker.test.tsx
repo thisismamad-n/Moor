@@ -18,7 +18,7 @@
  * dispatch at all for a row whose connection is gone.
  */
 
-import type * as HermesSdk from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
@@ -38,7 +38,7 @@ const { hostMock } = vi.hoisted(() => ({
 
 vi.mock('@moor/plugin-sdk', async () => {
   const { useQuery } = await import('@tanstack/react-query')
-  const { useI18n } = await vi.importActual<typeof HermesSdk>('@hermes/plugin-sdk')
+  const { useI18n } = await vi.importActual<typeof MoorSdk>('@moor/plugin-sdk')
 
   return {
     Button: (props: React.ComponentProps<'button'>) => <button {...props} />,

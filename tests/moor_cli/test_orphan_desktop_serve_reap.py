@@ -100,7 +100,7 @@ def test_reap_passes_child_pid_exclude_to_scan():
             "moor_cli.dashboard_procs._scan_dashboard_processes",
             return_value=[],
         ) as scan,
-        patch.dict(os.environ, {"HERMES_DESKTOP_CHILD_PID": "999,111"}, clear=False),
+        patch.dict(os.environ, {"MOOR_DESKTOP_CHILD_PID": "999,111"}, clear=False),
     ):
         result = _reap_orphaned_desktop_local_serves(sleep_fn=lambda _s: None)
 
@@ -161,12 +161,12 @@ def test_lock_owned_serve_pids_reads_valid_backend_lock(tmp_path):
 
 
 def test_lock_owned_serve_pids_sees_root_home_locks_from_a_profile_home(tmp_path, monkeypatch):
-    """A profile backend (``HERMES_HOME=<root>/profiles/<name>``) must still see the Desktop's SSH
+    """A profile backend (``MOOR_HOME=<root>/profiles/<name>``) must still see the Desktop's SSH
     locks, which live under ``<root>/desktop-ssh`` — otherwise its reaper kills the sibling
     profile's live SSH backend on every profile switch (#89811)."""
-    import hermes_constants
+    import moor_constants
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     profile_home = root / "profiles" / "flocki"
     profile_home.mkdir(parents=True)
     oid = "f" * 32
@@ -175,9 +175,9 @@ def test_lock_owned_serve_pids_sees_root_home_locks_from_a_profile_home(tmp_path
     (root / "desktop-ssh" / oid / "backend.lock.json").write_text(
         json.dumps(_valid_lock_payload(7777, oid, nonce))
     )
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
-    monkeypatch.setattr(hermes_constants, "_get_platform_default_hermes_home", lambda: root)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None, raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(profile_home))
+    monkeypatch.setattr(moor_constants, "_get_platform_default_moor_home", lambda: root)
+    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None, raising=False)
 
     assert _lock_owned_serve_pids() == {7777}
 
@@ -411,8 +411,8 @@ def test_reap_kills_descendants_of_killed_roots_but_spares_a_failed_roots_subtre
     surviving hosted-TUI children — but only for roots it actually killed. A root whose own kill
     raised (EPERM: not ours) keeps its subtree intact instead of being orphaned half-way."""
     scanned = [
-        (111, "hermes serve --host 127.0.0.1 --port 0"),  # ours: killed, child 1111 swept
-        (444, "hermes serve --host 127.0.0.1 --port 0"),  # not ours: EPERM, child 4444 spared
+        (111, "moor serve --host 127.0.0.1 --port 0"),  # ours: killed, child 1111 swept
+        (444, "moor serve --host 127.0.0.1 --port 0"),  # not ours: EPERM, child 4444 spared
     ]
     descendants = {1111: (111, 5.0), 4444: (444, 6.0)}
     start_times = {1111: 5.0, 4444: 6.0}
@@ -424,14 +424,14 @@ def test_reap_kills_descendants_of_killed_roots_but_spares_a_failed_roots_subtre
         sent.append((pid, sig))
 
     with (
-        patch("hermes_cli.dashboard_procs._scan_dashboard_processes", return_value=scanned),
-        patch("hermes_cli.dashboard_procs._process_ppid", return_value=1),
-        patch("hermes_cli.dashboard_procs._posix_descendants", return_value=descendants) as snap,
+        patch("moor_cli.dashboard_procs._scan_dashboard_processes", return_value=scanned),
+        patch("moor_cli.dashboard_procs._process_ppid", return_value=1),
+        patch("moor_cli.dashboard_procs._posix_descendants", return_value=descendants) as snap,
         patch("gateway.status.get_process_start_time", side_effect=start_times.get),
         patch("psutil.pid_exists", return_value=True),
         patch("os.kill", side_effect=fake_kill),
     ):
-        os.environ.pop("HERMES_DESKTOP_CHILD_PID", None)
+        os.environ.pop("MOOR_DESKTOP_CHILD_PID", None)
         result = _reap_orphaned_desktop_local_serves(
             sleep_fn=lambda _s: None, signal_term=15, signal_kill=9,
             process_age_seconds_fn=lambda _pid: 600.0,

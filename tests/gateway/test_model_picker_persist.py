@@ -22,7 +22,7 @@ closure the PR changed, against a real temp ``MOOR_HOME``.
 import asyncio
 import types
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
 from gateway.config import Platform
@@ -259,14 +259,14 @@ async def test_multiplex_picker_global_persists_only_named_profile(
 
 def _make_store_runner(adapter, sessions_dir, monkeypatch):
     """Bare runner with a real JSONL SessionStore (the durable /model override lives there)."""
-    import hermes_state
+    import moor_state
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore
 
     def _no_sqlite(*_a, **_k):
         raise RuntimeError("SQLite disabled in test")
 
-    monkeypatch.setattr(hermes_state, "SessionDB", _no_sqlite)
+    monkeypatch.setattr(moor_state, "SessionDB", _no_sqlite)
     runner = _make_runner(adapter)
     runner.session_store = SessionStore(sessions_dir=sessions_dir, config=GatewayConfig())
     return runner
@@ -340,7 +340,7 @@ async def test_concurrent_model_commands_commit_in_issue_order(tmp_path, monkeyp
     busy guard while no agent runs) must commit as if issued serially: a ``--global`` pick followed by
     a session pick leaves config.yaml on the global model AND the session override on the later pick,
     instead of the global cleanup wiping it; memory and durable store agree (#100314)."""
-    from hermes_cli.model_switch import ModelSwitchResult
+    from moor_cli.model_switch import ModelSwitchResult
 
     def _switch(**kw):
         return ModelSwitchResult(success=True, new_model=kw["raw_input"], target_provider="openrouter",
@@ -349,7 +349,7 @@ async def test_concurrent_model_commands_commit_in_issue_order(tmp_path, monkeyp
                                  is_global=kw.get("is_global", False))
 
     cfg_path = _setup_isolated_home(tmp_path, monkeypatch, {"default": "old-model", "provider": "openrouter"})
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", _switch)
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", _switch)
     runner = _make_store_runner(_FakePickerAdapter(), tmp_path / "sessions", monkeypatch)
     source = _make_event("x").source
     session_key = runner._session_key_for_source(source)

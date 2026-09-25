@@ -212,7 +212,7 @@ _fal_client: Any = None
 _fal_client_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
-# Managed FAL gateway (Nous Subscription)
+# Managed FAL gateway (Moor Subscription)
 # ---------------------------------------------------------------------------
 
 _managed_fal_video_client: Any = None

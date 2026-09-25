@@ -1,7 +1,7 @@
-import { LOCAL_CONNECTION_ID } from '@hermes/shared'
+import { LOCAL_CONNECTION_ID } from '@moor/shared'
 
-import { capabilityScoped, hermesApi, type OwnerScope } from '@/api/client'
-import type { HermesConnection } from '@/global'
+import { capabilityScoped, moorApi, type OwnerScope } from '@/api/client'
+import type { MoorConnection } from '@/global'
 import { translateNow } from '@/i18n'
 import { desktopFsCacheKey, readDesktopFileDataUrl } from '@/lib/desktop-fs'
 import { LruCache } from '@/lib/lru-cache'
@@ -99,14 +99,14 @@ export async function resolveMediaDisplaySrc(path: string, owner?: OwnerScope): 
   // An explicit local owner is this device, even with a remote foreground.
   // Keep the native reader and its configured size cap; the backend preview
   // endpoint has a separate fixed limit.
-  if (owner?.connectionId === LOCAL_CONNECTION_ID && window.hermesDesktop?.readFileDataUrl) {
-    return window.hermesDesktop.readFileDataUrl(filePathFromMediaPath(path))
+  if (owner?.connectionId === LOCAL_CONNECTION_ID && window.moorDesktop?.readFileDataUrl) {
+    return window.moorDesktop.readFileDataUrl(filePathFromMediaPath(path))
   }
 
   // A tile can belong to a different gateway than the foreground. Pin both
   // halves at read admission rather than resolving them when the read settles.
-  if (window.hermesDesktop && (owner?.connectionId || owner?.profile)) {
-    const result = await hermesApi<string | { dataUrl?: string }>({
+  if (window.moorDesktop && (owner?.connectionId || owner?.profile)) {
+    const result = await moorApi<string | { dataUrl?: string }>({
       path: `/api/fs/read-data-url?path=${encodeURIComponent(filePathFromMediaPath(path))}`,
       ...(owner.connectionId ? { connectionId: owner.connectionId } : {}),
       ...(owner.profile ? { profile: owner.profile } : {})
@@ -115,7 +115,7 @@ export async function resolveMediaDisplaySrc(path: string, owner?: OwnerScope): 
     return typeof result === 'string' ? result : result.dataUrl || ''
   }
 
-  if (window.hermesDesktop && isRemoteGateway()) {
+  if (window.moorDesktop && isRemoteGateway()) {
     return gatewayMediaDataUrl(path)
   }
 
@@ -137,7 +137,7 @@ export interface MediaImageDimensions {
 // of reserving a frame that collapses again.
 const imageDimensions = new LruCache<string, 'broken' | MediaImageDimensions>(512)
 
-export function mediaImageKey(path: string, connection: HermesConnection | null, owner?: OwnerScope): string {
+export function mediaImageKey(path: string, connection: MoorConnection | null, owner?: OwnerScope): string {
   // File reads ignore URL query/fragment, but callers can use them to identify
   // a new revision. Keep them in the geometry key while joining proven aliases.
   const revision = /^file:/i.test(path) ? (path.match(/[?#].*$/)?.[0] ?? '') : ''
@@ -343,7 +343,7 @@ export async function downloadGatewayMediaFile(
   const conn = $connection.get()
   const owner = origin.owner ?? { connectionId: conn?.connectionId, profile: origin.profile ?? conn?.profile }
 
-  return window.hermesDesktop.saveGatewayFile({
+  return window.moorDesktop.saveGatewayFile({
     ...(owner.connectionId ? { connectionId: owner.connectionId } : {}),
     path,
     ...(owner.profile ? { profile: owner.profile } : {}),

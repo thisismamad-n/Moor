@@ -74,7 +74,7 @@ export function useRemoteOAuth(options: RemoteOAuthOptions): RemoteOAuth {
         return
       }
 
-      const result = await window.hermesDesktop.oauthLoginConnectionConfig(url)
+      const result = await window.moorDesktop.oauthLoginConnectionConfig(url)
 
       if (!current()) {
         return
@@ -115,7 +115,7 @@ export function useRemoteOAuth(options: RemoteOAuthOptions): RemoteOAuth {
     setSigningIn(true)
 
     try {
-      await window.hermesDesktop.oauthLogoutConnectionConfig(url)
+      await window.moorDesktop.oauthLogoutConnectionConfig(url)
 
       if (current()) {
         setOAuthConnected(false)

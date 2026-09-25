@@ -458,7 +458,7 @@ def _unavailable_auth_dbs_error(browser: str, failed: dict[str, str]) -> str:
     names = ", ".join(failed)
     if all(reason == _AUTH_DB_LOCKED for reason in failed.values()):
         return (f"{browser} is running and holds the profile's {names} with a write lock, so their "
-                "SQLite backup made no progress within five seconds. Hermes does not fall back to a "
+                "SQLite backup made no progress within five seconds. Moor does not fall back to a "
                 "raw file copy (it could lose committed logins). Fully quit "
                 f"{browser} (including any background instance) and retry, or turn "
                 "browser.use_real_profile off.")

@@ -164,7 +164,7 @@ class TestMcpPrefixThreshold:
 
     def test_malformed_config_falls_back_to_default(self, tmp_path, monkeypatch):
         (tmp_path / "config.yaml").write_text("tool_budget: not-a-mapping\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         from tools.budget_config import DEFAULT_MCP_RESULT_SIZE_CHARS
         cfg = budget_for_context_window(None)
         assert cfg.resolve_threshold("mcp_x_y") == DEFAULT_MCP_RESULT_SIZE_CHARS

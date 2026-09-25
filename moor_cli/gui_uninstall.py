@@ -86,12 +86,12 @@ def gui_install_summary(moor_home: "Path | None" = None) -> dict:
     # Steward facts, so the UI can gate its destructive options on the same
     # ladder the CLI uninstaller uses: only a git checkout may have its code
     # removed; sealed trees (nix / desktop-app / docker) get data-only.
-    from hermes_cli import steward as steward_mod
+    from moor_cli import steward as steward_mod
 
-    steward, code_removal_allowed = steward_mod.classify_install(home / "hermes-agent")
+    steward, code_removal_allowed = steward_mod.classify_install(home / "moor-agent")
 
     return {
-        "hermes_home": str(home),
+        "moor_home": str(home),
         "agent_installed": agent_is_installed(home),
         "gui_installed": gui_is_installed(home),
         "source_built_artifacts": [str(p) for p in source_built_gui_artifacts(home) if p.exists()],

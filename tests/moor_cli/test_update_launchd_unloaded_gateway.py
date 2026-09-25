@@ -106,7 +106,7 @@ class TestLaunchdRestartAfterUpdate:
         assert update_cmd._restart_launchd_gateway_after_update(supervision_verify=False) == ([], ["ai.moor.gateway"])
         assert calls == []
         out = capsys.readouterr().out
-        assert "hermes gateway restart" in out
+        assert "moor gateway restart" in out
 
     def test_no_plist_is_not_a_launchd_install(self, launchd, capsys):
         """No service definition → nothing to restart, and nothing to warn about."""
@@ -149,7 +149,7 @@ class TestServicePidSweepExclusion:
         state = {"list_rc": 1, "print_rc": 0, "print_out": _PRINT_OUTPUT_RUNNING}
 
         monkeypatch.setattr(gateway_mod, "supports_systemd_services", lambda: False)
-        monkeypatch.setattr(gateway_mod, "get_launchd_label", lambda: "ai.hermes.gateway")
+        monkeypatch.setattr(gateway_mod, "get_launchd_label", lambda: "ai.moor.gateway")
         monkeypatch.setattr(gateway_mod, "_launchd_domain", lambda: "gui/501")
 
         def fake_run(argv, **kwargs):

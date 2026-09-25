@@ -68,6 +68,8 @@ IMMUNE_FILES = {
     "MOOR_REBRAND_PLAYBOOK.md",
     # Specifications, custom features, and rebrand reference.
     "Moor Specifications and features.md",
+    # Rebrand resilience unit tests (contain intentional negative brand assertions).
+    "tests/moor_cli/test_rebrand_solutions.py",
     # Points at the upstream repo on purpose (it syncs FROM it).
     ".github/workflows/sync-upstream.yml",
     # Git identity data — real humans' emails, never user-facing brand.
@@ -210,6 +212,7 @@ LADDER: list[tuple[str, str]] = [
     (r"(?<=[a-z])Nous(?![A-Za-z0-9_])", "Moor"),
     # Compound tokens and special literal forms.
     (r"HERMES_\(", "MOOR_("),                        # /^HERMES_(?:BACKEND|...)_READY/ regex literals
+    (r"hermesagent", "mooragent"),
     (r"hermesbot", "moorbot"),                       # IRC/test nick fixtures
     (r"HermesBot", "MoorBot"),
     (r"hermesbench", "moorbench"),                   # internal eval-discipline name
@@ -569,8 +572,7 @@ def phase_contents(files: list[str], fork: str | None, dry: bool) -> tuple[int, 
         text, codec = decoded
         had_bom = raw.startswith(UTF8_BOM)
         new_text = transform_update_source(text, rel)
-        if new_text == text:
-            new_text = transform_text(text, fork)
+        new_text = transform_text(new_text, fork)
         if new_text != text:
             changed += 1
             if not dry:

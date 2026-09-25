@@ -18,8 +18,8 @@ import time
 import threading
 from unittest.mock import patch
 
-import hermes_cli.web_server as web_server_mod
-import hermes_cli.web_server_lifecycle as _web_server_lifecycle
+import moor_cli.web_server as web_server_mod
+import moor_cli.web_server_lifecycle as _web_server_lifecycle
 
 SLOW_SECONDS = 1  # represents the Defender worst-case (scaled down for CI speed)
 

@@ -35,7 +35,7 @@ iex (irm https://hermes-agent.nousresearch.com/install.ps1)
 |---|---|
 | `-Branch NAME` | 选择源码分支，默认 `main`。 |
 | `-Commit SHA` | 在分支检出后固定到指定 commit。 |
-| `-HermesHome PATH` | 选择数据目录。 |
+| `-MoorHome PATH` | 选择数据目录。 |
 | `-InstallDir PATH` | 选择源码目录。 |
 | `-NonInteractive` | 跳过需要输入的 setup/gateway 阶段。 |
 | `-IncludeDesktop` | 构建桌面应用并创建快捷方式。 |
@@ -52,15 +52,15 @@ Windows 10 源码安装支持不代表 MSIX 支持 Windows 10。
 打开 `.appinstaller` 文件，Windows 会安装签名包并记录更新源。
 软件包包含 Python、Node 和基础依赖，首次启动无需克隆或编译源码。
 
-执行别名提供 `hermes`、`hermes-agent` 和 `hermes-acp`。
-用 `Get-Command hermes -All` 检查是否被其他安装覆盖。
+执行别名提供 `moor`、`moor-agent` 和 `moor-acp`。
+用 `Get-Command moor -All` 检查是否被其他安装覆盖。
 在 Windows 的应用执行别名设置中管理这些入口。
 
 侧载版通过桌面 Update 控件交给 App Installer 更新。
-Hermes 先下载本地描述文件，再停止自己的后端、退出并等待包替换。
+Moor 先下载本地描述文件，再停止自己的后端、退出并等待包替换。
 它不依赖 `ms-appinstaller:` URL 协议。商店版本由 Microsoft Store 更新。
 
-`Hermes-Setup.exe` 是另一种引导安装程序，会下载并配置源码安装。
+`moor-setup.exe` 是另一种引导安装程序，会下载并配置源码安装。
 不要把它与自包含 MSIX 混为一谈。
 
 ## 源码安装程序实际做了什么
@@ -77,7 +77,7 @@ PM 通过 `pm/lock.json` 管理工具版本，不使用旧的 winget/分层 pip 
 可选依赖由 PM 管理，不再调用 `install.ps1 -Ensure`。
 
 :::tip 在 Windows 上跳过繁琐的提供商配置
-在 Windows 上，逐个配置工具 API key（Firecrawl、FAL、Browser Use、OpenAI TTS）是获得可用 agent 摩擦最大的部分。[Nous Portal](./features/tool-gateway.md) 订阅通过一次 OAuth 登录即可覆盖模型**以及**所有这些工具。安装程序完成后，运行 `hermes setup --portal` 完成配置。
+在 Windows 上，逐个配置工具 API key（Firecrawl、FAL、Browser Use、OpenAI TTS）是获得可用 agent 摩擦最大的部分。[Moor Portal](./features/tool-gateway.md) 订阅通过一次 OAuth 登录即可覆盖模型**以及**所有这些工具。安装程序完成后，运行 `moor setup --portal` 完成配置。
 :::
 
 ## 功能矩阵
@@ -104,7 +104,7 @@ Dashboard 已有 Windows ConPTY 实现，依赖 `pywinpty`。SDK 缺失或损坏
 Moor 的终端工具通过 **Git Bash** 运行命令，与 Claude Code 采用相同策略。这在不重写每个工具的情况下绕过了 POSIX 与 Windows 的差异。
 
 `pm.shell()` 先读取 PM facts 中的 Git/Bash，再检查 PATH。
-当前脚本不再设置 `HERMES_GIT_BASH_PATH`。MinGit 不能替代带 Bash 的 Git for Windows。
+当前脚本不再设置 `MOOR_GIT_BASH_PATH`。MinGit 不能替代带 Bash 的 Git for Windows。
 
 WindowsApps 软件包中的可执行文件可能无法由包外 Python 启动，并返回 `WinError 5`。
 请使用包自己的入口，或为源码环境使用常规工具安装，不要关闭系统安全控制。
@@ -194,19 +194,19 @@ moor gateway uninstall   # 移除 schtasks 条目、Startup 快捷方式、pid �
 
 | 路径 | 内容 |
 |---|---|
-| `%LOCALAPPDATA%\hermes\hermes-agent\` | 源码安装的 checkout；纯 MSIX 安装没有此目录。 |
-| `%LOCALAPPDATA%\hermes\tools\` | 可写工具存储；MSIX 基础工具保留在包内。 |
-| `%LOCALAPPDATA%\hermes\installs\` | 每个安装的环境选择、事务日志和 Python 代际。 |
-| `%LOCALAPPDATA%\hermes\bin\` | 源码安装启动器；MSIX 使用执行别名。 |
-| `%LOCALAPPDATA%\hermes\` | 用户配置、密钥、会话、插件、技能和日志。 |
+| `%LOCALAPPDATA%\moor\moor-agent\` | 源码安装的 checkout；纯 MSIX 安装没有此目录。 |
+| `%LOCALAPPDATA%\moor\tools\` | 可写工具存储；MSIX 基础工具保留在包内。 |
+| `%LOCALAPPDATA%\moor\installs\` | 每个安装的环境选择、事务日志和 Python 代际。 |
+| `%LOCALAPPDATA%\moor\bin\` | 源码安装启动器；MSIX 使用执行别名。 |
+| `%LOCALAPPDATA%\moor\` | 用户配置、密钥、会话、插件、技能和日志。 |
 
-这些是默认路径，`HERMES_HOME` 可以更改数据位置。
-不要删除整个 `%LOCALAPPDATA%\hermes` 来修复应用，否则会丢失共享数据。
+这些是默认路径，`MOOR_HOME` 可以更改数据位置。
+不要删除整个 `%LOCALAPPDATA%\moor` 来修复应用，否则会丢失共享数据。
 
 ## 浏览器工具
 
 内置浏览器后端使用 PM 管理的 `agent-browser` 和 Chromium。
-Browser Use 则通过 `hermes tools` 配置自己的 CLI。
+Browser Use 则通过 `moor tools` 配置自己的 CLI。
 ARM64 Windows 上的 Chromium/agent-browser 可以使用 x64 模拟，这与原生 Python 不同。
 详见 [浏览器自动化](./features/browser.md)。
 
@@ -219,13 +219,13 @@ ARM64 Windows 上的 Chromium/agent-browser 可以使用 x64 模拟，这与原�
 验证：
 
 ```powershell
-Get-Command hermes        # 应输出 C:\Users\<you>\AppData\Local\hermes\bin\hermes.exe
-hermes --version
+Get-Command moor        # 应输出 C:\Users\<you>\AppData\Local\moor\bin\moor.exe
+moor --version
 ```
 
 ### 环境变量
 
-Hermes 同时支持 `$env:X`（进程作用域）和用户环境变量（永久，在系统属性 → 环境变量中设置）。将 API key 放在所选 `HERMES_HOME` 的 `.env` 中（默认 `%LOCALAPPDATA%\hermes\.env`）——与 Linux 相同：
+Moor 同时支持 `$env:X`（进程作用域）和用户环境变量（永久，在系统属性 → 环境变量中设置）。将 API key 放在所选 `MOOR_HOME` 的 `.env` 中（默认 `%LOCALAPPDATA%\moor\.env`）——与 Linux 相同：
 
 ```
 OPENROUTER_API_KEY=sk-or-...
@@ -240,8 +240,8 @@ TELEGRAM_BOT_TOKEN=...
 
 | 变量                          | 效果                                                                                                                                |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `HERMES_DISABLE_WINDOWS_UTF8` | 设为 `1` 可禁用 UTF-8 stdio 垫片，回退到区域设置代码页。用于排查编码 bug。                                                          |
-| `EDITOR` / `VISUAL`           | 用于 `/edit` 和 `Ctrl-X Ctrl-E` 的编辑器。如果两者均未设置，Hermes 默认使用 `notepad`。                                             |
+| `MOOR_DISABLE_WINDOWS_UTF8` | 设为 `1` 可禁用 UTF-8 stdio 垫片，回退到区域设置代码页。用于排查编码 bug。                                                          |
+| `EDITOR` / `VISUAL`           | 用于 `/edit` 和 `Ctrl-X Ctrl-E` 的编辑器。如果两者均未设置，Moor 默认使用 `notepad`。                                             |
 
 ## 卸载
 
@@ -251,13 +251,13 @@ TELEGRAM_BOT_TOKEN=...
 moor uninstall
 ```
 
-源码安装可先用 `hermes uninstall --dry-run` 查看范围。`--full` 同时删除数据，`--data` 只删除数据。MSIX/Store 应通过 Windows 设置的“已安装的应用”移除，CLI 不删除包所有的代码。
+源码安装可先用 `moor uninstall --dry-run` 查看范围。`--full` 同时删除数据，`--data` 只删除数据。MSIX/Store 应通过 Windows 设置的“已安装的应用”移除，CLI 不删除包所有的代码。
 
 :::caution 删除用户数据
-删除前先停止使用所选 `HERMES_HOME` 的全部进程，并备份数据。
-通过 `hermes uninstall --dry-run` 检查范围，再选择数据删除模式。
+删除前先停止使用所选 `MOOR_HOME` 的全部进程，并备份数据。
+通过 `moor uninstall --dry-run` 检查范围，再选择数据删除模式。
 不要为了修复一个应用或 profile 而递归删除默认数据根目录。
-自定义 `HERMES_HOME` 可以位于其他位置，移除应用包也不会删除这些数据。
+自定义 `MOOR_HOME` 可以位于其他位置，移除应用包也不会删除这些数据。
 :::
 
 `moor uninstall` CLI 子命令还能处理 schtasks 条目以不同任务名注册的情况（旧版安装）——它通过安装路径而非硬编码任务名来搜索。
@@ -274,8 +274,8 @@ moor uninstall
 
 ## 常见问题
 
-**安装后立即出现 `hermes: command not found`。**
-打开新的 PowerShell 窗口。安装程序已将 `%LOCALAPPDATA%\hermes\bin` 添加到用户 PATH，但现有 shell 需要重启才能获取更新。在此期间可以运行 `& "$env:LOCALAPPDATA\hermes\bin\hermes.exe"`。
+**安装后立即出现 `moor: command not found`。**
+打开新的 PowerShell 窗口。安装程序已将 `%LOCALAPPDATA%\moor\bin` 添加到用户 PATH，但现有 shell 需要重启才能获取更新。在此期间可以运行 `& "$env:LOCALAPPDATA\moor\bin\moor.exe"`。
 
 **运行工具时出现 `WinError 193: %1 is not a valid Win32 application`。**
 你触发了绕过 `.cmd` 垫片的 shebang 脚本调用。Moor 通过 `shutil.which(cmd, path=local_bin)` 解析命令，使 PATHEXT 能识别 `.CMD`——如果你通过硬编码路径调用工具，请切换到 `.cmd` 变体（例如使用 `npx.cmd` 而非 `npx`）。
@@ -290,10 +290,10 @@ moor uninstall
 你只在当前进程中设置了它；请关闭并重新打开 shell，或在系统属性 → 环境变量中以用户作用域设置。在新 PowerShell 窗口中用 `echo $env:EDITOR` 验证。
 
 **浏览器工具启动了，但工具调用超时。**
-运行 `hermes doctor` 和 `hermes pm doctor`，并通过 `hermes tools` 检查所选浏览器后端。不要向签名包写入另一个 Playwright 版本。
+运行 `moor doctor` 和 `moor pm doctor`，并通过 `moor tools` 检查所选浏览器后端。不要向签名包写入另一个 Playwright 版本。
 
 **`agent-browser` 报奇怪的 Node 版本错误。**
-运行 `hermes pm doctor` 并检查当前 Hermes 入口。PM 提供固定的 Node 版本，不要为了修复 Hermes 而删除其他程序使用的系统 Node。
+运行 `moor pm doctor` 并检查当前 Moor 入口。PM 提供固定的 Node 版本，不要为了修复 Moor 而删除其他程序使用的系统 Node。
 
 **CLI 中中文/日文/阿拉伯文字符显示为 `?`。**
 UTF-8 stdio 垫片未激活。检查 `MOOR_DISABLE_WINDOWS_UTF8` 是否**未**设置（`Get-ChildItem env:MOOR_DISABLE_WINDOWS_UTF8`）。如果该变量为空但仍然看到 `?`，控制台宿主（非常旧的 `cmd.exe`）可能完全不支持 UTF-8——请切换到 Windows Terminal。

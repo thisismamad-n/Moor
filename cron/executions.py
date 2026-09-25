@@ -18,8 +18,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
-from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from moor_constants import get_moor_home
+from moor_time import now as _moor_now
 from cron.constants import CLAIM_TTL_INACTIVITY_HEADROOM
 
 # Optional test override. Production resolves the path at transaction time so dashboard operations
@@ -148,7 +148,7 @@ def _live_owner_stale_after_seconds() -> Optional[float]:
     """Age past which a claimed/running row with a LIVE owner is treated as wedged.
 
     Derived from the existing knobs, never a bare wall-clock constant:
-    ``max(3 × HERMES_CRON_TIMEOUT, cron script timeout, 7200)``. Returns ``None`` (never reclaim
+    ``max(3 × MOOR_CRON_TIMEOUT, cron script timeout, 7200)``. Returns ``None`` (never reclaim
     live owners — today's behaviour) when the inactivity timeout is 0/unlimited or not a finite
     positive number: with no bound to derive from, fail closed.
     """
@@ -166,8 +166,8 @@ def _live_owner_stale_after_seconds() -> Optional[float]:
 
 
 def _claim_age_seconds(claimed_at: str) -> float:
-    """Seconds since ``claimed_at`` (NOT NULL, always the aware ISO string from hermes_time.now)."""
-    return (_hermes_now() - datetime.fromisoformat(claimed_at)).total_seconds()
+    """Seconds since ``claimed_at`` (NOT NULL, always the aware ISO string from moor_time.now)."""
+    return (_moor_now() - datetime.fromisoformat(claimed_at)).total_seconds()
 
 
 def _prune_unlocked(conn: sqlite3.Connection) -> None:
@@ -320,7 +320,7 @@ def recover_interrupted_executions() -> int:
     """Mark abandoned attempts unknown without scheduling retries: rows whose owner is provably
     dead, plus rows whose live owner holds a claim older than the derived stale bound (the
     process is not killed)."""
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     changed = 0
     recovered: List[Dict[str, Any]] = []
     # Derived on the first live-owned row only: the bound reads config, and the idle gateway

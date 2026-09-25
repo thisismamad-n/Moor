@@ -24,9 +24,9 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.macos_tcc_anchor as tcc
+import moor_cli.macos_tcc_anchor as tcc
 from pm.environments import venv_python
-from hermes_cli import doctor_platform
+from moor_cli import doctor_platform
 
 
 def _build_store(tmp_path, version: str = "3.11.15", *, with_libpython: bool = False) -> Path:
@@ -143,7 +143,7 @@ class TestEnsureTccAnchor:
         signed = []
 
         monkeypatch.setattr(
-            "hermes_cli.macos_signing.sign_managed_python", lambda p: signed.append(Path(p)) or True
+            "moor_cli.macos_signing.sign_managed_python", lambda p: signed.append(Path(p)) or True
         )
         store_bin = _build_store(tmp_path)
         root = _build_checkout(tmp_path, store_bin=store_bin)
@@ -561,8 +561,8 @@ class TestAnchoredAliasesBootE2E:
         # this disposable source a different identity so a skipped sign fails.
         subprocess.run(
             ["codesign", "--force", "--sign", "-", "--timestamp=none",
-             "--identifier", "test.hermes.unanchored", "--requirements",
-             '=designated => identifier "test.hermes.unanchored"', str(store_bin / minor)],
+             "--identifier", "test.moor.unanchored", "--requirements",
+             '=designated => identifier "test.moor.unanchored"', str(store_bin / minor)],
             check=True, capture_output=True, timeout=30,
         )
         os.symlink(base / "lib", store / "lib")
@@ -594,7 +594,7 @@ class TestAnchoredAliasesBootE2E:
                 ["codesign", "-d", "-r-", str(executable)],
                 check=True, capture_output=True, text=True, timeout=30,
             )
-            assert 'designated => identifier "com.nousresearch.hermes.managed-python"' in identity.stdout
+            assert 'designated => identifier "com.moorinc.moor.managed-python"' in identity.stdout
             probe = subprocess.run(
                 [str(venv_bin / name), "-c",
                  "import encodings, sys; print(sys.prefix)"],

@@ -88,7 +88,7 @@ class _OpenWakeWordEngine(_Engine):
         from pyopen_wakeword import OpenWakeWord, OpenWakeWordFeatures
 
         model_ref = str(sub.get("model") or ww._BUNDLED_MODEL_NAME).strip()
-        # Default (or explicit "hey_hermes") → the bundled model; a custom path
+        # Default (or explicit "hey_moor") → the bundled model; a custom path
         # is used as-is. pyopen-wakeword bundles the shared feature models
         # (melspectrogram + embedding — byte-identical to the openWakeWord
         # v0.5.1 files) inside its wheel, so there is no download_models step.

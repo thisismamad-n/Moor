@@ -766,7 +766,7 @@ class TestHealthEndpoint:
             data = await resp.json()
             assert "version" in data
             assert isinstance(data["version"], str)
-            from hermes_cli.version_info import get_version_info
+            from moor_cli.version_info import get_version_info
             assert data["version"] == get_version_info().base_version
 
 

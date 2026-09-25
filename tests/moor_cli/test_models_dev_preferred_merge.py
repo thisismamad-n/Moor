@@ -20,7 +20,7 @@ appear in ``/model`` without a Moor release.
 from unittest.mock import patch
 
 
-from hermes_cli.models import (
+from moor_cli.models import (
     _PROVIDER_MODELS,
     _merge_with_models_dev,
     provider_model_ids,
@@ -34,8 +34,8 @@ class TestMergeHelper:
         with patch(
             "agent.models_dev.list_agentic_models",
             return_value=["deepseek-v4-flash-vision-exp", "deepseek-v4-flash", "deepseek-flash", "deepseek-v4-pro"],
-        ), patch("hermes_cli.models._PROVIDER_CATALOG_FETCHERS", {}), \
-                patch("hermes_cli.models._profile_live_catalog", return_value=None):
+        ), patch("moor_cli.models._PROVIDER_CATALOG_FETCHERS", {}), \
+                patch("moor_cli.models._profile_live_catalog", return_value=None):
             out = provider_model_ids("deepseek")
 
         assert out == list(_PROVIDER_MODELS["deepseek"])

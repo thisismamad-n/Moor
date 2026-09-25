@@ -49,8 +49,8 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
     expect(files.some(f => f.endsWith('.heapsnapshot'))).toBe(false)
   })
 
-  it('writes both diagnostics and snapshot for auto-high when HERMES_AUTO_HEAPDUMP=1', async () => {
-    process.env.HERMES_AUTO_HEAPDUMP = '1'
+  it('writes both diagnostics and snapshot for auto-high when MOOR_AUTO_HEAPDUMP=1', async () => {
+    process.env.MOOR_AUTO_HEAPDUMP = '1'
 
     const result = await performHeapDump('auto-high')
 

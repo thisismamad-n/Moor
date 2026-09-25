@@ -275,7 +275,7 @@ def test_uninspectable_watched_identity_blocks_alias_before_sqlite(
         # swallow the error and report the database missing).
         frame = sys._getframe(1)
         if (str(path) == str(db) and not args and not kwargs
-                and frame.f_globals.get("__name__") == "hermes_state_holders"):
+                and frame.f_globals.get("__name__") == "moor_state_holders"):
             raise PermissionError(errno.EACCES, "watched identity denied", path)
         if path == "/proc/4242/fd/7":
             return real_stat(db)
@@ -299,7 +299,7 @@ def test_uninspectable_watched_identity_blocks_alias_before_sqlite(
 
 
 @pytest.mark.platforms("linux")
-def test_uninspectable_alias_descriptor_for_hermes_blocks_before_sqlite(
+def test_uninspectable_alias_descriptor_for_moor_blocks_before_sqlite(
     tmp_path, monkeypatch
 ):
     """Moor cannot make an aliased fd safe when its identity is unreadable."""

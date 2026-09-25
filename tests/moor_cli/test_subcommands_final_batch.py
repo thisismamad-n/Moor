@@ -13,8 +13,8 @@ from __future__ import annotations
 import argparse
 
 
-from hermes_cli.subcommands.computer_use import build_computer_use_parser
-from hermes_cli.subcommands.worktree import build_worktree_parser
+from moor_cli.subcommands.computer_use import build_computer_use_parser
+from moor_cli.subcommands.worktree import build_worktree_parser
 
 
 def _tree():

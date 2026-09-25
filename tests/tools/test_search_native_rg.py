@@ -121,7 +121,7 @@ def test_limit_hit_keeps_drained_matches_when_group_kill_is_refused(tree, ops_fa
     error nor discard the matches already drained (#116855)."""
     import os
 
-    monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "1")
+    monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "1")
     ops = ops_factory(tree, [])
     monkeypatch.setattr(os, "killpg", lambda pgid, sig: (_ for _ in ()).throw(PermissionError(1, "Operation not permitted")))
     result = ops.search(pattern="needle", path=str(tree), limit=2)

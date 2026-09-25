@@ -14,7 +14,7 @@ ASCII art: pyfiglet, cowsay, boxes, image-to-ascii.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/creative/ascii-art` |
+| Source | Optional — install with `moor skills install official/creative/ascii-art` |
 | Path | `optional-skills/creative/ascii-art` |
 | Version | `4.0.0` |
 | Author | 0xbyt4, Moor Agent |
@@ -250,14 +250,14 @@ Large collection of classic ASCII art organized by subject. Art is inside HTML `
 **Step 1 — Fetch the page:**
 
 ```bash
-curl -s 'https://ascii.co.uk/art/cat' -o ~/.hermes/cache/scratch/ascii_art.html
+curl -s 'https://ascii.co.uk/art/cat' -o ~/.moor/cache/scratch/ascii_art.html
 ```
 
 **Step 2 — Extract art from pre tags:**
 
 ```python
 import os, re, html
-with open(os.path.expanduser('~/.hermes/cache/scratch/ascii_art.html')) as f:
+with open(os.path.expanduser('~/.moor/cache/scratch/ascii_art.html')) as f:
     text = f.read()
 arts = re.findall(r'<pre[^>]*>(.*?)</pre>', text, re.DOTALL)
 for art in arts:

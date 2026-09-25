@@ -266,13 +266,13 @@ async def test_run_restart_excluded_from_stop_cancel_loop():
 @pytest.mark.asyncio
 async def test_restart_from_served_profile_chat_restarts_the_host_gateway(monkeypatch):
     """A /restart handled inside a served profile's runtime scope restarts the HOST gateway: the
-    detached watcher relaunches `hermes gateway restart` under the launch home (under a named
+    detached watcher relaunches `moor gateway restart` under the launch home (under a named
     profile's home it exits 78 and nothing comes back), and stop() - which flushes pending
-    messages under get_hermes_home() - runs outside the requester's profile scope."""
+    messages under get_moor_home() - runs outside the requester's profile scope."""
     from agent.secret_scope import current_secret_scope
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    launch_home = get_hermes_home()
+    launch_home = get_moor_home()
     profile_home = launch_home / "profiles" / "research"
     profile_home.mkdir(parents=True)
     (profile_home / ".env").write_text("RESEARCH_ONLY_TOKEN=x\n", encoding="utf-8")
@@ -281,22 +281,22 @@ async def test_restart_from_served_profile_chat_restarts_the_host_gateway(monkey
     seen = {}
 
     async def _recording_stop(**_kwargs):
-        seen["stop_home"] = get_hermes_home()
+        seen["stop_home"] = get_moor_home()
         seen["stop_secret_scope"] = current_secret_scope()
 
     runner.stop = _recording_stop
     watcher_envs = []
-    monkeypatch.setattr(gateway_run, "_resolve_hermes_bin", lambda: ["hermes"])
+    monkeypatch.setattr(gateway_run, "_resolve_moor_bin", lambda: ["moor"])
     monkeypatch.setattr(
         subprocess, "Popen", lambda _argv, **kwargs: watcher_envs.append(kwargs["env"]) or MagicMock()
     )
 
     async with gateway_run._async_profile_runtime_scope(profile_home):
-        assert get_hermes_home() == profile_home
+        assert get_moor_home() == profile_home
         assert runner.request_restart(detached=True, via_service=False) is True
     await runner._restart_task
 
-    assert [env.get("HERMES_HOME") for env in watcher_envs] == [str(launch_home)]
+    assert [env.get("MOOR_HOME") for env in watcher_envs] == [str(launch_home)]
     assert seen == {"stop_home": launch_home, "stop_secret_scope": None}
 
 
@@ -311,7 +311,7 @@ async def test_windows_detached_restart_scrubs_gateway_marker(monkeypatch, tmp_p
 
     monkeypatch.setattr(gateway_run, "_resolve_moor_bin", lambda: ["moor"])
     monkeypatch.setattr(gateway_run.os, "getpid", lambda: 321)
-    monkeypatch.setenv("_HERMES_GATEWAY", "1")
+    monkeypatch.setenv("_MOOR_GATEWAY", "1")
 
     import moor_cli._subprocess_compat as subprocess_compat
 
@@ -331,11 +331,11 @@ async def test_windows_detached_restart_scrubs_gateway_marker(monkeypatch, tmp_p
 
     assert len(popen_calls) == 1
     cmd, kwargs = popen_calls[0]
-    assert cmd[-3:] == ["hermes", "gateway", "restart"]
-    assert kwargs["env"].get("_HERMES_GATEWAY") is None
+    assert cmd[-3:] == ["moor", "gateway", "restart"]
+    assert kwargs["env"].get("_MOOR_GATEWAY") is None
     # The watcher is an installation-bound command: PM's bootstrap selects the
     # dependency generation at child start, no venv is captured in its env.
-    from hermes_cli._launchers import runtime_command
+    from moor_cli._launchers import runtime_command
     from pathlib import Path
     assert cmd[:3] == runtime_command(Path(gateway_run.__file__).resolve().parent.parent)[:3]
     assert kwargs["stdout"] is subprocess.DEVNULL
@@ -553,14 +553,14 @@ def test_wedged_agent_count_ignores_sentinels_and_bad_summaries(monkeypatch):
 async def test_request_restart_skips_wait_for_cron_run_past_inflight_allowance(monkeypatch, tmp_path):
     """A cron run older than the scheduler's stale-inflight allowance is wedged: the restart proceeds.
 
-    #115469 Defect B: a no-agent job whose delivery hung pinned ``hermes update`` in "draining" for the
+    #115469 Defect B: a no-agent job whose delivery hung pinned ``moor update`` in "draining" for the
     full ``restart_after_turn_timeout`` because ``_wedged_agent_count`` only ever looked at chat agents,
     so the cron unit was structurally un-skippable ("0 wedged and excluded").
     """
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.delenv("MOOR_AGENT_TIMEOUT", raising=False)
     monkeypatch.setattr("cron.jobs.load_jobs", lambda: [])
     runner, _adapter = make_restart_runner()
     runner.stop = AsyncMock()
@@ -584,7 +584,7 @@ def test_wedged_cron_allowance_honours_young_runs_and_job_interval(monkeypatch, 
     """Control: a run inside ``max(2 * interval, cron.inflight_max_minutes)`` is live work, not wedged."""
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr("cron.jobs.load_jobs", lambda: [{"id": "six-hourly-job", "schedule": {"kind": "interval", "minutes": 360}}])
     runner, _adapter = make_restart_runner()
     assert sched.try_register_running_job("six-hourly-job")
@@ -605,7 +605,7 @@ def test_wedged_cron_check_parses_jobs_once_per_run(monkeypatch, tmp_path):
     must be resolved once per in-flight run, not by a full jobs.json parse per job per tick."""
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     loads = []
     monkeypatch.setattr("cron.jobs.load_jobs", lambda: loads.append(1) or [
         {"id": jid, "schedule": {"kind": "interval", "minutes": 360}} for jid in ("job-a", "job-b", "job-c")])

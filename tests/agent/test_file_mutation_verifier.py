@@ -307,7 +307,7 @@ class TestVerifierEnabled:
 
     def test_config_value_disables(self, monkeypatch):
         """``display.file_mutation_verifier: false`` turns the verifier off."""
-        monkeypatch.delenv("HERMES_FILE_MUTATION_VERIFIER", raising=False)
+        monkeypatch.delenv("MOOR_FILE_MUTATION_VERIFIER", raising=False)
         agent = _bare_agent()
 
         import moor_cli.config as _cfg_mod

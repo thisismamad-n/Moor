@@ -9,7 +9,7 @@ description: "How to build a memory provider plugin for Moor Agent"
 Memory provider plugins give Moor Agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md. This guide covers how to build one.
 
 :::tip
-Memory providers are one of two **provider plugin** types. The other is [Context Engine Plugins](./context-engine-plugin.md), which replace the built-in context compressor. Both follow the same pattern: single-select, config-driven, managed via `hermes plugins`.
+Memory providers are one of two **provider plugin** types. The other is [Context Engine Plugins](./context-engine-plugin.md), which replace the built-in context compressor. Both follow the same pattern: single-select, config-driven, managed via `moor plugins`.
 :::
 
 ## Installation Layouts
@@ -18,10 +18,10 @@ Moor discovers memory providers from four sources, in this precedence order:
 
 | Source | Location | Notes |
 |---|---|---|
-| Bundled | `plugins/memory/<name>/` | Ships with Hermes. Closed to new providers — see [CONTRIBUTING](https://github.com/NousResearch/hermes-agent/blob/main/CONTRIBUTING.md). |
-| User | `$HERMES_HOME/plugins/<name>/` | Dropped in by the user, per profile. |
-| Project | `./.hermes/plugins/<name>/` | Opt-in via `HERMES_ENABLE_PROJECT_PLUGINS=1`. |
-| Package | `hermes_agent.memory_providers` entry point | Distribution supplied by the installation owner; nothing to copy. |
+| Bundled | `plugins/memory/<name>/` | Ships with Moor. Closed to new providers — see [CONTRIBUTING](https://github.com/thisismamad-n/Moor/blob/main/CONTRIBUTING.md). |
+| User | `$MOOR_HOME/plugins/<name>/` | Dropped in by the user, per profile. |
+| Project | `./.moor/plugins/<name>/` | Opt-in via `MOOR_ENABLE_PROJECT_PLUGINS=1`. |
+| Package | `moor_agent.memory_providers` entry point | Distribution supplied by the installation owner; nothing to copy. |
 
 Earlier sources win on a name collision, so a directory dropped into a working
 tree can never shadow a shipped provider.
@@ -36,16 +36,16 @@ Discovery only *enumerates* — it never imports a provider. Nothing runs until
 `memory.provider` names it.
 
 Entry-point discovery does not install packages. Do not inject a provider into
-Hermes's selected environment with pip. On PM-managed installations, ship a
+Moor's selected environment with pip. On PM-managed installations, ship a
 directory provider with declared Python dependencies; plugin admission and
-`hermes memory setup` prepare them through PM before use. Owner-managed builds
+`moor memory setup` prepare them through PM before use. Owner-managed builds
 (such as Nix) can include an entry-point distribution declaratively.
 
 CLI and dashboard setup share candidate preparation. PM includes the provider's
 `pyproject.toml` or legacy `pip_dependencies` / `python_dependencies` alongside
 the active plugin union; an importable module does not bypass declared version
 constraints. Dashboard readiness checks the same inputs without installing
-anything. A successful preparation may require restarting Hermes before the
+anything. A successful preparation may require restarting Moor before the
 running process can use the selected dependency generation. External sidecar
 checks and setup commands remain separate from the Python union.
 
@@ -128,7 +128,7 @@ fields; callers may initialize a provider without an agent or a session database
 | `gateway_session_key` | Stable messaging-chat identity for per-chat session isolation. |
 | `user_id`, `user_id_alt`, `user_name`, `chat_id` | Gateway identity fields, included when present. |
 | `agent_identity` | Active profile name, when available. |
-| `agent_workspace`, `agent_context` | Runtime agent scope. `agent_workspace` is `hermes`; `agent_context` is `cron` for scheduler runs, `subagent` for `delegate_task` children, else `primary` — skip automatic writes for the non-primary values. |
+| `agent_workspace`, `agent_context` | Runtime agent scope. `agent_workspace` is `moor`; `agent_context` is `cron` for scheduler runs, `subagent` for `delegate_task` children, else `primary` — skip automatic writes for the non-primary values. |
 
 Do not assume `os.getcwd()` identifies the conversation's workspace: one Desktop
 or gateway backend can serve several sessions. If `cwd` is absent and directory
@@ -183,7 +183,7 @@ entry selected under the native-store lock. Notifications are emitted only after
 the complete write or batch succeeds. Batch notifications preserve operation order;
 each operation's previous content reflects earlier operations in that batch.
 `old_text` is the caller's search text, not the identity of the changed entry.
-Older Hermes versions can omit `previous_content`. Providers that require exact
+Older Moor versions can omit `previous_content`. Providers that require exact
 identity should skip destructive mirroring when it is absent.
 
 ### Oversized prefetch results
@@ -234,13 +234,13 @@ uncompressed transcript is preserved, the compaction attempt errors with
 `BLOCKED_MISSING_PREREQUISITE`, and it can be retried once your store
 recovers. With the gate off (default), nothing changes for existing providers.
 
-None of the providers bundled with Hermes advertise checkpoint API v2 — the
+None of the providers bundled with Moor advertise checkpoint API v2 — the
 contract is opt-in and exists for third-party archiving providers. Enabling
 `checkpoint_required` without one therefore blocks every compression attempt
 (manual and automatic): agent init logs a warning naming the active provider,
 and each refusal names `compression.checkpoint_required` as the key to disable.
 
-The gate binds to every compaction authority, not just the Hermes
+The gate binds to every compaction authority, not just the Moor
 summarizer: server-side native compaction (`compression.codex_responses_native`)
 is suppressed while the gate is armed, post-turn micro-compaction
 (`compression.micro_compact`) is forced off at agent init (it absorbs old
@@ -272,20 +272,20 @@ Contract tests: `tests/agent/test_pre_compress_checkpoint_contract.py`.
 
 ## Setup UX — what a standalone provider keeps
 
-Every setup surface Hermes gives a bundled provider is driven by files in the provider's
+Every setup surface Moor gives a bundled provider is driven by files in the provider's
 own directory, so a provider installed from the plugin catalog keeps all of them:
 
 | Surface | What the provider ships |
 |---|---|
 | Desktop → Capabilities → Tools → Memory (config panel) | `config_schema.py` (below) |
-| `hermes memory setup` wizard | `get_config_schema()` declares the fields the wizard prompts for, `save_config(config, hermes_home)` persists them, `post_setup(hermes_home, config)` runs afterwards for anything interactive (OAuth, first sync); `get_status_config()` feeds `hermes memory status` |
-| `hermes <provider> …` subcommands | `cli.py` with `register_cli(subparser)` ([Adding CLI Commands](#adding-cli-commands)) |
-| Python dependencies | `pyproject.toml` `[project] dependencies` (or `python_dependencies` in `plugin.yaml`); installed under Hermes' own pins at install time and re-applied across `hermes update` |
+| `moor memory setup` wizard | `get_config_schema()` declares the fields the wizard prompts for, `save_config(config, moor_home)` persists them, `post_setup(moor_home, config)` runs afterwards for anything interactive (OAuth, first sync); `get_status_config()` feeds `moor memory status` |
+| `moor <provider> …` subcommands | `cli.py` with `register_cli(subparser)` ([Adding CLI Commands](#adding-cli-commands)) |
+| Python dependencies | `pyproject.toml` `[project] dependencies` (or `python_dependencies` in `plugin.yaml`); installed under Moor' own pins at install time and re-applied across `moor update` |
 
 Your provider's name, `memory.<name>` config section, data directory and tool names are the
-contract with existing users. A provider that moves out of core keeps all four; Hermes then
+contract with existing users. A provider that moves out of core keeps all four; Moor then
 installs the catalog plugin automatically for anyone whose `memory.provider` still names it
-(on `hermes update`, and once at agent start when `security.allow_lazy_installs` is on).
+(on `moor update`, and once at agent start when `security.allow_lazy_installs` is on).
 
 ## Config Schema
 
@@ -496,12 +496,12 @@ plugins/memory/my-provider/
 
 Only **one** external memory provider can be active at a time. If a user tries to register a second, the MemoryManager rejects it with a warning. This prevents tool schema bloat and conflicting backends.
 
-## `HERMES_HOME` survival contract (what wrappers can rely on)
+## `MOOR_HOME` survival contract (what wrappers can rely on)
 
-For wrapper-style providers that keep their runtime in a sidecar venv outside Hermes-managed Python (no dependency surface — no `pyproject.toml`, `pip_dependencies`, or `python_dependencies` — at the scanned plugin root; a `pyproject.toml` belonging solely to an external or nested sidecar is not scanned):
+For wrapper-style providers that keep their runtime in a sidecar venv outside moor-managed Python (no dependency surface — no `pyproject.toml`, `pip_dependencies`, or `python_dependencies` — at the scanned plugin root; a `pyproject.toml` belonging solely to an external or nested sidecar is not scanned):
 
-- **Location.** `$HERMES_HOME/plugins/<name>/` is the profile-scoped plugin location, and `HERMES_HOME` follows the active context override, then `$HERMES_HOME`, then the platform default. Propagate `HERMES_HOME` when launching the wrapper or sidecar so profile isolation holds; `MemoryManager.initialize_all` injects the active `hermes_home` into every provider.
-- **Survival.** Ordinary Hermes updates — including managed-venv rebuild/replacement by pm — do not delete or rewrite `$HERMES_HOME/plugins/**`. An installed wrapper directory and its marker file (e.g. `mnemosyne-wrapper.json`) survive. Explicit plugin updates and deletion flows (`hermes uninstall`, `hermes plugins remove`, profile deletion, user deletion) are excluded from this guarantee.
+- **Location.** `$MOOR_HOME/plugins/<name>/` is the profile-scoped plugin location, and `MOOR_HOME` follows the active context override, then `$MOOR_HOME`, then the platform default. Propagate `MOOR_HOME` when launching the wrapper or sidecar so profile isolation holds; `MemoryManager.initialize_all` injects the active `moor_home` into every provider.
+- **Survival.** Ordinary Moor updates — including managed-venv rebuild/replacement by pm — do not delete or rewrite `$MOOR_HOME/plugins/**`. An installed wrapper directory and its marker file (e.g. `mnemosyne-wrapper.json`) survive. Explicit plugin updates and deletion flows (`moor uninstall`, `moor plugins remove`, profile deletion, user deletion) are excluded from this guarantee.
 - **Sidecar isolation.** A plugin root with no dependency surface never joins the pm workspace dependency union; a resync or venv rebuild neither provisions deps for it nor touches its tree.
 - **Conflicts.** For native shared-venv plugins, an unsatisfiable dependency union fails loudly: the candidate plugin stays unenabled and unimported (the admission authority refuses before publishing config, reporting the plugin identity plus the resolver's reason, with a re-enable/retry path and a machine-readable pm receipt). Dependency resolution does not automatically disable other plugins or run a bisect. Explicit plugin updates, removal, and independent security gates are separate operations.
 

@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import post_update
-from hermes_cli.post_update import (
+from moor_cli import post_update
+from moor_cli.post_update import (
     HOME_STEPS,
     MACHINE_STEPS,
     run_steps,
@@ -63,7 +63,7 @@ def test_run_steps_isolates_failures():
 
 
 def test_migrate_config_noop_when_current(monkeypatch):
-    import hermes_cli.config as cfg
+    import moor_cli.config as cfg
 
     monkeypatch.setattr(cfg, "check_config_version", lambda: (34, 34))
     result = step_migrate_config()
@@ -73,8 +73,8 @@ def test_migrate_config_noop_when_current(monkeypatch):
 def test_migrate_config_restores_backup_when_version_does_not_advance(
     tmp_path, monkeypatch
 ):
-    import hermes_cli.config as cfg
-    import hermes_cli.config_migrations as mig
+    import moor_cli.config as cfg
+    import moor_cli.config_migrations as mig
 
     config_path = tmp_path / "config.yaml"
     config_path.write_text("_config_version: 20\n", encoding="utf-8")
@@ -105,12 +105,12 @@ def test_migrate_config_restores_backup_when_version_does_not_advance(
 
 
 def test_state_db_guard_skips_missing_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     assert step_state_db_guard() == {"ok": True, "skipped": "no-state-db"}
 
 
 def test_state_db_guard_flags_corrupt_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     (tmp_path / "state.db").write_text("this is not sqlite", encoding="utf-8")
     result = step_state_db_guard()
     assert result["ok"] is False
@@ -120,7 +120,7 @@ def test_state_db_guard_flags_corrupt_db(tmp_path, monkeypatch):
 def test_state_db_guard_passes_valid_db(tmp_path, monkeypatch):
     import sqlite3
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     conn = sqlite3.connect(tmp_path / "state.db")
     conn.execute("CREATE TABLE t (x)")
     conn.commit()
@@ -155,7 +155,7 @@ def test_provisioning_does_not_use_human_diagnostics(tmp_path, monkeypatch):
     (runtime / "facts.json").write_text(json.dumps({"schema": 1, "packages": {}}))
     lock = tmp_path / "lock.json"
     lock.write_text(json.dumps({"schema": 1, "packages": {"node": {"version": "test"}}}))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(runtime))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(runtime))
     monkeypatch.setattr(paths, "lockfile_path", lambda: lock)
     monkeypatch.setattr(engine, "sealed", lambda: False)
     monkeypatch.setattr(engine, "lazy_installs_allowed", lambda: True)

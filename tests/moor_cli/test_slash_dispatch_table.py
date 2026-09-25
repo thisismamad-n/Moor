@@ -1,4 +1,4 @@
-"""Slash-command dispatch semantics in cli.HermesCLI.
+"""Slash-command dispatch semantics in cli.MoorCLI.
 
 The pre-dispatch side effects (pre_command hook, pending-resume reset,
 unknown-command fallthrough) and return semantics must hold.

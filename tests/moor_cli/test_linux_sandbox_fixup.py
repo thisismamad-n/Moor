@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import main_desktop
+from moor_cli import main_desktop
 
 # Linux-only subject: run on the real Linux host instead of faking sys.platform.
 pytestmark = pytest.mark.platforms("linux")

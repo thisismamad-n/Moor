@@ -1501,10 +1501,10 @@ class TestPartialToolCallWarning:
         "partial delivery": the same request is retried (nothing to duplicate) instead of
         returning an empty length stub that makes the loop ask the model to continue from
         nowhere — which repeated the lost step (#112419)."""
-        from hermes_constants import PARTIAL_STREAM_STUB_ID
+        from moor_constants import PARTIAL_STREAM_STUB_ID
 
         agent, calls = self._zero_char_agent(mock_create, attempts_that_die=1)
-        with patch.dict("os.environ", {"HERMES_STREAM_RETRIES": "1"}):
+        with patch.dict("os.environ", {"MOOR_STREAM_RETRIES": "1"}):
             response = agent._interruptible_streaming_api_call({})
 
         assert calls["n"] == 2
@@ -1521,7 +1521,7 @@ class TestPartialToolCallWarning:
         import httpx
 
         agent, calls = self._zero_char_agent(mock_create, attempts_that_die=99)
-        with patch.dict("os.environ", {"HERMES_STREAM_RETRIES": "0"}), pytest.raises(httpx.RemoteProtocolError):
+        with patch.dict("os.environ", {"MOOR_STREAM_RETRIES": "0"}), pytest.raises(httpx.RemoteProtocolError):
             agent._interruptible_streaming_api_call({})
         assert calls["n"] == 1
 

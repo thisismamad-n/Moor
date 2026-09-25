@@ -1,7 +1,7 @@
 import { applyDocumentLocale, isRecord } from '@moor/shared/i18n'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
-import { getHermesConfigRecord, type HermesConfigRecord, retainConfigReadOrigin, saveHermesConfig } from '@/hermes'
+import { getMoorConfigRecord, type MoorConfigRecord, retainConfigReadOrigin, saveMoorConfig } from '@/moor'
 
 import { TRANSLATIONS } from './catalog'
 import {
@@ -36,10 +36,10 @@ const defaultConfigClient: I18nConfigClient = {
       return Promise.resolve({ ok: true })
     }
 
-    // No explicit scope: saveHermesConfig resolves the record's captured read
+    // No explicit scope: saveMoorConfig resolves the record's captured read
     // origin itself (resolveConfigWriteScope), and withConfigDisplayLanguage
     // retains that origin onto the derived record.
-    return saveHermesConfig(config, undefined, { preserveLanguage: true })
+    return saveMoorConfig(config, undefined, { preserveLanguage: true })
   }
 }
 

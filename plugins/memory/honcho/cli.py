@@ -589,7 +589,7 @@ def _ensure_sdk_installed() -> bool:
         print("  Installed.\n")
         return True
     except Exception as exc:
-        print(f"  Install failed: {exc}\n  Run manually: hermes pm install\n")
+        print(f"  Install failed: {exc}\n  Run manually: moor pm install\n")
         return False
 
 

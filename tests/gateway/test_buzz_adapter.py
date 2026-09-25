@@ -255,10 +255,10 @@ class TestMultiplexProfileScope:
     ):
         """The gate must consult the profile's own config.yaml + secret scope,
         not the default profile's env values."""
-        import hermes_yaml as yaml
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        import moor_yaml as yaml
+        from moor_constants import (
+            reset_moor_home_override,
+            set_moor_home_override,
         )
 
         creds = tmp_path / "creds.json"

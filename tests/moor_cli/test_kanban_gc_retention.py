@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_ops
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_ops
 
 @pytest.fixture
 def board(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
     return tmp_path
 
 def _done_task_with_old_event(conn):
@@ -100,7 +100,7 @@ def test_slash_kanban_gc_retention_bounds(board, days, expected):
     shell command: ``-1`` is rejected by the parser type before ``_cmd_gc``
     runs (usage error); ``0`` parses, reaches ``_cmd_gc``, and disables the
     sweep."""
-    from hermes_cli import kanban
+    from moor_cli import kanban
     with kbc.connect_closing() as conn:
         tid = _done_task_with_old_event(conn)
     log = _old_log_file()

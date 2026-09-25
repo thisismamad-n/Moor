@@ -3,7 +3,7 @@ from scripts import check_compat_pointers as checker
 
 
 def test_inventory_does_not_descend_into_excluded_trees(tmp_path, monkeypatch):
-    included = tmp_path / "hermes_cli"
+    included = tmp_path / "moor_cli"
     included.mkdir()
     (included / "entry.py").touch()
     nested = included / "node_modules"

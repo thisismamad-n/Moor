@@ -146,7 +146,7 @@ def test_holder_scan_fallback_respects_token_classifier(sleeper, monkeypatch, tm
     assert "--preserve-cache" in kanban_row[2]
 
     monkeypatch.setattr(
-        "hermes_cli.main._detect_venv_python_processes", lambda: [serve_row, kanban_row]
+        "moor_cli.main._detect_venv_python_processes", lambda: [serve_row, kanban_row]
     )
     # serve-shaped holder with a live parent (us) → owns
     assert update_cmd._desktop_owns_gateway_lifecycle() is True
@@ -156,6 +156,6 @@ def test_holder_scan_fallback_respects_token_classifier(sleeper, monkeypatch, tm
     serve_like.wait()
     assert kanban_like.poll() is None
     monkeypatch.setattr(
-        "hermes_cli.main._detect_venv_python_processes", lambda: [kanban_row]
+        "moor_cli.main._detect_venv_python_processes", lambda: [kanban_row]
     )
     assert update_cmd._desktop_owns_gateway_lifecycle() is False

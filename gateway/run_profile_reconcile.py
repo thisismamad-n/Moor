@@ -251,7 +251,7 @@ class GatewayProfileReconcileMixin:
                 with _log_suppressed(logging.DEBUG, "agent eviction failed for %s", key, exc_info=True):
                     self._evict_cached_agent(key)
             with _log_suppressed(logging.DEBUG, "profile handle release failed", exc_info=True):
-                from hermes_state_registry import close_all_under
+                from moor_state_registry import close_all_under
                 close_all_under(home)
             with _log_suppressed(logging.DEBUG, "memory-store release failed", exc_info=True):
                 from plugins.memory.holographic.store import MemoryStore
@@ -264,7 +264,7 @@ def _profile_lifecycle_verb(runner, *, serve: bool):
     loop = asyncio.get_running_loop()
 
     async def apply(name):
-        from hermes_cli.profiles import profiles_to_serve, profile_is_parked
+        from moor_cli.profiles import profiles_to_serve, profile_is_parked
         if not runner._multiplex_on() or not runner._running or runner._served_profile_homes is None:
             return {"error": "host multiplexer is not ready"}
         async with runner._reconcile_lock():
@@ -345,9 +345,9 @@ def _for_each_served_profile(runner, body) -> None:
     """Run ``body(profile_label)`` once per served profile, inside that profile's runtime scope.
 
     Housekeeping runs on a bare thread with no turn on the stack, so nothing binds a profile for it:
-    ``get_hermes_home()`` and ``get_secret()`` see the LAUNCH profile's values, and under
+    ``get_moor_home()`` and ``get_secret()`` see the LAUNCH profile's values, and under
     ``gateway.multiplex_profiles`` a fail-closed credential read logs ``no profile secret scope on a
-    multiplexed call`` on every tick (the skills-sync pulls resolved Nous credentials this way, four
+    multiplexed call`` on every tick (the skills-sync pulls resolved Moor credentials this way, four
     WARNINGs per hourly tick per chore). A single-profile gateway runs ``body`` once, unscoped:
     there the process env IS the profile's own value — unless a hosted room already flipped the
     process-wide guard (#112878), in which case the launch profile's OWN scope is bound, as
@@ -420,7 +420,7 @@ def migrate_profile_identity_verb(runner):
 
 
 def purge_profile_identity_verb(runner):
-    """Build the ``purge-profile-identity`` control-verb handler for ``hermes profile delete``
+    """Build the ``purge-profile-identity`` control-verb handler for ``moor profile delete``
     (#111926, delete side). The live multiplexer owns the routing index in memory and writes it back
     periodically, so a CLI-side DELETE of ``agent:<name>:*`` rows would be undone by its next save;
     the CLI therefore asks this process to drop the durable rows AND ``SessionStore._entries``.

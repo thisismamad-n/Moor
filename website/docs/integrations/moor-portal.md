@@ -50,11 +50,11 @@ Because routing is per-model and not always through OpenRouter, OpenRouter-speci
 
 ### The Moor Tool Gateway
 
-The same subscription unlocks the [Tool Gateway](../user-guide/features/tool-gateway.md), which routes Hermes Agent's tool calls through Nous-managed infrastructure. Five backends, one login:
+The same subscription unlocks the [Tool Gateway](../user-guide/features/tool-gateway.md), which routes Moor Agent's tool calls through Moor-managed infrastructure. Five backends, one login:
 
 | Tool | Partner | What it does |
 |------|---------|--------------|
-| **Web search & extract** | Nous-managed | Agent-grade search and full-page extraction. No search API key, no rate limit babysitting. |
+| **Web search & extract** | Moor-managed | Agent-grade search and full-page extraction. No search API key, no rate limit babysitting. |
 | **Image generation** | FAL | Nine models under one endpoint: FLUX 2 Klein 9B, FLUX 2 Pro, Z-Image Turbo, Nano Banana Pro (Gemini 3 Pro Image), GPT Image 1.5, GPT Image 2, Ideogram V3, Recraft V4 Pro, Qwen Image. |
 | **Text-to-speech** | OpenAI TTS | High-quality TTS without a separate OpenAI key. Enables [voice mode](../user-guide/features/voice-mode.md) across messaging platforms. |
 | **Cloud browser automation** | Browser Use | Headless Chromium sessions for `browser_navigate`, `browser_click`, `browser_type`, `browser_vision`. No Browserbase account needed. |
@@ -76,7 +76,7 @@ Because everything routes through one OAuth-authenticated Portal session, you do
 
 Moor inc.'s own **Hermes 4** family (Hermes-4-70B, Hermes-4-405B) is available through the Portal at heavily discounted rates. These are **frontier hybrid-reasoning chat models** — strong at math, science, instruction following, schema adherence, roleplay, and long-form writing.
 
-They are **not recommended for use inside Hermes Agent**, however. Hermes 4 is tuned for chat and reasoning, not the rapid-fire tool-calling loop the agent relies on. Use them for research workflows or via the [subscription proxy](../user-guide/features/subscription-proxy.md) from other tooling — but for agent work, pick a frontier agentic model from the catalog instead:
+They are **not recommended for use inside Moor Agent**, however. Hermes 4 is tuned for chat and reasoning, not the rapid-fire tool-calling loop the agent relies on. Use them for research workflows or via the [subscription proxy](../user-guide/features/subscription-proxy.md) from other tooling — but for agent work, pick a frontier agentic model from the catalog instead:
 
 ```bash
 /model anthropic/claude-sonnet-4.6     # best general-purpose agentic model
@@ -120,11 +120,11 @@ Your existing providers stay configured. You can switch between them with `/mode
 
 ### Headless / SSH / remote setup
 
-OAuth needs a browser, but the loopback callback runs on the machine where Hermes is running. For remote hosts, see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md) — the same patterns work for the Portal as for any other OAuth-based provider (`ssh -L` port forwarding).
+OAuth needs a browser, but the loopback callback runs on the machine where Moor is running. For remote hosts, see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md) — the same patterns work for the Portal as for any other OAuth-based provider (`ssh -L` port forwarding).
 
 ### Profile setup {#profile-setup}
 
-If you use [Hermes profiles](../user-guide/profiles.md), the Portal refresh token is automatically shared across all profiles via a shared token store. Sign in once on any profile, and the rest pick it up automatically — no need to repeat the OAuth flow per profile.
+If you use [Moor profiles](../user-guide/profiles.md), the Portal refresh token is automatically shared across all profiles via a shared token store. Sign in once on any profile, and the rest pick it up automatically — no need to repeat the OAuth flow per profile.
 
 ## Using the Portal day-to-day
 
@@ -193,7 +193,7 @@ moor tools
 # → TTS              → "Moor Subscription"
 ```
 
-The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `hermes tools` whether or not you're logged into Nous Portal — if you pick "Nous Subscription" before authenticating, Hermes runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](../user-guide/features/tool-gateway.md) for the full per-tool configuration matrix.
+The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `moor tools` whether or not you're logged into Moor Portal — if you pick "Moor Subscription" before authenticating, Moor runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](../user-guide/features/tool-gateway.md) for the full per-tool configuration matrix.
 
 ### Subscription management
 
@@ -270,7 +270,7 @@ The Portal routes each model to a suitable backend — some through OpenRouter, 
 /model anthropic/claude-opus-4.6
 ```
 
-If a model is genuinely missing, [open an issue](https://github.com/NousResearch/hermes-agent/issues) — we surface the Portal's catalog to Moor and gaps usually mean a routing config we can update.
+If a model is genuinely missing, [open an issue](https://github.com/thisismamad-n/Moor/issues) — we surface the Portal's catalog to Moor and gaps usually mean a routing config we can update.
 
 ### Bills not appearing on my Portal account
 
@@ -279,8 +279,8 @@ Check `moor portal info` first — if it shows you're using a different provider
 ## See also
 
 - **[Tool Gateway](../user-guide/features/tool-gateway.md)** — Full details on every gateway tool, per-tool config, and pricing
-- **[Subscription proxy](../user-guide/features/subscription-proxy.md)** — Use your Portal subscription from non-Hermes tools (other agents, scripts, third-party clients)
+- **[Subscription proxy](../user-guide/features/subscription-proxy.md)** — Use your Portal subscription from non-Moor tools (other agents, scripts, third-party clients)
 - **[Voice mode](../user-guide/features/voice-mode.md)** — Voice conversations using the Portal's OpenAI TTS
 - **[AI Providers](./providers.md)** — Full provider catalog if you want to compare alternatives
 - **[OAuth over SSH](../guides/oauth-over-ssh.md)** — Login from remote hosts or browser-only environments
-- **[Profiles](../user-guide/profiles.md)** — Multiple Hermes configurations sharing one Portal login
+- **[Profiles](../user-guide/profiles.md)** — Multiple Moor configurations sharing one Portal login

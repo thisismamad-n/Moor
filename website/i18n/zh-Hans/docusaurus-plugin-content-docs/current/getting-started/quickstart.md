@@ -7,9 +7,9 @@ description: "与 Moor Agent 的第一次对话——从安装到开始聊天，
 # 快速入门
 
 本页的 Python 依赖命令使用 [PM 准备的源码环境](../reference/package-management.md#developer-workflow)。
-依赖变更后，请重新激活该 checkout 并重启 Hermes。
+依赖变更后，请重新激活该 checkout 并重启 Moor。
 
-本指南带你从零开始搭建一个能够应对实际使用的 Hermes 环境。完成安装、选择 provider（服务提供商）、验证对话正常运行，并了解出现问题时的处理方法。
+本指南带你从零开始搭建一个能够应对实际使用的 Moor 环境。完成安装、选择 provider（服务提供商）、验证对话正常运行，并了解出现问题时的处理方法。
 
 ## 更喜欢看视频？
 
@@ -65,7 +65,7 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 ```
 
 源码脚本通过 PM 准备运行时。桌面软件包、Docker、Nix 和 Termux APT 是独立的安装方式。
-请勿使用 `pip install hermes-agent` 替代受管理的安装。
+请勿使用 `pip install moor-agent` 替代受管理的安装。
 
 Windows 原生安装可在 PowerShell 中运行 `iex (irm https://hermes-agent.nousresearch.com/install.ps1)`，无需 WSL。
 aarch64 Android 设备请使用 [Termux APT 指南](./termux.md)，而非上述脚本。
@@ -255,9 +255,9 @@ moor config set terminal.backend ssh       # 远程服务器
 ### 语音模式
 
 ```bash
-# 在 Hermes 安装目录下运行（curl 安装器在 Linux/macOS 上将其放置于
-# ~/.hermes/hermes-agent，在 Windows 上为 %LOCALAPPDATA%\hermes\hermes-agent）：
-cd ~/.hermes/hermes-agent
+# 在 Moor 安装目录下运行（curl 安装器在 Linux/macOS 上将其放置于
+# ~/.moor/moor-agent，在 Windows 上为 %LOCALAPPDATA%\moor\moor-agent）：
+cd ~/.moor/moor-agent
 python -c "import pm; pm.sync_venv(['voice'], explicit=True)"
 # 包含 faster-whisper，用于免费的本地语音转文字
 ```
@@ -293,7 +293,7 @@ ACP 支持已包含在标准 `[all]` 扩展中，因此 curl 安装器已默认�
 moor acp
 ```
 
-（如果安装时未包含 `[all]`，请先运行 `cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"`。）
+（如果安装时未包含 `[all]`，请先运行 `cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"`。）
 
 参阅 [ACP 编辑器集成](../user-guide/features/acp.md)。
 

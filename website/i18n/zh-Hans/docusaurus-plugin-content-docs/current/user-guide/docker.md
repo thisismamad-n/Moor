@@ -8,8 +8,8 @@ description: "在 Docker 中运行 Moor Agent 以及将 Docker 用作终端后�
 
 Docker 与 Moor Agent 的交集有两种截然不同的方式：
 
-1. **在 Docker 中运行 Hermes** — agent 本身在容器内运行（本页的主要内容）
-2. **Docker 作为终端后端** — agent 在宿主机上运行，但将每条命令在单个持久化 Docker 沙箱容器中执行，该容器在工具调用、`/new` 和子 agent 之间保持存活，直至 Hermes 进程结束（参见 [配置 → Docker 后端](./configuration.md#docker-后端)）
+1. **在 Docker 中运行 Moor** — agent 本身在容器内运行（本页的主要内容）
+2. **Docker 作为终端后端** — agent 在宿主机上运行，但将每条命令在单个持久化 Docker 沙箱容器中执行，该容器在工具调用、`/new` 和子 agent 之间保持存活，直至 Moor 进程结束（参见 [配置 → Docker 后端](./configuration.md#docker-后端)）
 
 本页介绍选项 1。容器将所有用户数据（配置、API 密钥、会话、技能、记忆）存储在从宿主机挂载于 `/opt/data` 的单个目录中。镜像本身是无状态的，可通过拉取新版本进行升级而不会丢失任何配置。
 
@@ -23,7 +23,7 @@ Docker 与 Moor Agent 的交集有两种截然不同的方式：
 
 镜像流程构建并测试 amd64 和 arm64。稳定发布复用已测试归档，不重新构建。
 主分支推送只更新 `main`，不会提升 `stable` 或 `latest`。
-应用代码位于 `/opt/hermes`，持久数据位于挂载的 `/opt/data`，两者分别管理。
+应用代码位于 `/opt/moor`，持久数据位于挂载的 `/opt/data`，两者分别管理。
 
 ## 快速开始
 
@@ -213,7 +213,7 @@ docker run -it --rm \
 直接传入的 `-e` 标志会覆盖 `.env` 中的值。这对于不希望将密钥写入磁盘的 CI/CD 或密钥管理器集成非常有用。
 
 :::note 寻找 Docker 作为**终端后端**的说明？
-本页介绍在 Docker 内运行 Hermes 本身。如果你希望 Hermes 在 Docker 沙箱容器内执行 agent 的 `terminal` / `execute_code` 调用（每个 Hermes 进程对应一个持久容器），那是另一个配置块——`terminal.backend: docker` 加上 `terminal.docker_image`、`terminal.docker_volumes`、`terminal.docker_forward_env`、`terminal.docker_run_as_host_user` 和 `terminal.docker_extra_args`。完整配置请参见 [配置 → Docker 后端](configuration.md#docker-后端)。
+本页介绍在 Docker 内运行 Moor 本身。如果你希望 Moor 在 Docker 沙箱容器内执行 agent 的 `terminal` / `execute_code` 调用（每个 Moor 进程对应一个持久容器），那是另一个配置块——`terminal.backend: docker` 加上 `terminal.docker_image`、`terminal.docker_volumes`、`terminal.docker_forward_env`、`terminal.docker_run_as_host_user` 和 `terminal.docker_extra_args`。完整配置请参见 [配置 → Docker 后端](configuration.md#docker-后端)。
 :::
 
 ## Docker Compose 示例
@@ -275,16 +275,16 @@ docker run -d \
 官方镜像基于 Debian 13.4，包含：
 
 
-- 按提交的 `uv.lock` 同步的 Python 3.14 环境，然后无依赖地安装 Hermes 源码。
+- 按提交的 `uv.lock` 同步的 Python 3.14 环境，然后无依赖地安装 Moor 源码。
 - 选定的 extras：`all`、`messaging`、`otlp`、`anthropic`、`bedrock`、`azure-identity` 和 `matrix`，不是 `--all-extras`。
 - 从摘要固定的 Node 镜像提供的 Node.js 26 和 npm。
-- PM 固定版本的 uv、完整 Chromium、FFmpeg 和 ripgrep，位于 `/opt/hermes/tools`。
+- PM 固定版本的 uv、完整 Chromium、FFmpeg 和 ripgrep，位于 `/opt/moor/tools`。
 - 系统 Git、OpenSSH、Docker CLI 和 Chromium 所需共享库。
 - 预构建的 TUI/dashboard 和 Photon sidecar 依赖，以及 s6-overlay。
 
 Chromium 由 PM 准备，不使用 `npx playwright install`。
-实际可执行路径记录在 `/etc/hermes/agent-browser-executable-path`。
-`PLAYWRIGHT_BROWSERS_PATH` 指向 `/opt/hermes/tools`，不在数据卷内。
+实际可执行路径记录在 `/etc/moor/agent-browser-executable-path`。
+`PLAYWRIGHT_BROWSERS_PATH` 指向 `/opt/moor/tools`，不在数据卷内。
 
 所有镜像（包括不带 `-desktop` 后缀的标签）都携带完整 Chromium，而不是 Playwright
 更轻量的 headless shell：同一个固定且校验过的浏览器同时服务无头浏览和有界面的
@@ -292,20 +292,20 @@ Bot Screen 会话。代价是镜像体积：完整版比早期镜像附带的 he
 
 可选后端 SDK（Edge TTS、Firecrawl、Exa、平台适配器、插件依赖）在首次使用时安装到
 `/opt/data/installs` 下的 PM 依赖代，容器重建和镜像更新后仍然保留；镜像自带的
-`/opt/hermes/.venv` 永不修改。每次启动时，容器在服务启动前按新镜像的锁文件重新解析
+`/opt/moor/.venv` 永不修改。每次启动时，容器在服务启动前按新镜像的锁文件重新解析
 已记录的选择；若失败（例如离线），则使用镜像自带环境启动，并保留已记录的 extras，
 留待下次启动或安装时重建。设置 `security.allow_lazy_installs: false` 可拒绝按需安装。
 旧 `lazy-packages` overlay 不再使用。
 
-构建来源记录在 `/etc/hermes/image-provenance.json`，构建戳记位于 `/opt/hermes/install-stamp.json`。
-没有戳记的本地构建报告未知版本，不猜测提交。`hermes update` 不修改镜像所有的代码，应用更新需替换镜像。
+构建来源记录在 `/etc/moor/image-provenance.json`，构建戳记位于 `/opt/moor/install-stamp.json`。
+没有戳记的本地构建报告未知版本，不猜测提交。`moor update` 不修改镜像所有的代码，应用更新需替换镜像。
 
 入口点是 `docker/entrypoint-dispatch.sh`。正常 Docker/Podman 中它占有 PID 1，转交给 s6 的 `/init`。
 若平台已有 PID-1 init，则直接运行 stage2 和主包装器；命令仍可运行，但没有 s6 监管的 dashboard 或各 profile gateway。
 
 PID-1 路径先准备数据卷和配置，重建各 profile 的 gateway 服务槽，然后运行主命令。
 不要绕过这些入口步骤，否则会失去权限处理和服务监管。
-主程序及受监管服务以 `hermes` 用户运行，避免在 `/opt/data` 中留下 root 所有的文件。
+主程序及受监管服务以 `moor` 用户运行，避免在 `/opt/data` 中留下 root 所有的文件。
 
 ### Per-profile gateway 监管 {#per-profile-gateway-supervision}
 
@@ -351,7 +351,7 @@ docker compose up -d
 
 ## 技能与凭据文件
 
-当使用 Docker 作为执行环境时（不是上述方法，而是 agent 在 Docker 沙箱内运行命令——参见 [配置 → Docker 后端](./configuration.md#docker-后端)），Hermes 为所有工具调用复用单个长期运行的容器，并自动将技能目录（`~/.hermes/skills/`）和技能声明的所有凭据文件以只读卷的形式绑定挂载到该容器中。技能脚本、模板和引用在沙箱内无需手动配置即可使用，由于容器在 Hermes 进程的整个生命周期内持续存在，你安装的任何依赖或写入的文件都会在下次工具调用时保留。
+当使用 Docker 作为执行环境时（不是上述方法，而是 agent 在 Docker 沙箱内运行命令——参见 [配置 → Docker 后端](./configuration.md#docker-后端)），Moor 为所有工具调用复用单个长期运行的容器，并自动将技能目录（`~/.moor/skills/`）和技能声明的所有凭据文件以只读卷的形式绑定挂载到该容器中。技能脚本、模板和引用在沙箱内无需手动配置即可使用，由于容器在 Moor 进程的整个生命周期内持续存在，你安装的任何依赖或写入的文件都会在下次工具调用时保留。
 
 SSH 和 Modal 后端也会进行相同的同步——技能和凭据文件在每次命令执行前通过 rsync 或 Modal mount API 上传。
 
@@ -401,7 +401,7 @@ docker run -d \
 
 ### 复杂工具或多服务栈——运行 sidecar 容器
 
-对于自带服务（数据库、Web 服务器、队列、无头浏览器集群）或过于庞大而不适合放在 Hermes 容器内的工具，将其作为独立容器运行在共享 Docker 网络上。Hermes 通过容器名称访问 sidecar，与访问本地推理服务器的方式相同（参见 [连接本地推理服务器](#连接本地推理服务器vllmollama-等)）。
+对于自带服务（数据库、Web 服务器、队列、无头浏览器集群）或过于庞大而不适合放在 Moor 容器内的工具，将其作为独立容器运行在共享 Docker 网络上。Moor 通过容器名称访问 sidecar，与访问本地推理服务器的方式相同（参见 [连接本地推理服务器](#连接本地推理服务器vllmollama-等)）。
 
 ```yaml
 services:
@@ -433,7 +433,7 @@ networks:
 
 ### 广泛有用的工具——提交 issue 或 pull request
 
-如果某个工具可能对大多数 Moor Agent 用户有用，考虑将其贡献到上游，而不是在私有派生镜像中维护。在 [moor-agent 仓库](https://github.com/NousResearch/hermes-agent)提交 issue 或 pull request，描述该工具及其使用场景。被纳入官方镜像的工具惠及所有用户，并避免了维护下游 fork 的开销。
+如果某个工具可能对大多数 Moor Agent 用户有用，考虑将其贡献到上游，而不是在私有派生镜像中维护。在 [moor-agent 仓库](https://github.com/thisismamad-n/Moor)提交 issue 或 pull request，描述该工具及其使用场景。被纳入官方镜像的工具惠及所有用户，并避免了维护下游 fork 的开销。
 
 ## 连接本地推理服务器（vLLM、Ollama 等）
 

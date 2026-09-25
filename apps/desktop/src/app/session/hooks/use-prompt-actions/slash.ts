@@ -3,7 +3,7 @@ import { parseCommandDispatch, parseSlashCommand } from '@moor/shared'
 import { type MutableRefObject, useCallback, useRef } from 'react'
 
 import { prepareDefaultNewSession } from '@/app/session/new-session-route'
-import { getProfiles } from '@/hermes'
+import { getProfiles } from '@/moor'
 import type { Translations } from '@/i18n'
 import { type ChatMessage, toChatMessages } from '@/lib/chat-messages'
 import { sessionTitle } from '@/lib/chat-runtime'

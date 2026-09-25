@@ -59,7 +59,7 @@ def test_control_files_and_lookalikes_outside_home_stay_writable(moor_layout, tm
 
 
 class TestProfileHomeProcessHome:
-    """With the process HOME pinned to ``{HERMES_HOME}/home`` (TERMINAL_HOME_MODE=profile,
+    """With the process HOME pinned to ``{MOOR_HOME}/home`` (TERMINAL_HOME_MODE=profile,
     containers, spawned workers) the write guards must still cover every home a write can
     land in: the OS user's real home, the profile home and ``~name`` accounts."""
 
@@ -67,10 +67,10 @@ class TestProfileHomeProcessHome:
     def profile_home_env(self, tmp_path, monkeypatch):
         profile = tmp_path / "profile"
         (profile / "home").mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("MOOR_HOME", str(profile))
         monkeypatch.setenv("HOME", str(profile / "home"))
-        monkeypatch.setattr(fs, "_hermes_home_path", lambda: profile)
-        monkeypatch.setattr(fs, "_hermes_root_path", lambda: profile.parent)
+        monkeypatch.setattr(fs, "_moor_home_path", lambda: profile)
+        monkeypatch.setattr(fs, "_moor_root_path", lambda: profile.parent)
         return profile
 
     def test_every_home_is_guarded(self, profile_home_env):

@@ -16,7 +16,7 @@ def _generation(root: Path, name: str, *, published: bool = True, leased: bool =
 
 
 def test_collector_keeps_selected_leased_and_pre_lease_generations(tmp_path):
-    from hermes_cli.runtime_state import lease_directory
+    from moor_cli.runtime_state import lease_directory
 
     root = tmp_path / "pm-runtime"
     selected = _generation(root, "selected")

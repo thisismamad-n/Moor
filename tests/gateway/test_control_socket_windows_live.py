@@ -137,7 +137,7 @@ def test_named_pipe_identify_status_and_fleet_consumer(live_server, monkeypatch)
     import moor_cli.update_receipt as ur
 
     monkeypatch.setattr(
-        "hermes_cli.version_info.get_code_identity",
+        "moor_cli.version_info.get_code_identity",
         lambda refresh=False: {"sha": ident.get("code_sha") or "X", "version": "t"},
     )
     monkeypatch.setattr("moor_cli.profiles._get_default_moor_home", lambda: home)
@@ -167,10 +167,10 @@ def test_pipe_gone_after_kill_falls_back(live_server, monkeypatch):
     # verifies the PID as this home's gateway via its live command line
     # (#110420). A real process wearing a `gateway run` argv stands in for
     # a gateway that lost its pipe.
-    import hermes_cli.update_receipt as ur
+    import moor_cli.update_receipt as ur
 
     monkeypatch.setattr(
-        "hermes_cli.version_info.get_code_identity",
+        "moor_cli.version_info.get_code_identity",
         lambda refresh=False: {"sha": "NEW", "version": "t"},
     )
     monkeypatch.setattr("moor_cli.profiles._get_default_moor_home", lambda: home)
@@ -183,7 +183,7 @@ def test_pipe_gone_after_kill_falls_back(live_server, monkeypatch):
             json.dumps(
                 {
                     "pid": pid, "gateway_state": "running",
-                    "code_sha": "OLD", "kind": "hermes-gateway",
+                    "code_sha": "OLD", "kind": "moor-gateway",
                 }
             ),
             encoding="utf-8",
@@ -192,7 +192,7 @@ def test_pipe_gone_after_kill_falls_back(live_server, monkeypatch):
     standin = subprocess.Popen(
         # Use the real interpreter: a Windows venv's python.exe can be a shim
         # whose PID differs from the process running the command line.
-        [getattr(sys, "_base_executable"), "-c", "import time; time.sleep(120)", "hermes", "gateway", "run"],
+        [getattr(sys, "_base_executable"), "-c", "import time; time.sleep(120)", "moor", "gateway", "run"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )

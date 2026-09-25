@@ -45,7 +45,7 @@ def test_basetemp_inside_the_native_home_is_relocated_outside_it(tmp_path, monke
     assert config.option.basetemp == str(relocated)
     # One shared, prunable root (never a loose dir in the operator's $HOME) and gone when
     # this pytest exits; a run killed before that is swept as soon as the root is idle.
-    assert relocated.parent.name == "hermes-pytest" and relocated.parent != Path.home()
+    assert relocated.parent.name == "moor-pytest" and relocated.parent != Path.home()
     suite_conftest.pytest_unconfigure(config)
     assert not relocated.exists()
     # The sandbox derived from it no longer resolves to the native root.
@@ -88,7 +88,7 @@ def test_relocation_root_sweeps_basetemps_of_killed_runs_and_keeps_live_ones(tmp
 
     native = tmp_path / "native-home"
     native.mkdir()
-    root = native.parent / "hermes-pytest"
+    root = native.parent / "moor-pytest"
     dead, live = root / "b-dead", root / "b-live"
     dead.mkdir(parents=True)
     live.mkdir()

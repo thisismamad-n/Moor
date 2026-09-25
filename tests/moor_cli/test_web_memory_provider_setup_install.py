@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from hermes_cli.web_routers import memory_providers as mp
+from moor_cli.web_routers import memory_providers as mp
 
 
 @pytest.mark.parametrize("surface", ["dashboard", "cli"])
@@ -18,8 +18,8 @@ def test_setup_admits_real_provider_union_and_keeps_selection_on_failure(tmp_pat
     from pm.environments import venv_python
     from pm.environments import selected_venv
     from tests.pm._fixtures import _wheel
-    from hermes_cli import memory_setup
-    from hermes_cli.web_server_memory import _memory_provider_setup_info
+    from moor_cli import memory_setup
+    from moor_cli.web_server_memory import _memory_provider_setup_info
 
     uv = shutil.which("uv")
     assert uv, "real PM admission test requires uv"
@@ -48,10 +48,10 @@ def test_setup_admits_real_provider_union_and_keeps_selection_on_failure(tmp_pat
     declare(["provider_dep==1.0", "provider_dep==2.0"])
     config = home / "config.yaml"
     config.write_text('plugins:\n  enabled: [incumbent]\n')
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(tmp_path / "tools"))
     monkeypatch.setattr("pm.paths.repo_root", lambda: core)
     monkeypatch.setattr("pm._uv._toolchain", lambda **kwargs: (Path(uv), Path(sys.executable)))
     monkeypatch.setattr("pm.client.is_runtime", lambda: True)

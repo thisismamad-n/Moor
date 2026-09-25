@@ -73,9 +73,9 @@ def _try_lazy_install_stt() -> bool:
         logger.warning(
             "Lazy install of faster-whisper failed: %s. "
             "When the message names a restart, this process selected its dependency generation at "
-            "boot and a new one cannot take effect in-flight; otherwise the Hermes process user "
-            "may not be able to write to the dependency environment. Run `hermes tools` as the "
-            "Hermes installation owner and select Local Whisper under Speech-to-Text.",
+            "boot and a new one cannot take effect in-flight; otherwise the Moor process user "
+            "may not be able to write to the dependency environment. Run `moor tools` as the "
+            "Moor installation owner and select Local Whisper under Speech-to-Text.",
             exc)
     return False
 

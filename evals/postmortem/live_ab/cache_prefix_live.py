@@ -1,7 +1,7 @@
 """Live A/B for the thinking-strip cache miss (F0). Runs a short real tool loop through AIAgent on
-Fable 5.1 via Nous and prints per-call cache hit ratios from agent.log. ~10 calls, well under $1.
-Arm A = current code. Arm B = HERMES_KEEP_ALL_THINKING=1 monkeypatch of _manage_thinking_signatures
-that passes thinking blocks back unchanged for the Nous/Anthropic route."""
+Fable 5.1 via Moor and prints per-call cache hit ratios from agent.log. ~10 calls, well under $1.
+Arm A = current code. Arm B = MOOR_KEEP_ALL_THINKING=1 monkeypatch of _manage_thinking_signatures
+that passes thinking blocks back unchanged for the Moor/Anthropic route."""
 import os, sys, re, tempfile, time, subprocess, json
 # LIVE: real provider calls (cents). Usage: python cache_prefix_live.py <repo_root> <A|B>
 os.environ.setdefault("MOOR_HOME", os.path.expanduser("~/.moor"))

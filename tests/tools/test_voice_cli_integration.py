@@ -227,7 +227,7 @@ class TestMaxRecordingSecondsConfigReal:
         # become a 1-second cap; it falls back to the documented 120 default,
         # mirroring the silence-param corruption handling.
         recorder = self._start_with_voice_cfg({"max_recording_seconds": True})
-        from hermes_cli.config import DEFAULT_CONFIG
+        from moor_cli.config import DEFAULT_CONFIG
 
         assert recorder._max_recording_seconds == DEFAULT_CONFIG["voice"]["max_recording_seconds"]
 

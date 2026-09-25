@@ -9,10 +9,10 @@ description: "NVIDIA App control through its local MCP server: overlay capture a
   connection, so a changed port or token needs no reconfiguration. Disclosure: the tools read and change
   NVIDIA App settings on this machine; nothing leaves loopback."
 title: NVIDIA App
-maintainer: NousResearch
+maintainer: Moor inc.
 tier: official
 category: tools
-requires_hermes: ">=0.21.4"
+requires_moor: ">=0.21.4"
 docs_url: https://github.com/NousResearch/hermes-nvidia/tree/main/nvidia-app
 version: "0.1.0"
 platforms: [windows]

@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cli import HermesCLI
+from cli import MoorCLI
 
 @pytest.fixture
 def bare_cli():

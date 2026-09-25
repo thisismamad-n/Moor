@@ -10,8 +10,8 @@ import {
 } from '@moor/shared'
 import { atom } from 'nanostores'
 
-import type { HermesConnection } from '@/global'
-import { HermesGateway, setApiRequestConnection } from '@/hermes'
+import type { MoorConnection } from '@/global'
+import { MoorGateway, setApiRequestConnection } from '@/moor'
 import { translateNow } from '@/i18n'
 import {
   decideLivenessForceClose,
@@ -116,8 +116,8 @@ interface Secondary {
   profile: string
   /** Registry connection serving this socket; null = the local/legacy path. */
   connectionId: null | string
-  connection: HermesConnection | null
-  gateway: HermesGateway
+  connection: MoorConnection | null
+  gateway: MoorGateway
   /**
    * Date.now() of the most recent socket 'open'. The live-work pruner's
    * min-lifetime grace reads this: an idle prune can race an on-demand dial
@@ -218,7 +218,7 @@ interface GatewayRegistryState {
   /** Registry source currently served by primaryGateway, when known. */
   primaryConnectionId: null | string
   /** Resolved mode of the primary's descriptor: a `local` primary is ONE
-   *  `hermes serve --profile <primary>` child and can never stand in for a
+   *  `moor serve --profile <primary>` child and can never stand in for a
    *  pooled profile's own backend. */
   primaryConnectionMode: 'local' | 'remote' | null
   primaryProfile: string
@@ -430,7 +430,7 @@ export function dialedGatewayModeFor(connectionId: null | string, profile: strin
 }
 
 /** Publish the registry source owned by the window primary socket. */
-export function setPrimaryGatewayConnection(connection: Pick<HermesConnection, 'connectionId' | 'mode'> | null): void {
+export function setPrimaryGatewayConnection(connection: Pick<MoorConnection, 'connectionId' | 'mode'> | null): void {
   setPrimaryGatewayConnectionId(connection?.connectionId, connection?.mode)
 }
 
@@ -484,7 +484,7 @@ async function ridesPrimaryBackend(
 
   // Resolved per call, never cached: main answers the route per request
   // (`resolveProfileBackendRoute` case 6 keeps a pooled backend for
-  // `HERMES_DESKTOP_ISOLATED_BACKEND=1`), and for a pooled profile this is the
+  // `MOOR_DESKTOP_ISOLATED_BACKEND=1`), and for a pooled profile this is the
   // same dial `openSecondary` makes next, coalesced by main's claim key.
   try {
     const conn = await withTimeout(
@@ -1677,7 +1677,7 @@ function scopeHasTurnLease(scope: string): boolean {
 // skip for cooperative retirement (electron/pool-retire.ts), never the proof:
 // main asks the backend itself before stopping anything. From #104871.
 function publishTurnLease(scope: string, activeTurn: boolean): void {
-  void window.hermesDesktop?.touchBackend?.(scope, { activeTurn }).catch(() => undefined)
+  void window.moorDesktop?.touchBackend?.(scope, { activeTurn }).catch(() => undefined)
 }
 
 function releaseTerminalTurnLease(scope: string, event: GatewayEvent): void {
@@ -1960,7 +1960,7 @@ export async function ensureGatewayForProfile(profile: string): Promise<void> {
 // retries; only a user gesture (`explicit`: the Reconnect action) may redial it.
 export async function ensureActiveGatewayOpen({
   explicit = false
-}: { explicit?: boolean } = {}): Promise<HermesGateway | null> {
+}: { explicit?: boolean } = {}): Promise<MoorGateway | null> {
   if (g.activeKey === g.primaryProfile) {
     return g.primaryGateway
   }

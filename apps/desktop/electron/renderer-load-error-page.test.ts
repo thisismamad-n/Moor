@@ -16,7 +16,7 @@ test('error page names the failure and carries a Reload button', () => {
   assert.match(html, /-6/)
   assert.match(html, /assets\/app-C0ffee\.js/)
   assert.match(html, /assets\/shiki-block-DeadBeef\.js/)
-  assert.match(html, /hermes desktop --force-build/)
+  assert.match(html, /moor desktop --force-build/)
   assert.match(html, /location\.reload\(\)/)
 })
 

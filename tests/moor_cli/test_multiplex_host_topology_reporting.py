@@ -1,11 +1,11 @@
 """Multiplex-only reporting: one host gateway serving N profiles must be reported as such.
 
 Invariants (all fail on origin/main):
-* ``hermes -p <served> cron status`` names the HOST gateway as the ticker and never tells the
+* ``moor -p <served> cron status`` names the HOST gateway as the ticker and never tells the
   user to start a second process.
-* ``hermes -p <served> doctor`` reports the single host gateway + its roster, not
+* ``moor -p <served> doctor`` reports the single host gateway + its roster, not
   "Per-profile gateways: up/total", and still checks the HOST systemd unit's linger.
-* ``hermes claw``'s destructive-action warning FIRES for a served profile.
+* ``moor claw``'s destructive-action warning FIRES for a served profile.
 * the state.db holder line names the shared host process and the profiles it serves.
 """
 
@@ -21,16 +21,16 @@ def served_host(tmp_path, monkeypatch):
     which owns no gateway.pid / gateway_state.json of its own (#97120)."""
     from gateway import host_rendezvous as hr
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     home = root / "profiles" / "served"
     home.mkdir(parents=True)
     locks = tmp_path / "locks"
     locks.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "served")
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(locks))
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
-    monkeypatch.setattr("hermes_cli.gateway.find_gateway_pids", lambda: [])
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_PROFILE", "served")
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(locks))
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
+    monkeypatch.setattr("moor_cli.gateway.find_gateway_pids", lambda: [])
     monkeypatch.setattr("gateway.status.is_gateway_runtime_lock_active", lambda lock_path=None: False)
     hr.publish_record(hr.ROLE_GATEWAY, profiles=("default", "served"))
     return root
@@ -38,7 +38,7 @@ def served_host(tmp_path, monkeypatch):
 
 def test_cron_status_names_the_host_gateway_for_a_served_profile(served_host, capsys, monkeypatch):
     from cron import jobs
-    from hermes_cli import cron
+    from moor_cli import cron
 
     monkeypatch.setattr(jobs, "CRON_DIR", served_host / "profiles/served/cron")
     monkeypatch.setattr(jobs, "JOBS_FILE", served_host / "profiles/served/cron/jobs.json")
@@ -48,12 +48,12 @@ def test_cron_status_names_the_host_gateway_for_a_served_profile(served_host, ca
     assert f"PID {os.getpid()}" in out and "served" in out
     assert "not running" not in out.lower()
     # Never route the user to a SECOND host process: per-profile install is legacy-only remediation.
-    assert "hermes gateway install" not in out
-    assert "sudo hermes gateway install --system" not in out
+    assert "moor gateway install" not in out
+    assert "sudo moor gateway install --system" not in out
 
 
 def test_claw_warning_fires_for_a_served_profile(served_host, capsys, monkeypatch):
-    from hermes_cli import claw
+    from moor_cli import claw
 
     (served_host / "gateway_state.json").write_text(json.dumps(
         {"served_profiles": ["default", "served"],
@@ -68,17 +68,17 @@ def test_claw_warning_fires_for_a_served_profile(served_host, capsys, monkeypatc
 
 
 def test_doctor_reports_the_single_host_gateway_not_per_profile_slots(served_host, capsys, monkeypatch):
-    from hermes_cli import doctor_platform
+    from moor_cli import doctor_platform
 
     class _Mgr:
         def is_running(self, name):
-            return name in ("main-hermes", "gateway-legacy")
+            return name in ("main-moor", "gateway-legacy")
 
         def list_profile_gateways(self):
             return ["default", "served", "legacy"]
 
-    monkeypatch.setattr("hermes_cli.service_manager.detect_service_manager", lambda: "s6")
-    monkeypatch.setattr("hermes_cli.service_manager.S6ServiceManager", _Mgr)
+    monkeypatch.setattr("moor_cli.service_manager.detect_service_manager", lambda: "s6")
+    monkeypatch.setattr("moor_cli.service_manager.S6ServiceManager", _Mgr)
     issues: list[str] = []
     doctor_platform._check_s6_supervision(issues)
     out = capsys.readouterr().out
@@ -93,18 +93,18 @@ def test_doctor_raises_an_issue_when_nothing_owns_the_gateway_role(served_host, 
     """The WORST state must produce remediation: slots exist, nothing serves them. The strictly
     less severe LEGACY case already appended an issue, so `doctor` exited 0 with `issues: []`
     on the outage and non-zero on the mere leftover."""
-    from hermes_cli import doctor_platform
+    from moor_cli import doctor_platform
 
     class _Mgr:
         def is_running(self, name):
-            return name == "main-hermes"
+            return name == "main-moor"
 
         def list_profile_gateways(self):
             return ["default", "served", "legacy"]
 
     monkeypatch.setattr("gateway.host_topology.host_gateway_topology", lambda: None)
-    monkeypatch.setattr("hermes_cli.service_manager.detect_service_manager", lambda: "s6")
-    monkeypatch.setattr("hermes_cli.service_manager.S6ServiceManager", _Mgr)
+    monkeypatch.setattr("moor_cli.service_manager.detect_service_manager", lambda: "s6")
+    monkeypatch.setattr("moor_cli.service_manager.S6ServiceManager", _Mgr)
     issues: list[str] = []
     doctor_platform._check_s6_supervision(issues)
 
@@ -114,22 +114,22 @@ def test_doctor_raises_an_issue_when_nothing_owns_the_gateway_role(served_host, 
 
 @pytest.mark.parametrize("xdg", [False, True])
 def test_doctor_checks_host_unit_linger_under_a_served_profile(served_host, tmp_path, capsys, monkeypatch, xdg):
-    from hermes_cli import doctor_platform
+    from moor_cli import doctor_platform
 
     fake_home = tmp_path / "fakehome"
     config_home = (tmp_path / "xdgconfig") if xdg else (fake_home / ".config")
     unit_dir = config_home / "systemd" / "user"
     unit_dir.mkdir(parents=True)
-    (unit_dir / "hermes-gateway.service").write_text("[Unit]\n")  # the HOST unit; no per-profile unit
+    (unit_dir / "moor-gateway.service").write_text("[Unit]\n")  # the HOST unit; no per-profile unit
     monkeypatch.setenv("HOME", str(fake_home))
     # A host that moves XDG_CONFIG_HOME keeps its units there; probing ~/.config false-negatives.
     if xdg:
         monkeypatch.setenv("XDG_CONFIG_HOME", str(config_home))
     else:
         monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
-    monkeypatch.setattr("hermes_cli.gateway.is_linux", lambda: True)
-    monkeypatch.setattr("hermes_cli.service_manager.detect_service_manager", lambda: "systemd")
-    monkeypatch.setattr("hermes_cli.gateway.get_systemd_linger_status", lambda *a, **k: (False, "off"))
+    monkeypatch.setattr("moor_cli.gateway.is_linux", lambda: True)
+    monkeypatch.setattr("moor_cli.service_manager.detect_service_manager", lambda: "systemd")
+    monkeypatch.setattr("moor_cli.gateway.get_systemd_linger_status", lambda *a, **k: (False, "off"))
 
     issues: list[str] = []
     doctor_platform._check_gateway_service_linger(issues)
@@ -139,7 +139,7 @@ def test_doctor_checks_host_unit_linger_under_a_served_profile(served_host, tmp_
 
 
 def test_state_db_holder_line_names_the_shared_host_gateway(served_host):
-    from hermes_cli import doctor_state
+    from moor_cli import doctor_state
 
     rows = doctor_state._render_state_db_stats(
         {"messages": 5}, holders=3, host_note=doctor_state.host_gateway_note())

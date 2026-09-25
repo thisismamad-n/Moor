@@ -336,9 +336,9 @@ def test_relay_ack_is_queued_with_the_envelope_id(tmp_path, monkeypatch):
     _capture_spawn(monkeypatch)
     home = _managed_home(tmp_path)
     bot_relay.write_remote_roster(home, [
-        {"profile": "default", "handle": "hermes", "connection_id": "cloud-1", "connection_label": "Hermes Cloud"},
+        {"profile": "default", "handle": "moor", "connection_id": "cloud-1", "connection_label": "Moor Cloud"},
     ])
-    result = json.loads(bot_mode_dm.message_agent_tool(target="hermes", message="ping", agent=_FakeAgent(home)))
+    result = json.loads(bot_mode_dm.message_agent_tool(target="moor", message="ping", agent=_FakeAgent(home)))
 
     assert result["status"] == "queued"
     (envelope,) = bot_relay.claim_pending_envelopes(home)
@@ -346,7 +346,7 @@ def test_relay_ack_is_queued_with_the_envelope_id(tmp_path, monkeypatch):
 
 
 def _rename(home: Path, folder: str, *, display_name: str = "", title: str = "") -> None:
-    lines = ["description: teammate for tests", "ui_meta:", "  hermes-bots:", "    shape: cloud"]
+    lines = ["description: teammate for tests", "ui_meta:", "  moor-bots:", "    shape: cloud"]
     if title:
         lines.append(f"    title: {title}")
     if display_name:
@@ -359,7 +359,7 @@ def test_friendly_names_and_desktop_slugs_resolve_to_folder_ids(tmp_path, monkey
     """A display name, Bot Mode title or the Desktop's @-slug of either lands on the
     folder id message_agent keys on — the same aliases the composer autocompletes (#100671)."""
     calls = _capture_spawn(monkeypatch)
-    monkeypatch.setattr(bot_relay, "_hermes_cli", lambda: "hermes")
+    monkeypatch.setattr(bot_relay, "_moor_cli", lambda: "moor")
     home = _managed_home(tmp_path, teammates=("writer", "foo", "builder"))
     _rename(home, "writer", display_name="Scribe")
     _rename(home, "foo", title="Dr. Foo")
@@ -376,21 +376,21 @@ def test_friendly_names_and_desktop_slugs_resolve_to_folder_ids(tmp_path, monkey
 
 
 @pytest.mark.parametrize(("target", "local_name", "relayed"), [
-    ("hermes@mini", "Hermes Mini", True),
-    ("@hermes@mini", "HermesMini", True),
+    ("moor@mini", "Moor Mini", True),
+    ("@moor@mini", "MoorMini", True),
     ("Ops@Home", "Ops@Home", False),  # an '@' friendly name no connection answers to stays local (#100671)
 ])
 def test_connection_qualified_target_reaches_the_relay_not_a_look_alike_local_bot(
         tmp_path, monkeypatch, target, local_name, relayed):
-    """'hermes@mini' is the form the relay hands out, and stamps on replies, for a remote row whose bare forms
-    collide. Resolved locally first, a local bot whose friendly name slugs to 'hermes-mini' captured it: the DM
+    """'moor@mini' is the form the relay hands out, and stamps on replies, for a remote row whose bare forms
+    collide. Resolved locally first, a local bot whose friendly name slugs to 'moor-mini' captured it: the DM
     and its reply thread landed in the wrong bot's transcript and memory."""
     calls = _capture_spawn(monkeypatch)
-    monkeypatch.setattr(bot_relay, "_hermes_cli", lambda: "hermes")
+    monkeypatch.setattr(bot_relay, "_moor_cli", lambda: "moor")
     home = _managed_home(tmp_path, teammates=("ops",))
     _rename(home, "ops", display_name=local_name)
     bot_relay.write_remote_roster(home, [
-        {"profile": "default", "handle": "hermes", "connection_id": "mini", "connection_label": "Mini"},
+        {"profile": "default", "handle": "moor", "connection_id": "mini", "connection_label": "Mini"},
     ])
 
     result = json.loads(bot_mode_dm.message_agent_tool(target=target, message="status?", agent=_FakeAgent(home)))
@@ -407,19 +407,19 @@ def test_connection_qualified_target_reaches_the_relay_not_a_look_alike_local_bo
 
 def test_ambiguous_friendly_name_fails_closed(tmp_path, monkeypatch):
     """Two bots titled the same must not let a DM land on whichever sorts first; the
-    reserved @hermes alias can never be hijacked by a rename."""
+    reserved @moor alias can never be hijacked by a rename."""
     calls = _capture_spawn(monkeypatch)
     home = _managed_home(tmp_path, teammates=("aaa", "bbb", "ops"))
     _rename(home, "aaa", display_name="Scribe")
     _rename(home, "bbb", display_name="Scribe")
-    _rename(home, "ops", display_name="Hermes")
+    _rename(home, "ops", display_name="Moor")
 
     ambiguous = json.loads(bot_mode_dm.message_agent_tool(target="Scribe", message="ping", agent=_FakeAgent(home)))
-    hijack = json.loads(bot_mode_dm.message_agent_tool(target="hermes", message="ping",
+    hijack = json.loads(bot_mode_dm.message_agent_tool(target="moor", message="ping",
                                                        agent=_FakeAgent(home / "profiles" / "aaa")))
 
     assert "error" in ambiguous
-    assert hijack.get("to") == "@hermes"
+    assert hijack.get("to") == "@moor"
     assert [_runner_parts(c["command"])[2][1:3] for c in calls] == [["-p", "default"]]
 
 
@@ -531,33 +531,33 @@ def test_peer_delivery_author_carries_the_sender_hostname_and_local_stays_bare(t
 
 
 def test_renamed_primary_signs_with_its_friendly_name_and_is_reachable_by_it(tmp_path, monkeypatch):
-    """#89720: `hermes profile rename default Maia` writes profile.yaml ``display_name`` (no Bot Mode
-    title). The primary must then sign `Maia (@hermes)`, not `hermes (@hermes)`, and a teammate must
-    reach it as `maia` / `@maia` — the tag the Desktop roster inserts — while `@hermes` keeps resolving.
+    """#89720: `moor profile rename default Maia` writes profile.yaml ``display_name`` (no Bot Mode
+    title). The primary must then sign `Maia (@moor)`, not `moor (@moor)`, and a teammate must
+    reach it as `maia` / `@maia` — the tag the Desktop roster inserts — while `@moor` keeps resolving.
     A Bot Mode title outranks the display_name in the signature, as in the Desktop's botFriendlyNames."""
     calls = _capture_spawn(monkeypatch)
-    monkeypatch.setattr(bot_relay, "_hermes_cli", lambda: "hermes")
+    monkeypatch.setattr(bot_relay, "_moor_cli", lambda: "moor")
     home = _managed_home(tmp_path, teammates=("coder",))
     (home / "profile.yaml").write_text("display_name: Maia\n", encoding="utf-8")
 
     result = json.loads(bot_mode_dm.message_agent_tool(target="coder", message="hi", agent=_FakeAgent(home)))
     assert result["status"] == "queued"
     _mode, dm_file, _argv = _runner_parts(calls[0]["command"])
-    assert Path(dm_file).read_text(encoding="utf-8").startswith("Message from 🤖 Maia (@hermes): ")
+    assert Path(dm_file).read_text(encoding="utf-8").startswith("Message from 🤖 Maia (@moor): ")
 
     coder = _FakeAgent(home / "profiles" / "coder")
-    for target in ("maia", "@maia", "@hermes"):
+    for target in ("maia", "@maia", "@moor"):
         result = json.loads(bot_mode_dm.message_agent_tool(target=target, message="pong", agent=coder))
         assert result["status"] == "queued", (target, result)
         _mode, _dm_file, argv = _runner_parts(calls[-1]["command"])
         assert argv[1:3] == ["-p", "default"], (target, argv)
 
     (home / "profile.yaml").write_text(
-        "display_name: Maia\nui_meta:\n  hermes-bots:\n    title: Maia Prime\n", encoding="utf-8"
+        "display_name: Maia\nui_meta:\n  moor-bots:\n    title: Maia Prime\n", encoding="utf-8"
     )
     json.loads(bot_mode_dm.message_agent_tool(target="coder", message="hi", agent=_FakeAgent(home)))
     _mode, dm_file, _argv = _runner_parts(calls[-1]["command"])
-    assert Path(dm_file).read_text(encoding="utf-8").startswith("Message from 🤖 Maia Prime (@hermes): ")
+    assert Path(dm_file).read_text(encoding="utf-8").startswith("Message from 🤖 Maia Prime (@moor): ")
 
 
 def test_named_profile_sender_prefix(tmp_path, monkeypatch):
@@ -1198,7 +1198,7 @@ def test_local_turn_survives_undecodable_transport_output(tmp_path, capsys):
 
 
 def test_local_turn_relays_utf8_reply_under_a_gbk_default_codec(tmp_path, monkeypatch, capsys):
-    """#83851: the transport is a Hermes CLI child, which always writes UTF-8 stdio. Decoding it with
+    """#83851: the transport is a Moor CLI child, which always writes UTF-8 stdio. Decoding it with
     the host's default codec (cp936 on zh-CN Windows) crashed or garbled the reply; it must round-trip."""
     dm_file = tmp_path / "dm.txt"
     dm_file.write_text("hello", encoding="utf-8")

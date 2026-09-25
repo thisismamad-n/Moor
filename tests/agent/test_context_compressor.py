@@ -794,8 +794,8 @@ class TestAuthFailureAborts:
         # env var (#114405 / #78996) and must classify as permanent, not be retried.
         oauth_err = RuntimeError(
             "Provider 'minimax-oauth' is set in config.yaml but no credentials were found. "
-            "Run `hermes auth add minimax-oauth` to sign in, or switch to a different provider "
-            "with `hermes model`."
+            "Run `moor auth add minimax-oauth` to sign in, or switch to a different provider "
+            "with `moor model`."
         )
         assert _is_summary_access_or_quota_error(oauth_err) is True
 
@@ -2079,7 +2079,7 @@ class TestThresholdTokensCap:
     def test_default_config_uses_lower_effective_trigger(self, context_length):
         """Shipped defaults: the trigger is the LOWER of the ratio trigger and the absolute cap, so a
         1M window compacts at the cap while windows whose ratio trigger sits below it are untouched."""
-        from hermes_cli.config import DEFAULT_CONFIG
+        from moor_cli.config import DEFAULT_CONFIG
 
         default_pct = DEFAULT_CONFIG["compression"]["threshold"]
         default_cap = DEFAULT_CONFIG["compression"]["threshold_tokens"]
@@ -2139,7 +2139,7 @@ class TestThresholdTokensCap:
 
     def test_default_config_cap_survives_model_switch(self):
         """The shipped cap remains effective when the active model changes."""
-        from hermes_cli.config import DEFAULT_CONFIG
+        from moor_cli.config import DEFAULT_CONFIG
 
         with patch("agent.context_compressor.get_model_context_length", return_value=1_000_000):
             comp = ContextCompressor(
@@ -2228,7 +2228,7 @@ class TestTruncateToolCallArgsJson:
         shrunk = result[1]["tool_calls"][0]["function"]["arguments"]
         # Must parse — otherwise downstream provider returns 400
         parsed = _json.loads(shrunk)
-        assert parsed["path"] == "~/.hermes/skills/shopping/browser-setup-notes.md"
+        assert parsed["path"] == "~/.moor/skills/shopping/browser-setup-notes.md"
         assert parsed["content"].startswith(huge_content[:200])
         assert parsed["content"][200:].startswith(_COMPRESSION_MARKER_PREFIX)
 

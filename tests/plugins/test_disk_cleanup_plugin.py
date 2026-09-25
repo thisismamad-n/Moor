@@ -152,7 +152,7 @@ class TestProfileUserTreesNeverCleaned:
 
     def test_session_end_hook_leaves_workspace_files_alone(self, _isolate_env):
         """End-to-end: write_file into a project tree, then session end. A scratch file at
-        the HERMES_HOME root is the control: it is still tracked and removed."""
+        the MOOR_HOME root is the control: it is still tracked and removed."""
         pi = _load_plugin_init()
         dg = _load_lib()
         keep = _isolate_env / "workspace" / "proj" / "tests" / "test_parse.py"
@@ -245,7 +245,7 @@ class TestGitWorktreeFilesNeverCleaned:
     git trees still are."""
 
     def test_quick_drops_stale_tracked_worktree_entry_instead_of_deleting(self, _isolate_env):
-        """A test_* file inside a linked git worktree ($HERMES_HOME/worktrees/, .git is a
+        """A test_* file inside a linked git worktree ($MOOR_HOME/worktrees/, .git is a
         pointer FILE) is not classified as disposable, and a stale pre-fix tracked entry
         (category "test") is dropped by quick()'s re-validation, not deleted."""
         dg = _load_lib()
@@ -263,9 +263,9 @@ class TestGitWorktreeFilesNeverCleaned:
         assert dg.load_tracked() == [], "stale entry is dropped from tracking, not kept"
 
     def test_scratch_outside_git_trees_still_cleaned(self, _isolate_env):
-        """Control: root-level test_* scratch is still auto-deleted — even when HERMES_HOME
+        """Control: root-level test_* scratch is still auto-deleted — even when MOOR_HOME
         itself lives inside a git checkout (dotfiles repo); only .git entries strictly below
-        HERMES_HOME mark a file as git-owned."""
+        MOOR_HOME mark a file as git-owned."""
         dg = _load_lib()
         (_isolate_env.parent / ".git").mkdir()
         scratch = _isolate_env / "test_scratch.py"
@@ -494,8 +494,8 @@ class TestOnSessionEndHook:
 class TestBundledDiscovery:
     def _write_enabled_config(self, moor_home, names):
         """Write plugins.enabled allow-list to config.yaml."""
-        import hermes_yaml as yaml
-        cfg_path = hermes_home / "config.yaml"
+        import moor_yaml as yaml
+        cfg_path = moor_home / "config.yaml"
         cfg_path.write_text(yaml.safe_dump({"plugins": {"enabled": list(names)}}))
 
     def test_disk_cleanup_discovered_but_not_loaded_by_default(self, _isolate_env):
@@ -514,7 +514,7 @@ class TestBundledDiscovery:
 
     def test_disabled_beats_enabled(self, _isolate_env):
         """plugins.disabled wins even if the plugin is also in plugins.enabled."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         cfg_path = _isolate_env / "config.yaml"
         cfg_path.write_text(yaml.safe_dump({
             "plugins": {

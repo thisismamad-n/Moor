@@ -16,9 +16,9 @@ if "dotenv" not in sys.modules:
     fake_dotenv.load_dotenv = lambda *args, **kwargs: None
     sys.modules["dotenv"] = fake_dotenv
 
-from hermes_cli.auth import resolve_provider
-from hermes_cli.config import load_config
-from hermes_cli.models import (
+from moor_cli.auth import resolve_provider
+from moor_cli.config import load_config
+from moor_cli.models import (
     provider_model_ids,
 )
 from agent.auxiliary_client import resolve_provider_client
@@ -273,8 +273,8 @@ class TestGmiMainFlow:
 
             _model_flow_api_key_provider(load_config(), "gmi", "old-model")
 
-        import hermes_yaml as yaml
-        from hermes_constants import get_hermes_home
+        import moor_yaml as yaml
+        from moor_constants import get_moor_home
 
         config = yaml.safe_load((get_moor_home() / "config.yaml").read_text()) or {}
         model_cfg = config.get("model")

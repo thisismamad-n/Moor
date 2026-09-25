@@ -228,7 +228,7 @@ def test_get_flush_dir_uses_get_moor_home(tmp_path, monkeypatch):
 
     captured = {}
 
-    def fake_get_hermes_home():
+    def fake_get_moor_home():
         captured["called"] = True
         return tmp_path
 

@@ -104,7 +104,7 @@ class TestPressureSignalScope:
         import gateway.agent_cache_pressure as acp
         import gateway.cgroup_cleanup as cleanup
 
-        monkeypatch.setattr(cleanup, "_own_cgroup_path", lambda: "/hermes.service")
+        monkeypatch.setattr(cleanup, "_own_cgroup_path", lambda: "/moor.service")
         real_read_text = acp.Path.read_text
 
         def read_text(self, *args, **kwargs):

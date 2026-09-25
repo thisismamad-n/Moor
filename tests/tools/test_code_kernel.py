@@ -417,7 +417,7 @@ class TestKernelOwnershipAndLifecycle(unittest.TestCase):
         self.assertEqual([r["status"] for r in results], ["success"] * 6)
         self.assertEqual(len(_KERNELS), 1)
         runners = [proc for proc, args in spawned
-                   if len(args) == 2 and Path(args[1]).name == "hermes_kernel_runner.py"]
+                   if len(args) == 2 and Path(args[1]).name == "moor_kernel_runner.py"]
         self.assertEqual(len(runners), 1, "parallel cells spawned an unowned kernel")
         kernel = next(iter(_KERNELS.values()))
         self.assertIs(kernel.proc, runners[0])
@@ -577,8 +577,8 @@ class TestStaleStagingDirSweep(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             with patch("tools.code_kernel.tempfile.gettempdir", return_value=tmp):
-                old = Path(tmp, "hermes_kernel_old")
-                young = Path(tmp, "hermes_kernel_young")
+                old = Path(tmp, "moor_kernel_old")
+                young = Path(tmp, "moor_kernel_young")
                 bystander = Path(tmp, "unrelated_dir")
                 for path in (old, young, bystander):
                     path.mkdir()

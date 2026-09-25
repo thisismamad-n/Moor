@@ -10,15 +10,15 @@ from types import SimpleNamespace
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-from hermes_cli.auth import AuthError, resolve_provider
-from hermes_cli.colors import Colors, color
-from hermes_cli.config import get_env_path, get_env_value, get_hermes_home, load_config
-from hermes_cli.models import provider_label
-from hermes_cli.runtime_provider import resolve_requested_provider
-from hermes_cli.vercel_auth import describe_vercel_auth
-from hermes_cli.status_auth import (  # renderers wired into _SECTIONS below
-    _render_api_keys, _render_apikey_providers, _render_auth_providers, _render_nous_gateway)
-from hermes_constants import OPENROUTER_MODELS_URL
+from moor_cli.auth import AuthError, resolve_provider
+from moor_cli.colors import Colors, color
+from moor_cli.config import get_env_path, get_env_value, get_moor_home, load_config
+from moor_cli.models import provider_label
+from moor_cli.runtime_provider import resolve_requested_provider
+from moor_cli.vercel_auth import describe_vercel_auth
+from moor_cli.status_auth import (  # renderers wired into _SECTIONS below
+    _render_api_keys, _render_apikey_providers, _render_auth_providers, _render_moor_gateway)
+from moor_constants import OPENROUTER_MODELS_URL
 
 
 def check_mark(ok: bool) -> str:
@@ -172,7 +172,7 @@ def _render_terminal(ctx):
         auth_status = describe_vercel_auth()
         _kv("Runtime:", os.getenv('TERMINAL_VERCEL_RUNTIME') or terminal_cfg.get('vercel_runtime') or 'node24')
         _kv_flag("SDK:", importlib.util.find_spec("vercel") is not None, "installed",
-                 "missing (run hermes setup terminal and select Vercel Sandbox, then restart Hermes)")
+                 "missing (run moor setup terminal and select Vercel Sandbox, then restart Moor)")
         _kv("Auth:", f"{check_mark(auth_status.ok)} {auth_status.label}")
         for line in auth_status.detail_lines:
             _kv("Auth detail:", line)

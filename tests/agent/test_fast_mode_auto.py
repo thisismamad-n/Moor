@@ -140,7 +140,7 @@ def test_fast_auto_and_cold_parse_and_slash_command(monkeypatch):
     }
     route_stub.base_url = "https://openrouter.ai/api/v1"
     route_stub.provider = "openrouter"
-    assert cli_mod.HermesCLI._resolve_turn_agent_config(route_stub, "hi")["request_overrides"] is None
+    assert cli_mod.MoorCLI._resolve_turn_agent_config(route_stub, "hi")["request_overrides"] is None
 
 
 class _FastRateLimitError(Exception):

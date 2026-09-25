@@ -348,7 +348,7 @@ class TestDispatchDefersToGatewayAuthorization(unittest.TestCase):
         from plugins.platforms.email.adapter import EmailAdapter
         with tempfile.TemporaryDirectory() as pairing_dir, \
                 patch("gateway.pairing.PAIRING_DIR", Path(pairing_dir)), \
-                patch.dict(os.environ, {"EMAIL_ADDRESS": "hermes@test.com", "EMAIL_PASSWORD": "secret",
+                patch.dict(os.environ, {"EMAIL_ADDRESS": "moor@test.com", "EMAIL_PASSWORD": "secret",
                                         "EMAIL_IMAP_HOST": "imap.test.com", "EMAIL_SMTP_HOST": "smtp.test.com",
                                         **(env or {})}):
             adapter = EmailAdapter(PlatformConfig(enabled=True, extra=dict(extra or {})))

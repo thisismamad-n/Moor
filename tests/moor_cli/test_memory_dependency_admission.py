@@ -9,9 +9,9 @@ import sys
 from types import SimpleNamespace
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_cli import memory_setup
+from moor_cli import memory_setup
 from pm.environments import selected_venv
 from pm import paths
 from tests.pm._fixtures import _wheel
@@ -55,8 +55,8 @@ def test_setup_requires_dependencies_and_keeps_the_existing_union(tmp_path, monk
         'name: other-plugin\npython_dependencies: ["other_dep==1.0"]\n', encoding='utf-8')
     other_config = other_home / 'config.yaml'
     other_config.write_text('plugins:\n  enabled: [other-plugin]\n', encoding='utf-8')
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setenv('HERMES_RUNTIME_DIR', str(tmp_path / 'tools'))
+    monkeypatch.setenv('MOOR_HOME', str(home))
+    monkeypatch.setenv('MOOR_RUNTIME_DIR', str(tmp_path / 'tools'))
     monkeypatch.setattr(paths, 'repo_root', lambda: core)
     ensure = importlib.import_module('pm.install')
     monkeypatch.setattr(ensure, 'lazy_installs_allowed', lambda: True)
@@ -77,7 +77,7 @@ def test_setup_requires_dependencies_and_keeps_the_existing_union(tmp_path, monk
     monkeypatch.setattr(memory_setup, '_curses_select', lambda *args, **kwargs: 0)
 
     def setup():
-        from hermes_cli.main_agent_cmds import cmd_memory
+        from moor_cli.main_agent_cmds import cmd_memory
 
         cmd_memory(SimpleNamespace(memory_command='setup', provider=None if picker else 'candidate'))
 

@@ -9,7 +9,7 @@ import importlib
 import sys
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 
 @pytest.fixture()

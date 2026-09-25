@@ -28,9 +28,9 @@ _ZIP_PRESERVED_TOP_LEVEL = {"venv", ".venv", "node_modules", ".git", ".env"}
 # `_stage_entries` grafts the live copies into the staged tree so the swap keeps them (#90495).
 _ZIP_PRESERVED_NESTED = {
     "apps": ("desktop/release", "desktop/dist", "desktop/node_modules", "desktop/build"),
-    "hermes_cli": ("web_dist",),
+    "moor_cli": ("web_dist",),
     "scripts": ("whatsapp-bridge/node_modules",),
-    "ui-tui": ("dist", "node_modules", "packages/hermes-ink/dist"),
+    "ui-tui": ("dist", "node_modules", "packages/moor-ink/dist"),
     "web": ("node_modules",),
 }
 
@@ -133,7 +133,7 @@ def _zip_overlay_block_reason(
 
     The swap replaces every top-level entry (minus a tiny preserve set) and deletes backups, so uncommitted
     edits and untracked files are gone. Fails closed when git status cannot run. ``ignore_staging_artifacts``
-    is for the pre-swap re-check: phase 1 leaves our own ``*.hermes-update-staging`` siblings that git
+    is for the pre-swap re-check: phase 1 leaves our own ``*.moor-update-staging`` siblings that git
     reports as untracked; without the filter the re-check always refuses. ``shipped`` is the extracted
     ZIP's top-level entry set once known (the re-check); before the download the tracked root entries stand
     in for it. A gitignored path under a root entry the ZIP does not ship is never touched by the swap.
@@ -182,7 +182,7 @@ def _status_top_level(path: str) -> str:
 def _is_zip_preserved_entry_status_line(line: str, shipped: Optional[Collection[str]] = None) -> bool:
     """True when the swap would not destroy what a porcelain status line names: every path sits under a
     preserved top-level entry; or the line is gitignored (``!!``) and under a root entry the ZIP does not
-    ship (``.bytecode-fingerprint``, ``.hermes-bootstrap-complete``, ``hermes_agent.egg-info/`` — the swap
+    ship (``.bytecode-fingerprint``, ``.moor-bootstrap-complete``, ``moor_agent.egg-info/`` — the swap
     replaces ``shipped`` entries only); or a ``!!`` build output nested under a shipped dir that the swap
     keeps (`_ZIP_PRESERVED_NESTED`) or regenerates (``__pycache__``, ``node_modules``). Every real install
     has all of these, and blocking on them made the ZIP fallback refuse every install. Tracked edits,
@@ -282,7 +282,7 @@ def _require_staging_space(extracted: str, entries: list[str], project_root: str
 
 def _link_or_copy_artifact(source: str, destination: str) -> None:
     """Hardlink where the filesystem allows (apps/desktop/node_modules is hundreds of MB, and a link stays
-    valid after the swap unlinks the old tree; on Windows a link also succeeds on a locked Hermes.exe
+    valid after the swap unlinks the old tree; on Windows a link also succeeds on a locked Moor.exe
     where copy2 raises); byte copy otherwise."""
     try:
         os.link(source, destination)
@@ -383,7 +383,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False,
 
     A supplied commit keeps the archive on the target selected before Git failed.
     """
-    from hermes_cli.update_cmd import _m, _complete_source_update
+    from moor_cli.update_cmd import _m, _complete_source_update
     # The static archive would silently ignore --branch — the exact silent-divergence bug it exists to
     # prevent. Refuse rather than lie.
     from moor_cli.update_source import BRANCH
@@ -400,12 +400,12 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False,
     _abort_zip_update_if_dirty_tree()
     # Older callers lack the snapshot/receipt/lifecycle handoff. Refuse before swap.
     if completion_request is None:
-        from hermes_cli._old_updater import stop_for_relaunch
+        from moor_cli._old_updater import stop_for_relaunch
         stop_for_relaunch(incomplete=True)
     if target_sha is not None and not re.fullmatch(r"[0-9a-f]{40}", target_sha):
         raise ValueError("ZIP update requires an exact full commit SHA")
     ref = target_sha if target_sha is not None else f"refs/heads/{branch}"
-    repository = target_repository or "NousResearch/hermes-agent"
+    repository = target_repository or "thisismamad-n/Moor"
     if (not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository)
             or any(part in (".", "..") for part in repository.split("/"))):
         raise ValueError("ZIP update requires a GitHub owner/repository")

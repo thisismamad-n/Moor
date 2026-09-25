@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 
-from hermes_cli.logs import (
+from moor_cli.logs import (
     _extract_level,
     _extract_logger_name,
     _line_matches_component,

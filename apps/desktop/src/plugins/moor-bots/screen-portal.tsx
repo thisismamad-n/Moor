@@ -9,9 +9,9 @@
  * it once on mount so a bot the user never opened still shows real state.
  */
 
-import { Codicon, host, useValue } from '@hermes/plugin-sdk'
-import type { RpcEvent } from '@hermes/plugin-sdk'
-import type { ProfileGroupRoute } from '@hermes/plugin-sdk'
+import { Codicon, host, useValue } from '@moor/plugin-sdk'
+import type { RpcEvent } from '@moor/plugin-sdk'
+import type { ProfileGroupRoute } from '@moor/plugin-sdk'
 import { useEffect, useMemo } from 'react'
 
 import { $lastRoster } from './data'
@@ -118,7 +118,7 @@ export function useScreenPortalState(bot: RosterRow) {
         }
       })
       .catch((error: unknown) => {
-        // An older Hermes without display.* is a settled answer (hide the surface);
+        // An older Moor without display.* is a settled answer (hide the surface);
         // an offline bot is transient and stays in its unknown state.
         if (!cancelled && isDisplayUnavailable(error)) {
           setScreenUnavailable(bot)

@@ -168,7 +168,7 @@ def test_unresolvable_review_provider_falls_back_with_visible_warning(caplog):
     emitted = []
     agent._emit_warning = emitted.append
     cfg = {"auxiliary": {"background_review": {"provider": "no-such-provider", "model": "review-model"}}}
-    with patch("hermes_cli.config.load_config", return_value=cfg), patch("hermes_cli.config.load_config_readonly", return_value=cfg):
+    with patch("moor_cli.config.load_config", return_value=cfg), patch("moor_cli.config.load_config_readonly", return_value=cfg):
         with caplog.at_level(logging.WARNING, logger="agent.background_review"):
             rt = br._resolve_review_runtime(agent)
             br._resolve_review_runtime(agent)

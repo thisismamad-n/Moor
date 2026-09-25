@@ -319,8 +319,8 @@ class VercelSandboxEnvironment(BaseEnvironment):
             self._run_checked(quoted_rm_command(remote_paths), "delete")
 
     def _vercel_bulk_download(self, dest_tar_path: Path) -> None:
-        archive_member = self._remote_hermes_dir().lstrip("/")
-        remote_tar = f"/tmp/.hermes_sync.{os.getpid()}.tar"  # no-tmp: ok — remote sandbox path
+        archive_member = self._remote_moor_dir().lstrip("/")
+        remote_tar = f"/tmp/.moor_sync.{os.getpid()}.tar"  # no-tmp: ok — remote sandbox path
         sandbox = self._require_sandbox()
         try:
             # --exclude: live sockets cannot be archived ("socket ignored") and must not fail the download.

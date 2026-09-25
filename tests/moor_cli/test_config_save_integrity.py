@@ -5,10 +5,10 @@ import os
 import shutil
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-import hermes_cli.config as config_mod
-from hermes_cli.config import DEFAULT_CONFIG, load_config, migrate_config, read_raw_config, save_config
+import moor_cli.config as config_mod
+from moor_cli.config import DEFAULT_CONFIG, load_config, migrate_config, read_raw_config, save_config
 
 _CONFIG = """# hand-tuned
 model:
@@ -26,8 +26,8 @@ approvals:
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     from tui_gateway import server
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.setattr(server, "_moor_home", tmp_path)
     server._cfg_cache = server._cfg_sig = server._cfg_path = None
     (tmp_path / "config.yaml").write_text(_CONFIG, encoding="utf-8")
     yield tmp_path
@@ -87,7 +87,7 @@ def _tui_config_set():
 
 def _dashboard_put():
     from starlette.testclient import TestClient
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
     client = TestClient(app, raise_server_exceptions=False)
     r = client.put("/api/config", json={"config": {"display": {"skin": "ares"}}},
                    headers={_SESSION_HEADER_NAME: _SESSION_TOKEN})
@@ -134,8 +134,8 @@ def test_transient_read_error_is_not_recorded_as_a_corrupt_config(read, home, mo
     """One EMFILE on an intact file must not leave the process treating config.yaml as corrupt: the
     provider auto-resolution refusal (`corrupt_config`) keyed on the file signature would otherwise
     fire until the file is next edited, and the good file would be copied away as `.corrupt`."""
-    from hermes_cli.auth import _refuse_env_adoption_if_config_corrupt
-    from hermes_cli.config_read_errors import _CONFIG_PARSE_WARNED, get_active_config_parse_failure
+    from moor_cli.auth import _refuse_env_adoption_if_config_corrupt
+    from moor_cli.config_read_errors import _CONFIG_PARSE_WARNED, get_active_config_parse_failure
     path = home / "config.yaml"
     _fresh_process(home, _CONFIG)
     _CONFIG_PARSE_WARNED.clear()
@@ -157,8 +157,8 @@ def test_unreadable_config_serves_one_cached_fallback_until_it_reads(home, monke
     once, not per call: ~250x slower loads before), and the first load once the file opens again
     reads the real file even though its signature never changed."""
     import builtins
-    from hermes_cli import config_backups
-    from hermes_cli.config_read_errors import FailedConfigRead
+    from moor_cli import config_backups
+    from moor_cli.config_read_errors import FailedConfigRead
     path = home / "config.yaml"
     _fresh_process(home, _CONFIG)
     load_config()  # leaves the `good` backup a fresh process falls back to
@@ -187,16 +187,16 @@ def test_save_refusal_for_bad_yaml_asks_for_an_edit_not_a_retry(home):
     cfg["display"]["skin"] = "ares"
     with pytest.raises(RuntimeError, match="has a formatting error") as refusal:
         save_config(cfg)
-    assert "hermes config edit" in str(refusal.value) and "Try again" not in str(refusal.value)
+    assert "moor config edit" in str(refusal.value) and "Try again" not in str(refusal.value)
     assert (home / "config.yaml").read_text(encoding="utf-8") == "model: [unclosed\n"
 
 
 @pytest.mark.parametrize("operation", ["save", "partial_save", "migrate"])
 def test_authored_nulls_survive_config_writes(tmp_path, monkeypatch, operation):
-    from hermes_cli.resource_limits import configured_nofile_soft_limit
+    from moor_cli.resource_limits import configured_nofile_soft_limit
     from agent.agent_runtime_helpers import prompt_caching_disabled_from_config
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     config_path = tmp_path / "config.yaml"
     seed = {
         "_config_version": DEFAULT_CONFIG["_config_version"] - (operation == "migrate"),

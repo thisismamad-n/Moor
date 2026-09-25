@@ -172,7 +172,7 @@ def test_reasoning_stream_delta_plugin_hook_is_opt_in(monkeypatch):
 
     # The opt-in is resolved once per stream; a new request picks up the flipped flag.
     agent._reset_stream_delivery_tracking()
-    with patch("hermes_cli.config.cfg_get", return_value=True):
+    with patch("moor_cli.config.cfg_get", return_value=True):
         agent._fire_reasoning_delta("visible reasoning")
         _wait_for(lambda: calls)
         shutdown_plugin_stream_hook_dispatcher()

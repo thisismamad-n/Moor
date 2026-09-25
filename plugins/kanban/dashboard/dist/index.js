@@ -485,7 +485,7 @@
       function startDrag() {
         dragging = true;
         proxy = el.cloneNode(true);
-        proxy.classList.add("hermes-kanban-touch-proxy");
+        proxy.classList.add("moor-kanban-touch-proxy");
         document.body.appendChild(proxy);
         proxy.style.position = "fixed";
         proxy.style.pointerEvents = "none";
@@ -2101,13 +2101,13 @@
     if (!b || !b.project_id) return null;
     return h(Badge, {
       variant: "outline",
-      className: "hermes-kanban-board-project text-xs font-normal gap-1",
+      className: "moor-kanban-board-project text-xs font-normal gap-1",
       title: tx(t, "boardProjectBadgeTitle", "New tasks on this board inherit this project"),
     },
       tx(t, "boardProjectBadge", "Project: {name}", { name: b.project_name || b.project_id }),
       h("button", {
         type: "button",
-        className: "hermes-kanban-board-project-unbind",
+        className: "moor-kanban-board-project-unbind",
         "aria-label": tx(t, "unbindProject", "Unbind project"),
         title: tx(t, "unbindProject", "Unbind project"),
         onClick: props.onUnbind,
@@ -2221,7 +2221,7 @@
     );
   }
 
-  // Live (non-archived) Hermes projects available for board scoping,
+  // Live (non-archived) Moor projects available for board scoping,
   // fetched from GET /projects on mount. On failure the list stays empty
   // and both dialogs omit the project_id field from their payloads, so a
   // projects-store hiccup can never clear an existing binding.

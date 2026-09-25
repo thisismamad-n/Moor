@@ -92,8 +92,8 @@ def _fetch_picker_live_models(
     headers: dict[str, str] | None = None, timeout: float = 5.0,
     api_mode: str | None = None, *, cache: bool = True) -> list[str] | None:
     """Fetch picker models with native Ollama and cached generic discovery."""
-    from hermes_cli.models import _get_ollama_native_headers, cached_fetch_api_models, fetch_api_models
-    from hermes_cli.models_local import (
+    from moor_cli.models import _get_ollama_native_headers, cached_fetch_api_models, fetch_api_models
+    from moor_cli.models_local import (
         _OLLAMA_LOCAL_MODELS_CACHE_TTL,
         _normalize_openai_base_url,
         fetch_ollama_local_models,
@@ -218,7 +218,7 @@ def _prefetch_provider_models_parallel(provider_slugs: list[str]) -> None:
     non-blocking serial read for a parallel fetch the picker waits on. Each worker re-persists
     through the thread-safe ``update_provider_cache_entry`` so concurrent writes cannot
     clobber each other."""
-    from hermes_cli.models import (
+    from moor_cli.models import (
         _credential_fingerprint, _disk_serve_tier, _load_provider_models_cache,
         _normalized_cache_slug, cached_provider_model_ids)
 
@@ -356,7 +356,7 @@ def _overlay_has_env_creds(pid: str, moor_slug: str, overlay, read_env) -> bool:
             pcfg = PROVIDER_REGISTRY.get(key)
             if pcfg and pcfg.api_key_env_vars and _any_env(pcfg.api_key_env_vars, read_env):
                 return True
-    if not has_creds and hermes_slug == "azure-foundry":
+    if not has_creds and moor_slug == "azure-foundry":
         has_creds = _azure_entra_configured(read_env)
     return has_creds
 
@@ -365,7 +365,7 @@ def _azure_entra_configured(read_env=os.environ.get) -> bool:
     """Azure Foundry under ``model.auth_mode: entra_id`` mints a per-request bearer, so no
     ``AZURE_FOUNDRY_API_KEY`` ever exists; the row is configured once the runtime resolver's own
     inputs are (provider + auth_mode + an endpoint). No token is minted here (#27989)."""
-    from hermes_cli.models import _get_model_config_dict
+    from moor_cli.models import _get_model_config_dict
     model_cfg = _get_model_config_dict()
     if (str(model_cfg.get("provider") or "").strip().lower() != "azure-foundry"
             or str(model_cfg.get("auth_mode") or "").strip().lower() != "entra_id"):
@@ -407,11 +407,11 @@ def _is_aws_sdk(pconfig) -> bool:
 
 def _live_or_curated_ids(slug: str, curated: dict, *fallback_keys: str, merge_models_dev: bool = True,
                          non_blocking: bool = False) -> list:
-    """``cached_provider_model_ids`` (the SAME disk-cached list ``hermes model`` builds), falling
+    """``cached_provider_model_ids`` (the SAME disk-cached list ``moor model`` builds), falling
     back to the curated list (merged with models.dev for preferred providers) when live is empty.
     ``non_blocking`` (GUI read path) reads the disk cache only — a provider that is slow or down
     contributes its curated list instead of stalling the whole picker (#114215)."""
-    from hermes_cli.models import _MODELS_DEV_PREFERRED, _merge_with_models_dev, cached_provider_model_ids
+    from moor_cli.models import _MODELS_DEV_PREFERRED, _merge_with_models_dev, cached_provider_model_ids
     model_ids = cached_provider_model_ids(slug, non_blocking=non_blocking)
     if not model_ids:
         model_ids = _first_curated(curated, fallback_keys or (slug,))
@@ -795,10 +795,10 @@ def _lap_lmstudio_row(b: _PickerBuild, user_providers: dict) -> None:
     is_current = b.current_provider_norm == "lmstudio"
     if not (is_current or isinstance(configured, dict)):
         return
-    from hermes_cli.model_switch import _declared_model_ids
+    from moor_cli.model_switch import _declared_model_ids
     configured_models = _declared_model_ids(configured.get("models")) if isinstance(configured, dict) else []
     model_ids = list(dict.fromkeys([*configured_models, *b.curated.get("lmstudio", [])]))
-    b.add_builtin_row("lmstudio", get_label("lmstudio"), is_current, model_ids, "hermes")
+    b.add_builtin_row("lmstudio", get_label("lmstudio"), is_current, model_ids, "moor")
 
 
 def _lap_builtin_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None:
@@ -810,7 +810,7 @@ def _lap_builtin_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None
         # LAUNCH profile's env-keyed providers and hid its own .env-keyed ones.
         if not (_any_env(env_vars, _scoped_key_env) or _raw_pool_usable(moor_id)):
             continue
-        model_ids = _live_or_curated_ids(hermes_id, b.curated, non_blocking=b.non_blocking_catalogs)
+        model_ids = _live_or_curated_ids(moor_id, b.curated, non_blocking=b.non_blocking_catalogs)
         # A providers.<built-in>.models block extends the discovered catalog; section 3 cannot
         # emit it later because this row owns the slug.
         configured = user_providers.get(moor_id) if isinstance(user_providers, dict) else None
@@ -876,10 +876,10 @@ def _overlay_has_creds(b: _PickerBuild, pid: str, moor_slug: str, overlay) -> bo
 
 
 def _lap_overlay_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None:
-    """Section 2: Hermes-only providers (nous, openai-codex, copilot, opencode-go, ...)."""
+    """Section 2: moor-only providers (moor, openai-codex, copilot, opencode-go, ...)."""
     from agent.models_dev import PROVIDER_TO_MODELS_DEV
-    from hermes_cli.model_switch import _declared_model_ids
-    from hermes_cli.providers import HERMES_OVERLAYS
+    from moor_cli.model_switch import _declared_model_ids
+    from moor_cli.providers import MOOR_OVERLAYS
 
     # MOOR_OVERLAYS keys may be models.dev IDs ("github-copilot") while config.yaml uses
     # Moor IDs ("copilot").
@@ -893,23 +893,23 @@ def _lap_overlay_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None
         if moor_slug in {"openai-codex", "copilot", "copilot-acp"}:
             # Live OAuth-backed discovery so Pro-only Codex slugs not in the static catalog
             # appear; falls back to curated when unreachable (or not yet cached on the read path).
-            model_ids = _live_or_curated_ids(hermes_slug, b.curated, merge_models_dev=False,
+            model_ids = _live_or_curated_ids(moor_slug, b.curated, merge_models_dev=False,
                                              non_blocking=b.non_blocking_catalogs)
         elif overlay.auth_type == "aws_sdk":
-            model_ids = _aws_live_or_curated_ids(hermes_slug, b.curated, hermes_slug, pid,
+            model_ids = _aws_live_or_curated_ids(moor_slug, b.curated, moor_slug, pid,
                                                  non_blocking=b.non_blocking_catalogs)
-        elif hermes_slug == "nous":
-            # A guest identity never needs the Portal catalog: add_builtin_row pins nous/welcome
-            # (or drops the row when nous.guest is off), so only a real account fetches.
-            tier_row = _free_tier_nous_row({"name": get_label(hermes_slug), "models": []})
+        elif moor_slug == "moor":
+            # A guest identity never needs the Portal catalog: add_builtin_row pins moor/welcome
+            # (or drops the row when moor.guest is off), so only a real account fetches.
+            tier_row = _free_tier_moor_row({"name": get_label(moor_slug), "models": []})
             real_account = tier_row is not None and not tier_row["models"]
             model_ids = _moor_picker_model_ids(b.curated, b.force_fresh_moor_tier) if real_account else []
         else:
-            model_ids = _live_or_curated_ids(hermes_slug, b.curated, hermes_slug, pid,
+            model_ids = _live_or_curated_ids(moor_slug, b.curated, moor_slug, pid,
                                              non_blocking=b.non_blocking_catalogs)
         # A providers.<overlay>.models block extends the row exactly as it does for built-in rows
         # (section 1); section 3 never emits it because this row owns the slug (#27989).
-        configured = user_providers.get(hermes_slug) or user_providers.get(pid) if isinstance(user_providers, dict) else None
+        configured = user_providers.get(moor_slug) or user_providers.get(pid) if isinstance(user_providers, dict) else None
         if isinstance(configured, dict):
             model_ids = list(dict.fromkeys([*_declared_model_ids(configured.get("models")), *model_ids]))
         b.add_builtin_row(
@@ -926,7 +926,14 @@ def _lap_canonical_rows(b: _PickerBuild) -> None:
             continue
         cp_config = PROVIDER_REGISTRY.get(cp.slug)
         has_creds = False
-        if cp_config and cp_config.api_key_env_vars:
+        # Keyless providers (opencode-free) are served anonymously — always treated as credentialed.
+        try:
+            from moor_cli.providers import MOOR_OVERLAYS
+            if getattr(MOOR_OVERLAYS.get(cp.slug), "keyless", False):
+                has_creds = True
+        except Exception:
+            pass
+        if not has_creds and cp_config and cp_config.api_key_env_vars:
             lit = {ev for ev in cp_config.api_key_env_vars if os.environ.get(ev)}
             has_creds = bool(lit)
             # A regional "-cn" twin lit only by key vars shared with its non-CN sibling is a
@@ -940,9 +947,9 @@ def _lap_canonical_rows(b: _PickerBuild) -> None:
             _is_aws_sdk(cp_config) and _has_aws_sdk_creds_for_listing(cp.slug, b.current_provider))
         if not has_creds and cp_config is not None and cp_config.auth_type == "external_process":
             # Subprocess-backed providers own their auth; the binary resolving is the credential
-            # evidence for listing (same gate as the copilot-acp overlay row and hermes auth status).
+            # evidence for listing (same gate as the copilot-acp overlay row and moor auth status).
             try:
-                from hermes_cli.auth import get_external_process_provider_status
+                from moor_cli.auth import get_external_process_provider_status
                 has_creds = bool(get_external_process_provider_status(cp.slug).get("configured"))
             except Exception as exc:
                 logger.debug("External-process check failed for %s: %s", cp.slug, exc)
@@ -1127,10 +1134,10 @@ def _lap_custom_provider_rows(b: _PickerBuild, custom_providers: list) -> None:
 
 def _build_curated_lists(current_provider: str, current_base_url: str, current_model: str,
                         non_blocking: bool = False) -> dict[str, list[str]]:
-    """Curated model lists keyed by hermes provider id, plus the dynamic ones (nous manifest,
+    """Curated model lists keyed by moor provider id, plus the dynamic ones (moor manifest,
     Ollama Cloud, LM Studio live probe). ``non_blocking`` (GUI read path) takes cached Ollama Cloud
     ids and warms them in the background rather than waiting on an 8s probe (#114215)."""
-    from hermes_cli.models import OPENROUTER_MODELS, _PROVIDER_MODELS, get_curated_nous_model_ids
+    from moor_cli.models import OPENROUTER_MODELS, _PROVIDER_MODELS, get_curated_moor_model_ids
     curated: dict[str, list[str]] = dict(_PROVIDER_MODELS)
     curated["openrouter"] = [mid for mid, _ in OPENROUTER_MODELS]
     # Plugin profiles without a static row: their fallback_models are the curated floor, so the
@@ -1142,7 +1149,7 @@ def _build_curated_lists(current_provider: str, current_base_url: str, current_m
     # Remote manifest so new Portal models surface without a release; in-repo snapshot fallback.
     curated["moor"] = get_curated_moor_model_ids()
     if "ollama-cloud" not in curated:
-        from hermes_cli.models import fetch_ollama_cloud_models
+        from moor_cli.models import fetch_ollama_cloud_models
         # Read path: cache only; the row's own SWR refresh (cached_provider_model_ids) warms it.
         curated["ollama-cloud"] = fetch_ollama_cloud_models(cache_only=non_blocking)
     # LM Studio has no static catalog: probe its native endpoint live. Base URL precedence:
@@ -1318,8 +1325,8 @@ def list_picker_providers(
     custom endpoints, where the user may supply their own model set through config.
     ``non_blocking_catalogs`` makes every catalog read cache-only: provider catalogs warm in the
     background, OpenRouter's stale disk copy is served as-is; the ``probe_*`` flags are forwarded."""
-    from hermes_cli.model_switch import list_authenticated_providers
-    from hermes_cli.models import fetch_openrouter_models
+    from moor_cli.model_switch import list_authenticated_providers
+    from moor_cli.models import fetch_openrouter_models
     providers = list_authenticated_providers(
         current_provider=current_provider, current_base_url=current_base_url,
         user_providers=user_providers, custom_providers=custom_providers, max_models=max_models,
@@ -1343,7 +1350,7 @@ def list_picker_providers(
         is_custom_endpoint = bool(p.get("is_user_defined")) and bool(p.get("api_url"))
         if p.get("models") or is_custom_endpoint:
             filtered.append(p)
-    from hermes_cli.models_validate import drop_unofferable_model_ids
+    from moor_cli.models_validate import drop_unofferable_model_ids
 
     drop_unofferable_model_ids(filtered)
     return filtered

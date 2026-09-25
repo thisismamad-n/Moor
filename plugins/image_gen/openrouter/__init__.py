@@ -172,7 +172,7 @@ _IMAGE_API_INTS = (
 _ATTRIBUTION_HEADERS = {
     "Content-Type": "application/json",
     # OpenRouter attribution headers (harmless against Moor Portal).
-    "HTTP-Referer": "https://github.com/NousResearch/hermes-agent",
+    "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
     "X-Title": "Moor Agent",
 }
 
@@ -819,12 +819,12 @@ def _build_providers() -> List[OpenRouterCompatImageProvider]:
                     "key": "OPENROUTER_API_KEY", "prompt": "OpenRouter API key", "url": "https://openrouter.ai/keys",
                 }],
             }),
-        # No picker row: Portal models are offered inside the single managed "Nous Subscription" row
-        # (tools/image_generation_managed.py). A row of its own also wrote `provider: nous` and so
+        # No picker row: Portal models are offered inside the single managed "Moor Subscription" row
+        # (tools/image_generation_managed.py). A row of its own also wrote `provider: moor` and so
         # read "active" alongside the managed FAL row while the runtime routed its pick to FAL.
         OpenRouterCompatImageProvider(
-            provider_name="nous", display_name="Nous Portal", runtime_name="nous", config_key="nous",
-            model_env_var="NOUS_IMAGE_MODEL", setup_schema=None),
+            provider_name="moor", display_name="Moor Portal", runtime_name="moor", config_key="moor",
+            model_env_var="MOOR_IMAGE_MODEL", setup_schema=None),
     ]
 
 

@@ -21,8 +21,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_cli._subprocess_compat import noninteractive_git_env
-from hermes_time import safe_strftime
+from moor_cli._subprocess_compat import noninteractive_git_env
+from moor_time import safe_strftime
 
 logger = logging.getLogger(__name__)
 
@@ -922,7 +922,7 @@ def judge_goal(
     try:
         raw = _call_goal_judge_llm(call_llm, JUDGE_SYSTEM_PROMPT, prompt, timeout)
     except AuxiliaryClientUnavailable as exc:
-        # No client at all (e.g. a dead Nous refresh token): name the cause so the user is sent to
+        # No client at all (e.g. a dead Moor refresh token): name the cause so the user is sent to
         # re-authenticate, not to context-length / model debugging (#42177). Still fails open.
         logger.info("goal judge: auxiliary client unavailable (%s) — falling through to continue", exc)
         return "continue", f"goal_judge auxiliary client unavailable: {exc}", False, None, True

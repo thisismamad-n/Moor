@@ -179,7 +179,7 @@ def _spawn_pyright(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
 
 
 def _detect_python(root: str) -> Optional[str]:
-    # Pyright needs the project's dependencies, not Hermes's runtime packages.
+    # Pyright needs the project's dependencies, not Moor's runtime packages.
     venvs = [v for v in (os.environ.get("VIRTUAL_ENV"), os.path.join(root, ".venv"), os.path.join(root, "venv")) if v]
     paths = (os.path.join(v, sub) for v in venvs for sub in ("bin/python", "bin/python3", "Scripts/python.exe"))
     project_python = next((p for p in paths if os.path.exists(p)), None)
@@ -214,12 +214,12 @@ def _spawn_bash_ls(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
 
 
 _VUE_REINSTALL = (
-    "delete <HERMES_HOME>/lsp/node_modules/@vue and <HERMES_HOME>/lsp/bin/vue-language-server*, "
-    "then run: hermes lsp install vue-language-server"
+    "delete <MOOR_HOME>/lsp/node_modules/@vue and <MOOR_HOME>/lsp/bin/vue-language-server*, "
+    "then run: moor lsp install vue-language-server"
 )
 _VUE_TUNNEL_MSG = (
     "vue-language-server: the installed @vue/language-server is 3.x, which only works behind a client-hosted "
-    f"tsserver tunnel Hermes does not run — no diagnostics will arrive. Reinstall the self-hosting 2.x line: {_VUE_REINSTALL}"
+    f"tsserver tunnel Moor does not run — no diagnostics will arrive. Reinstall the self-hosting 2.x line: {_VUE_REINSTALL}"
 )
 _VUE_TSDK_MSG = (
     "vue-language-server: no JavaScript TypeScript SDK (typescript/lib/typescript.js) next to the server or under "
@@ -229,9 +229,9 @@ _VUE_TSDK_MSG = (
 
 def _node_modules_trees(bin_path: str, root: str) -> List[str]:
     """``node_modules`` trees that may hold the Vue server and its TypeScript SDK:
-    the launcher's own tree (symlinks resolved), Hermes staging, then the project's."""
-    from agent.lsp.install import hermes_lsp_bin_dir
-    trees = [str(hermes_lsp_bin_dir().parent / "node_modules"), os.path.join(root, "node_modules")]
+    the launcher's own tree (symlinks resolved), Moor staging, then the project's."""
+    from agent.lsp.install import moor_lsp_bin_dir
+    trees = [str(moor_lsp_bin_dir().parent / "node_modules"), os.path.join(root, "node_modules")]
     real = os.path.realpath(bin_path)
     marker = f"{os.sep}node_modules{os.sep}"
     if (idx := real.rfind(marker)) >= 0:

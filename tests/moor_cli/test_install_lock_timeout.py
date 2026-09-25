@@ -1,7 +1,7 @@
 """A backend binds even while another process holds the install lock.
 
 Regression: ``runtime_lock`` waited forever, and the lock is held across a whole dependency
-rebuild (tens of seconds on a bundle), so the second backend — the ``hermes-setup`` onboarding
+rebuild (tens of seconds on a bundle), so the second backend — the ``moor-setup`` onboarding
 profile — never reached its port: the renderer gave up at 40 s and Electron killed it at 90 s
 while the holder ran a uv build it had started for a status probe. Deciding what a lost race
 means is the caller's job now: readers skip, explicit installs still wait.
@@ -19,7 +19,7 @@ from pm.environments import install_state_dir, runtime_facts_path, site_packages
 _HOLDER = """
 import sys
 from pathlib import Path
-from hermes_cli.runtime_state import runtime_lock
+from moor_cli.runtime_state import runtime_lock
 with runtime_lock(Path(sys.argv[1]), timeout=0):
     print("locked", flush=True)
     sys.stdin.readline()
@@ -31,7 +31,7 @@ def install_tree(tmp_path, monkeypatch):
     """A real committed generation, ready for ``activate_dependencies`` to select."""
     repo = tmp_path / "repo"
     repo.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     environment = install_state_dir(repo) / "environments" / "gen1" / "venv"
     site = site_packages(environment)
     site.mkdir(parents=True)
@@ -58,7 +58,7 @@ def locked_install(install_tree):
 
 
 def test_runtime_lock_reports_a_lost_race(locked_install):
-    from hermes_cli.runtime_state import runtime_lock
+    from moor_cli.runtime_state import runtime_lock
 
     repo, _site = locked_install
     with runtime_lock(repo, timeout=0.2) as held:
@@ -70,7 +70,7 @@ def test_boot_activation_proceeds_while_the_install_is_locked(locked_install, mo
     """The issue's symptom, inverted: the backend reaches its dependency environment and can bind
     while a sibling holds the lock. Recovery belongs to whoever holds it, so it is skipped."""
     import pm.environments as runtime_paths
-    import hermes_cli.runtime_state as runtime_state
+    import moor_cli.runtime_state as runtime_state
 
     repo, site = locked_install
     real_lock = runtime_state.runtime_lock

@@ -305,6 +305,6 @@ class SlashCommandsMixin:
         return f"Queued for the next turn. ({_queue_prompt(state, queued_text)} queued)"
 
     def _cmd_version(self, args: str, state: SessionState) -> str:
-        from hermes_cli.version_info import get_version_info
+        from moor_cli.version_info import get_version_info
 
-        return f"Hermes Agent v{get_version_info().derived_version}"
+        return f"Moor Agent v{get_version_info().derived_version}"

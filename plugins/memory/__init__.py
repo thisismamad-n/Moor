@@ -203,9 +203,9 @@ def load_memory_provider(name: str, *, register_skills: Optional[bool] = None) -
         logger.debug("Memory provider '%s' not found in bundled, user plugins, or entry points", name)
         return None
     if provider_dir is not None and _explicitly_disabled(name, provider_dir):
-        # The Plugins hub / `hermes plugins disable` park a user-installed provider in
+        # The Plugins hub / `moor plugins disable` park a user-installed provider in
         # ``plugins.disabled``; the loader must honour it or "disabled" is a lie in the UI.
-        logger.warning("Memory provider '%s' is disabled via plugins.disabled; run `hermes plugins enable %s` "
+        logger.warning("Memory provider '%s' is disabled via plugins.disabled; run `moor plugins enable %s` "
                        "or change memory.provider.", name, name)
         return None
 
@@ -220,7 +220,7 @@ def load_memory_provider(name: str, *, register_skills: Optional[bool] = None) -
 def import_memory_provider_module(name: Optional[str] = None) -> bool:
     """Import the provider's module (default: the configured ``memory.provider``) WITHOUT
     constructing a provider — the later ``load_memory_provider`` then hits ``sys.modules``
-    instead of a fresh native extension load. Exists so ``hermes acp`` can pay the heavy
+    instead of a fresh native extension load. Exists so ``moor acp`` can pay the heavy
     import (numpy / ML stack) on the main thread before any other thread starts: on Windows
     a first-time native import racing another thread's import chain deadlocked
     ``session/new`` (#58083). False when no provider is configured, the provider is
@@ -265,7 +265,7 @@ def import_provider_module(name: str, submodule: Optional[str] = None):
 
     Host-side code (dashboard host-block storage, OAuth routes, doctor, profile clone) used to
     ``import plugins.memory.<name>.<submodule>``, which only exists for the bundled copy; a
-    catalog install under ``$HERMES_HOME/plugins/`` loads under the synthetic user namespace,
+    catalog install under ``$MOOR_HOME/plugins/`` loads under the synthetic user namespace,
     so those surfaces 500'd/404'd the moment the bundled copy left core. Resolving through
     ``find_provider_dir`` makes bundled and user-dir copies behave identically. Raises
     ``ImportError`` when the provider is not installed or lacks the submodule.
@@ -455,7 +455,7 @@ def _explicitly_disabled(name: str, provider_dir: Path) -> bool:
     if _MEMORY_PLUGINS_DIR in provider_dir.parents:
         return False
     try:
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         disabled = cfg_get(load_config(), "plugins", "disabled")
     except Exception:
         return False
@@ -463,7 +463,7 @@ def _explicitly_disabled(name: str, provider_dir: Path) -> bool:
         return False
     names = {name, provider_dir.name}
     try:
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         with open(provider_dir / "plugin.yaml", encoding="utf-8-sig") as f:
             names.add(str((yaml.safe_load(f) or {}).get("name") or ""))
     except Exception:

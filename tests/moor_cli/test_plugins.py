@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.plugins import (
     ENTRY_POINTS_GROUP,
@@ -23,8 +23,8 @@ from moor_cli.plugins import (
     resolve_plugin_command_result,
     _portable_skill_namespace,
 )
-from hermes_cli.relay_plugin_cutover import RELAY_PLUGINS_CONFIG_ENV
-from hermes_cli.middleware import (
+from moor_cli.relay_plugin_cutover import RELAY_PLUGINS_CONFIG_ENV
+from moor_cli.middleware import (
     apply_llm_request_middleware,
     apply_tool_request_middleware,
     run_llm_execution_middleware,
@@ -170,7 +170,7 @@ class TestPluginDiscovery:
             json.dumps({
                 "$schema": PLUGIN_SCHEMA_V1,
                 "name": "portable.test",
-                "extensions": {"com.nousresearch.hermes": {"servers": {"worker": {
+                "extensions": {"com.moorinc.moor": {"servers": {"worker": {
                     "app": {"darwin": {"presence": "executable", "location": str(app)}},
                     "requires": {"app": True},
                     "liveness": {"kind": "static"},
@@ -222,8 +222,8 @@ class TestPluginDiscovery:
         assert manager._plugins["portable.test"].enabled is True
         assert manager._plugins["native"].enabled is True
         assert manager._plugins["native"].module is not None
-        from hermes_cli.agent_plugins import liveness_for
-        from hermes_platform import declaration
+        from moor_cli.agent_plugins import liveness_for
+        from moor_platform import declaration
 
         assert declaration.lookup(internal_name) is not None
         assert liveness_for(internal_name) == {"kind": "static"}
@@ -234,10 +234,10 @@ class TestPluginDiscovery:
     def test_two_portable_plugins_with_the_same_server_name_do_not_both_load(self, tmp_path, monkeypatch):
         """Readable server names can clash where the old digest could not: the second plugin's server
         is skipped with a warning naming the first, and the first's config is the one served."""
-        from hermes_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
-        from hermes_cli import plugins as plugins_mod
+        from moor_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
+        from moor_cli import plugins as plugins_mod
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".moor"
         # Two unrelated plugins both call their server "shared": one readable name, one owner.
         for plugin_name, command in (("alpha-tools", "python-a"), ("beta-tools", "python-b")):
             plugin = home / "plugins" / plugin_name
@@ -252,7 +252,7 @@ class TestPluginDiscovery:
         empty_bundled = tmp_path / "bundled"
         empty_bundled.mkdir()
         monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("MOOR_HOME", str(home))
         monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
 
         manager = PluginManager()
@@ -298,7 +298,7 @@ class TestPluginDiscovery:
     def test_portable_author_object_is_normalized_to_stable_string(
         self, tmp_path, monkeypatch
     ):
-        from hermes_cli.agent_plugins import PLUGIN_SCHEMA_V1
+        from moor_cli.agent_plugins import PLUGIN_SCHEMA_V1
 
         home = tmp_path / "home"
         plugin = home / "plugins" / "portable"
@@ -441,11 +441,11 @@ class TestPluginDiscovery:
         used to look for ``.register`` on that function object, find nothing,
         and warn "no register() function" on every discovery pass.
         """
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        moor_home = tmp_path / "moor_test"
+        moor_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         # Entry-point plugins load only when opted into plugins.enabled.
-        (hermes_home / "config.yaml").write_text(
+        (moor_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["fn_plugin"]}})
         )
 
@@ -588,11 +588,11 @@ class TestPluginLoading:
         (chronos / "plugin.yaml").write_text(yaml.safe_dump({"name": "chronos"}), encoding="utf-8")
         (chronos / "__init__.py").write_text(
             "def register(ctx):\n    ctx.register_cron_scheduler(object())\n", encoding="utf-8")
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(exist_ok=True)
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["chronos"]}}))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        from hermes_cli import plugins as plugins_mod
+        moor_home = tmp_path / "moor_test"
+        moor_home.mkdir(exist_ok=True)
+        (moor_home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["chronos"]}}))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
+        from moor_cli import plugins as plugins_mod
         monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: bundled)
 
         mgr = PluginManager()
@@ -603,14 +603,14 @@ class TestPluginLoading:
     def test_user_cron_plugin_auto_coerced_to_exclusive(self, tmp_path, monkeypatch):
         """A user-installed cron provider (no ``kind:``) routes to ``plugins.cron_providers`` like a
         memory provider does, instead of being imported by the general manager (#62951)."""
-        hermes_home = tmp_path / "hermes_test"
-        plugin_dir = hermes_home / "plugins" / "mycron"
+        moor_home = tmp_path / "moor_test"
+        plugin_dir = moor_home / "plugins" / "mycron"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "mycron"}), encoding="utf-8")
         (plugin_dir / "__init__.py").write_text(
             "def register(ctx):\n    ctx.register_cron_scheduler(object())\n", encoding="utf-8")
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["mycron"]}}))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        (moor_home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["mycron"]}}))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1211,7 +1211,7 @@ class TestForceReloadSymmetry:
     def test_system_exit_is_reported_under_timeout_path(self, monkeypatch, caplog):
         """Bounded hooks isolate SystemExit without losing its failure report."""
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 1.0
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 1.0
         )
 
         def exits(**_kwargs):
@@ -1220,7 +1220,7 @@ class TestForceReloadSymmetry:
         mgr = PluginManager()
         mgr._hooks["post_tool_call"] = [exits, lambda **_kw: "survived"]
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="moor_cli.plugins"):
             assert mgr.invoke_hook("post_tool_call") == ["survived"]
         assert "bounded plugin requested process exit" in caplog.text
 
@@ -1230,7 +1230,7 @@ class TestForceReloadSymmetry:
         (#109624), on both the caller-thread and the bounded-worker path, and the block message
         names the callback and the error so a crashing guard is distinguishable from a slow one."""
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: timeout
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: timeout
         )
 
         def boom(**_kwargs):
@@ -1280,7 +1280,7 @@ class TestForceReloadSymmetry:
     def test_system_exit_from_caller_thread_hook_is_isolated(self, monkeypatch, caplog):
         """A plugin dependency calling sys.exit() must not terminate hook dispatch."""
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 1.0
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 1.0
         )
 
         def exits(**_kwargs):
@@ -1289,14 +1289,14 @@ class TestForceReloadSymmetry:
         mgr = PluginManager()
         mgr._hooks["subagent_stop"] = [exits, lambda **_kw: "survived"]
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="moor_cli.plugins"):
             assert mgr.invoke_hook("subagent_stop", parent_session_id="p1") == ["survived"]
         assert "plugin requested process exit" in caplog.text
 
     def test_keyboard_interrupt_from_caller_thread_hook_propagates(self, monkeypatch):
         """Plugin isolation must not swallow an operator's Ctrl-C."""
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 1.0
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 1.0
         )
         later_calls = []
 
@@ -1321,7 +1321,7 @@ class TestForceReloadSymmetry:
         mgr = PluginManager()
         mgr._middleware["tool_call"] = [exits, lambda **_kw: "survived"]
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="moor_cli.plugins"):
             assert mgr.invoke_middleware("tool_call") == ["survived"]
         assert "middleware requested process exit" in caplog.text
 
@@ -1432,7 +1432,7 @@ class TestForceReloadSymmetry:
         ``_HOOK_MAX_ABANDONED_WORKERS`` live ones — a hung plugin leaks a bounded few threads,
         never one per call (#98382), and past the cap it is skipped with a warning that names
         the callback (#105223)."""
-        import hermes_cli.plugins_dispatch as dispatch
+        import moor_cli.plugins_dispatch as dispatch
 
         monkeypatch.setattr(
             "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 0.1
@@ -1450,7 +1450,7 @@ class TestForceReloadSymmetry:
         mgr._hook_timeout_suppression_seconds = 0.0  # isolate the gate from suppression
         mgr._hooks["post_tool_call"] = [blocker]
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="moor_cli.plugins"):
             for i in range(dispatch._HOOK_MAX_ABANDONED_WORKERS + 3):
                 assert mgr.invoke_hook("post_tool_call", tool_name="read_file", tool_call_id=f"call-{i}") == []
 
@@ -1464,10 +1464,10 @@ class TestForceReloadSymmetry:
         that has recovered decides again (#105223)."""
         import time
 
-        from hermes_cli.plugins import _PRE_TOOL_CALL_TIMEOUT_BLOCK_MESSAGE
+        from moor_cli.plugins import _PRE_TOOL_CALL_TIMEOUT_BLOCK_MESSAGE
 
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 0.1
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 0.1
         )
         hold = threading.Event()
         starts = []
@@ -1663,12 +1663,12 @@ class TestForceReloadSymmetry:
             PluginManager, "_discover_and_load_inner", lambda self_inner: None,
         )
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profile-a"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "profile-a"))
         mgr_a = PluginManager()
         plugins_mod._plugin_manager = mgr_a
         shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profile-b"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "profile-b"))
         mgr_b = PluginManager()
         plugins_mod._plugin_manager = mgr_b
         shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
@@ -1686,7 +1686,7 @@ class TestForceReloadSymmetry:
         # B's later adapter reconnect re-runs register_from_config(); its
         # idempotence key must still be intact, so this must be a no-op
         # rather than appending a second callback to B's live manager.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profile-b"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "profile-b"))
         second = shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
 
         assert second == []
@@ -1757,9 +1757,9 @@ class TestPreToolCallDirective:
         """Precedence is block > approve, not registration order: a security plugin's veto must
         not be shadowed by an earlier plugin's approve (#87420). Under approvals.mode off an
         approve means no prompt at all, so the veto would otherwise be dropped silently."""
-        from hermes_cli.plugins import _get_pre_tool_call_directive_details
+        from moor_cli.plugins import _get_pre_tool_call_directive_details
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "moor_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "modify", "args": {"path": "/safe"}},
                 {"action": "approve", "message": "earlier plugin approves", "rule_key": "k"},
@@ -1774,9 +1774,9 @@ class TestPreToolCallDirective:
     def test_first_approve_wins_among_approves_and_keeps_later_modify(self, monkeypatch):
         """Holding approve back for a veto scan must not change which approve wins (first valid,
         incl. its rule_key) and must keep accumulating modify directives that follow it."""
-        from hermes_cli.plugins import _get_pre_tool_call_directive_details
+        from moor_cli.plugins import _get_pre_tool_call_directive_details
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "moor_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "block"},  # message-less block is invalid and ignored
                 {"action": "approve", "message": "first", "rule_key": " write_file:ssh "},
@@ -1795,7 +1795,7 @@ class TestResolvePreToolBlock:
 
 
     def test_approve_gate_receives_tool_observability_context(self, monkeypatch):
-        from hermes_cli.plugins import resolve_pre_tool_block
+        from moor_cli.plugins import resolve_pre_tool_block
         from tools import approval_context
 
         seen = {}
@@ -2714,7 +2714,7 @@ class TestAsyncHookOnCallerLoop:
             return {"seen_async": event}
 
         mgr._hooks.setdefault("pre_gateway_dispatch", []).extend([narrow, boom, narrow_async])
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="moor_cli.plugins"):
             results = asyncio.run(mgr.ainvoke_hook("pre_gateway_dispatch", event="e", gateway="g"))
         assert results == [{"seen": "e"}, {"seen_async": "e"}]
         assert "async plugin blew up" in caplog.text

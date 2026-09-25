@@ -56,12 +56,12 @@ def test_stopped_gateway_does_not_report_stale_platform_error(client):
 
 
 def test_operator_stopped_gateway_does_not_report_retained_startup_failure(client):
-    """``hermes gateway stop`` keeps the last ``startup_failed`` + ``exit_reason`` on disk with
+    """``moor gateway stop`` keeps the last ``startup_failed`` + ``exit_reason`` on disk with
     ``desired_state: stopped``; the Channels page must read that as stopped, exactly like
     ``/api/status`` does, not wear a "Start failed" badge with the stale reason (#112517)."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    (get_hermes_home() / "gateway_state.json").write_text(json.dumps({
+    (get_moor_home() / "gateway_state.json").write_text(json.dumps({
         "kind": "gateway", "pid": 999_999_999, "start_time": 1.0,
         "gateway_state": "startup_failed", "desired_state": "stopped",
         "exit_reason": "Port 8642 already in use", "updated_at": "2026-01-01T00:00:00+00:00",

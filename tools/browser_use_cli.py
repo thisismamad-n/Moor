@@ -29,10 +29,10 @@ _SESSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 
 # Set on the env dict by the CDP resolvers when the resolved browser is EXCLUSIVE to this named session
 # (per-name provider / named BU cloud / Lightpanda). Popped before the subprocess launches — never exported.
-_PRIVATE_BROWSER_SENTINEL = "_HERMES_BU_PRIVATE_BROWSER"
+_PRIVATE_BROWSER_SENTINEL = "_MOOR_BU_PRIVATE_BROWSER"
 # Internal route provenance: this exec resolved to a browser on the Bot Desktop display and must use
 # the same human-control lease fence as the built-in browser tools. Popped before launching the CLI.
-_BOT_DESKTOP_BROWSER_SENTINEL = "_HERMES_BU_BOT_DESKTOP_BROWSER"
+_BOT_DESKTOP_BROWSER_SENTINEL = "_MOOR_BU_BOT_DESKTOP_BROWSER"
 
 # Prepended to the model's code for named sessions on SHARED browsers (a /browser connect CDP override): the
 # harness daemon attaches to the first existing page at startup, so two fresh named daemons can land on the
@@ -142,8 +142,8 @@ def _base_subprocess_env() -> dict:
     from tools.browser_tool import _build_browser_env
     env = _build_browser_env()
     # The CLI runs under its own PM-managed Python; an inherited PYTHONPATH/PYTHONHOME
-    # (Hermes's venv) wins over its site-packages → wrong-ABI C-extensions and a crash.
-    # PYTHONPATH/PYTHONHOME inherited from the agent process point at Hermes's venv site-packages, and a
+    # (Moor's venv) wins over its site-packages → wrong-ABI C-extensions and a crash.
+    # PYTHONPATH/PYTHONHOME inherited from the agent process point at Moor's venv site-packages, and a
     # child interpreter honors them ahead of its own site-packages — so the CLI imports compiled
     # C-extensions (e.g. pydantic_core) built for the wrong interpreter and crashes on ABI mismatch (#83427,
     # #84841, #86006, #86104). Strip both — the CLI manages its own environment and never needs Moor's
@@ -233,7 +233,7 @@ def default_downgrade_notice() -> Optional[str]:
     try:
         if get_browser_backend() or _camofox_active() or _find_cli() is not None:
             return None  # explicit choice / Camofox / CLI present — nothing downgraded
-        stamp = Path(get_hermes_home()) / "cache" / ".browser_use_default_notice"
+        stamp = Path(get_moor_home()) / "cache" / ".browser_use_default_notice"
         now = time.time()
         with contextlib.suppress(OSError):
             if 0 <= now - stamp.stat().st_mtime < 24 * 3600:
@@ -242,7 +242,7 @@ def default_downgrade_notice() -> Optional[str]:
             stamp.parent.mkdir(parents=True, exist_ok=True)
             stamp.touch()
             os.utime(stamp, (now, now))
-        return ("Browser Use CLI not found — using the built-in browser tools. Run `hermes tools` "
+        return ("Browser Use CLI not found — using the built-in browser tools. Run `moor tools` "
                 "(Browser Automation → Browser Use) to install it, or `browser.backend: off` in config.yaml to silence this.")
     except Exception as e:  # pragma: no cover — a notice must never break startup
         logger.debug("browser-use downgrade notice failed: %s", e)
@@ -584,7 +584,7 @@ def browser_exec(code: str, session: str = "", timeout_s: int = _DEFAULT_TIMEOUT
     cmd = _find_cli()
     if not cmd:
         return tool_error("The PM-managed browser-use CLI is not installed. "
-                          "Run `hermes tools` (Browser Automation → Browser Use) to install it.")
+                          "Run `moor tools` (Browser Automation → Browser Use) to install it.")
 
     env = _base_subprocess_env()
     if session:
@@ -749,7 +749,7 @@ BROWSER_EXEC_SCHEMA = {
     "name": "browser_exec",
     # Static fallback description, used only when the managed CLI is unavailable
     "description": (_HEADER_BASE + _HELPERS_DIGEST
-                    + "\n\n(The browser-use CLI is not installed yet. Install it with `hermes tools` (Browser Automation → Browser Use).)"),
+                    + "\n\n(The browser-use CLI is not installed yet. Install it with `moor tools` (Browser Automation → Browser Use).)"),
     "parameters": {
         "type": "object",
         "properties": {

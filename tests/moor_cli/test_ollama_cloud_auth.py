@@ -292,18 +292,18 @@ class TestSwitchModelDirectAliasOverride:
         import os
         from pathlib import Path
 
-        import hermes_cli.model_switch as ms
-        from hermes_cli.config import load_config
+        import moor_cli.model_switch as ms
+        from moor_cli.config import load_config
 
         monkeypatch.setenv("PROVIDER_B_KEY", "sk-provider-b")
-        (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+        (Path(os.environ["MOOR_HOME"]) / "config.yaml").write_text(
             "model:\n  provider: provider-a\n  default: old-model\n"
             "providers:\n"
             "  provider-a:\n    base_url: https://api-a.example.com/v1\n"
             "  provider-b:\n    base_url: https://api-b.example.com/v1\n    key_env: PROVIDER_B_KEY\n"
             + extra_cfg)
         monkeypatch.setattr(ms, "DIRECT_ALIASES", aliases)
-        monkeypatch.setattr("hermes_cli.models_validate.validate_requested_model",
+        monkeypatch.setattr("moor_cli.models_validate.validate_requested_model",
             lambda *a, **kw: {"accepted": True, "persist": True, "recognized": True, "message": None})
         cfg = load_config()
         return ms.switch_model(
@@ -315,7 +315,7 @@ class TestSwitchModelDirectAliasOverride:
     def test_explicit_provider_never_adopts_alias_bound_to_another_provider(self, monkeypatch):
         """An alias on another provider's endpoint that targets the same model id must not
         outrank --provider: the turn and the credential stay on the provider the user named."""
-        from hermes_cli.model_switch import DirectAlias
+        from moor_cli.model_switch import DirectAlias
 
         result = self._explicit_switch_to_provider_b(monkeypatch, {
             "a-alias": DirectAlias("shared-model", "custom", "https://alias-host.example.com/v1",
@@ -331,7 +331,7 @@ class TestSwitchModelDirectAliasOverride:
     def test_explicit_provider_prefers_its_own_alias_for_a_shared_model(self, monkeypatch):
         """Several aliases expose one model id: the one owned by the named provider wins,
         whatever the mapping order (provider spelling is normalized)."""
-        from hermes_cli.model_switch import DirectAlias
+        from moor_cli.model_switch import DirectAlias
 
         result = self._explicit_switch_to_provider_b(monkeypatch, {
             "a-alias": DirectAlias("shared-model", "custom", "https://alias-host.example.com/v1",
@@ -347,7 +347,7 @@ class TestSwitchModelDirectAliasOverride:
     def test_explicit_provider_keeps_alias_owned_by_legacy_custom_provider(self, monkeypatch):
         """A legacy ``custom_providers`` entry resolves to ``custom:<name>``; an alias that names
         it by its bare name is still that provider's alias and keeps its own endpoint and key."""
-        from hermes_cli.model_switch import DirectAlias
+        from moor_cli.model_switch import DirectAlias
 
         result = self._explicit_switch_to_provider_b(monkeypatch, {
             "a-alias": DirectAlias("shared-model", "provider-a", "https://alias-host.example.com/v1",
@@ -370,11 +370,11 @@ class TestSwitchModelDirectAliasOverride:
         import os
         from pathlib import Path
 
-        import hermes_cli.model_switch as ms
-        from hermes_cli.config import load_config
-        from hermes_cli.model_switch import DirectAlias
+        import moor_cli.model_switch as ms
+        from moor_cli.config import load_config
+        from moor_cli.model_switch import DirectAlias
 
-        (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+        (Path(os.environ["MOOR_HOME"]) / "config.yaml").write_text(
             "model:\n  provider: custom:corp-llm\n  default: old-model\n"
             "providers:\n  provider-a:\n    base_url: https://api-a.example.com/v1\n"
             "custom_providers:\n  - name: corp-llm\n"
@@ -385,7 +385,7 @@ class TestSwitchModelDirectAliasOverride:
             "corp-alias": DirectAlias("shared-model", "corp-llm", "https://corp.example.com/v2",
                                       api_key="sk-corp-alias"),
         })
-        monkeypatch.setattr("hermes_cli.models_validate.validate_requested_model",
+        monkeypatch.setattr("moor_cli.models_validate.validate_requested_model",
             lambda *a, **kw: {"accepted": True, "persist": True, "recognized": True, "message": None})
         cfg = load_config()
 

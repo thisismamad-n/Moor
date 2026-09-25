@@ -5,14 +5,14 @@ import threading
 from pathlib import Path
 from types import SimpleNamespace
 
-from hermes_cli import web_server
-import hermes_cli.config as _cfg_mod
-import hermes_cli.web_routers.dashboard_ui as _rt_dashboard_ui
-import hermes_cli.web_server_dashboard as _web_server_dashboard
-import hermes_cli.web_server_memory as _web_server_memory
-from hermes_cli import plugins_cmd
-from hermes_cli import plugin_catalog
-from hermes_cli import plugins_cmd_catalog
+from moor_cli import web_server
+import moor_cli.config as _cfg_mod
+import moor_cli.web_routers.dashboard_ui as _rt_dashboard_ui
+import moor_cli.web_server_dashboard as _web_server_dashboard
+import moor_cli.web_server_memory as _web_server_memory
+from moor_cli import plugins_cmd
+from moor_cli import plugin_catalog
+from moor_cli import plugins_cmd_catalog
 from tools import registry as tools_registry
 
 

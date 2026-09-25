@@ -12,7 +12,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from hermes_cli.steward import UPDATE_MECHANISMS
+from moor_cli.steward import UPDATE_MECHANISMS
 
 
 def _project_root() -> Path:
@@ -22,17 +22,17 @@ def _project_root() -> Path:
 def _is_sealed(project_root: Path) -> bool:
     """A sealed tree ships its interpreter; only checkouts own a venv.
 
-    The stamp file is the authority (shared with hermes_cli.steward).
+    The stamp file is the authority (shared with moor_cli.steward).
     A tree with BOTH a stamp and .git is a dev tree — treat as checkout.
 
     A stamp without a valid ``updateMechanism`` is a build-lane bug and
     must not be silently read as "not sealed" (that is exactly the
     misclassification that made sealed trees look updatable) — same
-    guard as hermes_cli.version_info._stamp_version_info.
+    guard as moor_cli.version_info._stamp_version_info.
     """
     if (project_root / ".git").exists():
         return False
-    from hermes_cli.steward import read_install_stamp
+    from moor_cli.steward import read_install_stamp
     from pm.paths import install_stamp_path
     stamp_path = install_stamp_path(project_root)
     data = read_install_stamp(project_root)
@@ -51,7 +51,7 @@ def _is_sealed(project_root: Path) -> bool:
 def check_runtime(project_root: Path) -> str | None:
     """One passive startup verdict; callers only choose stderr or logging."""
     import pm
-    from hermes_cli.steward import read_install_stamp, sealed_steward
+    from moor_cli.steward import read_install_stamp, sealed_steward
 
     if (Path(project_root) / ".git").exists() and read_install_stamp(project_root).get("updateMechanism") != "self":
         return None  # A developer's checkout does not owe managed products.
@@ -61,7 +61,7 @@ def check_runtime(project_root: Path) -> str | None:
         return None
     steward = sealed_steward(Path(project_root))
     remedy = (f"this {steward}-managed install must rebuild the artifact to fix"
-              if steward else "run `hermes pm install`")
+              if steward else "run `moor pm install`")
     return f"install out of sync ({'; '.join(problems)}) — {remedy}"
 
 
@@ -69,8 +69,8 @@ def publish_launchers(project_root: Path, *, create: bool = True) -> None:
     """Refresh durable commands; bootstrap repairs only existing PATH exposure."""
     import logging
 
-    from hermes_cli._launchers import ENTRY_POINTS, ensure_install_launchers, expose_cli, resolve_store_python
-    from hermes_cli.steward import read_install_stamp
+    from moor_cli._launchers import ENTRY_POINTS, ensure_install_launchers, expose_cli, resolve_store_python
+    from moor_cli.steward import read_install_stamp
 
     root = Path(project_root)
     log = logging.getLogger(__name__)
@@ -85,9 +85,9 @@ def publish_launchers(project_root: Path, *, create: bool = True) -> None:
         # source-driver.sh refuses to let --version paper over the gap), so
         # this skip is a half-finished update, never a quiet no-op.
         log.warning("launchers: no managed interpreter under %s; %s not published",
-                    root, root / ".hermes" / "bin")
+                    root, root / ".moor" / "bin")
         return
-    written = ensure_install_launchers(root, root / ".hermes" / "bin")
+    written = ensure_install_launchers(root, root / ".moor" / "bin")
     if len(written) != len(ENTRY_POINTS):
         from pm.package import InstallError
 
@@ -101,7 +101,7 @@ def publish_launchers(project_root: Path, *, create: bool = True) -> None:
 
 def sync(project_root: Path | None = None, *, check: bool = False) -> dict:
     """Report or sync dependencies. A malformed install stamp is a build error."""
-    from hermes_cli.update_stage import publish_stage
+    from moor_cli.update_stage import publish_stage
 
     root = Path(project_root) if project_root is not None else _project_root()
     if _is_sealed(root):
@@ -130,13 +130,13 @@ def sync(project_root: Path | None = None, *, check: bool = False) -> dict:
 def collect_superseded_generations(project_root: Path) -> None:
     """Collect what a publish just superseded, as the Docker boot already does.
 
-    Without this only a manual `hermes pm gc` reclaimed old environments. Safe
+    Without this only a manual `moor pm gc` reclaimed old environments. Safe
     right after a sync: the collectors skip leased, selected and day-young
     generations and yield to any in-flight install instead of waiting.
     """
     import logging
 
-    from hermes_cli.runtime_state import collect_generations
+    from moor_cli.runtime_state import collect_generations
     from pm.environments import install_state_dir
     from pm.runtime import collect_runtime_generations
 
@@ -189,7 +189,7 @@ def refuse_foreign_owned_venv(project_root: Path) -> None:
     # A root-run update on a user's checkout is not safe even if a fresh
     # generation would be allocated: it publishes root-owned state for them.
     from pm.environments import selected_venv
-    candidates = [root, root / "venv", root / ".venv", root / ".hermes", selected_venv(root)]
+    candidates = [root, root / "venv", root / ".venv", root / ".moor", selected_venv(root)]
     for venv in (root / "venv", root / ".venv", candidates[-1]):
         for directory in (venv / ("Scripts" if os.name == "nt" else "bin"),
                           *venv.glob("lib/python*/site-packages")):
@@ -223,19 +223,19 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     """
     import os
     import sys
-    from hermes_cli._parser import command_argv
-    from hermes_cli.steward import read_install_stamp
+    from moor_cli._parser import command_argv
+    from moor_cli.steward import read_install_stamp
 
     root = Path(project_root).resolve()
     if (command_argv(argv)[:1] == ["pm"]
             or _METADATA_FLAGS & set(argv)
-            or os.environ.get("HERMES_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
+            or os.environ.get("MOOR_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
             or not (root / ".git").exists()
             or not (root / "pyproject.toml").is_file()):
         return None
     stamp = read_install_stamp(root)
     if not stamp:
-        from hermes_cli.post_update import step_adopt_blessed_checkout
+        from moor_cli.post_update import step_adopt_blessed_checkout
 
         step_adopt_blessed_checkout(root)
         stamp = read_install_stamp(root)
@@ -243,15 +243,15 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
         return None  # Developer checkouts and packaged runtimes retain their owner.
 
     import pm
-    from hermes_cli._launchers import resolve_store_python
-    from hermes_cli.update_lock import UpdateLock, read_live_update
+    from moor_cli._launchers import resolve_store_python
+    from moor_cli.update_lock import UpdateLock, read_live_update
 
     current = pm.venv_is_current(project_root=root)
     pending = completion_pending_path(root)
     if not current or pending.is_file():
         lock = UpdateLock()
         if not lock.acquire():
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Moor")
         try:
             # The tail imports the application, whose entry point runs this very function:
             # under the launching process's own claim (its pid is our ancestor) we ARE that
@@ -272,7 +272,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
             lock.release()
     python = resolve_store_python(root)
     if python is None:
-        raise RuntimeError("source update has no managed Python; run `hermes pm install`")
+        raise RuntimeError("source update has no managed Python; run `moor pm install`")
     if not current or python.absolute() != Path(sys.executable).absolute():
         publish_launchers(root)
         return python
@@ -282,7 +282,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
 def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
     """Sync dependencies when they are stale, then run the tail the marker still owes."""
     import sys
-    from hermes_cli._early_recovery import _marker_owner_is_live
+    from moor_cli._early_recovery import _marker_owner_is_live
     from pm.environments import activation_environment
 
     if not current:
@@ -290,14 +290,14 @@ def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
         # Current post-sync verification children can boot under a live updater.
         legacy_markers = (root / ".update-incomplete", root / ".lazy-refresh-incomplete")
         if any(_marker_owner_is_live(marker) for marker in legacy_markers):
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
-        print("hermes: completing source-update dependencies...", file=sys.stderr, flush=True)
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Moor")
+        print("moor: completing source-update dependencies...", file=sys.stderr, flush=True)
         _sync_source_dependencies(root, arm=True)
     else:
-        print("hermes: finishing an interrupted source update...", file=sys.stderr, flush=True)
+        print("moor: finishing an interrupted source update...", file=sys.stderr, flush=True)
     # Sync commits the dependency generation, but a source update also owes
     # the product builds and the post-build maintenance -- the tail every
-    # install and finished update shares (hermes_cli/source_completion.py).
+    # install and finished update shares (moor_cli/source_completion.py).
     # Those builds need PM's selected interpreter with its dependencies
     # activated, so hand that file THIS interpreter and let it re-exec
     # itself, exactly as the installers do.
@@ -309,14 +309,14 @@ def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
     # emitting machine-readable stdout (a JSON probe, a piped query).
     code = subprocess.call(
         [sys.executable, "-I", "-B", "-u",
-         str(root / "hermes_cli/source_completion.py"),
+         str(root / "moor_cli/source_completion.py"),
          "--source", str(root), "--finish-update",
          *(("--desktop",) if desktop else ())],
         cwd=root, env=activation_environment(root), stdout=sys.__stderr__,
     )
     if code != 0:
         raise RuntimeError(
-            "source update completion failed; run `hermes update` to finish it"
+            "source update completion failed; run `moor update` to finish it"
         )
     clear_completion(root)
 
@@ -330,7 +330,7 @@ def _sync_source_dependencies(root: Path, *, arm: bool) -> None:
     from pm.extras import legacy_selection
 
     if not arm:
-        print("hermes: preparing dependencies for this update...", file=sys.stderr, flush=True)
+        print("moor: preparing dependencies for this update...", file=sys.stderr, flush=True)
     refuse_foreign_owned_venv(root)
     if arm:
         # Owed from before the sync commits: a crash between the commit and the
@@ -339,7 +339,7 @@ def _sync_source_dependencies(root: Path, *, arm: bool) -> None:
     # Main-era installs have no PM ledger; carry what their venv held.
     # Established PM installs retain their recorded extras and plugin union instead.
     extras = legacy_selection(root) if not runtime_facts_path(root).is_file() else None
-    # Same order as `hermes update`: an interrupted update or a hand-run
+    # Same order as `moor update`: an interrupted update or a hand-run
     # `git pull` leaves this tree's lockfile ahead of the installed tools.
     ensure_tools_for_sync()
     pm.sync_venv(extras, explicit=True, project_root=root, evict_incompatible_plugins=True)
@@ -383,7 +383,7 @@ def relaunch_command(
 
 
 def main(argv: list | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="hermes_cli.venv_sync")
+    parser = argparse.ArgumentParser(prog="moor_cli.venv_sync")
     parser.add_argument("--project-root", default=None)
     parser.add_argument(
         "--check", action="store_true", help="report; change nothing"

@@ -133,7 +133,7 @@ def _read_suppressed_names() -> set:
     """Built-in skills the curator pruned — must NOT be re-seeded on sync.
 
     Delegates to ``tools.skill_usage`` (single source of truth) and falls back
-    to reading ``~/.hermes/skills/.curator_suppressed`` directly if that import
+    to reading ``~/.moor/skills/.curator_suppressed`` directly if that import
     is unavailable in a packaged/update context.
     """
     try:

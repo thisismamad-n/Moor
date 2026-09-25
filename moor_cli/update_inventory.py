@@ -225,7 +225,7 @@ def _loaded_backend_launchd_jobs() -> list:
     to ``[]`` — classification falls back to the spawner probe and never aborts the inventory.
     See #116503."""
     with suppress(Exception):
-        from hermes_cli import main_dashboard as _dash
+        from moor_cli import main_dashboard as _dash
 
         return _dash._loaded_launchd_backend_jobs()
     return []
@@ -239,8 +239,8 @@ def _launchd_owner_for_ledger_entry(entry: dict, pid: int, jobs: list) -> "tuple
     fights the job's own KeepAlive respawn. The loaded-job match (live PID, an ancestor, or the
     normalized ``ProgramArguments``) is the authoritative classification. See #116503."""
     with suppress(Exception):
-        from hermes_cli import main_dashboard as _dash
-        from hermes_cli.dashboard_procs import _process_ancestors
+        from moor_cli import main_dashboard as _dash
+        from moor_cli.dashboard_procs import _process_ancestors
 
         try:
             cmdline = shlex.split(str(entry.get("argv") or "")) or None
@@ -290,7 +290,7 @@ def collect_runtime_inventory() -> UpdatePlan:
     plan = UpdatePlan()
     _collect_install_shape(plan)
     with _probe("Code-identity probe"):
-        from hermes_cli.version_info import get_code_identity
+        from moor_cli.version_info import get_code_identity
 
         identity = get_code_identity(refresh=True)
         plan.expected_sha = identity.get("sha")
@@ -445,7 +445,7 @@ def report_unaccounted_runtimes(outcomes: list[dict[str, Any]]) -> bool:
         print()
         print("  ⚠ Manual serve restarts deferred to their owner (reminders retained until the old processes exit):")
         for o in manual:
-            print(f"    • {o['kind']} [{o['profile']}] pid {o['pid']}: relaunch `hermes serve` / `hermes dashboard`, or reconnect Desktop for an SSH backend")
+            print(f"    • {o['kind']} [{o['profile']}] pid {o['pid']}: relaunch `moor serve` / `moor dashboard`, or reconnect Desktop for an SSH backend")
     deferred = [o for o in outcomes if o.get("outcome") == "deferred" and o.get("mechanism") != "respawn-argv"]
     if deferred:
         # Surfaced but not escalated: the updater has no authority over these, so holding

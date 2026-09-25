@@ -104,7 +104,7 @@ def test_update_check_prunes_and_reports_count(tmp_path, monkeypatch, capsys):
     )
     # Local fixture commits have no GitHub compare result; keep the check offline.
     monkeypatch.setattr(
-        "hermes_cli.source_check._github_compare_behind", lambda *a, **k: None
+        "moor_cli.source_check._github_compare_behind", lambda *a, **k: None
     )
 
     update_cmd._cmd_update_check("main")

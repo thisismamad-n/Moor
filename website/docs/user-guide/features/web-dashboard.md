@@ -9,7 +9,7 @@ description: "Browser-based administration panel for managing configuration, API
 The web dashboard is a browser-based UI for managing your Moor Agent installation. Instead of editing YAML files or running CLI commands, you can configure settings, manage API keys, and monitor sessions from a clean web interface.
 
 :::tip
-Hosted-mode auth uses Nous Portal OAuth; if you also want the dashboard to talk to a real backend, `hermes setup --portal` wires up the model and tool gateway too. See [Nous Portal](../../integrations/nous-portal.md).
+Hosted-mode auth uses Moor Portal OAuth; if you also want the dashboard to talk to a real backend, `moor setup --portal` wires up the model and tool gateway too. See [Moor Portal](../../integrations/moor-portal.md).
 :::
 
 ## Quick Start
@@ -86,12 +86,12 @@ across profiles with its own filter).
 
 ## Prerequisites
 
-FastAPI, Uvicorn, and the platform PTY helper are core Hermes dependencies.
+FastAPI, Uvicorn, and the platform PTY helper are core Moor dependencies.
 The `web` extra adds exact constraints for the HTTP stack. The `pty` extra is
 empty because its dependencies are already core. Standard PM setup includes
 `web` through `all`.
 
-If these dependencies are damaged, run `hermes pm repair` and restart Hermes.
+If these dependencies are damaged, run `moor pm repair` and restart Moor.
 For source setup, use the [PM developer workflow](../../reference/package-management.md#developer-workflow).
 Messaging and voice extras are separate requests, not implied by `all`.
 
@@ -149,11 +149,11 @@ The **Chat** tab embeds the full Moor TUI (the same interface you get from `moor
 
 **Session switcher (right rail):** the Chat tab carries its own ChatGPT-style conversation list in a thin right rail beside the terminal, so you can swap conversations without leaving the page. The rail stacks the model picker on top and the session list directly below it; the terminal takes up most of the screen. The list shows your most recent sessions for the active profile — title (falling back to a message preview), relative last-active time, message count, and the source channel for non-CLI sessions. Click any row to resume it in place (the terminal respawns with that conversation's history); the active session is highlighted. **New chat** starts a fresh session, and a refresh control re-pulls the list. The rail is read-only for switching — delete, rename, export, and bulk cleanup still live on the **Sessions** tab. On narrow screens it folds into a slide-over panel.
 
-**Workspace picker:** a fresh chat starts wherever the dashboard process was launched — useless when you are driving Hermes from a phone and want it in `~/code/foo`. The rail's **workspace** selector lists the same directories the Desktop sidebar knows: your explicit projects (`hermes projects`) and every discovered git repository (session-derived plus the `desktop.repo_scan_roots` scan), most recently active first, with an **Other path…** entry for anything else. The choice is remembered per profile and applies to the next **New chat** (a resumed session keeps its own working directory); the rescan button re-walks the discovery roots on the host, so a repo you just cloned over SSH shows up without a restart. A path that no longer exists is refused with an error instead of silently starting in the launch directory. Backed by `GET /api/chat/workspaces` and the `cwd` parameter of the `/api/pty` WebSocket.
+**Workspace picker:** a fresh chat starts wherever the dashboard process was launched — useless when you are driving Moor from a phone and want it in `~/code/foo`. The rail's **workspace** selector lists the same directories the Desktop sidebar knows: your explicit projects (`moor projects`) and every discovered git repository (session-derived plus the `desktop.repo_scan_roots` scan), most recently active first, with an **Other path…** entry for anything else. The choice is remembered per profile and applies to the next **New chat** (a resumed session keeps its own working directory); the rescan button re-walks the discovery roots on the host, so a repo you just cloned over SSH shows up without a restart. A path that no longer exists is refused with an error instead of silently starting in the launch directory. Backed by `GET /api/chat/workspaces` and the `cwd` parameter of the `/api/pty` WebSocket.
 
 **Prerequisites:**
 
-- Node.js (same requirement as `hermes --tui`; the TUI bundle is built on first launch)
+- Node.js (same requirement as `moor --tui`; the TUI bundle is built on first launch)
 - `ptyprocess` — a core dependency on POSIX
 - POSIX kernel (Linux, macOS, or WSL2).  The `/chat` terminal pane specifically needs a POSIX PTY — native Windows Python has no equivalent, so on a native Windows install the rest of the dashboard (sessions, jobs, metrics, config editor) works but the `/chat` tab will show a banner telling you to use WSL2 for that feature.
 
@@ -190,12 +190,12 @@ RestartSec=10
 RestartPreventExitStatus=78
 ```
 
-One backend serves a whole host, so when `hermes dashboard` finds a live backend it cannot
+One backend serves a whole host, so when `moor dashboard` finds a live backend it cannot
 serve your typed `--host`/`--port` with, it refuses with exit 78 and names the owner. Stop that
 backend, or give the service its own dedicated server with `--isolated`. The Desktop app's own
 loopback backends never claim host ownership, so the two can coexist without either flag.
 
-with `~/.hermes/.env` containing:
+with `~/.moor/.env` containing:
 
 ```bash
 MOOR_DASHBOARD_BASIC_AUTH_USERNAME=admin
@@ -1110,7 +1110,7 @@ The dashboard's React StatusPage shows the same fields under "Web server". A sid
 
 ## Connecting Moor Desktop to a remote backend
 
-Hermes Desktop can drive a Hermes backend running on another machine (a VPS, a home server, a Mini behind Tailscale). In the app this lives under **Settings → Gateways → Remote gateway**, which asks for a **Remote URL** and a way to **Sign in**. (For the desktop app itself — install, settings, chat — see the [Hermes Desktop](../desktop.md) page.)
+Moor Desktop can drive a Moor backend running on another machine (a VPS, a home server, a Mini behind Tailscale). In the app this lives under **Settings → Gateways → Remote gateway**, which asks for a **Remote URL** and a way to **Sign in**. (For the desktop app itself — install, settings, chat — see the [Moor Desktop](../desktop.md) page.)
 
 You protect the remote dashboard with one of the bundled auth providers, and the desktop app signs in against whichever one the backend advertises. For a backend reachable beyond your own machine — a VPS, a public host, anything internet-facing — the recommended provider is **OAuth (Moor Portal)** (register it with [`moor dashboard register`](#registering-a-dashboard) and sign in with *Sign in with Moor inc.*). The bundled [username/password provider](#usernamepassword-provider-no-oauth-idp) is the quickest option when the backend is on a trusted LAN or reachable only over a VPN, but is **not suitable for direct public-internet exposure**. Binding the dashboard to a non-loopback address engages its auth gate; once signed in, Desktop reuses the session for the chat WebSocket automatically — there is no token to copy or paste.
 

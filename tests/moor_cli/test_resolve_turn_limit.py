@@ -99,7 +99,7 @@ class TestGatewayBridgeNullHandling:
     "None", which would resolve to unlimited instead of the default."""
 
     def test_none_value_not_bridged(self, monkeypatch, tmp_path):
-        """YAML ``max_turns: null`` should not set HERMES_MAX_ITERATIONS."""
+        """YAML ``max_turns: null`` should not set MOOR_MAX_ITERATIONS."""
         cfg_file = tmp_path / "config.yaml"
         cfg_file.write_text("agent:\n  max_turns: null\n", encoding="utf-8")
         monkeypatch.setenv("MOOR_MAX_ITERATIONS", "stale-120")

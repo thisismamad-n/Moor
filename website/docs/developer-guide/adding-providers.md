@@ -348,7 +348,7 @@ then use the canonical runner, which isolates each file and scrubs credentials:
 
 ```bash
 
-scripts/run_tests.sh tests/hermes_cli/test_runtime_provider_resolution.py tests/hermes_cli/test_cli_provider_resolution.py tests/hermes_cli/test_setup_model_provider.py tests/agent/test_provider_parity.py -q
+scripts/run_tests.sh tests/moor_cli/test_runtime_provider_resolution.py tests/moor_cli/test_cli_provider_resolution.py tests/moor_cli/test_setup_model_provider.py tests/agent/test_provider_parity.py -q
 ```
 
 For deeper changes, run the full suite before pushing:
@@ -365,15 +365,15 @@ its isolated development home. Leave any test venv before PM activation.
 
 ```bash
 source ./activate
-python hermes chat -q "Say hello" --provider your-provider --model your-model
+python moor chat -q "Say hello" --provider your-provider --model your-model
 ```
 
 Also test the interactive flows if you changed menus:
 
 ```bash
 source ./activate
-python hermes model
-python hermes setup
+python moor model
+python moor setup
 ```
 
 For native providers, verify at least one tool call too, not just a plain text response.

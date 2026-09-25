@@ -201,11 +201,11 @@ STORAGE_RECOVERY_DOCS_URL = "https://hermes-agent.nousresearch.com/docs/user-gui
 # happened, nothing is lost, the one thing to do); the rest is the operator detail. The phrase
 # "deleted state.db-wal or state.db-shm" is the classifier's RPC-wrapped fingerprint — keep it.
 _DELETED_WAL_GENERATION_MSG = (
-    "FATAL: session storage stopped writing because another Hermes process still holds a deleted "
+    "FATAL: session storage stopped writing because another Moor process still holds a deleted "
     "state.db-wal or state.db-shm inode (an old copy of the write-ahead log). Nothing is lost: quit "
-    "every Hermes process on this profile (Desktop app, gateway, dashboard, cron), run `hermes doctor` "
-    "(it names the processes still holding the log), then start Hermes again. Do not delete the WAL "
-    "yourself and do not run `hermes doctor --fix` while they are running. "
+    "every Moor process on this profile (Desktop app, gateway, dashboard, cron), run `moor doctor` "
+    "(it names the processes still holding the log), then start Moor again. Do not delete the WAL "
+    "yourself and do not run `moor doctor --fix` while they are running. "
     f"Guide: {STORAGE_RECOVERY_DOCS_URL} "
     "Detail: the path names a different (or missing) generation than the one this process holds "
     "open; opening or writing through it would mint a second WAL (split-brain). "

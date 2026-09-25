@@ -28,7 +28,7 @@ from functools import cached_property, wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Tuple, Union
 
-from hermes_constants import get_hermes_home, get_process_hermes_home, hermes_home_key
+from moor_constants import get_moor_home, get_process_moor_home, moor_home_key
 from registration_lifecycle import replacement_coordinator
 from utils import env_var_enabled
 from moor_cli.config import load_config_readonly
@@ -770,7 +770,7 @@ class PluginContext:
         from moor_cli.dashboard_auth.registry import register_global_provider, unregister_global_provider
         if self._wrong_type(provider, DashboardAuthProvider, "dashboard-auth provider"):
             return
-        launch_scope = hermes_home_key(get_process_hermes_home())
+        launch_scope = moor_home_key(get_process_moor_home())
         if self._manager.scope_key != launch_scope:
             logger.warning(
                 "Plugin '%s' tried to register dashboard-auth provider %r "
@@ -1013,7 +1013,7 @@ class PluginContext:
         frontmatter: Optional[Mapping[str, Any]] = None,
     ) -> PluginRegistration:
         """Register a read-only skill resolvable as ``'<plugin_name>:<name>'`` via ``skill_view()``
-        and listed by ``skills_list``. Not copied into ``~/.hermes/skills/`` and not in the system
+        and listed by ``skills_list``. Not copied into ``~/.moor/skills/`` and not in the system
         prompt's ``<available_skills>``. Raises ``ValueError`` (``':'``/invalid chars) or
         ``FileNotFoundError``."""
         from agent.skill_utils import _NAMESPACE_RE
@@ -1184,9 +1184,9 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
     def __init__(self, scope_key: Optional[str] = None) -> None:
         # Capture the home immutably. Unload can run from a different ambient
         # profile context, but every inverse must target the registration's
-        # original scope.  Normalize through hermes_home_key so the scope
+        # original scope.  Normalize through moor_home_key so the scope
         # matches the key the registries store under (normcase on Windows).
-        self.scope_key = hermes_home_key(scope_key)
+        self.scope_key = moor_home_key(scope_key)
         self.home_path = Path(self.scope_key)
         self._discovery_lock = threading.RLock()
         self._discovered: bool = False
@@ -1689,7 +1689,7 @@ def get_plugin_manager() -> PluginManager:
         else:
             manager = _plugin_managers_by_home.get(current_home)
             if manager is None:
-                manager = PluginManager(scope_key=hermes_home_key(current_home))
+                manager = PluginManager(scope_key=moor_home_key(current_home))
                 _plugin_managers_by_home[current_home] = manager
             _plugin_manager = manager
     _attach_published_tui_host(manager)

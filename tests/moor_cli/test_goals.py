@@ -179,8 +179,8 @@ class TestJudgeParseFailureAutoPause:
 
     def test_auto_pause_after_three_consecutive_parse_failures(self, moor_home):
         """N=3 consecutive parse failures → auto-pause with config pointer."""
-        from hermes_cli import goals
-        from hermes_cli.goals import GoalManager
+        from moor_cli import goals
+        from moor_cli.goals import GoalManager
 
         mgr = GoalManager(session_id="parse-fail-sid-1", default_max_turns=20)
         mgr.set("do a thing")

@@ -1,7 +1,7 @@
 """Key-validation surfaces never reroute a key by its prefix, matching chat (#115306).
 
 Google issues ``AQ.`` keys for both Google AI Studio and Vertex express mode, so a key prefix can
-no longer pick the surface: ``hermes doctor`` and the dashboard key test probe the default Studio
+no longer pick the surface: ``moor doctor`` and the dashboard key test probe the default Studio
 host, and an express key reaches aiplatform only through an explicitly configured base URL.
 """
 
@@ -15,7 +15,7 @@ _STUDIO_MODELS = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 def test_doctor_gemini_probe_keeps_aq_keys_on_the_studio_host(monkeypatch):
-    from hermes_cli.doctor_connectivity import _apikey_request
+    from moor_cli.doctor_connectivity import _apikey_request
 
     _, url, headers = _apikey_request(
         "AQ.studio-key", "GEMINI_BASE_URL", _STUDIO_MODELS
@@ -41,8 +41,8 @@ def test_doctor_gemini_probe_keeps_aq_keys_on_the_studio_host(monkeypatch):
 
 
 def test_dashboard_gemini_key_probe_keeps_aq_keys_on_the_studio_host(monkeypatch):
-    import hermes_cli.web_routers.config_env as mod
-    from hermes_cli.web_models import EnvVarUpdate
+    import moor_cli.web_routers.config_env as mod
+    from moor_cli.web_models import EnvVarUpdate
 
     seen = {}
 

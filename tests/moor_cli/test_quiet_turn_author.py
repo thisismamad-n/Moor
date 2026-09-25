@@ -229,7 +229,7 @@ def _quiet_policy(tmp_path, monkeypatch, setting):
     import json
     home = tmp_path / f"home-{setting}"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     display = {} if setting is None else {"suppress_warning_notifications": setting}
     (home / "config.yaml").write_text(json.dumps({"display": display}))
 
@@ -239,7 +239,7 @@ def test_quiet_diagnostic_only_wake_runs_but_reply_displaces_result_only_when_vi
     """Grid sweep: -Q linger had no diagnostic admission rule. A wake made only of automatic early
     failure notices still runs (the agent may act on it) but under suppression its reply must not
     replace the requested one-shot answer; absent/false keep legacy displacement."""
-    from hermes_cli import quiet_single_query as qsq
+    from moor_cli import quiet_single_query as qsq
     _quiet_policy(tmp_path, monkeypatch, setting)
     _quiet_drain(monkeypatch, [({"type": "completion", "task_failure_notice": True, "session_key": "s"},
                                 "[Background process failed early: exit 7]")])
@@ -251,7 +251,7 @@ def test_quiet_diagnostic_only_wake_runs_but_reply_displaces_result_only_when_vi
 
 
 def test_quiet_requested_completion_wake_never_muted(tmp_path, monkeypatch):
-    from hermes_cli import quiet_single_query as qsq
+    from moor_cli import quiet_single_query as qsq
     _quiet_policy(tmp_path, monkeypatch, True)
     _quiet_drain(monkeypatch, [({"type": "completion", "session_key": "s"}, "[Background process finished: OK]"),
                                 ({"type": "completion", "task_failure_notice": True, "session_key": "s"}, "[failed early]")])

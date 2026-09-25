@@ -28,10 +28,10 @@ from moor_cli.auth import (  # resolve_external_process_provider_credentials is 
     resolve_external_process_provider_credentials,  # noqa: F401
     has_usable_secret, is_actual_local_base_url, normalize_actual_base_url,
 )
-from hermes_cli import config as _config_mod
-from hermes_cli import models as _models  # attribute access keeps ``hermes_cli.models.<name>`` patches effective
-from hermes_constants import OPENROUTER_BASE_URL
-from hermes_cli.providers import determine_api_mode, get_provider, is_actual_route, is_official_openai_host, nous_api_mode
+from moor_cli import config as _config_mod
+from moor_cli import models as _models  # attribute access keeps ``moor_cli.models.<name>`` patches effective
+from moor_constants import OPENROUTER_BASE_URL
+from moor_cli.providers import determine_api_mode, get_provider, is_actual_route, is_official_openai_host, moor_api_mode
 from utils import base_url_host_matches, base_url_hostname, base_url_path, env_int
 
 
@@ -292,7 +292,7 @@ def _maybe_apply_codex_app_server_runtime(*, provider: str, api_mode: str, model
 # ── base_url / credential helpers ──────────────────────────────────────────────────────────
 
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
-_NO_ANTHROPIC_CREDENTIALS_MSG = ("No Anthropic credentials found. Run 'hermes auth add anthropic' to sign in, "
+_NO_ANTHROPIC_CREDENTIALS_MSG = ("No Anthropic credentials found. Run 'moor auth add anthropic' to sign in, "
                                  "or set ANTHROPIC_TOKEN / ANTHROPIC_API_KEY.")
 
 
@@ -321,7 +321,7 @@ def is_foreign_provider_endpoint(provider: Optional[str], base_url: Optional[str
     """True when ``base_url`` is another built-in provider's canonical endpoint, not ``provider``'s.
 
     A persisted session route that pairs one provider with another's endpoint is left over from a
-    switch that kept the old URL (openai-codex + the Nous Portal URL sent the Codex slug to the Portal).
+    switch that kept the old URL (openai-codex + the Moor Portal URL sent the Codex slug to the Portal).
     Only registered providers are judged: a custom or proxy URL is never another provider's canonical one.
     """
     pconfig = PROVIDER_REGISTRY.get(str(provider or "").strip().lower())
@@ -356,7 +356,7 @@ def _anthropic_token_or_raise(*, model: str | None = None) -> str:
         # user to re-authenticate would send them chasing a cooldown that lifts on its own.
         if model and resolve_anthropic_token():
             raise AuthError(f"Anthropic credentials are rate-limited for {model}; "
-                            "other Claude models remain available (see `hermes auth list`).")
+                            "other Claude models remain available (see `moor auth list`).")
         raise AuthError(_NO_ANTHROPIC_CREDENTIALS_MSG)
     return token
 
@@ -489,7 +489,7 @@ def resolve_requested_provider(requested: Optional[str] = None) -> str:
 
 # ── extracted collaborators (re-exported; see module docstring) ────────────────────────────
 
-from hermes_cli.runtime_provider_custom import (  # noqa: E402,F401
+from moor_cli.runtime_provider_custom import (  # noqa: E402,F401
     _LLAMACPP_ALIASES, _apply_custom_provider_extras, _custom_provider_request_overrides, _filter_capabilities, _find_custom_identity,
     _get_named_custom_provider, _lift_common_custom_fields, _lift_extra_headers,
     _lift_model_capabilities, _normalize_base_url_for_match, _normalize_custom_provider_name, _resolve_named_custom_runtime,
@@ -611,7 +611,7 @@ def _exchange_copilot_pool_entry(entry: Any, pool_api_key: str) -> str:
     config); here copilot IS the runtime target (`/model copilot/… --session`, `--provider copilot`,
     delegation/cron overrides), and a raw token routes to the language-server integrator whose
     allowlist omits enterprise-only models (400 model_not_available_for_integrator)."""
-    from hermes_cli.copilot_auth import get_copilot_api_token, validate_copilot_token
+    from moor_cli.copilot_auth import get_copilot_api_token, validate_copilot_token
     if not pool_api_key or not validate_copilot_token(pool_api_key)[0]:
         return pool_api_key  # already an exchanged API token
     api_token, enterprise_base_url = get_copilot_api_token(pool_api_key)
@@ -640,8 +640,8 @@ def _resolve_from_pool(provider: str, requested_provider: str, model_cfg: Dict[s
     if entry is None:
         return None
     pool_api_key = _pool_entry_api_key(entry)
-    if provider == "nous":
-        entry, pool_api_key = _refresh_nous_pool_entry(pool, entry, pool_api_key)
+    if provider == "moor":
+        entry, pool_api_key = _refresh_moor_pool_entry(pool, entry, pool_api_key)
     elif provider == "copilot":
         pool_api_key = _exchange_copilot_pool_entry(entry, pool_api_key)
     if not has_usable_secret(pool_api_key):
@@ -850,6 +850,16 @@ def _api_key_provider_runtime(provider, pconfig, requested_provider, model_cfg, 
     return _runtime(provider, api_mode, base_url, api_key, source=creds.get("source", "env"), requested_provider=requested_provider)
 
 
+def _opencode_free_runtime(provider, requested_provider, model_cfg, target_model) -> Optional[Dict[str, Any]]:
+    """OpenCode Zen free tier (*-free slugs) is served ANONYMOUSLY on the Zen relay only: unknown
+    bearers 401 and the Go relay rejects free models, so free slugs route through the keyless Zen
+    runtime BEFORE the pool / explicit / api_key paths."""
+    if _models.opencode_provider_family(provider) is None:
+        return None
+    model = str(target_model or model_cfg.get("default") or model_cfg.get("model") or "").strip()
+    return _tag(_models.opencode_zen_free_runtime(provider, model), requested_provider)
+
+
 # ── the resolution ladder ──────────────────────────────────────────────────────────────────
 
 _VERTEX_NAMES = ("vertex", "google-vertex", "vertex-ai", "gcp-vertex", "vertexai")
@@ -982,7 +992,7 @@ def resolve_runtime_provider(*, requested: Optional[str] = None, explicit_api_ke
       4. local-endpoint bypass (no explicit creds, config base_url at a non-cloud host)
       5. ``auth.resolve_provider`` → explicit --api-key/--base-url path
       6. credential pool (OpenRouter pool only without custom endpoint/override)
-      7. OAuth specs (nous/codex/xai/qwen; "auto" swallows AuthError, logs, and stamps it on a
+      7. OAuth specs (moor/codex/xai/qwen; "auto" swallows AuthError, logs, and stamps it on a
          keyless fallback as ``auth_error``) → minimax-oauth
          → external-process → anthropic env → bedrock → registry api_key providers
       8. OpenRouter / bare-custom fallback
@@ -1047,6 +1057,7 @@ def _ladder_rungs(requested_provider, explicit_api_key, explicit_base_url, targe
         yield _local_endpoint_bypass(requested_provider, explicit_api_key, explicit_base_url)
     provider = resolve_provider(requested_provider, explicit_api_key=explicit_api_key, explicit_base_url=explicit_base_url)
     model_cfg = _get_model_config()
+    yield _opencode_free_runtime(provider, requested_provider, model_cfg, target_model)
     yield _resolve_explicit_runtime(provider=provider, requested_provider=requested_provider, model_cfg=model_cfg,
                                     explicit_api_key=explicit_api_key, explicit_base_url=explicit_base_url,
                                     target_model=target_model)
@@ -1121,12 +1132,12 @@ def resolve_runtime_with_fallback(config: Optional[Dict[str, Any]], *, requested
     re-raised: a fallback entry's failure is not what the operator configured first (#81209). The entry's
     ``model`` is the model the caller must send.
     """
-    from hermes_cli.auth import AuthError, primary_failure_wording
+    from moor_cli.auth import AuthError, primary_failure_wording
     try:
         return resolve_runtime_provider(requested=requested, target_model=target_model,
                                         explicit_base_url=explicit_base_url, explicit_api_key=explicit_api_key), None
     except AuthError as primary_exc:
-        from hermes_cli.fallback_config import effective_runtime_provider, get_fallback_chain, resolve_entry_api_key
+        from moor_cli.fallback_config import effective_runtime_provider, get_fallback_chain, resolve_entry_api_key
         for entry in get_fallback_chain(config):
             provider = (entry.get("provider") or "").strip().lower()
             model = (entry.get("model") or "").strip()

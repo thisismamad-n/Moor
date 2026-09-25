@@ -8,10 +8,10 @@ import pytest
 from moor_cli.console_engine import MoorConsoleEngine, run_console_repl
 
 
-def test_sessions_optimize_accepts_the_force_override_it_advertises(_isolate_hermes_home):
+def test_sessions_optimize_accepts_the_force_override_it_advertises(_isolate_moor_home):
     """The held-store refusal this command prints points at `sessions optimize --force`; if the
     console rejected the flag, the command could only ever refuse whenever a gateway is running."""
-    result = HermesConsoleEngine().execute("sessions optimize --force", confirmed=True)
+    result = MoorConsoleEngine().execute("sessions optimize --force", confirmed=True)
 
     assert result.status == "ok", result.output
     assert "Usage:" not in result.output

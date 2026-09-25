@@ -83,13 +83,13 @@ def test_breadcrumb_roundtrip(moor_home, monkeypatch, no_terminal_env):
     files = list((moor_home / "terminal-sessions").iterdir())
     assert [f.name for f in files] == ["tty-dev-pts-7"]
 
-def test_write_skipped_without_terminal_identity(hermes_home, monkeypatch, no_terminal_env):
+def test_write_skipped_without_terminal_identity(moor_home, monkeypatch, no_terminal_env):
     _fake_no_tty(monkeypatch)
     tb.write_breadcrumb("20260815_120000_abc123")
     assert not (moor_home / "terminal-sessions").exists()
     assert tb.read_breadcrumb() is None
 
-def test_two_terminals_do_not_clobber(hermes_home, monkeypatch, no_terminal_env):
+def test_two_terminals_do_not_clobber(moor_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/1")
     tb.write_breadcrumb("session-one")
     _fake_tty(monkeypatch, "/dev/pts/2")
@@ -98,7 +98,7 @@ def test_two_terminals_do_not_clobber(hermes_home, monkeypatch, no_terminal_env)
     _fake_tty(monkeypatch, "/dev/pts/1")
     assert tb.read_breadcrumb()["session_id"] == "session-one"
 
-def test_stale_breadcrumb_ignored_and_pruned(hermes_home, monkeypatch, no_terminal_env):
+def test_stale_breadcrumb_ignored_and_pruned(moor_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/1")
     directory = moor_home / "terminal-sessions"
     directory.mkdir(parents=True)
@@ -115,7 +115,7 @@ def test_stale_breadcrumb_ignored_and_pruned(hermes_home, monkeypatch, no_termin
     tb.write_breadcrumb("fresh")
     assert not stale.exists()
 
-def test_corrupt_breadcrumb_returns_none(hermes_home, monkeypatch, no_terminal_env):
+def test_corrupt_breadcrumb_returns_none(moor_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/1")
     directory = moor_home / "terminal-sessions"
     directory.mkdir(parents=True)
@@ -131,20 +131,20 @@ def _make_session(home: Path, session_id: str):
     db.create_session(session_id, "cli")
     db.close()
 
-def test_resolve_picks_this_terminals_session(hermes_home, monkeypatch, no_terminal_env):
+def test_resolve_picks_this_terminals_session(moor_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/5")
     _make_session(moor_home, "20260815_100000_aaaaaa")
     _make_session(moor_home, "20260815_110000_bbbbbb")  # newer, other terminal
     tb.write_breadcrumb("20260815_100000_aaaaaa")
     assert tb.resolve_breadcrumb_session() == "20260815_100000_aaaaaa"
 
-def test_resolve_falls_back_when_session_deleted(hermes_home, monkeypatch, no_terminal_env):
+def test_resolve_falls_back_when_session_deleted(moor_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/5")
     _make_session(moor_home, "20260815_110000_bbbbbb")
     tb.write_breadcrumb("20260815_100000_deleted")  # never existed / deleted
     assert tb.resolve_breadcrumb_session() is None
 
-def test_resolve_projects_through_compression_chain(hermes_home, monkeypatch, no_terminal_env):
+def test_resolve_projects_through_compression_chain(moor_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/5")
     _make_session(moor_home, "20260815_100000_parent")
     tb.write_breadcrumb("20260815_100000_parent")

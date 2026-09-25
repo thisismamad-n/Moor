@@ -514,8 +514,8 @@ async def test_primary_adapter_busy_origin_uses_routed_privacy(
 async def test_secondary_busy_text_timing_follows_profile_config_not_process_env(tmp_path, monkeypatch):
     """Debounce / hard-cap are per-profile config (#116893): a launch-process env value must not
     reach a secondary profile's adapter, and each profile keeps its own numbers across A->B->A."""
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_TEXT_DEBOUNCE_SECONDS", "9.0")
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_TEXT_HARD_CAP_SECONDS", "9.0")
+    monkeypatch.setenv("MOOR_GATEWAY_BUSY_TEXT_DEBOUNCE_SECONDS", "9.0")
+    monkeypatch.setenv("MOOR_GATEWAY_BUSY_TEXT_HARD_CAP_SECONDS", "9.0")
     runner = _runner()
     runner._busy_text_timing = (0.35, 1.0)
     homes = {"alpha": tmp_path / "alpha", "beta": tmp_path / "beta"}
@@ -554,9 +554,9 @@ def test_busy_text_timing_rejects_non_numeric_config(caplog):
 async def test_secondary_human_delay_follows_profile_config_not_process_env(tmp_path, monkeypatch):
     """``human_delay`` pacing is per-profile config (#116895): the launch-process env must not reach
     any adapter, and each profile keeps its own range across A->B->A."""
-    monkeypatch.setenv("HERMES_HUMAN_DELAY_MODE", "custom")
-    monkeypatch.setenv("HERMES_HUMAN_DELAY_MIN_MS", "1")
-    monkeypatch.setenv("HERMES_HUMAN_DELAY_MAX_MS", "2")
+    monkeypatch.setenv("MOOR_HUMAN_DELAY_MODE", "custom")
+    monkeypatch.setenv("MOOR_HUMAN_DELAY_MIN_MS", "1")
+    monkeypatch.setenv("MOOR_HUMAN_DELAY_MAX_MS", "2")
     runner = _runner()
     runner._human_delay = None
     homes = {"alpha": tmp_path / "alpha", "beta": tmp_path / "beta"}

@@ -145,11 +145,11 @@ class TestMaintainPackHealth:
 
 
 class TestRepackStampede:
-    """Regression for the Sep 2026 shared-clone incident: every ``hermes -w`` launch started its
+    """Regression for the Sep 2026 shared-clone incident: every ``moor -w`` launch started its
     own full repack, and a timed-out repack left ``pack-objects`` running for days."""
 
     def test_one_repack_per_clone_per_interval(self, repo, monkeypatch):
-        from hermes_cli import worktree_ops
+        from moor_cli import worktree_ops
 
         monkeypatch.setattr(worktree_ops, "_PACK_SPRAWL_THRESHOLD", 0)
         runs: list = []
@@ -169,7 +169,7 @@ class TestRepackStampede:
         import os
         import time
 
-        from hermes_cli import worktree_ops
+        from moor_cli import worktree_ops
 
         # A stand-in ``git`` that forks a long-lived grandchild, the way repack forks pack-objects.
         shim_dir = tmp_path / "bin"

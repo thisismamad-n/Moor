@@ -140,7 +140,7 @@ describe('external link helpers', () => {
 
   it('sends a plain click to the OS browser when "always external" is on', () => {
     const openExternal = vi.fn().mockResolvedValue(undefined)
-    installDesktopBridge({ openExternal: openExternal as unknown as Window['hermesDesktop']['openExternal'] })
+    installDesktopBridge({ openExternal: openExternal as unknown as Window['moorDesktop']['openExternal'] })
     setAlwaysExternalLinks(true)
 
     render(<ExternalLink href="https://example.com/path/to/resource">Example link</ExternalLink>)

@@ -22,8 +22,8 @@ from unittest.mock import patch
 from gateway.config import GatewayConfig, Platform
 from gateway.session import SessionEntry, SessionStore
 
-def test_session_store_default_db_uses_runtime_hermes_home(tmp_path, monkeypatch):
-    """SessionStore must honor runtime HERMES_HOME when opening the default DB.
+def test_session_store_default_db_uses_runtime_moor_home(tmp_path, monkeypatch):
+    """SessionStore must honor runtime MOOR_HOME when opening the default DB.
 
     Regression for the import-time DEFAULT_DB_PATH freeze: importing
     moor_state before a fixture redirected MOOR_HOME used to pin every

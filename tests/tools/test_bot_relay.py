@@ -365,9 +365,9 @@ def test_relay_route_queues_envelope_and_spawns_waiter(tmp_path, monkeypatch):
 
     monkeypatch.setattr("tools.bot_mode_dm._spawn_delivery", _fake_spawn)
     agent = _FakeAgent(home)
-    out = json.loads(message_agent_tool(target="hermes", message="ping", agent=agent))
+    out = json.loads(message_agent_tool(target="moor", message="ping", agent=agent))
     assert out.get("status") == "queued"
-    assert "Hermes Cloud" in spawned["label"]
+    assert "Moor Cloud" in spawned["label"]
     # envelope landed in the outbox with attribution prefixed
     pending = bot_relay.claim_pending_envelopes(home)
     assert len(pending) == 1
@@ -397,15 +397,15 @@ def test_relay_route_ambiguous_target_errors_with_forms(tmp_path, monkeypatch):
 
 
 def test_remote_default_is_addressable_by_its_title_slug(tmp_path, monkeypatch):
-    """A remote ``default`` is ``@hermes`` like every gateway's own, so its Bot Mode title is the only
+    """A remote ``default`` is ``@moor`` like every gateway's own, so its Bot Mode title is the only
     bare form that singles it out: ``message_agent`` accepts the slug, the prompt roster offers it
-    (never bare ``@hermes``, which is the LOCAL default), and the form does not depend on roster order."""
+    (never bare ``@moor``, which is the LOCAL default), and the form does not depend on roster order."""
     from tools import bot_mode_probe
 
     home = _managed_home(tmp_path)
     rows = [
-        {"profile": "default", "handle": "hermes", "connection_id": "vps-1", "title": "CoS Bot"},
-        {"profile": "default", "handle": "hermes", "connection_id": "cloud-1", "title": "Ops Bot"},
+        {"profile": "default", "handle": "moor", "connection_id": "vps-1", "title": "CoS Bot"},
+        {"profile": "default", "handle": "moor", "connection_id": "cloud-1", "title": "Ops Bot"},
         {"profile": "cos-bot", "handle": "cos-bot", "connection_id": "cloud-1", "title": "Other"},
     ]
     monkeypatch.setattr("tools.bot_mode_dm._spawn_delivery", lambda *a, **k: json.dumps({"status": "queued"}))
@@ -416,17 +416,17 @@ def test_remote_default_is_addressable_by_its_title_slug(tmp_path, monkeypatch):
         forms = dict(zip((r["connection_id"] + "/" + r["profile"] for r in roster),
                          bot_relay.remote_target_forms(roster, bot_mode_probe.local_taken_forms(home))))
         # an exact handle beats a colliding title slug; the collided title falls back to the qualified form
-        assert forms == {"cloud-1/cos-bot": "cos-bot", "vps-1/default": "hermes@vps-1", "cloud-1/default": "ops-bot"}
+        assert forms == {"cloud-1/cos-bot": "cos-bot", "vps-1/default": "moor@vps-1", "cloud-1/default": "ops-bot"}
         assert bot_relay.resolve_remote_target("cos-bot", roster)["profile"] == "cos-bot"
     out = json.loads(message_agent_tool(target="@ops-bot", message="ping", agent=agent))
     assert out.get("status") == "queued"
     [env] = bot_relay.claim_pending_envelopes(home)
     assert (env["target_connection"], env["target_profile"]) == ("cloud-1", "default")
-    # a bare @hermes from the local default is the two remote defaults — offered under their reply-safe forms
-    err = json.loads(message_agent_tool(target="hermes", message="ping", agent=agent))["error"]
-    assert "hermes@vps-1" in err and "ops-bot" in err
+    # a bare @moor from the local default is the two remote defaults — offered under their reply-safe forms
+    err = json.loads(message_agent_tool(target="moor", message="ping", agent=agent))["error"]
+    assert "moor@vps-1" in err and "ops-bot" in err
     section = bot_mode_probe.get_bot_mode_protocol_section(home)
-    assert "`@ops-bot`" in section and "`@hermes@vps-1`" in section and "- `@hermes` —" not in section
+    assert "`@ops-bot`" in section and "`@moor@vps-1`" in section and "- `@moor` —" not in section
 
 
 
@@ -440,8 +440,8 @@ def test_protocol_section_lists_remote_teammates(tmp_path):
          "connection_label": "Moor Cloud", "title": "Moxie"},
     ])
     section = bot_mode_probe.get_bot_mode_protocol_section(home, force_refresh=True)
-    # Offered under its title slug: bare `@hermes` is THIS gateway's own default (#103731).
-    assert "`@moxie`" in section and "Hermes Cloud" in section
+    # Offered under its title slug: bare `@moor` is THIS gateway's own default (#103731).
+    assert "`@moxie`" in section and "Moor Cloud" in section
 
 
 def test_capability_fingerprint_changes_with_relay_roster(tmp_path):
@@ -591,11 +591,11 @@ def test_the_outbox_is_claimed_oldest_first(root):
     deterministically, which random ids reproduce half the time."""
     first = bot_relay.enqueue_envelope(
         root, target=_target(), message="do this first",
-        sender_profile="default", sender_handle="hermes",
+        sender_profile="default", sender_handle="moor",
     )
     second = bot_relay.enqueue_envelope(
         root, target=_target(), message="then this",
-        sender_profile="default", sender_handle="hermes",
+        sender_profile="default", sender_handle="moor",
     )
     outbox = bot_relay.relay_root(root) / bot_relay.OUTBOX_DIR
     now = _time2.time()

@@ -13,7 +13,7 @@ facts this branch already ships:
 
 A sealed tree (no ``.git``) belongs to a steward: only the steward removes
 or replaces its code. The refusal messages below always leave the user a
-working next step for their data (``hermes uninstall --data`` / the
+working next step for their data (``moor uninstall --data`` / the
 desktop app's Settings -> About page).
 """
 
@@ -31,29 +31,29 @@ STEWARD_DOCKER = "docker"
 STEWARD_NIX = "nix"
 STEWARD_APT_TERMUX = "apt-termux"
 
-# What `hermes update` says in a sealed tree, per steward — the refusal
+# What `moor update` says in a sealed tree, per steward — the refusal
 # table shared by the update admission gate. The fallback covers stewards
 # this build does not know (a newer package-manager value read by older
 # code).
 STEWARD_UPDATE_MESSAGES = {
     STEWARD_DESKTOP: (
-        "✗ This Hermes runs from inside the desktop app bundle.\n"
+        "✗ This Moor runs from inside the desktop app bundle.\n"
         "\n"
         "Manage updates from within the desktop app.\n"
         "Prefer a self-managed source install? See:\n"
         "  https://hermes-agent.nousresearch.com/docs/user-guide/switching-to-source"
     ),
     STEWARD_NIX: (
-        "✗ This Hermes runs from the Nix store.\n"
+        "✗ This Moor runs from the Nix store.\n"
         "\n"
         "The store path is immutable. Update through your flake:\n"
         "  nix flake update && rebuild your profile or system"
     ),
     STEWARD_APT_TERMUX: (
-        "✗ This Hermes runs from a Termux APT package.\n"
+        "✗ This Moor runs from a Termux APT package.\n"
         "\n"
         "The package manager owns the code tree. Update with:\n"
-        "  pkg upgrade hermes-agent"
+        "  pkg upgrade moor-agent"
     ),
 }
 
@@ -61,19 +61,19 @@ STEWARD_UPDATE_MESSAGES = {
 # pins a bionic CPython with no Android wheels, so a source sync would
 # build sdists on the phone. The APT package is the only supported shape.
 SOURCE_ON_TERMUX_UPDATE_MESSAGE = (
-    "✗ This Hermes is a source checkout running under Termux.\n"
+    "✗ This Moor is a source checkout running under Termux.\n"
     "\n"
-    "Source installs are not supported on Termux — `hermes update` would\n"
+    "Source installs are not supported on Termux — `moor update` would\n"
     "build Python packages on the device. Switch to the APT package:\n"
-    "  pkg install hermes-agent"
+    "  pkg install moor-agent"
 )
-SOURCE_ON_TERMUX_UPDATE_COMMAND = "pkg install hermes-agent"
+SOURCE_ON_TERMUX_UPDATE_COMMAND = "pkg install moor-agent"
 
 
 _STEWARD_UPDATE_FALLBACK = (
-    "✗ This Hermes install is managed by {steward}.\n"
+    "✗ This Moor install is managed by {steward}.\n"
     "\n"
-    "The tree has no git checkout, so `hermes update` cannot update it.\n"
+    "The tree has no git checkout, so `moor update` cannot update it.\n"
     "Update it with the tool that installed it."
 )
 
@@ -81,13 +81,13 @@ _STEWARD_UPDATE_FALLBACK = (
 # tree. The steward put the code there; the steward removes it. The
 # desktop-app message is per-OS because each OS owns app removal
 # differently.
-_STEWARD_DELETE_DATA_PREAMBLE = "To delete your Hermes data (chats, configuration, etc),\n"
-_STEWARD_DELETE_DATA_CLI = "run:\n$ hermes uninstall --data\n"
-_STEWARD_DELETE_DATA_DESKTOP = "Open Hermes Desktop, go to Settings -> About, and delete your data from there.\n"
+_STEWARD_DELETE_DATA_PREAMBLE = "To delete your Moor data (chats, configuration, etc),\n"
+_STEWARD_DELETE_DATA_CLI = "run:\n$ moor uninstall --data\n"
+_STEWARD_DELETE_DATA_DESKTOP = "Open Moor Desktop, go to Settings -> About, and delete your data from there.\n"
 
 _STEWARD_UNINSTALL_MESSAGES = {
     STEWARD_DOCKER: (
-        "✗ This Hermes runs from a Docker image.\n"
+        "✗ This Moor runs from a Docker image.\n"
         "\n"
         "There is no code to uninstall — remove the container and image:\n"
         "  docker rm <container> && docker rmi nousresearch/hermes-agent\n"
@@ -96,19 +96,19 @@ _STEWARD_UNINSTALL_MESSAGES = {
         _STEWARD_DELETE_DATA_CLI
     ),
     STEWARD_APT_TERMUX: (
-        "✗ This Hermes was installed by a Termux APT package.\n"
+        "✗ This Moor was installed by a Termux APT package.\n"
         "\n"
         "The package manager owns the code tree — uninstall it with:\n"
-        "  pkg uninstall hermes-agent\n"
+        "  pkg uninstall moor-agent\n"
         "\n" +
         _STEWARD_DELETE_DATA_PREAMBLE +
         _STEWARD_DELETE_DATA_CLI
     ),
     STEWARD_NIX: (
-        "✗ This Hermes was installed by Nix.\n"
+        "✗ This Moor was installed by Nix.\n"
         "\n"
         "The store path is immutable — uninstall it the same way you\n"
-        "installed it: remove hermes-agent from your flake / profile\n"
+        "installed it: remove moor-agent from your flake / profile\n"
         "(e.g. `nix profile remove`), then rebuild.\n"
         "\n" +
         _STEWARD_DELETE_DATA_PREAMBLE +
@@ -116,7 +116,7 @@ _STEWARD_UNINSTALL_MESSAGES = {
     ),
 }
 
-_STEWARD_MANAGED_BY_DESKTOP = "✗ Hermes is managed by the desktop app.\n"
+_STEWARD_MANAGED_BY_DESKTOP = "✗ Moor is managed by the desktop app.\n"
 
 _STEWARD_DESKTOP_UNINSTALL_BY_PLATFORM = {
     "win32": (
@@ -129,7 +129,7 @@ _STEWARD_DESKTOP_UNINSTALL_BY_PLATFORM = {
     "darwin": (
         _STEWARD_MANAGED_BY_DESKTOP +
         "\n"
-        "Quit the app and drag Hermes.app from Applications to the Trash.\n" +
+        "Quit the app and drag Moor.app from Applications to the Trash.\n" +
         _STEWARD_DELETE_DATA_PREAMBLE +
         _STEWARD_DELETE_DATA_DESKTOP
     ),
@@ -138,14 +138,14 @@ _STEWARD_DESKTOP_UNINSTALL_BY_PLATFORM = {
 _STEWARD_DESKTOP_UNINSTALL_DEFAULT = (
     _STEWARD_MANAGED_BY_DESKTOP +
     "\n"
-    "Delete the Hermes AppImage (or app directory) from wherever you\n"
+    "Delete the Moor AppImage (or app directory) from wherever you\n"
     "saved it.\n" +
     _STEWARD_DELETE_DATA_PREAMBLE +
     _STEWARD_DELETE_DATA_DESKTOP
 )
 
 _STEWARD_UNINSTALL_FALLBACK = (
-    "✗ Hermes is managed by {steward}.\n"
+    "✗ Moor is managed by {steward}.\n"
     "\n"
     "The tree has no git checkout, so the uninstaller will not remove it.\n"
     "Remove it with the tool that installed it.\n"
@@ -158,7 +158,7 @@ _STEWARD_UNINSTALL_FALLBACK = (
 
 
 def steward_update_message(steward: str) -> str:
-    """The `hermes update` refusal text for a sealed tree."""
+    """The `moor update` refusal text for a sealed tree."""
     message = STEWARD_UPDATE_MESSAGES.get(steward)
     if message is not None:
         return message

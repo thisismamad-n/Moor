@@ -17,7 +17,7 @@ import zipfile
 
 import pytest
 
-from hermes_cli import backup_restore as backup_mod
+from moor_cli import backup_restore as backup_mod
 
 pytestmark = pytest.mark.platforms("linux")  # /proc holder scan is Linux-only
 
@@ -30,7 +30,7 @@ _HOLDER = (
     "time.sleep(300)\n"
 )
 
-_MEMBER = "hermes/state.db"
+_MEMBER = "moor/state.db"
 
 
 def _make_db(path, marker):

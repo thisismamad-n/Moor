@@ -8,11 +8,11 @@ description: "Connect Moor Agent to the Moor Portal MCP server so your local age
 
 Python dependency commands on this page use a
 [PM-prepared source checkout](../reference/package-management.md#developer-workflow).
-After a dependency change, reactivate the checkout and restart Hermes.
+After a dependency change, reactivate the checkout and restart Moor.
 
-[Hermes Cloud](https://portal.nousresearch.com/cloud) runs hosted Hermes Agent instances for you. Normally you manage them from the `/agents` page in the [Nous Portal](../integrations/nous-portal.md). This guide connects your **local** Hermes Agent to the Portal's MCP server so you can manage those cloud instances by just asking — "list my cloud agents", "restart the stopped one", "what's it costing me" — without leaving your terminal.
+[Moor Cloud](https://portal.nousresearch.com/cloud) runs hosted Moor Agent instances for you. Normally you manage them from the `/agents` page in the [Moor Portal](../integrations/moor-portal.md). This guide connects your **local** Moor Agent to the Portal's MCP server so you can manage those cloud instances by just asking — "list my cloud agents", "restart the stopped one", "what's it costing me" — without leaving your terminal.
 
-It's a standard [MCP](../user-guide/features/mcp.md) server hosted by Nous Research, gated by the same OAuth login you already use for the Portal. Once connected, Hermes gets two tools it can call on your behalf.
+It's a standard [MCP](../user-guide/features/mcp.md) server hosted by Moor inc., gated by the same OAuth login you already use for the Portal. Once connected, Moor gets two tools it can call on your behalf.
 
 ## What you can do with it
 
@@ -32,11 +32,11 @@ Every call runs against **your** org with your Portal identity, and membership i
 
 ## Prerequisites
 
-- A [Nous Portal](../integrations/nous-portal.md) account with [Hermes Cloud](https://portal.nousresearch.com/cloud) access (at least one instance, or the ability to create one).
+- A [Moor Portal](../integrations/moor-portal.md) account with [Moor Cloud](https://portal.nousresearch.com/cloud) access (at least one instance, or the ability to create one).
 - MCP support installed. If you used the standard install script it's already there; otherwise:
 
   ```bash
-  cd ~/.hermes/hermes-agent
+  cd ~/.moor/moor-agent
   python -c "import pm; pm.sync_venv(['mcp'], explicit=True)"
   ```
 
@@ -131,7 +131,7 @@ mcp_servers:
       include: [agents]
 ```
 
-Run `/reload-mcp` after changing the config. See [Use MCP with Hermes](./use-mcp-with-hermes.md) for the full filtering model (`include`/`exclude`, `prompts`, `resources`).
+Run `/reload-mcp` after changing the config. See [Use MCP with Moor](./use-mcp-with-moor.md) for the full filtering model (`include`/`exclude`, `prompts`, `resources`).
 
 ## Troubleshooting
 
@@ -169,12 +169,12 @@ OAuth tokens refresh automatically, but if the Portal invalidates your session (
 
 ### Headless / SSH / remote host
 
-The OAuth browser callback runs on the machine where Hermes is running. On a remote host, forward the loopback port over SSH — the same pattern as any other OAuth login. See [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md).
+The OAuth browser callback runs on the machine where Moor is running. On a remote host, forward the loopback port over SSH — the same pattern as any other OAuth login. See [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md).
 
 ## See also
 
-- **[Nous Portal](../integrations/nous-portal.md)** — the subscription, models, and Tool Gateway behind the same login
-- **[Use MCP with Hermes](./use-mcp-with-hermes.md)** — connecting and filtering MCP servers in general
-- **[MCP feature overview](../user-guide/features/mcp.md)** — what MCP is and how Hermes uses it
+- **[Moor Portal](../integrations/moor-portal.md)** — the subscription, models, and Tool Gateway behind the same login
+- **[Use MCP with Moor](./use-mcp-with-moor.md)** — connecting and filtering MCP servers in general
+- **[MCP feature overview](../user-guide/features/mcp.md)** — what MCP is and how Moor uses it
 - **[MCP configuration reference](../reference/mcp-config-reference.md)** — every `mcp_servers` field, including `auth: oauth`
 - **[OAuth over SSH](./oauth-over-ssh.md)** — logging in from remote or browser-only environments

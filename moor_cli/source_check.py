@@ -16,8 +16,8 @@ from urllib.parse import quote
 import urllib.error
 import urllib.request
 
-from hermes_constants import get_hermes_home
-from hermes_cli.source_releases import OFFICIAL_REPOSITORY, _GITHUB_ORIGIN, resolve_source_target
+from moor_constants import get_moor_home
+from moor_cli.source_releases import OFFICIAL_REPOSITORY, _GITHUB_ORIGIN, resolve_source_target
 
 logger = logging.getLogger(__name__)
 UPDATE_AVAILABLE_NO_COUNT = -1
@@ -39,7 +39,7 @@ def source_git_env() -> dict[str, str]:
     an upstream tip the clone never fetched would download its history, and the
     probe timeout kills only git itself, orphaning the fetch (see NO_LAZY_FETCH_ENV).
     """
-    from hermes_cli._subprocess_compat import NO_LAZY_FETCH_ENV, noninteractive_git_env
+    from moor_cli._subprocess_compat import NO_LAZY_FETCH_ENV, noninteractive_git_env
 
     env = noninteractive_git_env()
     for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE",
@@ -56,7 +56,7 @@ _GIT_TEXT_KW = {"text": True, "encoding": "utf-8", "errors": "replace"}
 def _git_run(args: list[str], *, cwd: Optional[Path] = None, timeout: int = 5, text: bool = True,
              git: str = "git"):
     """Read Git state without prompts, optional index writes, or inherited targeting."""
-    from hermes_cli._subprocess_compat import windows_hide_flags
+    from moor_cli._subprocess_compat import windows_hide_flags
 
     kwargs: dict = {"creationflags": windows_hide_flags(), "env": source_git_env(), "stdin": subprocess.DEVNULL}
     try:
@@ -108,12 +108,12 @@ def _github_compare_behind(current_rev: str, target_rev: str, repository: str = 
 
 
 def _request(url: str, accept: str = "application/vnd.github+json") -> str:
-    """GET an api.github.com resource with the credential ladder in hermes_cli.github_api.
+    """GET an api.github.com resource with the credential ladder in moor_cli.github_api.
 
     A token GitHub rejects (401) drops this request to anonymous rather than
     failing the check on a stale credential.
     """
-    from hermes_cli.github_api import github_token
+    from moor_cli.github_api import github_token
 
     token = github_token()
     try:
@@ -126,7 +126,7 @@ def _request(url: str, accept: str = "application/vnd.github+json") -> str:
 
 
 def _request_with(url: str, accept: str, token: str | None) -> str:
-    headers = {"Accept": accept, "User-Agent": "hermes-update-check"}
+    headers = {"Accept": accept, "User-Agent": "moor-update-check"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, headers=headers)
@@ -142,7 +142,7 @@ def _branch_tip(repository: str | None, branch: str, root: Path, git: str,
     # GitHub 404 can also mean a private repository: it must not heal a branch.
     failure = None
     if repository:
-        from hermes_cli.github_api import describe_github_failure, github_token
+        from moor_cli.github_api import describe_github_failure, github_token
         try:
             sha = _request(f"https://api.github.com/repos/{repository}/commits/{quote(branch, safe='')}",
                            "application/vnd.github.sha")
@@ -203,8 +203,8 @@ def _read_json(path: Path):
 
 def _unsupported_reason(stamp: dict, root: Path, *, explicit_root: bool, embedded: Optional[str]) -> Optional[dict]:
     """Fields explaining why this install cannot self-update from Git, or None when it can."""
-    from hermes_cli.config import detect_install_method
-    from hermes_cli.update_contract import COMMIT_BUILD_UPDATE_MESSAGE
+    from moor_cli.config import detect_install_method
+    from moor_cli.update_contract import COMMIT_BUILD_UPDATE_MESSAGE
 
     if stamp.get("source") == "commit-build":
         return {"reason": "commit-build", "message": COMMIT_BUILD_UPDATE_MESSAGE}
@@ -344,18 +344,18 @@ def check_for_updates(*, install_root: Path | None = None, home: Path | None = N
                       passive: bool = False, git: str = "git") -> dict:
     """Return a presentation-ready status. Omitted branch follows the current checkout.
 
-    Only the default (running installation) may use HERMES_REVISION. An explicit
+    Only the default (running installation) may use MOOR_REVISION. An explicit
     target must never inherit the host process's embedded revision or stamp.
     """
-    from hermes_cli.config import get_project_root, require_readable_config_before_write
-    from hermes_cli.steward import read_install_stamp
-    from hermes_cli.update_channel import install_id, resolve_update_channel
-    from hermes_cli.release_channels import validate_name
+    from moor_cli.config import get_project_root, require_readable_config_before_write
+    from moor_cli.steward import read_install_stamp
+    from moor_cli.update_channel import install_id, resolve_update_channel
+    from moor_cli.release_channels import validate_name
 
-    embedded = (os.environ.get("HERMES_REVISION") or None) if install_root is None else None
+    embedded = (os.environ.get("MOOR_REVISION") or None) if install_root is None else None
     root = Path(install_root if install_root is not None else get_project_root()).resolve()
-    home = Path(home if home is not None else get_hermes_home()).resolve()
-    result = {"supported": False, "hermesRoot": str(root), "behind": None, "commits": []}
+    home = Path(home if home is not None else get_moor_home()).resolve()
+    result = {"supported": False, "moorRoot": str(root), "behind": None, "commits": []}
     unsupported = _unsupported_reason(read_install_stamp(root), root,
                                       explicit_root=install_root is not None, embedded=embedded)
     if unsupported:
@@ -407,7 +407,7 @@ def main() -> None:
     parser.add_argument("--home", type=Path, required=True)
     parser.add_argument("--git", default="git")
     parser.add_argument("--branch")
-    from hermes_cli.release_channels import validate_name
+    from moor_cli.release_channels import validate_name
     parser.add_argument("--channel", type=validate_name)
     parser.add_argument("--cache-path", type=Path)
     parser.add_argument("--branch-config-path", type=Path)

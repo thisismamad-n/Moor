@@ -285,7 +285,7 @@ describe('speaker labels', () => {
     data.$lastRoster.set([])
 
     expect(chat.groupSpeakerLabel('local::reviewer')).toBe('reviewer')
-    expect(chat.groupSpeakerLabel('spark::default')).toBe('Hermes')
+    expect(chat.groupSpeakerLabel('spark::default')).toBe('Moor')
 
     data.$botMeta.set({ 'spark::reviewer': { title: 'Beta' } })
 
@@ -1218,7 +1218,7 @@ describe('sync worker', () => {
     room.chat.hydrateGroupChatTombstones({ 'id:room-1': 5 })
 
     // Mirror whose tombstone push was lost: full room, no `deleted` entry.
-    room.gateway.uiMeta['hermes-bots-groups'] = {
+    room.gateway.uiMeta['moor-bots-groups'] = {
       rooms: {
         'id:room-1': {
           log: [{ at: 1, from: { kind: 'user', name: 'You' }, id: 'b1', text: 'go' }],
@@ -1231,7 +1231,7 @@ describe('sync worker', () => {
       updatedAt: 2,
       version: 3
     }
-    room.gateway.uiMetaRevisions['hermes-bots-groups'] = 9
+    room.gateway.uiMetaRevisions['moor-bots-groups'] = 9
 
     // An unrelated room write is enough: the publish carries the memory.
     room.chat.$groupChats.set({
@@ -1282,8 +1282,8 @@ describe('sync worker', () => {
     room.chat.updateGroupChat('Core', current => ({ ...current, roomId: room.chat.mintGroupRoomId() }), { sync: false })
     room.chat.appendGroupChatEntry('Core', { kind: 'user', name: 'You' }, 'fresh start', 't2')
 
-    room.gateway.uiMeta['hermes-bots-groups'] = { deleted: {}, rooms: {}, updatedAt: 5, version: 3 }
-    room.gateway.uiMetaRevisions['hermes-bots-groups'] = 9
+    room.gateway.uiMeta['moor-bots-groups'] = { deleted: {}, rooms: {}, updatedAt: 5, version: 3 }
+    room.gateway.uiMetaRevisions['moor-bots-groups'] = 9
     await room.chat.pullGroupChatServerState()
 
     expect(room.chat.$groupChats.get().Core?.log.map(entry => entry.text)).toEqual(['fresh start'])

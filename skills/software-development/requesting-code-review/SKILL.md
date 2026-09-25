@@ -2,7 +2,7 @@
 name: requesting-code-review
 description: "Pre-commit review: security scan, quality gates, auto-fix."
 version: 2.1.0
-author: Hermes Agent (adapted from obra/superpowers + MorAlekss)
+author: Moor Agent (adapted from obra/superpowers + MorAlekss)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -124,7 +124,7 @@ Quick scan before dispatching the reviewer:
 
 ## Step 5 — Independent reviewer subagent
 
-**Interactive sessions only.** In a one-shot run (`hermes chat -q`, `--oneshot`, a
+**Interactive sessions only.** In a one-shot run (`moor chat -q`, `--oneshot`, a
 benchmark harness) there is no one to hand the verdict to and a fresh subagent re-pays
 the whole system prompt plus a repo re-read: skip Steps 5 and 7, apply the Step 4
 checklist to the diff yourself, run the tests, and go to Step 8.

@@ -5,7 +5,7 @@ import os
 import subprocess
 import tempfile
 
-from hermes_cli.completion import _walk, generate_bash, generate_fish
+from moor_cli.completion import _walk, generate_bash, generate_fish
 
 
 # ---------------------------------------------------------------------------

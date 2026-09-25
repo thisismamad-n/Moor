@@ -1433,8 +1433,8 @@ export const GROUP_CHAT_MAX_MEMBERS = 6
  *  renamed bot never shows up as its raw profile id or a stale "Moor"
  *  (community report, Aug 21 2026: renamed default still read "Moor is
  *  thinking…" in group rooms). The untitled primary profile is literally
- *  named "default" — render it as Hermes (matching displayName and the
- *  @hermes handle) so the main agent never loses its name in rooms.
+ *  named "default" — render it as Moor (matching displayName and the
+ *  @moor handle) so the main agent never loses its name in rooms.
  *
  *  Accepts either a member key (`connectionId::profile`, what the activity
  *  feed records) or a raw profile name (legacy rooms, the round prompt).
@@ -1443,7 +1443,7 @@ export const GROUP_CHAT_MAX_MEMBERS = 6
  *  same pipeline the Bots tab renders — and a raw name resolves the same
  *  way when exactly one roster row carries it. Same-named members that
  *  resolve to the same label get their connection label appended, so two
- *  failing `default`s are never one anonymous "Hermes" — judged against the
+ *  failing `default`s are never one anonymous "Moor" — judged against the
  *  ROOM's seats when the caller names the room (#94869: a room whose only
  *  `reviewer` is local reads plain "Reviewer" however many other connections
  *  expose one), against the whole roster otherwise. A key with no roster row
@@ -1479,7 +1479,7 @@ export function groupSpeakerLabel(name?: null | string, group?: null | string) {
     const connection = trimmed.slice(0, boundary)
     const profile = trimmed.slice(boundary + 2)
     const title = String(meta?.[trimmed]?.title || meta?.[profile]?.title || '').trim()
-    const label = title || (profile.toLowerCase() === 'default' ? 'Hermes' : profile)
+    const label = title || (profile.toLowerCase() === 'default' ? 'Moor' : profile)
 
     // Another connection still exposes this name: keep them tellable apart.
     return rows.some(bot => bot.name === profile) ? `${label} · ${connection}` : label
@@ -1495,7 +1495,7 @@ export function groupSpeakerLabel(name?: null | string, group?: null | string) {
   }
 
   // Legacy rungs for names the roster cannot place: a bare-keyed Bot Mode
-  // title, then the local row's display_name, then default → Hermes.
+  // title, then the local row's display_name, then default → Moor.
   const title = String(meta?.[trimmed]?.title || '').trim()
 
   if (title) {
@@ -1509,7 +1509,7 @@ export function groupSpeakerLabel(name?: null | string, group?: null | string) {
     return renamed
   }
 
-  return isDefault ? 'Hermes' : trimmed
+  return isDefault ? 'Moor' : trimmed
 }
 
 /** Trim a room log + its watermarks to the retained window, keeping

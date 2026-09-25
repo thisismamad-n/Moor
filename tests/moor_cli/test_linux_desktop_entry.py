@@ -209,10 +209,10 @@ def test_exec_prefixes_interpreter_for_env_shebang_python_script(
 
 def test_exec_leaves_shell_wrapper_launchers_alone(tmp_path, xdg_home, monkeypatch):
     root = _make_project(tmp_path)
-    hermes_bin = tmp_path / "bin" / "hermes"
-    hermes_bin.parent.mkdir()
-    hermes_bin.write_text(
-        '#!/usr/bin/env bash\nexec /opt/hermes/venv/bin/python "$@"\n', encoding="utf-8"
+    moor_bin = tmp_path / "bin" / "moor"
+    moor_bin.parent.mkdir()
+    moor_bin.write_text(
+        '#!/usr/bin/env bash\nexec /opt/moor/venv/bin/python "$@"\n', encoding="utf-8"
     )
     moor_bin.chmod(0o755)
     monkeypatch.setattr(
@@ -399,7 +399,7 @@ def test_exec_uses_known_wrapper_when_path_lookup_misses(
     known_wrapper = tmp_path / "known-home" / ".local" / "bin" / "moor"
     known_wrapper.parent.mkdir(parents=True)
     known_wrapper.write_text(
-        f'#!/usr/bin/env bash\nexec {root / "venv" / "bin" / "python"} {root / "hermes"} "$@"\n',
+        f'#!/usr/bin/env bash\nexec {root / "venv" / "bin" / "python"} {root / "moor"} "$@"\n',
         encoding="utf-8",
     )
     known_wrapper.chmod(0o755)
@@ -432,21 +432,21 @@ def test_exec_never_persists_a_checkout_internal_path_hit(tmp_path, xdg_home, mo
     persisting the venv form; the next DE launch re-resolves to the durable
     wrapper and flips the bytes back. Alternating writers alternate the
     file content (captured: wrapper -> venv -> wrapper inside one update
-    cycle), and every flip rewrites hermes.desktop. A rewrite landing
+    cycle), and every flip rewrites moor.desktop. A rewrite landing
     inside a grid launch's STARTING window is the arm for the gnome-shell
     50.x crash this module already guards against. A PATH hit inside the
     checkout must fall through to the durable probe.
     """
     root = _make_project(tmp_path)
-    venv_script = root / "venv" / "bin" / "hermes"
+    venv_script = root / "venv" / "bin" / "moor"
     venv_script.parent.mkdir(parents=True)
     venv_script.write_text("#!/usr/bin/env bash\nexec true\n", encoding="utf-8")
     venv_script.chmod(0o755)
 
-    known_wrapper = tmp_path / "path-home" / ".local" / "bin" / "hermes"
+    known_wrapper = tmp_path / "path-home" / ".local" / "bin" / "moor"
     known_wrapper.parent.mkdir(parents=True)
     known_wrapper.write_text(
-        f'#!/usr/bin/env bash\nexec {root / "venv" / "bin" / "python"} {root / "hermes"} "$@"\n',
+        f'#!/usr/bin/env bash\nexec {root / "venv" / "bin" / "python"} {root / "moor"} "$@"\n',
         encoding="utf-8",
     )
     known_wrapper.chmod(0o755)
@@ -457,7 +457,7 @@ def test_exec_never_persists_a_checkout_internal_path_hit(tmp_path, xdg_home, mo
     def fake_resolve():
         return sys.argv[0] or str(venv_script)
 
-    monkeypatch.setattr("hermes_cli.relaunch.resolve_hermes_bin", fake_resolve)
+    monkeypatch.setattr("moor_cli.relaunch.resolve_moor_bin", fake_resolve)
     _argv0_context(monkeypatch, str(venv_script))
     monkeypatch.setattr(lde, "refresh_desktop_databases", lambda _dir: [])
 
@@ -497,7 +497,7 @@ def test_exec_finds_known_wrapper_when_resolver_has_no_candidate(
     known_wrapper = tmp_path / "cold-home" / ".local" / "bin" / "moor"
     known_wrapper.parent.mkdir(parents=True)
     known_wrapper.write_text(
-        f'#!/usr/bin/env bash\nexec {root / "venv" / "bin" / "python"} {root / "hermes"} "$@"\n',
+        f'#!/usr/bin/env bash\nexec {root / "venv" / "bin" / "python"} {root / "moor"} "$@"\n',
         encoding="utf-8",
     )
     known_wrapper.chmod(0o755)
@@ -551,7 +551,7 @@ def test_exec_rejects_known_wrapper_from_another_checkout(
     foreign_wrapper.parent.mkdir(parents=True)
     foreign_wrapper.write_text(
         f"#!/usr/bin/env bash\nexec {other_root / 'venv' / 'bin' / 'python'} "
-        f'{other_root / "hermes"} "$@"\n',
+        f'{other_root / "moor"} "$@"\n',
         encoding="utf-8",
     )
     foreign_wrapper.chmod(0o755)
@@ -1019,7 +1019,7 @@ def test_probe_accepts_shell_launcher_wrapper(tmp_path, xdg_home, monkeypatch):
     good_wrapper.parent.mkdir(parents=True)
     good_wrapper.write_text(
         f"#!/usr/bin/env bash\nexec {root / 'venv' / 'bin' / 'python'} "
-        f'{root / "hermes"} "$@"\n',
+        f'{root / "moor"} "$@"\n',
         encoding="utf-8",
     )
     good_wrapper.chmod(0o755)

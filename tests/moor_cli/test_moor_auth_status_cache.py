@@ -23,7 +23,7 @@ def _seed_auth_file(tmp_path):
     auth.write_text(json.dumps({"providers": {}}), encoding="utf-8")
     return auth
 
-def test_get_nous_auth_status_caches_consecutive_calls(tmp_path, monkeypatch):
+def test_get_moor_auth_status_caches_consecutive_calls(tmp_path, monkeypatch):
     """A second call within the TTL skips re-computing the snapshot."""
     monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     _seed_auth_file(tmp_path)
@@ -52,4 +52,4 @@ def test_get_nous_auth_status_caches_consecutive_calls(tmp_path, monkeypatch):
     first["mutated"] = True
     assert "mutated" not in auth_mod.get_moor_auth_status()
 
-    auth_mod.invalidate_nous_auth_status_cache()
+    auth_mod.invalidate_moor_auth_status_cache()

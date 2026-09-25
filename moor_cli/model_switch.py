@@ -13,10 +13,10 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Any, NamedTuple, Optional
 
-from hermes_cli.providers import (
+from moor_cli.providers import (
     LLAMACPP_ALIASES, ProviderDef, custom_provider_aliases, determine_api_mode, get_label,
     host_mandated_api_mode, is_aggregator, normalize_provider, resolve_provider_full)
-from hermes_cli.model_normalize import normalize_model_for_provider
+from moor_cli.model_normalize import normalize_model_for_provider
 from agent.models_dev import (
     ModelCapabilities, ModelInfo, get_model_capabilities, get_model_info, list_provider_models)
 from utils import base_url_host_matches, base_url_hostname, base_url_origin, file_signature
@@ -107,7 +107,7 @@ _MOOR_MODEL_WARNING = (
 # false-positived on tool-capable local Modelfiles like ``moor-brain:qwen3-14b-ctx16k``.
 #   match:    moor-4-405b, hermes-4-405b, openrouter/hermes3:70b
 #   no match: moor-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
-_MOOR_MOOR_NON_AGENTIC_RE = re.compile(r"(?:^|[/:])(?:moor|hermes)[-_ ]?[34](?:[-_.:]|$)", re.IGNORECASE)  # LEGACY-REBRAND-COMPAT: legacy model regex
+_MOOR_MOOR_NON_AGENTIC_RE = re.compile(r"(?:^|[/:])(?:moor|moor)[-_ ]?[34](?:[-_.:]|$)", re.IGNORECASE)  # LEGACY-REBRAND-COMPAT: legacy model regex
 
 
 # Opaque proxy model IDs (Palantir Foundry: ``ri.language-model-service..language-model.<slug>``)
@@ -392,8 +392,8 @@ def resolve_startup_model_route(
     # accepts. Left undecoded, the configured default provider receives the unsplit string as
     # the model name and the whole prompt goes to its endpoint before it 404s (#73943). The
     # configured ids come from the caller's config, the same source the ``/`` branch below uses.
-    from hermes_cli.models import parse_model_input
-    from hermes_cli.providers import custom_provider_slug
+    from moor_cli.models import parse_model_input
+    from moor_cli.providers import custom_provider_slug
     custom_ids = {custom_provider_slug(str(entry.get("name") or key), str(key))
                   for key, entry in (user_providers or {}).items() if isinstance(entry, dict)}
     custom_ids.update(custom_provider_slug(str(entry.get("name") or ""))
@@ -857,12 +857,12 @@ def get_authenticated_provider_slugs(
 def _resolve_alias_fallback(
     raw_input: str, authenticated_providers: list[str] = (), user_providers: Optional[dict] = None,
     custom_providers: Optional[list] = None) -> Optional[tuple[str, str, str]]:
-    """Resolve an alias on the user's authenticated providers (``("openrouter", "nous")`` when none given).
+    """Resolve an alias on the user's authenticated providers (``("openrouter", "moor")`` when none given).
 
     AmbiguousAliasError propagates: the alias exists on this provider, the user just has to
     choose — trying the next provider would silently switch them somewhere they didn't ask for."""
     results = (resolve_alias(raw_input, p, user_providers, custom_providers)
-               for p in authenticated_providers or ("openrouter", "nous"))
+               for p in authenticated_providers or ("openrouter", "moor"))
     return next((r for r in results if r is not None), None)
 
 
@@ -959,7 +959,7 @@ def _configured_provider_identity(slug: str, cfg: dict) -> tuple[str, str, str, 
     normalizer that builds the compat view, so a ``providers.<slug>`` row, its ``custom:<name>``
     projection and a legacy duplicate of the same endpoint reduce to one tuple. Any difference in
     endpoint, credential identity or wire protocol keeps two rows distinct."""
-    from hermes_cli.config_providers import _canonical_api_mode, _normalize_custom_provider_entry
+    from moor_cli.config_providers import _canonical_api_mode, _normalize_custom_provider_entry
     # ``provider_key`` is the compat view's stamp, not a config key: drop it so the normalizer does
     # not warn about it as unknown.
     entry = _normalize_custom_provider_entry({k: v for k, v in cfg.items() if k != "provider_key"},
@@ -1465,7 +1465,7 @@ def _creds_for_switched_provider(st: _Switch) -> Optional[ModelSwitchResult]:
         # one. A built-in label (anthropic, openai, …) must NOT get the alias URL: its resolver
         # would pair the vendor key with the foreign host, and _apply_direct_alias_endpoint then
         # sees a same-origin credential and keeps it (#28660).
-        from hermes_cli.runtime_provider import _resolves_to_custom
+        from moor_cli.runtime_provider import _resolves_to_custom
         da = DIRECT_ALIASES.get(st.resolved_alias) if st.resolved_alias else None
         alias_url = da.base_url if da is not None and _resolves_to_custom(st.target_provider) else None
         try:
@@ -1548,7 +1548,7 @@ def _custom_endpoint_source() -> str:
         env_url = (get_secret_str("CUSTOM_BASE_URL", "") or "").strip()
         if env_url:
             return env_url
-        from hermes_cli.runtime_provider import (
+        from moor_cli.runtime_provider import (
             _config_base_url_trustworthy_for_bare_custom, _get_model_config)
         model_cfg = _get_model_config() or {}
         base = model_cfg.get("base_url") if isinstance(model_cfg.get("base_url"), str) else ""
@@ -1594,7 +1594,7 @@ def _resolve_switch_credentials(st: _Switch) -> Optional[ModelSwitchResult]:
     # session state when the host mandates one wire protocol (e.g. gpt-5.x on api.openai.com
     # would otherwise 400 on tools+reasoning). ``codex_app_server`` is the resolver's
     # ``model.openai_runtime`` opt-in, not a wire protocol the host can mandate: keep it.
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     mandated_mode = "chat_completions" if is_actual_route(st.target_provider, st.base_url) else host_mandated_api_mode(st.base_url)
     if mandated_mode is not None and st.api_mode != "codex_app_server":
         st.api_mode = mandated_mode
@@ -1680,10 +1680,10 @@ _PROVIDER_API_MODE_OVERRIDES: dict[str, Any] = {
 
 def model_derived_api_mode(provider: str, model: str, api_key: str = "") -> Optional[str]:
     """api_mode re-derived from the FINAL model for providers that serve several wire formats behind one
-    endpoint (OpenCode Zen/Go and custom providers extending a family slug, Copilot, Nous); None when the
+    endpoint (OpenCode Zen/Go and custom providers extending a family slug, Copilot, Moor); None when the
     provider's wire is fixed by its endpoint. A persisted api_mode from an earlier model of such a provider
     is never authoritative — resume paths must call this instead of honoring the row (#96066)."""
-    from hermes_cli.models import opencode_provider_family
+    from moor_cli.models import opencode_provider_family
     key = str(provider or "").strip().lower()
     override = _PROVIDER_API_MODE_OVERRIDES.get(opencode_provider_family(key) or key)
     return override(key, model, api_key) if override is not None else None
@@ -1823,7 +1823,7 @@ def persist_model_selection(result: ModelSwitchResult, config_path: Any = None) 
     user set there (``model_slots``, ``model_fallback``, ...). ``should_clear_context_pin`` can do
     cold-start disk I/O — async callers run this on a worker thread."""
     from pathlib import Path
-    from hermes_cli.config import get_config_path, read_user_config_raw
+    from moor_cli.config import get_config_path, read_user_config_raw
     from utils import atomic_roundtrip_yaml_update
     path = Path(config_path) if config_path else get_config_path()
     for key, value in model_selection_config_updates(result, read_user_config_raw(path).get("model")).items():

@@ -13,7 +13,7 @@ import type {
   DesktopUpdateStage,
   DesktopUpdateStatus,
   DesktopVersionInfo,
-  HermesConnection
+  MoorConnection
 } from '@/global'
 import { checkMoorUpdate, getActionStatus, updateMoor } from '@/moor'
 import { translateNow } from '@/i18n'
@@ -26,7 +26,7 @@ import type { BackendUpdateCheckResponse } from '@/types/moor'
 
 /** Keyed per retired-channel revision: a new retirement (or a revision bump on
  *  the same channel) re-shows the notice, a plain re-check never does. */
-const DISCONTINUED_DISMISS_KEY = 'hermes:discontinued-notice-dismissed-for'
+const DISCONTINUED_DISMISS_KEY = 'moor:discontinued-notice-dismissed-for'
 const DISCONTINUED_TOAST_ID = 'desktop-build-discontinued'
 
 export interface UpdateApplyState {
@@ -481,7 +481,7 @@ export async function refreshDesktopVersion(): Promise<DesktopVersionInfo | null
   // as an unhandled promise rejection in the renderer. Swallow it.
   try {
     const connection = $connection.get()
-    const next = await window.hermesDesktop?.getVersion?.({ ...connectionScoped(), ...profileScoped() })
+    const next = await window.moorDesktop?.getVersion?.({ ...connectionScoped(), ...profileScoped() })
 
     if ($connection.get() !== connection) {
       return null
@@ -599,7 +599,7 @@ export async function applyUpdates(opts: DesktopUpdateApplyOptions = {}): Promis
     return { ok: false, error: 'retirement-blocked' }
   }
 
-  const bridge = window.hermesDesktop?.updates
+  const bridge = window.moorDesktop?.updates
 
   if (!bridge) {
     return { ok: false, error: 'unavailable', message: 'Desktop bridge unavailable.' }
@@ -619,8 +619,8 @@ export async function applyUpdates(opts: DesktopUpdateApplyOptions = {}): Promis
         ...IDLE,
         applying: false,
         stage: 'manual',
-        message: result.message ?? result.command ?? 'hermes update',
-        command: result.command ?? 'hermes update'
+        message: result.message ?? result.command ?? 'moor update',
+        command: result.command ?? 'moor update'
       })
 
       return result
@@ -1141,7 +1141,7 @@ let connectionUnsub: (() => void) | null = null
 let lastConnectionMode: string | undefined
 
 export const BACKGROUND_UPDATE_CHECK_MS = 24 * 60 * 60 * 1000
-const FOCUS_RECHECK_KEY = 'hermes.updates.last-passive-check'
+const FOCUS_RECHECK_KEY = 'moor.updates.last-passive-check'
 
 function passiveCheckDue(now: number): boolean {
   const last = Number(storedString(FOCUS_RECHECK_KEY) ?? 0)
@@ -1175,7 +1175,7 @@ export function startUpdatePoller(): void {
   // The poller starts at mount, before the gateway connects — so the first
   // backend check above sees mode≠remote and no-ops. Re-check once the
   // connection resolves to remote.
-  connectionUnsub = $connection.subscribe((conn: HermesConnection | null): void => {
+  connectionUnsub = $connection.subscribe((conn: MoorConnection | null): void => {
     if (conn?.mode === lastConnectionMode) {
       return
     }

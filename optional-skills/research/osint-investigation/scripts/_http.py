@@ -13,7 +13,7 @@ import urllib.request
 
 DEFAULT_UA = (
     "moor-osint-investigation/0.2 "
-    "(+https://github.com/NousResearch/hermes-agent; "
+    "(+https://github.com/thisismamad-n/Moor; "
     "set MOOR_OSINT_UA env var to identify yourself per "
     "Wikimedia / SEC fair-use guidance)"
 )

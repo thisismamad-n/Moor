@@ -57,7 +57,7 @@ def _terminal_backend_rows() -> List[Dict[str, str]]:
 def _probe_docker_backend(_cfg) -> tuple:
     """Health-check the docker terminal backend the same way the agent resolves it.
 
-    ``find_docker()`` honors ``HERMES_DOCKER_BINARY``, then ``docker`` / ``podman``
+    ``find_docker()`` honors ``MOOR_DOCKER_BINARY``, then ``docker`` / ``podman``
     on PATH. The probe uses ``version`` (not ``info --format {{.ServerVersion}}``)
     because Podman has no ServerVersion field and the agent already probes with
     ``version``.
@@ -172,8 +172,8 @@ def _resolve_toolset_model_plugin(ts_key: str, provider_row: dict) -> Optional[s
 
 def _toolset_model_catalog(ts_key: str, plugin_name: str, config: dict):
     """Return ``(catalog_dict, default_model)`` for a toolset's plugin backend or, for an image row's
-    ``imagegen_backend`` (``fal``, the managed ``nous`` union), that backend's catalog."""
-    from hermes_cli.tools_config import IMAGEGEN_BACKENDS, _plugin_image_gen_catalog, _plugin_video_gen_catalog
+    ``imagegen_backend`` (``fal``, the managed ``moor`` union), that backend's catalog."""
+    from moor_cli.tools_config import IMAGEGEN_BACKENDS, _plugin_image_gen_catalog, _plugin_video_gen_catalog
 
     if ts_key == "image_gen":
         backend = IMAGEGEN_BACKENDS.get(plugin_name)

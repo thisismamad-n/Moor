@@ -25,7 +25,7 @@ def test_dashboard_service_resets_home(
     privileges, so HOME-anchored state (discord lockfile, XDG dirs) doesn't
     try to write to /root (the /init context's HOME).
 
-    Start the container with HERMES_DASHBOARD=1 and verify the running
+    Start the container with MOOR_DASHBOARD=1 and verify the running
     dashboard process has HOME=/opt/data in its real environment.
 
     Since the dashboard requires an auth provider on non-loopback binds,
@@ -38,7 +38,7 @@ def test_dashboard_service_resets_home(
     # /proc/<pid>/environ (the real runtime environment, not the script text).
     ok, out = poll_container(
         container_name,
-        'pid=$(pgrep -f "hermes dashboard" | head -1); '
+        'pid=$(pgrep -f "moor dashboard" | head -1); '
         '[ -n "$pid" ] && tr "\\0" "\\n" < /proc/$pid/environ | grep "^HOME="',
         deadline_s=60.0,
     )

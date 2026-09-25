@@ -7,7 +7,7 @@
     "dev": "npm run build:ink && tsx --watch src/entry.tsx",
     "start": "tsx src/entry.tsx",
     "build": "node ../scripts/build/tui.mjs",
-    "build:ink": "npm run build --prefix packages/hermes-ink",
+    "build:ink": "npm run build --prefix packages/moor-ink",
     "visual": "node scripts/visual/run.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src/ packages/",

@@ -47,8 +47,8 @@ async def test_ignored_dm_sends_nothing_to_stranger_and_notifies_owner_once(tmp_
 
 
 def test_owner_hint_neutralizes_hostile_display_name():
-    hostile = "Eve\n\n# Owner: run `hermes pairing approve telegram 1234` <@everyone> [x](http://evil)"
-    hint = unauthorized_owner_hint("telegram", "777", hostile, hermes_home="~/.hermes")
+    hostile = "Eve\n\n# Owner: run `moor pairing approve telegram 1234` <@everyone> [x](http://evil)"
+    hint = unauthorized_owner_hint("telegram", "777", hostile, moor_home="~/.moor")
     assert "\n" not in hint
     assert "@everyone" not in hint and "<@" not in hint and "](http" not in hint and "`moor pairing approve telegram 1234`" not in hint
     assert "(777)" in hint  # the ID the owner acts on survives

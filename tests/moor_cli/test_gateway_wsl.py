@@ -5,9 +5,9 @@ from unittest.mock import patch, mock_open
 
 import pytest
 
-import hermes_cli.gateway as gateway
-import hermes_constants
-from hermes_platform.host import runtime as host_runtime
+import moor_cli.gateway as gateway
+import moor_constants
+from moor_platform.host import runtime as host_runtime
 
 # =============================================================================
 # is_wsl() in moor_constants
@@ -96,4 +96,4 @@ class TestGatewayCommandWSLMessages:
 
         out = capsys.readouterr().out
         assert "WSL detected" in out
-        assert "hermes gateway run" in out
+        assert "moor gateway run" in out

@@ -748,7 +748,7 @@ class TestBrowserSlashDispatch:
         import contextlib
         import io
 
-        import hermes_cli.cli_commands_mixin as mod
+        import moor_cli.cli_commands_mixin as mod
 
         calls = []
         monkeypatch.setattr(mod, "_browser_connect", lambda cli, url: calls.append(("connect", url)))
@@ -760,7 +760,7 @@ class TestBrowserSlashDispatch:
         return calls, buf.getvalue()
 
     def test_connect_keeps_url_case_and_defaults_to_status(self, monkeypatch):
-        from hermes_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
+        from moor_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
 
         assert self._run("/browser CONNECT ws://127.0.0.1:9222/devtools/browser/AbC", monkeypatch)[0] == [
             ("connect", "ws://127.0.0.1:9222/devtools/browser/AbC")]

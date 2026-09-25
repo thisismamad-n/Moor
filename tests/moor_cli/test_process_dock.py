@@ -13,8 +13,8 @@ def _wait(predicate, timeout=5.0):
 
 
 def test_dock_paints_processes_under_agents_and_retires_finished_rows(monkeypatch):
-    from hermes_cli import cli_process_dock
-    from hermes_cli.cli_subagent_monitor import SubagentMonitor
+    from moor_cli import cli_process_dock
+    from moor_cli.cli_subagent_monitor import SubagentMonitor
     from tools import delegate_tool_registry as registry
     from tools.process_registry import process_registry
 
@@ -54,7 +54,7 @@ def test_dock_paints_processes_under_agents_and_retires_finished_rows(monkeypatc
 
 
 def test_monitor_controls_stop_processes_and_never_steer_them():
-    from hermes_cli.cli_subagent_monitor import SubagentMonitor
+    from moor_cli.cli_subagent_monitor import SubagentMonitor
     from tools.process_registry import process_registry
 
     slow = process_registry.spawn_local(command="sleep 30", cwd='.', task_id='t', owner_task_id='t', session_key='')

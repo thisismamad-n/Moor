@@ -9,7 +9,7 @@ description: "How to build an image-generation backend plugin for Moor Agent"
 Image-gen provider plugins register a backend that services every `image_generate` tool call — DALL·E, gpt-image, Grok, Flux, Imagen, Stable Diffusion, fal, Replicate, a local ComfyUI rig, anything. Built-in providers (OpenAI, OpenAI-Codex, xAI, FAL, Krea, DeepInfra, OpenRouter, Meta Model API) all ship as plugins. You can add a new one, or override a bundled one, by dropping a directory into `plugins/image_gen/<name>/`.
 
 :::tip
-Image-gen is one of several **backend plugins** Hermes supports. The others (with more specialized ABCs) are [Memory Provider Plugins](./memory-provider-plugin.md), [Context Engine Plugins](./context-engine-plugin.md), and [Model Provider Plugins](./model-provider-plugin.md). General tool/hook/CLI plugins live in [Build a Hermes Plugin](./plugins/index.md).
+Image-gen is one of several **backend plugins** Moor supports. The others (with more specialized ABCs) are [Memory Provider Plugins](./memory-provider-plugin.md), [Context Engine Plugins](./context-engine-plugin.md), and [Model Provider Plugins](./model-provider-plugin.md). General tool/hook/CLI plugins live in [Build a Moor Plugin](./plugins/index.md).
 :::
 
 ## How discovery works
@@ -276,8 +276,8 @@ Drop a user plugin at `~/.moor/plugins/image_gen/<name>/` with the same `name` p
 ## Testing
 
 ```bash
-export HERMES_HOME=$HOME/.hermes/cache/scratch/hermes-imggen-test
-mkdir -p $HERMES_HOME/plugins/image_gen/my-backend
+export MOOR_HOME=$HOME/.moor/cache/scratch/moor-imggen-test
+mkdir -p $MOOR_HOME/plugins/image_gen/my-backend
 # …copy __init__.py + plugin.yaml into that dir…
 
 export MY_BACKEND_API_KEY=your-test-key
@@ -313,4 +313,4 @@ my-backend-imggen = "my_backend_imggen_package"
 
 - [Image Generation](../user-guide/features/image-generation.md) — user-facing feature documentation
 - [Plugins overview](../user-guide/features/plugins.md) — all plugin types at a glance
-- [Build a Hermes Plugin](./plugins/index.md) — general tools/hooks/slash commands guide
+- [Build a Moor Plugin](./plugins/index.md) — general tools/hooks/slash commands guide

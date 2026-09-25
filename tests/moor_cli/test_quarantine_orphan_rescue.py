@@ -27,9 +27,9 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import _early_recovery as er
-from hermes_cli import main as cli_main
-from hermes_cli import main_install_repair
+from moor_cli import _early_recovery as er
+from moor_cli import main as cli_main
+from moor_cli import main_install_repair
 
 
 def _make_scripts_dir(tmp_path: Path) -> Path:

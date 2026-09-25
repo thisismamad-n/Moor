@@ -89,7 +89,7 @@ export function cleanStaleAppOutDir(appOutDir) {
  * safe fallback and matches pre-#69179 behavior exactly.
  */
 /** @param {string | null | undefined} appOutDir @param {string} [productExeName] @returns {boolean} */
-export function preserveRollbackBackup(appOutDir, productExeName = 'Hermes.exe') {
+export function preserveRollbackBackup(appOutDir, productExeName = 'Moor.exe') {
   if (!appOutDir || typeof appOutDir !== 'string' || !existsSync(appOutDir)) {
     return false
   }
@@ -138,6 +138,6 @@ export default async function beforePack(context) {
   if (!platform || !arch) return
   const app = context.packager.projectDir
   const source = path.resolve(app, '../..')
-  const nativeDeps = process.env.HERMES_PREPARED_NATIVE_DEPS || path.join(app, 'build/native-deps')
+  const nativeDeps = process.env.MOOR_PREPARED_NATIVE_DEPS || path.join(app, 'build/native-deps')
   copyNativeInputs({ source, nativeDeps, out: path.join(app, 'dist/node_modules'), platform, arch })
 }

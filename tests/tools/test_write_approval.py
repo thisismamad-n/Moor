@@ -33,7 +33,7 @@ def _set_approval(subsystem, enabled):
 # Config resolution
 # ---------------------------------------------------------------------------
 
-def test_list_pending_skips_non_dict_record(hermes_home):
+def test_list_pending_skips_non_dict_record(moor_home):
     """A parseable-but-non-object pending file must be skipped, not crash the sort."""
     from tools import write_approval as wa
     wa.stage_write("memory", {"action": "add", "target": "user", "content": "ok"},
@@ -72,7 +72,7 @@ def test_memory_gate_off_allows_write(moor_home):
     assert r["entry_count"] == 1
     assert wa.pending_count("memory") == 0
 
-def test_cli_memory_approve_without_live_agent_uses_fresh_store(hermes_home, capsys):
+def test_cli_memory_approve_without_live_agent_uses_fresh_store(moor_home, capsys):
     """#46783: ``/memory approve`` from a context with no live agent (e.g. the
     Desktop GUI) passed ``memory_store=None`` into the shared handler, which
     returned "memory store unavailable" and applied nothing. The CLI handler must
@@ -101,7 +101,7 @@ def test_cli_memory_approve_without_live_agent_uses_fresh_store(hermes_home, cap
     reloaded = MemoryStore(); reloaded.load_from_disk()
     assert any("remember the launch date" in e for e in reloaded.memory_entries)
 
-def test_load_on_disk_store_honors_configured_limits_and_permissions(hermes_home, monkeypatch):
+def test_load_on_disk_store_honors_configured_limits_and_permissions(moor_home, monkeypatch):
     """Fresh approval stores must match the live agent's limits and target gates."""
     from tools.memory_tool import MemoryStore, load_on_disk_store
 
@@ -139,8 +139,8 @@ def test_load_on_disk_store_honors_configured_limits_and_permissions(hermes_home
 # Shared command handler
 # ---------------------------------------------------------------------------
 
-def test_handle_approve_all(hermes_home):
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+def test_handle_approve_all(moor_home):
+    from moor_cli.write_approval_commands import handle_pending_subcommand
     from tools.memory_tool import MemoryStore
     from tools import write_approval as wa
     store = MemoryStore(); store.load_from_disk()
@@ -153,11 +153,11 @@ def test_handle_approve_all(hermes_home):
     assert wa.pending_count("memory") == 0
     assert len(store.user_entries) == 2
 
-def test_handle_approve_surfaces_overwritten_entry(hermes_home):
+def test_handle_approve_surfaces_overwritten_entry(moor_home):
     """#117952: on the /memory approve surface a partial-entry replace must show the
     approver the FULL entry it overwrote — the store's replaced_entries field used to be
     dropped by _apply_one, so the incident path stayed silent."""
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+    from moor_cli.write_approval_commands import handle_pending_subcommand
     from tools.memory_tool import MemoryStore
     from tools import write_approval as wa
     store = MemoryStore(); store.load_from_disk()
@@ -197,10 +197,10 @@ def _review_stages_remove(shape):
 
 
 @pytest.mark.parametrize("shape", ["single", "batch"])
-def test_approve_refuses_staged_remove_whose_entry_changed(hermes_home, shape):
+def test_approve_refuses_staged_remove_whose_entry_changed(moor_home, shape):
     """Approval re-ran the staged old_text search against the file as it is THEN, so it
     deleted the newer entry the live agent had written in place, which the approver never saw."""
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+    from moor_cli.write_approval_commands import handle_pending_subcommand
     from tools.memory_tool import load_on_disk_store, memory_tool
     from tools import write_approval as wa
     store, pid = _review_stages_remove(shape)
@@ -217,9 +217,9 @@ def test_approve_refuses_staged_remove_whose_entry_changed(hermes_home, shape):
 
 
 @pytest.mark.parametrize("shape", ["single", "batch"])
-def test_approve_names_the_entry_a_remove_deleted(hermes_home, shape):
+def test_approve_names_the_entry_a_remove_deleted(moor_home, shape):
     """Approve listed what a replace overwrote but was silent about what a remove deleted."""
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+    from moor_cli.write_approval_commands import handle_pending_subcommand
     from tools.memory_tool import load_on_disk_store
     from tools import write_approval as wa
     _store, pid = _review_stages_remove(shape)
@@ -228,10 +228,10 @@ def test_approve_names_the_entry_a_remove_deleted(hermes_home, shape):
     assert _REVIEWED in out
 
 
-def test_approve_refuses_unpinned_legacy_remove(hermes_home):
+def test_approve_refuses_unpinned_legacy_remove(moor_home):
     """A record staged before removes were pinned to their full entry has no verifiable target,
     so approve refuses it (keeping the record) instead of replaying its old_text search."""
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+    from moor_cli.write_approval_commands import handle_pending_subcommand
     from tools.memory_tool import load_on_disk_store
     from tools import write_approval as wa
     _store, pid = _review_stages_remove("single")
@@ -258,8 +258,8 @@ def test_handle_approval_on(moor_home):
     assert captured["enabled"] is True
     assert "on" in out
 
-def test_handle_approval_off(hermes_home):
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+def test_handle_approval_off(moor_home):
+    from moor_cli.write_approval_commands import handle_pending_subcommand
     from tools import write_approval as wa
     captured = {}
     out = handle_pending_subcommand(
@@ -281,7 +281,7 @@ def approval_callback_cleanup():
     from tools.terminal_tool import set_approval_callback
     set_approval_callback(None)
 
-def test_memory_inline_approve_writes(hermes_home, approval_callback_cleanup):
+def test_memory_inline_approve_writes(moor_home, approval_callback_cleanup):
     from tools.memory_tool import memory_tool, MemoryStore
     from tools.terminal_tool import set_approval_callback
     from tools import write_approval as wa
@@ -303,7 +303,7 @@ def test_memory_inline_approve_writes(hermes_home, approval_callback_cleanup):
     assert len(calls) == 1
     assert "approved fact" in calls[0][0]
 
-def test_memory_inline_deny_blocks(hermes_home, approval_callback_cleanup):
+def test_memory_inline_deny_blocks(moor_home, approval_callback_cleanup):
     from tools.memory_tool import memory_tool, MemoryStore
     from tools.terminal_tool import set_approval_callback
     from tools import write_approval as wa
@@ -317,7 +317,7 @@ def test_memory_inline_deny_blocks(hermes_home, approval_callback_cleanup):
     assert store.memory_entries == []
     assert wa.pending_count("memory") == 0  # denied, not staged
 
-def test_memory_invalid_params_rejected_before_staging(hermes_home):
+def test_memory_invalid_params_rejected_before_staging(moor_home):
     # Param validation must run BEFORE the gate so a broken write is rejected
     # immediately instead of staged and failing at approve time.
     from tools.memory_tool import memory_tool, MemoryStore

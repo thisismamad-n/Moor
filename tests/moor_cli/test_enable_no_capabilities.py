@@ -2,9 +2,9 @@
 from unittest.mock import MagicMock
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from tests.hermes_cli.plugin_worker_support import (
+from tests.moor_cli.plugin_worker_support import (
     isolated_python as isolated_python,
     plugin_world as plugin_world,
 )
@@ -34,7 +34,7 @@ def test_enable_consent(plugin_world, monkeypatch, caps, flag, existing, answer,
         "plugins": {"entries": {"hook-only-probe": {"allow_tool_override": existing}}}
     }
     (home / "config.yaml").write_text(yaml.safe_dump(initial), encoding="utf-8")
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
 
     console = MagicMock()
     console.input.return_value = answer

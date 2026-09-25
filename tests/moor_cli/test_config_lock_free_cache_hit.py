@@ -9,7 +9,7 @@ On a gateway that lands on the event loop: the per-message hook path
 (``invoke_hook`` -> ``_resolve_hook_callback_timeout``) reads config, so one
 background config write stalls every inbound message for its whole duration.
 
-These tests drive the real functions against a temp HERMES_HOME -- no mocks of
+These tests drive the real functions against a temp MOOR_HOME -- no mocks of
 the thing under test, no source reading.
 """
 
@@ -27,15 +27,15 @@ MAX_BLOCKED_READ_SECS = 2.0
 
 @pytest.fixture()
 def config_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
     lines = ["plugins:", "  hook_callback_timeout: 30", "agent:", "  max_turns: 500"]
     for i in range(100):
         lines += [f"section_{i}:", f"  key_a: value_{i}"]
     (home / "config.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
-    from hermes_cli import config as cfgmod
+    from moor_cli import config as cfgmod
 
     cfgmod._LOAD_CONFIG_CACHE.clear()
     cfgmod._RAW_CONFIG_CACHE.clear()
@@ -47,7 +47,7 @@ def config_home(tmp_path, monkeypatch):
 def _time_cached_read_under_held_lock(reader):
     """Prime ``reader`` (lock-free), then time one more call while another thread holds
     ``_CONFIG_LOCK``. Returns ``(result, elapsed_seconds)``."""
-    from hermes_cli import config as cfgmod
+    from moor_cli import config as cfgmod
 
     reader()  # prime the cache
 
@@ -73,7 +73,7 @@ def _time_cached_read_under_held_lock(reader):
 
 
 def test_cached_read_completes_while_another_thread_holds_the_config_lock(config_home):
-    from hermes_cli import config as cfgmod
+    from moor_cli import config as cfgmod
 
     cfg, elapsed = _time_cached_read_under_held_lock(cfgmod.load_config_readonly)
 
@@ -86,7 +86,7 @@ def test_cached_read_completes_while_another_thread_holds_the_config_lock(config
 
 def test_cached_raw_read_completes_while_another_thread_holds_the_config_lock(config_home):
     """Twin of the load_config test for the sibling ``read_raw_config`` fast path."""
-    from hermes_cli import config as cfgmod
+    from moor_cli import config as cfgmod
 
     raw, elapsed = _time_cached_read_under_held_lock(cfgmod.read_raw_config_readonly)
 

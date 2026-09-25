@@ -8,7 +8,7 @@ import time
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 
 def _write_auth_store(tmp_path, payload: dict) -> None:
@@ -194,7 +194,7 @@ def test_auth_add_migrates_display_name_derived_legacy_pool_key(
         api_key = "gsk-new"
         label = "new"
 
-    with patch("hermes_cli.models.clear_provider_models_cache"):
+    with patch("moor_cli.models.clear_provider_models_cache"):
         auth_add_command(_Args())
 
     payload = json.loads((moor_home / "auth.json").read_text(encoding="utf-8"))
@@ -533,15 +533,15 @@ def _codex_jwt(email: str, account_id: str, subject: str) -> str:
 
 
 def _add_codex_twice(tmp_path, monkeypatch, capsys, second_token: str) -> str:
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     codex_login = {"base_url": "https://chatgpt.com/backend-api/codex", "last_refresh": "2026-09-01T00:00:00Z"}
     logins = iter([
         {"tokens": {"access_token": _codex_jwt("me@example.com", "acct-A", "user-1"), "refresh_token": "rt-1"}, **codex_login},
         {"tokens": {"access_token": second_token, "refresh_token": "rt-2"}, **codex_login},
     ])
-    monkeypatch.setattr("hermes_cli.auth._codex_device_code_login", lambda: next(logins))
-    from hermes_cli.auth_commands import auth_add_command
+    monkeypatch.setattr("moor_cli.auth._codex_device_code_login", lambda: next(logins))
+    from moor_cli.auth_commands import auth_add_command
 
     class _Args:
         provider = "openai-codex"
@@ -556,7 +556,7 @@ def _add_codex_twice(tmp_path, monkeypatch, capsys, second_token: str) -> str:
 
 
 def test_auth_add_codex_warns_when_login_is_same_account_as_pooled_entry(tmp_path, monkeypatch, capsys):
-    """A second ``hermes auth add openai-codex`` for the SAME OpenAI account must tell the user
+    """A second ``moor auth add openai-codex`` for the SAME OpenAI account must tell the user
     which existing credential it duplicates (#47096): the two logins share one token family and
     the provider revokes the older one, so the extra entry buys no quota. Different accounts
     get no warning — they rotate independently.
@@ -833,7 +833,7 @@ def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, mo
 
     logout_command(SimpleNamespace(provider="openai-codex"))
 
-    config_text = (hermes_home / "config.yaml").read_text()
+    config_text = (moor_home / "config.yaml").read_text()
     assert "provider: auto" in config_text
     assert "base_url: https://openrouter.ai/api/v1" in config_text
 
@@ -889,9 +889,9 @@ def test_seed_from_singletons_respects_moor_pkce_suppression(tmp_path, monkeypat
     moor_home.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("MOOR_HOME", str(moor_home))
 
-    import hermes_yaml as yaml
-    (hermes_home / "config.yaml").write_text(yaml.safe_dump({"model": {"provider": "anthropic", "model": "claude"}}))
-    (hermes_home / "auth.json").write_text(json.dumps({
+    import moor_yaml as yaml
+    (moor_home / "config.yaml").write_text(yaml.safe_dump({"model": {"provider": "anthropic", "model": "claude"}}))
+    (moor_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
         "suppressed_sources": {"anthropic": ["moor_pkce"]},
@@ -991,7 +991,7 @@ def test_auth_remove_env_seeded_dotenv_with_bom_no_shell_hint(tmp_path, monkeypa
     auth_remove_command(SimpleNamespace(provider="deepseek", target="1"))
 
     out = capsys.readouterr().out
-    assert "DEEPSEEK_API_KEY" not in (hermes_home / ".env").read_text(encoding="utf-8-sig")
+    assert "DEEPSEEK_API_KEY" not in (moor_home / ".env").read_text(encoding="utf-8-sig")
     assert "still set in your shell environment" not in out
 
 

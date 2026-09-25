@@ -34,8 +34,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_state import repair_state_db_schema
-from hermes_state_repair import _connect_repair_durable
+from moor_state import repair_state_db_schema
+from moor_state_repair import _connect_repair_durable
 
 
 def _make_db(tmp_path: Path) -> Path:
@@ -67,7 +67,7 @@ def test_connect_repair_durable_sets_macos_barriers(tmp_path: Path) -> None:
         conn.close()
 
     # SQLite: 0=OFF, 1=NORMAL, 2=FULL, 3=EXTRA. NORMAL is what tore the
-    # b-tree pages; FULL is what _enforce_macos_synchronous_full sets.
+    # b-tree pages; FULL is what _enforce_macos_synchromoor_full sets.
     assert synchronous == 2, (
         f"repair connection opened with synchronous={synchronous}; on "
         "Darwin this lets REINDEX/VACUUM leave half-written b-tree pages"

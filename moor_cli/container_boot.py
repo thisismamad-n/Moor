@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Sequence
 
-from hermes_cli.gateway_multiplex_s6 import AUTOSTART_STATES as _AUTOSTART_STATES, fold_named_slot_intent
+from moor_cli.gateway_multiplex_s6 import AUTOSTART_STATES as _AUTOSTART_STATES, fold_named_slot_intent
 
 log = logging.getLogger(__name__)
 
@@ -66,9 +66,9 @@ def _slot_action(profile: str, profile_dir: Path, prior_state: str | None, start
                            folded_into_root=folded_into_root)
 
 
-def _named_profile_dirs(hermes_home: Path) -> list[tuple[str, Path]]:
-    """Every real named profile under ``$HERMES_HOME/profiles`` (``SOUL.md`` is the marker)."""
-    profiles_root = hermes_home / "profiles"
+def _named_profile_dirs(moor_home: Path) -> list[tuple[str, Path]]:
+    """Every real named profile under ``$MOOR_HOME/profiles`` (``SOUL.md`` is the marker)."""
+    profiles_root = moor_home / "profiles"
     if not profiles_root.is_dir():
         return []
     found: list[tuple[str, Path]] = []
@@ -98,7 +98,7 @@ def reconcile_profile_gateways(
     review).
     """
     actions: list[ReconcileAction] = []
-    # ONE gateway per container: named slots are registered (so `hermes -p X gateway start` has a
+    # ONE gateway per container: named slots are registered (so `moor -p X gateway start` has a
     # target and `s6-svstat` can report them) but are NEVER booted from their persisted run intent.
     # This is the s6 leg of the multiplex-only convergence: an image upgraded from a release that
     # booted N per-profile slots comes back up with one multiplexing root gateway and no manual
@@ -106,15 +106,15 @@ def reconcile_profile_gateways(
     #
     # It used to be gated on `gateway.multiplex_profiles`, which made the UNSET default (on) boot
     # the slots anyway — the container shipped the opt-out topology by accident. The key is retired
-    # as a topology switch (hermes_cli/gateway_multiplex_mode.py), so there is nothing to read.
-    named = [(name, entry, _read_desired_state(entry)) for name, entry in _named_profile_dirs(hermes_home)]
+    # as a topology switch (moor_cli/gateway_multiplex_mode.py), so there is nothing to read.
+    named = [(name, entry, _read_desired_state(entry)) for name, entry in _named_profile_dirs(moor_home)]
 
     # A legacy `gateway run` container with no state yet seeds `running` (pre-s6 behavior).
     legacy_default_state = _maybe_migrate_legacy_gateway_run_state(
-        hermes_home, container_argv=container_argv, dry_run=dry_run)
-    default_prior_state = legacy_default_state or _read_desired_state(hermes_home)
+        moor_home, container_argv=container_argv, dry_run=dry_run)
+    default_prior_state = legacy_default_state or _read_desired_state(moor_home)
     # The root slot INHERITS every named slot's autostart intent, because it is the one process
-    # that serves them. Without this an image only ever driven as `hermes -p coder gateway start`
+    # that serves them. Without this an image only ever driven as `moor -p coder gateway start`
     # booted with ZERO gateways: it has no root state (or "stopped"), every named slot is now
     # registered down unconditionally, and every action reported "registered" — a container that
     # looks healthy while nothing is listening.
@@ -125,7 +125,7 @@ def reconcile_profile_gateways(
     if not dry_run:
         _cleanup_stale_runtime_files(moor_home)
         _register_service(scandir, "default", start=default_should_start)
-    actions.append(_slot_action("default", hermes_home, default_prior_state, default_should_start,
+    actions.append(_slot_action("default", moor_home, default_prior_state, default_should_start,
                                 folded_into_root=bool(folded)))
 
     for name, entry, prior_state in named:
@@ -357,7 +357,7 @@ def main() -> int:
 
     moor_home = Path(os.environ.get("MOOR_HOME", "/opt/data"))
     scandir = Path(os.environ.get("S6_PROFILE_GATEWAY_SCANDIR", "/run/service"))
-    actions = reconcile_profile_gateways(hermes_home=hermes_home, scandir=scandir)
+    actions = reconcile_profile_gateways(moor_home=moor_home, scandir=scandir)
     folded = [a.profile for a in actions if a.profile != "default" and a.folded_into_root]
     if folded:
         print(boot_notice(folded))

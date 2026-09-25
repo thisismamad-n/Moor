@@ -14,7 +14,7 @@ const { saveBotMeta, storage } = vi.hoisted(() => ({
   storage: new Map<string, unknown>()
 }))
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { atom } = await import('nanostores')
 
   return { atom, host: {} }

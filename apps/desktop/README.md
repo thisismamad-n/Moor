@@ -1,10 +1,10 @@
 # Moor Desktop ☤
 
 <p align="center">
-  <a href="https://github.com/NousResearch/hermes-agent/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
+  <a href="https://github.com/thisismamad-n/Moor/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
   <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
   <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://github.com/thisismamad-n/Moor/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
 </p>
 
 **The native desktop app for [Moor Agent](../../README.md) — the self-improving AI agent from [Moor inc.](https://nousresearch.com).** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
@@ -44,7 +44,7 @@ Update through the owner of the installed artifact: Windows App Installer for
 sideload MSIX, Microsoft Store for Store packages, and `electron-updater` for
 macOS bundles. Source-built apps use the checkout update handoff.
 
-`hermes update` updates managed source checkouts; it does not rewrite a bundled
+`moor update` updates managed source checkouts; it does not rewrite a bundled
 payload. See [BUILDING.md](BUILDING.md) for package and release contracts.
 
 ---
@@ -52,8 +52,8 @@ payload. See [BUILDING.md](BUILDING.md) for package and release contracts.
 ## Screenshot shortcut (macOS)
 
 Enable **Settings → Keyboard Shortcuts → Screenshot shortcut**, then press the
-left and right Command keys together in any app. Hermes captures that app's
-frontmost window and attaches the image to the last-active Hermes composer,
+left and right Command keys together in any app. Moor captures that app's
+frontmost window and attaches the image to the last-active Moor composer,
 including split-pane chats. It does not send the draft or capture the whole
 screen. Release both keys before taking another screenshot.
 
@@ -86,10 +86,10 @@ npm run dev          # Vite renderer + Electron, which boots the Python backend
 Point the app at a specific source checkout, or sandbox it away from your real config:
 
 ```bash
-# throwaway HERMES_HOME, separate Electron userData, distinct app name to avoid the single-instance lock
+# throwaway MOOR_HOME, separate Electron userData, distinct app name to avoid the single-instance lock
 ../../scripts/dev-sandbox.sh npm run dev
-HERMES_DESKTOP_HERMES_ROOT=/path/to/clone npm run dev
-HERMES_HOME=$HOME/.hermes/cache/scratch/throwaway npm run dev
+MOOR_DESKTOP_MOOR_ROOT=/path/to/clone npm run dev
+MOOR_HOME=$HOME/.moor/cache/scratch/throwaway npm run dev
 npm run dev:fake-boot   # exercise the startup overlay with deterministic delays
 ```
 
@@ -111,7 +111,7 @@ publishes Windows and macOS packages; Linux desktop legs are disabled.
 
 The bundled app carries the Electron shell, native React chat surface, and
 local agent payload. It runs the payload directly from resources. User data
-lives in `HERMES_HOME` outside the app. Bootstrap builds instead provision a
+lives in `MOOR_HOME` outside the app. Bootstrap builds instead provision a
 source installation; Light is a remote-only variant without a local runtime.
 
 The app has three boundaries:
@@ -126,10 +126,10 @@ The app has three boundaries:
 
 A bundled artifact uses its payload. If that payload is unusable, the app
 reports damage rather than installing a second checkout. It does not adopt
-an arbitrary `hermes` command on PATH or a system Python installation.
+an arbitrary `moor` command on PATH or a system Python installation.
 
 Non-bundled builds can use the explicit source-root override, development
-checkout, completed managed install, or `HERMES_DESKTOP_HERMES` deployment
+checkout, completed managed install, or `MOOR_DESKTOP_MOOR` deployment
 override before offering bootstrap. Candidates are probed before use.
 A runtime that predates `serve` falls back to headless
 `dashboard --no-open`. This is compatibility for the backend command only and
@@ -252,7 +252,7 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\moor\moor-agent\venv"
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📖 [Documentation](https://hermes-agent.nousresearch.com/docs/)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/thisismamad-n/Moor/issues)
 
 ---
 

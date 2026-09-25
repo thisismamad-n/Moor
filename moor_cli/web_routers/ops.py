@@ -29,30 +29,30 @@ from moor_cli.web_models import (
     BackupRequest, CredentialPoolAdd, HookCreate, HookDelete, ImportRequest, MemoryProviderSelect,
     MemoryReset, PairingApprove, PairingRevoke, WebhookCreate, WebhookEnabledToggle,
 )
-from hermes_cli.web_routers._common import (
+from moor_cli.web_routers._common import (
     config_scoped_to_thread, config_write_scope, destructive_profile, http_failure,
     spawn_profile_action,
 )
-from hermes_cli.web_routers.files import stream_upload_to_path
+from moor_cli.web_routers.files import stream_upload_to_path
 
 _log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
 
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
-_discover_memory_provider_statuses = late("_discover_memory_provider_statuses", "hermes_cli.web_server_memory")
-_gateway_subcommand = late("_gateway_subcommand", "hermes_cli.web_server_gateway")
-_config_profile_scope = late("_config_profile_scope", "hermes_cli.web_server_profiles")
-_resolve_profile_dir = late("_resolve_profile_dir", "hermes_cli.web_server_profiles")
-_spawn_hermes_action = late("_spawn_hermes_action", "hermes_cli.web_server_gateway")
-_write_platform_enabled = late("_write_platform_enabled", "hermes_cli.web_server_messaging")
-get_hermes_home = late("get_hermes_home", "hermes_cli.config")
-load_config = late("load_config", "hermes_cli.config")
-save_config = late("save_config", "hermes_cli.config")
+_discover_memory_provider_statuses = late("_discover_memory_provider_statuses", "moor_cli.web_server_memory")
+_gateway_subcommand = late("_gateway_subcommand", "moor_cli.web_server_gateway")
+_config_profile_scope = late("_config_profile_scope", "moor_cli.web_server_profiles")
+_resolve_profile_dir = late("_resolve_profile_dir", "moor_cli.web_server_profiles")
+_spawn_moor_action = late("_spawn_moor_action", "moor_cli.web_server_gateway")
+_write_platform_enabled = late("_write_platform_enabled", "moor_cli.web_server_messaging")
+get_moor_home = late("get_moor_home", "moor_cli.config")
+load_config = late("load_config", "moor_cli.config")
+save_config = late("save_config", "moor_cli.config")
 
 
 def _spawn_action(argv: List[str], name: str, *, log_msg: str, prefix: str,
                   profile: Optional[str] = None) -> dict:
-    """Spawn a ``hermes -p <profile> <argv>`` action; spawn failure -> 500.
+    """Spawn a ``moor -p <profile> <argv>`` action; spawn failure -> 500.
 
     The profile reaches the child as argv (``_profile_cli_args``) — the only mechanism
     that retargets a fresh process's import-time home bindings.
@@ -154,7 +154,7 @@ def _webhook_route_summary(name: str, route: Dict[str, Any], base_url: str) -> D
 @router.get("/api/webhooks")
 async def list_webhooks(profile: Optional[str] = None):
     def _run():
-        import hermes_cli.webhook as wh
+        import moor_cli.webhook as wh
 
         base_url = wh._get_webhook_base_url()
         return {
@@ -189,7 +189,7 @@ async def enable_webhooks(profile: Optional[str] = None):
 
 @router.post("/api/webhooks")
 async def create_webhook(body: WebhookCreate, profile: Optional[str] = None):
-    import hermes_cli.webhook as wh
+    import moor_cli.webhook as wh
 
     def _enabled():
         return wh._is_webhook_enabled()
@@ -239,7 +239,7 @@ async def create_webhook(body: WebhookCreate, profile: Optional[str] = None):
 def _webhook_subs_with(name: str):
     """(module, subscriptions, key) for an existing route; 404 otherwise. Call inside the
     request's profile scope — ``_load_subscriptions`` resolves the home at call time."""
-    import hermes_cli.webhook as wh
+    import moor_cli.webhook as wh
 
     key = (name or "").strip().lower()
     subs = wh._load_subscriptions()
@@ -523,7 +523,7 @@ async def reset_memory(body: MemoryReset, profile: Optional[str] = None):
     profile = destructive_profile(profile, "POST /api/memory/reset")
 
     def _run():
-        mem_dir = get_hermes_home() / "memories"
+        mem_dir = get_moor_home() / "memories"
         deleted = []
         for fname, key in _MEMORY_FILES:
             path = mem_dir / fname
@@ -560,7 +560,7 @@ async def run_security_audit(profile: Optional[str] = None):
 def _dashboard_backup_dir(profile: Optional[str] = None) -> Path:
     """``<profile home>/backups`` — the archive belongs to the profile it backs up."""
     with _config_profile_scope(profile):
-        return get_hermes_home() / "backups"
+        return get_moor_home() / "backups"
 
 
 @router.post("/api/ops/backup")
@@ -569,7 +569,7 @@ async def run_backup(body: BackupRequest, profile: Optional[str] = None):
     output = (body.output or "").strip()
     if not output:
         stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-        archive = _dashboard_backup_dir(profile) / f"hermes-backup-{stamp}-{secrets.token_hex(4)}.zip"
+        archive = _dashboard_backup_dir(profile) / f"moor-backup-{stamp}-{secrets.token_hex(4)}.zip"
         try:
             archive.parent.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
@@ -794,7 +794,7 @@ async def list_checkpoints(profile: Optional[str] = None):
     so the UI can show what a prune reclaims; pruning itself is a spawned CLI
     action so the confirmation logic stays in one place."""
     def _run():
-        cp_dir = get_hermes_home() / "checkpoints"
+        cp_dir = get_moor_home() / "checkpoints"
         sessions = []
         total_bytes = 0
         if cp_dir.is_dir():

@@ -673,9 +673,9 @@ def _normalize_krea_model(model_id: Optional[str]) -> Optional[str]:
 def _managed_model_plugin() -> Optional[tuple]:
     """``(plugin_name, model_id)`` when the managed selection stores a Krea or Portal model, else ``None``.
 
-    The managed row writes ``provider: nous`` for three gateways; the model id says which. FAL
+    The managed row writes ``provider: moor`` for three gateways; the model id says which. FAL
     models (and an unset model) return ``None`` so the in-tree FAL path handles them. Only the
-    ``nous``/unset selection qualifies — a direct/BYO provider pick dispatches normally.
+    ``moor``/unset selection qualifies — a direct/BYO provider pick dispatches normally.
     """
     from tools.image_generation_managed import KREA, PORTAL, managed_backend_for_model
 
@@ -686,8 +686,8 @@ def _managed_model_plugin() -> Optional[tuple]:
     backend = managed_backend_for_model(model_id)
     if backend == KREA:
         return "krea", model_id
-    if backend == PORTAL and configured_provider == NOUS_MANAGED_PROVIDER:
-        return "nous", model_id
+    if backend == PORTAL and configured_provider == MOOR_MANAGED_PROVIDER:
+        return "moor", model_id
     return None
 
 
@@ -717,8 +717,8 @@ def _maybe_route_managed_model(
         if plugin_name == "krea":
             return None
         return _provider_error(
-            f"image_gen.model='{model_id}' is a Nous Portal model but the Portal image backend is not "
-            f"available. Pick another model via `hermes tools` → Image Generation.", "provider_not_registered")
+            f"image_gen.model='{model_id}' is a Moor Portal model but the Portal image backend is not "
+            f"available. Pick another model via `moor tools` → Image Generation.", "provider_not_registered")
     kwargs: Dict[str, Any] = {"prompt": prompt, "aspect_ratio": aspect_ratio, "model": model_id}
     try:
         _add_provider_kwargs(kwargs, image_url, reference_image_urls, upscale)
@@ -768,7 +768,7 @@ def _handle_image_generate(args, **kw):
     if confine_error is not None:
         return confine_error
     # Order matters: explicit plugin provider, then the model-driven managed gateways (Krea /
-    # Portal — only under the "nous"/unset selection, so BYO/direct FAL stays untouched), then FAL.
+    # Portal — only under the "moor"/unset selection, so BYO/direct FAL stays untouched), then FAL.
     sources = dict(image_url=image_url, reference_image_urls=reference_image_urls,
                    upscale=upscale if isinstance(upscale, bool) else None)
     raw = None

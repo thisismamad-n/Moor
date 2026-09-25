@@ -22,7 +22,7 @@ def test_cli_owner_deferral_and_attempt_fence(tmp_path, monkeypatch, error):
     assert refusal is None and lease is not None
     run = Mock(side_effect=error, return_value=subprocess.CompletedProcess([], 0, "", ""))
     monkeypatch.setattr(delivery, "_run_bot_chat_turn", run)
-    monkeypatch.setattr(delivery.shutil, "which", lambda _: "/bin/hermes")
+    monkeypatch.setattr(delivery.shutil, "which", lambda _: "/bin/moor")
     job = {"id": "job", "execution_id": "execution"}
     try:
         assert "queued" in delivery._deliver_to_bot_chat(job, "output", "")
@@ -74,7 +74,7 @@ def test_delivery_exception_retains_attempt_and_continues_siblings(tmp_path, mon
         return original_is_dir(self)
 
     def run(argv, env, report_path, timeout):
-        calls.append(env["HERMES_HOME"])
+        calls.append(env["MOOR_HOME"])
         return subprocess.CompletedProcess([], 0, "", "")
 
     monkeypatch.setattr(importlib.util, "find_spec", resolve_cli)
@@ -111,7 +111,7 @@ def test_pending_queue_uses_admission_order_and_keeps_claims(tmp_path, monkeypat
 
 
 def test_policy_change_settles_diagnostic_without_waiting_for_cli_owner(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session(session_id="chat", source="cli")
     db.set_session_title("chat", "Bot Chat")
@@ -137,7 +137,7 @@ def test_policy_change_settles_diagnostic_without_waiting_for_cli_owner(tmp_path
 
 
 def test_live_receipt_outcome_survives_later_suppression(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session(session_id="chat", source="tui")
     db.set_session_title("chat", "Bot Chat")
@@ -159,7 +159,7 @@ def test_live_receipt_outcome_survives_later_suppression(tmp_path, monkeypatch):
 def test_unreadable_deferred_receipt_does_not_block_siblings(tmp_path, monkeypatch, caplog):
     """One permission-denied receipt beside healthy queued work must degrade to a logged skip,
     not abort the drain (same class as the live-owner mailbox wedge, #109820)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     queue.defer("a" * 64, {"id": "job"}, "healthy", "", tmp_path)
     bad = queue._root() / f"{'e' * 64}.json"
     bad.write_text('{"status": "queued"}', encoding="utf-8")
@@ -181,7 +181,7 @@ def test_non_dict_deferred_receipt_is_skipped_by_the_drain_and_fails_exact_id_re
     """A receipt that parses but is not a JSON object is a bad file like any other: the drain
     and new admissions skip it (warned once, preserved as evidence) and an exact-id read of it
     never licenses an overwrite."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     queue.defer("a" * 64, {"id": "job"}, "healthy", "", tmp_path)
     bad = queue._root() / f"{'e' * 64}.json"
     bad.write_text(payload, encoding="utf-8")

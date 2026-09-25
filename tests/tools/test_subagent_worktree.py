@@ -300,7 +300,7 @@ class SubagentWorktreeTests(unittest.TestCase):
             {"path": "/x/wt", "branch": "moor-subagent/subagent-1"}
         )
         self.assertIn("/x/wt", note)
-        self.assertIn("hermes-subagent/subagent-1", note)
+        self.assertIn("moor-subagent/subagent-1", note)
 
 
 class WorktreePayloadSchemaTests(unittest.TestCase):

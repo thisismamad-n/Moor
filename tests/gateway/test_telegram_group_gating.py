@@ -966,14 +966,14 @@ def test_sibling_bot_wake_word_message_is_observed_not_dropped():
         adapter = _make_adapter(
             require_mention=True,
             bots_require_mention=True,
-            mention_patterns=["hermes"],
+            mention_patterns=["moor"],
             allowed_chats=["-100"],
             group_allowed_chats=["-100"],
             observe_unmentioned_group_messages=True,
         )
         store = _FakeSessionStore()
         adapter._session_store = store
-        msg = _bot_sender_message("hermes, can you take this one?")
+        msg = _bot_sender_message("moor, can you take this one?")
         assert adapter._should_process_message(msg) is False, "loop breaker must still block dispatch"
         update = SimpleNamespace(update_id=2001, message=msg, effective_message=None)
 
@@ -983,7 +983,7 @@ def test_sibling_bot_wake_word_message_is_observed_not_dropped():
         assert len(store.messages) == 1
         _session_id, message, _skip_db = store.messages[0]
         assert message["observed"] is True
-        assert message["content"].endswith("hermes, can you take this one?")
+        assert message["content"].endswith("moor, can you take this one?")
 
     asyncio.run(_run())
 
@@ -994,12 +994,12 @@ def test_sibling_bot_explicit_mention_still_dispatches_and_is_not_observed():
     adapter = _make_adapter(
         require_mention=True,
         bots_require_mention=True,
-        mention_patterns=["hermes"],
+        mention_patterns=["moor"],
         allowed_chats=["-100"],
         group_allowed_chats=["-100"],
         observe_unmentioned_group_messages=True,
     )
-    text = "@hermes_bot ping"
+    text = "@moor_bot ping"
     msg = _bot_sender_message(text, entities=[_mention_entity(text)])
 
     assert adapter._should_process_message(msg) is True
@@ -1009,6 +1009,6 @@ def test_sibling_bot_explicit_mention_still_dispatches_and_is_not_observed():
     assert adapter._should_process_message(quoted) is False
     assert adapter._should_observe_unmentioned_group_message(quoted) is True
     # ... while a human wake-word match still dispatches and is not double-recorded.
-    human = _group_message("hermes, hello")
+    human = _group_message("moor, hello")
     assert adapter._should_process_message(human) is True
     assert adapter._should_observe_unmentioned_group_message(human) is False

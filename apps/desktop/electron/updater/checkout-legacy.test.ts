@@ -10,22 +10,22 @@ import { readSourceUpdate, type SourceUpdate } from './checkout-source'
 it('moves a checkout without a source probe to main, but surfaces a broken probe', async (): Promise<void> => {
   const root: string = fs.mkdtempSync(path.join(os.tmpdir(), 'legacy-channel-'))
   const home: string = path.join(root, 'profile')
-  const modulePath: string = path.join(root, 'hermes_cli', 'source_check.py')
+  const modulePath: string = path.join(root, 'moor_cli', 'source_check.py')
   fs.mkdirSync(path.dirname(modulePath))
   fs.mkdirSync(home)
-  fs.writeFileSync(path.join(root, 'hermes_cli', '__init__.py'), '')
+  fs.writeFileSync(path.join(root, 'moor_cli', '__init__.py'), '')
 
   const probe: () => Promise<SourceUpdate | null> = (): Promise<SourceUpdate | null> =>
     readSourceUpdate({
-      python: process.env.HERMES_PYTHON || 'python3',
+      python: process.env.MOOR_PYTHON || 'python3',
       git: 'git',
       updateRoot: root,
-      hermesHome: home
+      moorHome: home
     })
 
   const deps: CheckoutStrategyDeps = {
     readSourceUpdate: probe,
-    hermesHome: home,
+    moorHome: home,
     isWindows: process.platform === 'win32',
     isMac: process.platform === 'darwin',
     defaultUpdateBranch: 'main',
@@ -37,7 +37,7 @@ it('moves a checkout without a source probe to main, but surfaces a broken probe
     remoteGatewayActive: (): boolean => false,
     emitUpdateProgress: vi.fn(),
     rememberLog: vi.fn(),
-    startHermes: vi.fn(async (): Promise<void> => {}),
+    startMoor: vi.fn(async (): Promise<void> => {}),
     stopBackendsForUpdate: vi.fn(async (): Promise<void> => {}),
     repairMacUpdaterHelper: vi.fn(),
     preflightStateDb: vi.fn(),
@@ -57,7 +57,7 @@ it('moves a checkout without a source probe to main, but surfaces a broken probe
       }
 
       expect(await strategy.check()).toMatchObject({ supported: true, updateAvailable: true, branch: 'main' })
-      expect(await strategy.apply()).toMatchObject({ ok: true, manual: true, command: 'hermes update' })
+      expect(await strategy.apply()).toMatchObject({ ok: true, manual: true, command: 'moor update' })
     }
 
     fs.writeFileSync(modulePath, 'def main():\n    raise RuntimeError("invalid channel configuration")\n')
@@ -73,14 +73,14 @@ it('moves a checkout without a source probe to main, but surfaces a broken probe
 it.skipIf(process.platform === 'win32')('uses the install-scoped PM launcher rather than a system Python for source checks', async (): Promise<void> => {
   const root: string = fs.mkdtempSync(path.join(os.tmpdir(), 'pm-source-check-'))
   const home: string = path.join(root, 'profile')
-  const launcher: string = path.join(root, '.hermes', 'bin', 'hermes')
+  const launcher: string = path.join(root, '.moor', 'bin', 'moor')
   fs.mkdirSync(path.dirname(launcher), { recursive: true })
   fs.mkdirSync(path.join(root, 'pm'))
   fs.mkdirSync(home)
-  fs.writeFileSync(launcher, '#!/bin/sh\n[ "$1" = --run-module ] && [ "$2" = hermes_cli.source_check ] || exit 5\nprintf \'%s\\n\' \'{"supported":true,"channel":"stable","behind":-1}\'\n', { mode: 0o755 })
+  fs.writeFileSync(launcher, '#!/bin/sh\n[ "$1" = --run-module ] && [ "$2" = moor_cli.source_check ] || exit 5\nprintf \'%s\\n\' \'{"supported":true,"channel":"stable","behind":-1}\'\n', { mode: 0o755 })
 
   try {
-    const probe = { python: '/nonexistent/system-python', git: 'git', updateRoot: root, hermesHome: home, channel: 'stable' as const }
+    const probe = { python: '/nonexistent/system-python', git: 'git', updateRoot: root, moorHome: home, channel: 'stable' as const }
     await expect(readSourceUpdate(probe)).resolves.toMatchObject({ supported: true, channel: 'stable', behind: null })
     fs.rmSync(launcher)
     await expect(readSourceUpdate(probe)).rejects.toThrow('installation launcher is missing')
@@ -94,13 +94,13 @@ it.skipIf(process.platform !== 'win32')(
   async (): Promise<void> => {
     const root: string = fs.mkdtempSync(path.join(os.tmpdir(), 'pm source check '))
     const home: string = path.join(root, 'profile with spaces')
-    const launcher: string = path.join(root, '.hermes', 'bin', 'hermes.cmd')
+    const launcher: string = path.join(root, '.moor', 'bin', 'moor.cmd')
     fs.mkdirSync(path.dirname(launcher), { recursive: true })
     fs.mkdirSync(path.join(root, 'pm'))
     fs.mkdirSync(home)
     fs.writeFileSync(
       launcher,
-      '@echo off\r\nif not "%~1"=="--run-module" exit /b 5\r\nif not "%~2"=="hermes_cli.source_check" exit /b 6\r\necho {"supported":true,"channel":"stable","behind":-1}\r\n'
+      '@echo off\r\nif not "%~1"=="--run-module" exit /b 5\r\nif not "%~2"=="moor_cli.source_check" exit /b 6\r\necho {"supported":true,"channel":"stable","behind":-1}\r\n'
     )
 
     try {
@@ -108,7 +108,7 @@ it.skipIf(process.platform !== 'win32')(
         python: 'nonexistent-system-python',
         git: 'git',
         updateRoot: root,
-        hermesHome: home,
+        moorHome: home,
         channel: 'stable' as const
       }
 

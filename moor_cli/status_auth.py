@@ -4,13 +4,13 @@ module object so tests that monkeypatch that module keep working."""
 
 from datetime import datetime, timezone
 
-from hermes_cli.auth import AuthError
-from hermes_cli.nous_account import (
-    format_nous_portal_entitlement_message, get_nous_portal_account_info)
-from hermes_cli.nous_subscription import get_nous_subscription_features
-from tools.tool_backend_helpers import managed_nous_tools_enabled
-from hermes_cli import config
-from hermes_time import safe_strftime
+from moor_cli.auth import AuthError
+from moor_cli.moor_account import (
+    format_moor_portal_entitlement_message, get_moor_portal_account_info)
+from moor_cli.moor_subscription import get_moor_subscription_features
+from tools.tool_backend_helpers import managed_moor_tools_enabled
+from moor_cli import config
+from moor_time import safe_strftime
 
 
 def _format_iso_timestamp(value) -> str:

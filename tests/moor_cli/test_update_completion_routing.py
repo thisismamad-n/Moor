@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from hermes_cli import main, main_web_build, update_cmd, update_cmd_zip, update_cmd_maint
+from moor_cli import main, main_web_build, update_cmd, update_cmd_zip, update_cmd_maint
 from tests.compat.old_updater_support import fresh_child, no_external_work  # noqa: F401
 
 
@@ -23,7 +23,7 @@ from tests.compat.old_updater_support import fresh_child, no_external_work  # no
         "node_failures": ["dashboard"], "desktop_build_ok": False, "pre_update_version": "0.20.1"}),
     (update_cmd_maint._finish_dashboard_update_cleanup, ([],), {}),
     (update_cmd_maint._finish_dashboard_update_cleanup, (["dashboard"],), {
-        "already_restarted_units": {"hermes-serve"}}),
+        "already_restarted_units": {"moor-serve"}}),
 ])
 def test_historical_completion_hook_never_reports_success(hook, args, kwargs, fresh_child, capsys):
     if hook in {update_cmd._prepare_updated_checkout, update_cmd._reload_config_modules,
@@ -32,14 +32,14 @@ def test_historical_completion_hook_never_reports_success(hook, args, kwargs, fr
             hook(*args, **kwargs)
         assert error.value.code == 1
         assert fresh_child.requests == []
-        assert 'run `hermes update` again' in capsys.readouterr().err
+        assert 'run `moor update` again' in capsys.readouterr().err
         return
     with fresh_child.exits():
         hook(*args, **kwargs)
 
 
 def test_incomplete_handoff_requires_explicit_update_retry(tmp_path, monkeypatch, capsys):
-    from hermes_cli import main
+    from moor_cli import main
 
     monkeypatch.setattr(main, "PROJECT_ROOT", tmp_path)
     completion = Mock()
@@ -49,7 +49,7 @@ def test_incomplete_handoff_requires_explicit_update_retry(tmp_path, monkeypatch
     assert error.value.code == 1
     completion.assert_not_called()
     output = capsys.readouterr()
-    assert "run `hermes update` again" in output.err
+    assert "run `moor update` again" in output.err
     assert "Update complete" not in output.out
     assert not (tmp_path / ".update-incomplete").exists()
     assert not (tmp_path / ".lazy-refresh-incomplete").exists()

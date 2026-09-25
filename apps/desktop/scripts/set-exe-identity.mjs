@@ -21,10 +21,10 @@
 // HOW IT RUNS
 // -----------
 // Primarily as an electron-builder `afterExtract` hook (scripts/after-extract.mjs),
-// so EVERY packed build — first install, `hermes desktop`, the installer's
+// so EVERY packed build — first install, `moor desktop`, the installer's
 // --update rebuild, or a dev's manual `npm run pack` — gets a branded exe from
 // one place. Previously this stamp lived only in install.ps1, so the update
-// path (which rebuilds via `hermes desktop --build-only`, never install.ps1)
+// path (which rebuilds via `moor desktop --build-only`, never install.ps1)
 // shipped a stock "Electron" exe. Keeping it in afterExtract closes that gap.
 //
 // Also runnable standalone for ad-hoc re-stamping:
@@ -62,7 +62,7 @@ function wait(delay) {
   return new Promise(resolve => setTimeout(resolve, delay))
 }
 
-// Stamp the Hermes icon + identity onto `exe`. Resolves on success, throws on
+// Stamp the Moor icon + identity onto `exe`. Resolves on success, throws on
 // failure. `desktopRoot` defaults to this script's package root so the icon and
 // the rcedit dependency resolve regardless of cwd.
 async function stampExeIdentity(

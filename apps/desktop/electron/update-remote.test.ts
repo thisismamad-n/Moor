@@ -41,8 +41,8 @@ test('canonicalGitHubRemote normalizes SSH and HTTPS forms for Moor and legacy u
 
   assert.equal(canonicalGitHubRemote('git@github.com:NousResearch/hermes-agent.git'), LEGACY_UPSTREAM_CANONICAL)
   assert.equal(canonicalGitHubRemote('git@github.com:NousResearch/hermes-agent'), LEGACY_UPSTREAM_CANONICAL)
-  assert.equal(canonicalGitHubRemote('ssh://git@github.com/NousResearch/hermes-agent.git'), LEGACY_UPSTREAM_CANONICAL)
-  assert.equal(canonicalGitHubRemote('https://github.com/NousResearch/hermes-agent.git'), LEGACY_UPSTREAM_CANONICAL)
+  assert.equal(canonicalGitHubRemote('ssh://git@github.com/thisismamad-n/Moor.git'), LEGACY_UPSTREAM_CANONICAL)
+  assert.equal(canonicalGitHubRemote('https://github.com/thisismamad-n/Moor.git'), LEGACY_UPSTREAM_CANONICAL)
 })
 
 test('canonicalGitHubRemote is empty for falsy input', () => {

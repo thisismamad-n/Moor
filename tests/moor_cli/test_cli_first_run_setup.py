@@ -200,10 +200,10 @@ def test_offer_first_run_setup_re_resolves_reasoning_for_picked_model(monkeypatc
         "reasoning_overrides": {"hermes-4-405b": "high"}})
     shell = _make_shell(cli, monkeypatch)
     assert shell.reasoning_config["effort"] == "medium"
-    monkeypatch.setattr("hermes_cli.main.select_provider_and_model", lambda: None)
+    monkeypatch.setattr("moor_cli.main.select_provider_and_model", lambda: None)
     monkeypatch.setattr("builtins.input", lambda *a, **k: "y")
-    monkeypatch.setattr("hermes_cli.config.load_config",
-                        lambda: {"model": {"provider": "nous", "default": "hermes-4-405b"}})
+    monkeypatch.setattr("moor_cli.config.load_config",
+                        lambda: {"model": {"provider": "moor", "default": "hermes-4-405b"}})
     monkeypatch.setattr(shell, "_runtime_credentials_ready", lambda: True)
 
     assert shell._offer_first_run_setup() is True
@@ -270,7 +270,7 @@ def test_empty_key_error_names_actual_provider(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "fireworks" in out
     assert "OPENROUTER_API_KEY" not in out
-    assert "hermes model" in out or "hermes setup" in out
+    assert "moor model" in out or "moor setup" in out
 
 
 # ---------------------------------------------------------------------------
@@ -278,11 +278,11 @@ def test_empty_key_error_names_actual_provider(monkeypatch, capsys):
 # ---------------------------------------------------------------------------
 
 
-def _bench_nous_pool(monkeypatch, **entry_fields):
+def _bench_moor_pool(monkeypatch, **entry_fields):
     import time
     from agent.credential_pool import STATUS_EXHAUSTED, CredentialPool, PooledCredential
 
-    benched = PooledCredential(id="e1", provider="nous", auth_type="oauth", access_token="x",
+    benched = PooledCredential(id="e1", provider="moor", auth_type="oauth", access_token="x",
                                refresh_token="r", label="portal", source="manual:device_code",
                                priority=0, last_status=STATUS_EXHAUSTED, last_status_at=time.time() - 5,
                                **entry_fields)
@@ -295,7 +295,7 @@ def _bench_nous_pool(monkeypatch, **entry_fields):
 
 
 def _forbid_wizard(monkeypatch, shell):
-    monkeypatch.setattr("hermes_cli.main.select_provider_and_model",
+    monkeypatch.setattr("moor_cli.main.select_provider_and_model",
                         lambda: (_ for _ in ()).throw(AssertionError("wizard must not run")))
     monkeypatch.setattr(shell, "_offer_first_run_setup",
                         lambda: (_ for _ in ()).throw(AssertionError("wizard must not be offered")))
@@ -307,14 +307,14 @@ def test_benched_credential_prints_cooldown_instead_of_wizard(monkeypatch, capsy
     user to re-authenticate, and never offers the first-run wizard."""
     cli = _import_cli()
     shell = _make_shell(cli, monkeypatch)
-    shell.requested_provider = "nous"
+    shell.requested_provider = "moor"
 
     def _raise(**kwargs):
-        raise AuthError("Hermes is not logged into Nous Portal.", provider="nous",
-                        code="nous_auth_missing", relogin_required=True)
+        raise AuthError("Moor is not logged into Moor Portal.", provider="moor",
+                        code="moor_auth_missing", relogin_required=True)
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _raise)
-    _bench_nous_pool(monkeypatch, last_error_code=429, last_error_reason="rate_limited")
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", _raise)
+    _bench_moor_pool(monkeypatch, last_error_code=429, last_error_reason="rate_limited")
     _forbid_wizard(monkeypatch, shell)
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
 
@@ -325,31 +325,31 @@ def test_benched_credential_prints_cooldown_instead_of_wizard(monkeypatch, capsy
     headline = next(line for line in out.splitlines() if line.strip())
     assert "cooling down after a rate-limit or quota response" in headline and "about 1m" in headline
     assert "failed token refresh" not in out
-    assert "not logged into Nous Portal" in out
-    assert "re-authenticate" not in out and "hermes model" not in out
+    assert "not logged into Moor Portal" in out
+    assert "re-authenticate" not in out and "moor model" not in out
 
 
 def test_auth_json_only_login_explains_instead_of_wizard(monkeypatch, capsys, tmp_path):
-    """auth.json-only shape: logged into Nous but no ``model.provider`` (requested "auto"). The
+    """auth.json-only shape: logged into Moor but no ``model.provider`` (requested "auto"). The
     ladder swallows the AuthError and falls through to a keyless OpenRouter fallback; the gate
     must still explain the real failure rather than treat the profile as a blank install.
     Control: the resolver's ``no_provider_configured`` still reaches the wizard."""
     import dataclasses
 
-    import hermes_cli.runtime_provider as rp
+    import moor_cli.runtime_provider as rp
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text("model:\n  default: some-model\n", encoding="utf-8")
     for key in [k for k in os.environ if k.endswith("_API_KEY")]:
         monkeypatch.delenv(key, raising=False)
 
-    def _nous_fail():
-        raise AuthError("Hermes is not logged into Nous Portal.", provider="nous",
-                        code="nous_auth_missing", relogin_required=True)
+    def _moor_fail():
+        raise AuthError("Moor is not logged into Moor Portal.", provider="moor",
+                        code="moor_auth_missing", relogin_required=True)
 
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **kw: "nous")
-    monkeypatch.setitem(rp._OAUTH_RUNTIME_PROVIDERS, "nous",
-                        dataclasses.replace(rp._OAUTH_RUNTIME_PROVIDERS["nous"], resolve=_nous_fail))
+    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **kw: "moor")
+    monkeypatch.setitem(rp._OAUTH_RUNTIME_PROVIDERS, "moor",
+                        dataclasses.replace(rp._OAUTH_RUNTIME_PROVIDERS["moor"], resolve=_moor_fail))
 
     cli = _import_cli()
     shell = _make_shell(cli, monkeypatch)
@@ -361,13 +361,13 @@ def test_auth_json_only_login_explains_instead_of_wizard(monkeypatch, capsys, tm
 
     shell._maybe_offer_first_run_setup()
     out = capsys.readouterr().out
-    assert "not logged into Nous Portal" in out
+    assert "not logged into Moor Portal" in out
     assert "No inference provider is configured yet" not in out
 
     offered = []
     monkeypatch.setattr(shell, "_offer_first_run_setup", lambda: offered.append(True) or True)
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", lambda **kw: (_ for _ in ()).throw(
-        AuthError("Hermes is not connected to any AI provider yet.", code="no_provider_configured")))
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", lambda **kw: (_ for _ in ()).throw(
+        AuthError("Moor is not connected to any AI provider yet.", code="no_provider_configured")))
     shell._maybe_offer_first_run_setup()
     assert offered == [True]
     assert "not logged into" not in capsys.readouterr().out

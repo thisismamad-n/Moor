@@ -918,8 +918,8 @@ def _finish_turn(sid: str, session: dict, st: _TurnRun) -> None:
     history.clear()
     if isinstance(run_kwargs, dict):
         run_kwargs.clear()
-    try:  # while the profile HERMES_HOME override is still active (session's own config)
-        from hermes_cli.mem_trim import trim_memory
+    try:  # while the profile MOOR_HOME override is still active (session's own config)
+        from moor_cli.mem_trim import trim_memory
         # The finishing session is still marked running here; every OTHER session must be idle (#58576).
         if _sessions_quiescent(exclude=sid):
             trim_memory(reason="tui turn completion")

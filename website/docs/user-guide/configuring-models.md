@@ -11,8 +11,8 @@ Moor uses two kinds of model slots:
 
 This page covers configuring both from the dashboard. If you prefer config files or the CLI, jump to [Alternative methods](#alternative-methods) at the bottom. To run models on your own machine instead of a cloud provider, see [Local Models](./local-models.md).
 
-:::tip Fastest path: Nous Portal
-[Nous Portal](./features/tool-gateway.md) provides 300+ models under one subscription. On a fresh install, run `hermes setup --portal` to log in and set Nous as your provider in one command. Inspect what's wired up with `hermes portal info`.
+:::tip Fastest path: Moor Portal
+[Moor Portal](./features/tool-gateway.md) provides 300+ models under one subscription. On a fresh install, run `moor setup --portal` to log in and set Moor as your provider in one command. Inspect what's wired up with `moor portal info`.
 
 - Portal subscribers also get **10% off token-billed providers**.
 :::
@@ -192,9 +192,9 @@ providers:
       CF-Access-Client-Secret: "yyyy"
 ```
 
-Header values routinely carry credentials — Hermes never logs them. `extra_headers` applies to OpenAI-compatible routes and to `anthropic_messages` routes (the main client, `/model` switches, rebuilds and auxiliary clients alike); `bedrock_converse` does not use it. A relay behind a WAF that rejects the SDK's default `User-Agent` (403 "Your request was blocked" or a browser-challenge page) is the typical reason to set one — Hermes reports such a 403 as a firewall/CDN block rather than an API-key rejection.
+Header values routinely carry credentials — Moor never logs them. `extra_headers` applies to OpenAI-compatible routes and to `anthropic_messages` routes (the main client, `/model` switches, rebuilds and auxiliary clients alike); `bedrock_converse` does not use it. A relay behind a WAF that rejects the SDK's default `User-Agent` (403 "Your request was blocked" or a browser-challenge page) is the typical reason to set one — Moor reports such a 403 as a firewall/CDN block rather than an API-key rejection.
 
-**`session_affinity_header`** — the NAME of a header that carries Hermes' conversation id on every request to that provider (main turn on `chat_completions`, `anthropic_messages` and `codex_responses`, plus auxiliary calls such as compression and titles). Off unless set — Hermes never sends a session identifier to an endpoint that did not ask for one. Session-aware proxies fronting a stateful backend (LiteLLM's `x-litellm-session-id`, self-hosted Claude/OpenAI gateways) otherwise have nothing to correlate an agent loop on and treat nearly every request as a new conversation, re-sending the whole history upstream on each turn. The value is opaque, stable across the turns of one conversation (including compaction), and different for every conversation:
+**`session_affinity_header`** — the NAME of a header that carries Moor' conversation id on every request to that provider (main turn on `chat_completions`, `anthropic_messages` and `codex_responses`, plus auxiliary calls such as compression and titles). Off unless set — Moor never sends a session identifier to an endpoint that did not ask for one. Session-aware proxies fronting a stateful backend (LiteLLM's `x-litellm-session-id`, self-hosted Claude/OpenAI gateways) otherwise have nothing to correlate an agent loop on and treat nearly every request as a new conversation, re-sending the whole history upstream on each turn. The value is opaque, stable across the turns of one conversation (including compaction), and different for every conversation:
 
 ```yaml
 providers:

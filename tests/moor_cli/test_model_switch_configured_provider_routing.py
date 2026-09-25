@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.model_switch import switch_model
+from moor_cli.model_switch import switch_model
 
 _ACCEPTED = {"accepted": True, "persist": True, "recognized": True, "message": None}
 _REJECTED = {"accepted": False, "persist": False, "recognized": False, "message": "not found"}
@@ -131,7 +131,7 @@ def test_compat_projection_of_same_provider_is_not_ambiguous():
     """The gateway/TUI/CLI pass ``providers:`` AND ``get_compatible_custom_providers()``, which re-lists
     each ``providers.<slug>`` row as ``custom:<name>``. One configured endpoint must route, not be
     rejected as 'declared by multiple configured providers' (#112788)."""
-    from hermes_cli.config import get_compatible_custom_providers
+    from moor_cli.config import get_compatible_custom_providers
 
     user_providers = {"relay": {"name": "relay", "api": "https://relay.example/v1",
                                 "key_env": "RELAY_KEY", "default_model": "claude-opus-4-7"}}
@@ -145,7 +145,7 @@ def test_compat_projection_of_same_provider_is_not_ambiguous():
 def test_distinct_legacy_endpoint_with_same_model_stays_ambiguous():
     """Control for #112788: a hand-written ``custom_providers:`` row (no provider_key) that declares
     the same model on a different endpoint is still a genuinely separate candidate."""
-    from hermes_cli.config import get_compatible_custom_providers
+    from moor_cli.config import get_compatible_custom_providers
 
     user_providers = {"relay": {"name": "relay", "api": "https://relay.example/v1",
                                 "key_env": "RELAY_KEY", "default_model": "claude-opus-4-7"}}
@@ -170,7 +170,7 @@ def test_legacy_duplicate_of_same_endpoint_collapses_by_identity():
     """A hand-migrated config that kept the same endpoint under ``providers.relay`` AND as a legacy
     ``custom_providers`` row (same name, endpoint, credential, protocol) is one provider: ``/model``
     routes to ``relay`` instead of calling it ambiguous (#112788)."""
-    from hermes_cli.config import get_compatible_custom_providers
+    from moor_cli.config import get_compatible_custom_providers
 
     user_providers = {"relay": _RELAY}
     cfg = {"providers": user_providers, "custom_providers": [_LEGACY_RELAY]}
@@ -187,7 +187,7 @@ def test_legacy_duplicate_of_same_endpoint_collapses_by_identity():
 def test_same_named_legacy_row_with_different_identity_stays_ambiguous(delta):
     """Identity collapse is exact: a legacy row sharing the display name but differing in credential,
     wire protocol or endpoint is still a second candidate (#112788 acceptance criterion)."""
-    from hermes_cli.config import get_compatible_custom_providers
+    from moor_cli.config import get_compatible_custom_providers
 
     user_providers = {"relay": _RELAY}
     cfg = {"providers": user_providers, "custom_providers": [{**_LEGACY_RELAY, **delta}]}
@@ -201,7 +201,7 @@ def test_same_named_legacy_row_with_different_identity_stays_ambiguous(delta):
 def test_session_on_projection_slug_keeps_its_slug():
     """A session whose current provider is the compat projection slug ``custom:relay`` switching to
     a model ``providers.relay`` declares stays on ``custom:relay`` — same provider, no flip (#112788)."""
-    from hermes_cli.config import get_compatible_custom_providers
+    from moor_cli.config import get_compatible_custom_providers
 
     user_providers = {"relay": _RELAY}
     result = _run_switch(
@@ -229,7 +229,7 @@ def test_legacy_duplicate_keeps_its_own_declared_models():
     """Folding an identity-equal legacy row into ``providers.relay`` must not drop the models only
     that row declares: ``/model gpt-5.4-mini`` still routes to the shared endpoint instead of
     falling through to the current provider (#112788 review follow-up)."""
-    from hermes_cli.config import get_compatible_custom_providers
+    from moor_cli.config import get_compatible_custom_providers
 
     user_providers = {"relay": _RELAY}
     cfg = {"providers": user_providers,

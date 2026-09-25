@@ -315,8 +315,8 @@ class CLISessionMixin:
         if not self._session_db:
             return []
         try:
-            from hermes_cli.session_listing import query_session_listing
-            from hermes_state_sessions import INTERNAL_LISTING_SOURCES
+            from moor_cli.session_listing import query_session_listing
+            from moor_state_sessions import INTERNAL_LISTING_SOURCES
 
             return query_session_listing(
                 self._session_db, source="cli", current_session_id=self.session_id,
@@ -492,7 +492,7 @@ class CLISessionMixin:
         from cli import (
             CLI_CONFIG, _parse_service_tier_config,
             _sync_process_session_id, datetime)
-        from hermes_cli.cli_model_switch_mixin import _resolve_cli_reasoning
+        from moor_cli.cli_model_switch_mixin import _resolve_cli_reasoning
         old_session_id = self.session_id
         _boundary_snapshot = None
         if self.agent:
@@ -625,7 +625,7 @@ class CLISessionMixin:
         redaction pass before writing.
         """
         from cli import datetime
-        from hermes_cli.session_export import (
+        from moor_cli.session_export import (
             SAVE_TRANSCRIPT_FORMATS, SAVE_USAGE, normalize_save_format, render_session_for_save)
 
         parts = cmd.split()[1:]
@@ -1029,7 +1029,7 @@ class CLISessionMixin:
             try:
                 import subprocess
 
-                from hermes_cli._subprocess_compat import windows_hide_flags
+                from moor_cli._subprocess_compat import windows_hide_flags
 
                 if os.name == "nt":
                     argv = ["cmd", "/c", "cls"]  # `cls` is a cmd builtin, not an exe

@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import boot_bootstrap
-from hermes_cli.boot_bootstrap import (
+from moor_cli import boot_bootstrap
+from moor_cli.boot_bootstrap import (
     _RecordLock,
     current_install_identity,
     needs_bootstrap,
@@ -140,7 +140,7 @@ def test_identity_broken_tree_is_none(tmp_path):
 
 
 def test_record_paths_key_on_install_root(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     a = record_path(tmp_path / "install-a")
     b = record_path(tmp_path / "install-b")
     assert a != b
@@ -153,7 +153,7 @@ def test_record_paths_key_on_install_root(tmp_path, monkeypatch):
 
 @pytest.mark.platforms("posix")  # requires symlink privilege on Windows
 def test_symlinked_root_canonicalizes(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     real = tmp_path / "real-install"
     real.mkdir()
     link = tmp_path / "link-install"
@@ -165,7 +165,7 @@ def test_symlinked_root_canonicalizes(tmp_path, monkeypatch):
 
 
 def test_needs_bootstrap_broken_tree_never_fires(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     assert needs_bootstrap(tmp_path / "nope") is None
     assert run_boot_bootstrap(tmp_path / "nope") == {"home": "skipped"}
     assert not record_path(tmp_path / "nope").exists()
@@ -218,7 +218,7 @@ def fake_steps(monkeypatch):
         calls["home"] += 1
         return {"ok": True}
 
-    from hermes_cli import post_update
+    from moor_cli import post_update
 
     monkeypatch.setattr(post_update, "BOOT_HOME_STEPS", (("h", home_step),))
     return calls
@@ -227,7 +227,7 @@ def fake_steps(monkeypatch):
 def test_double_check_under_lock(repo, tmp_path, monkeypatch, fake_steps):
     """A racer that finished between our read and our acquire wins."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     sha = _head_sha(repo)
 
     real_acquire = _RecordLock.acquire
@@ -260,10 +260,10 @@ def test_sealed_tree_bootstrap_end_to_end(tmp_path, monkeypatch):
     swap emits."""
     import json as _json
 
-    from hermes_cli import post_update
+    from moor_cli import post_update
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     sealed = tmp_path / "payload"
     sealed.mkdir()
     (sealed / "install-stamp.json").write_text(

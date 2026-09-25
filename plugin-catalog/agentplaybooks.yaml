@@ -1,15 +1,15 @@
 name: agentplaybooks
 repo: https://github.com/matebenyovszky/agentplaybooks
 sha: f453163d449f5ee0c28881da8c689932dd4141e8
-subdir: packages/hermes-memory/agentplaybooks
+subdir: packages/moor-memory/agentplaybooks
 description: "Private, portable AgentPlaybooks memory: native recall, explicit memory-write mirroring, archive and history. Disclosure — hosted memory: each turn's query is sent to agentplaybooks.ai for recall and explicit built-in memory writes are mirrored there; only https (or localhost http) endpoints are accepted."
 maintainer: matebenyovszky
 tier: community
 category: memory
-requires_hermes: ">=0.21.4"
+requires_moor: ">=0.21.4"
 version: "0.1.0"
-docs_url: https://github.com/matebenyovszky/agentplaybooks/tree/f453163d449f5ee0c28881da8c689932dd4141e8/packages/hermes-memory/agentplaybooks
-image: https://raw.githubusercontent.com/matebenyovszky/agentplaybooks/f453163d449f5ee0c28881da8c689932dd4141e8/public/plugin-catalog/hermes-memory.png
+docs_url: https://github.com/matebenyovszky/agentplaybooks/tree/f453163d449f5ee0c28881da8c689932dd4141e8/packages/moor-memory/agentplaybooks
+image: https://raw.githubusercontent.com/matebenyovszky/agentplaybooks/f453163d449f5ee0c28881da8c689932dd4141e8/public/plugin-catalog/moor-memory.png
 readme: true
 platforms: [linux, macos, windows]
 capabilities:

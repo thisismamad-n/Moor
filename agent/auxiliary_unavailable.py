@@ -1,6 +1,6 @@
-"""Why an auxiliary client could not be built — and the Nous credential failure behind it.
+"""Why an auxiliary client could not be built — and the Moor credential failure behind it.
 
-``_resolve_nous_runtime_api`` must swallow the resolver's ``AuthError`` and return None so the
+``_resolve_moor_runtime_api`` must swallow the resolver's ``AuthError`` and return None so the
 ladder can still fall back (stored token, fallback_chain). Swallowing it at DEBUG left the goal
 loop reporting ``judge error: RuntimeError`` while the real cause was an ``invalid_grant`` refresh
 (#42177). This module remembers the latest failure so the ladder's raise and the goal judge can
@@ -14,7 +14,7 @@ import time
 from datetime import datetime
 from typing import Optional
 
-from hermes_time import safe_strftime
+from moor_time import safe_strftime
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +24,11 @@ class AuxiliaryClientUnavailable(RuntimeError):
 
 
 _lock = threading.Lock()
-_last_nous_detail: Optional[str] = None
-_warned_nous_details: set[str] = set()
+_last_moor_detail: Optional[str] = None
+_warned_moor_details: set[str] = set()
 
 
-def _quarantined_nous_error(exc: BaseException) -> BaseException:
+def _quarantined_moor_error(exc: BaseException) -> BaseException:
     """Prefer the persisted terminal quarantine marker over *exc*; sentence-terminate either message.
 
     The pool rung swallows the real ``invalid_grant`` and wipes the dead tokens, so by the time the
@@ -36,13 +36,13 @@ def _quarantined_nous_error(exc: BaseException) -> BaseException:
     carries the message and code the user needs (#42177). ``format_auth_error`` appends the
     remediation sentence with a space, so an unterminated message reads "Invalid refresh token Run …".
     """
-    from hermes_cli.auth import AuthError, get_provider_auth_state
-    from hermes_cli.auth_nous import _terminal_quarantine_marker
+    from moor_cli.auth import AuthError, get_provider_auth_state
+    from moor_cli.auth_moor import _terminal_quarantine_marker
 
     with contextlib.suppress(Exception):
-        marker = _terminal_quarantine_marker(get_provider_auth_state("nous") or {})
+        marker = _terminal_quarantine_marker(get_provider_auth_state("moor") or {})
         if marker and marker.get("message"):
-            return AuthError(_sentence(marker["message"]), provider="nous", code=marker.get("code"),
+            return AuthError(_sentence(marker["message"]), provider="moor", code=marker.get("code"),
                              relogin_required=True)
     if isinstance(exc, AuthError):
         return AuthError(_sentence(exc), provider=exc.provider, code=exc.code,
@@ -60,13 +60,13 @@ def pool_cooldown_message(provider_id: str) -> Optional[str]:
 
     ``resolve_provider_client()`` returns ``None`` both when no credential exists and when every
     pool entry sits in a 429/quota cooldown, so the raise sites could only say "no credentials
-    were found. Run hermes auth add …" — wrong on both counts for a valid OAuth grant that is
+    were found. Run moor auth add …" — wrong on both counts for a valid OAuth grant that is
     merely rate-limited (#56810). Read the persisted pool state (no seeding, no writes) and name
     the cooldown and its reset time instead; ``None`` when the pool is empty or a credential is
     usable (the caller keeps the missing-credential diagnostic).
     """
     from agent.credential_pool import STATUS_DEAD, PooledCredential, _exhausted_until
-    from hermes_cli.auth import read_credential_pool
+    from moor_cli.auth import read_credential_pool
 
     entries = []
     with contextlib.suppress(Exception):
@@ -86,8 +86,8 @@ def pool_cooldown_message(provider_id: str) -> Optional[str]:
              else f"all {len(live)} credentials are")
     return (f"Provider '{provider_id}' is set in config.yaml but {which} cooling down after a "
             f"rate limit / quota error (429); the next one resets at {when}. Wait for the reset, "
-            f"add another credential with `hermes auth add {provider_id}`, or switch to a "
-            "different provider with `hermes model`.")
+            f"add another credential with `moor auth add {provider_id}`, or switch to a "
+            "different provider with `moor model`.")
 
 
 def missing_provider_credentials_message(provider_id: str) -> str:
@@ -104,7 +104,7 @@ def missing_provider_credentials_message(provider_id: str) -> str:
         return cooldown
     pconfig = None
     with contextlib.suppress(Exception):
-        from hermes_cli.auth import PROVIDER_REGISTRY
+        from moor_cli.auth import PROVIDER_REGISTRY
         pconfig = PROVIDER_REGISTRY.get(provider_id)
     env_vars = tuple(getattr(pconfig, "api_key_env_vars", None) or ())
     problem, remedy = "no API key was found", ""
@@ -113,62 +113,62 @@ def missing_provider_credentials_message(provider_id: str) -> str:
     elif pconfig is None:
         remedy = f"Set the {provider_id.upper().replace('-', '_')}_API_KEY environment variable"
     elif str(pconfig.auth_type).startswith("oauth"):
-        problem, remedy = "no credentials were found", f"Run `hermes auth add {provider_id}` to sign in"
+        problem, remedy = "no credentials were found", f"Run `moor auth add {provider_id}` to sign in"
     else:
         problem = "no credentials were found"
-    switch = "switch to a different provider with `hermes model`."
+    switch = "switch to a different provider with `moor model`."
     return (f"Provider '{provider_id}' is set in config.yaml but {problem}. "
             + (f"{remedy}, or {switch}" if remedy else switch.capitalize()))
 
 
-def _nous_credential_present(exc: BaseException) -> bool:
-    """True when a Nous credential exists that failed — a coded error (``invalid_grant``, a quarantine
-    marker, ``refresh_failed``) or persisted Nous auth state. The uncoded "not logged into Nous Portal"
-    with no stored state is the normal condition for users who never chose Nous; the auto-route walk
+def _moor_credential_present(exc: BaseException) -> bool:
+    """True when a Moor credential exists that failed — a coded error (``invalid_grant``, a quarantine
+    marker, ``refresh_failed``) or persisted Moor auth state. The uncoded "not logged into Moor Portal"
+    with no stored state is the normal condition for users who never chose Moor; the auto-route walk
     hits it on every discovery pass and must not warn (the ladder already logs its own summary).
     """
     if getattr(exc, "code", None):
         return True
-    from hermes_cli.auth import get_provider_auth_state
+    from moor_cli.auth import get_provider_auth_state
 
     with contextlib.suppress(Exception):
-        return bool(get_provider_auth_state("nous"))
+        return bool(get_provider_auth_state("moor"))
     return False
 
 
-def record_nous_credential_failure(exc: BaseException) -> str:
-    """Remember *exc* as the latest Nous credential failure.
+def record_moor_credential_failure(exc: BaseException) -> str:
+    """Remember *exc* as the latest Moor credential failure.
 
-    Logged once per distinct message: WARNING when a real credential failed, DEBUG when Hermes was
-    simply never logged into Nous.
+    Logged once per distinct message: WARNING when a real credential failed, DEBUG when Moor was
+    simply never logged into Moor.
     """
-    from hermes_cli.auth import format_auth_error
+    from moor_cli.auth import format_auth_error
 
-    exc = _quarantined_nous_error(exc)
+    exc = _quarantined_moor_error(exc)
     message = format_auth_error(exc) if isinstance(exc, Exception) else str(exc)
     message = message.strip() or type(exc).__name__
     code = getattr(exc, "code", None)
     if code and str(code) not in message:
         message = f"{message} (code: {code})"
-    detail = f"Nous Portal runtime credentials unavailable: {message}"
-    global _last_nous_detail
+    detail = f"Moor Portal runtime credentials unavailable: {message}"
+    global _last_moor_detail
     with _lock:
-        _last_nous_detail = detail
-        first_time = detail not in _warned_nous_details
-        _warned_nous_details.add(detail)
+        _last_moor_detail = detail
+        first_time = detail not in _warned_moor_details
+        _warned_moor_details.add(detail)
     if first_time:
-        level = logging.WARNING if _nous_credential_present(exc) else logging.DEBUG
-        logger.log(level, "Auxiliary Nous client unavailable: %s", detail)
+        level = logging.WARNING if _moor_credential_present(exc) else logging.DEBUG
+        logger.log(level, "Auxiliary Moor client unavailable: %s", detail)
     return detail
 
 
-def clear_nous_credential_failure() -> None:
-    global _last_nous_detail
+def clear_moor_credential_failure() -> None:
+    global _last_moor_detail
     with _lock:
-        _last_nous_detail = None
+        _last_moor_detail = None
 
 
-def nous_credential_failure_detail() -> Optional[str]:
-    """The latest recorded Nous credential failure, or None when the last resolution succeeded."""
+def moor_credential_failure_detail() -> Optional[str]:
+    """The latest recorded Moor credential failure, or None when the last resolution succeeded."""
     with _lock:
-        return _last_nous_detail
+        return _last_moor_detail

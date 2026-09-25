@@ -37,11 +37,11 @@ from agent.think_scrubber import StreamingThinkScrubber
 from agent.tool_guardrails import (
     ToolCallGuardrailConfig, ToolCallGuardrailController
 )
-from hermes_cli.config import DEFAULT_CONFIG, cfg_get
-from hermes_cli.route_identity import normalize_route_base_url
-from hermes_cli.timeouts import get_provider_request_timeout
-from hermes_constants import get_hermes_home
-from hermes_state_ids import new_session_id
+from moor_cli.config import DEFAULT_CONFIG, cfg_get
+from moor_cli.route_identity import normalize_route_base_url
+from moor_cli.timeouts import get_provider_request_timeout
+from moor_constants import get_moor_home
+from moor_state_ids import new_session_id
 from utils import base_url_host_matches, is_truthy_value
 
 # Same logger name as run_agent so caplog/patches on "run_agent" see our records.
@@ -373,7 +373,7 @@ _EXPLICIT_API_MODES = {
 
 def _resolve_api_mode(agent, api_mode, provider_name, base_url):
     """Set ``agent.api_mode`` (and provider rewrites) — ordered ladder, first match wins."""
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     from agent.transports import registered_api_modes
     host, url = agent._base_url_hostname, agent._base_url_lower
     if is_actual_route(agent.provider, base_url):
@@ -400,7 +400,7 @@ def _resolve_api_mode(agent, api_mode, provider_name, base_url):
         host.startswith("bedrock-runtime.") and base_url_host_matches(url, "amazonaws.com")
     ):
         agent.api_mode = "bedrock_converse"
-    elif agent.provider in {"moor", "moor-portal", "nousresearch", "nous"}:  # LEGACY-REBRAND-COMPAT: fallback provider alias
+    elif agent.provider in {"moor", "moor-portal", "nousresearch", "moor"}:  # LEGACY-REBRAND-COMPAT: fallback provider alias
         # Portal is dual-wire (anthropic/* → Messages, else chat_completions); covers direct
         # AIAgent construction without a resolved runtime.
         from moor_cli.providers import moor_api_mode
@@ -470,7 +470,7 @@ def _finalize_routing(agent, api_mode, credential_pool):
     # api_mode was explicit, the runtime is ACP (`acp://` clients route themselves, no
     # Responses surface) or Azure OpenAI (gpt-5.x on /chat/completions only). Provider
     # exceptions live in _provider_model_requires_responses_api.
-    from hermes_cli.runtime_provider_backends import _is_external_process_provider
+    from moor_cli.runtime_provider_backends import _is_external_process_provider
 
     _base_lower = str(agent.base_url or "").lower()
     if (
@@ -808,7 +808,7 @@ def _explicit_client_kwargs(agent, api_key, base_url, _provider_timeout) -> Dict
     # ACP/subprocess providers take launch kwargs instead of HTTP credentials. Keyed on the
     # provider profile's auth_type, not one vendor slug, so out-of-tree external_process
     # plugin providers get the same launch path as the built-in copilot-acp (#102421).
-    from hermes_cli.runtime_provider_backends import _is_external_process_provider
+    from moor_cli.runtime_provider_backends import _is_external_process_provider
 
     if _is_external_process_provider(agent.provider):
         client_kwargs["command"] = agent.acp_command
@@ -905,7 +905,7 @@ def _routed_client_kwargs(agent, fallback_model, _provider_timeout) -> Optional[
         # Explicit non-OpenRouter provider with no creds and no usable fallback: fail fast.
         from agent.auxiliary_unavailable import missing_provider_credentials_message
         raise RuntimeError(missing_provider_credentials_message(_explicit))
-    from hermes_constants import profile_cli_selector
+    from moor_constants import profile_cli_selector
     _sel = profile_cli_selector()
     raise RuntimeError(
         "No LLM provider configured. Run `moor model` to "
@@ -956,7 +956,7 @@ def _init_openai_client(agent, api_key, base_url, fallback_model, _provider_time
             if not agent.quiet_mode:
                 print(f"🤖 AI Agent initialized with MoA preset: {agent.model}")
             return
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     if is_actual_route(agent.provider, client_kwargs.get("base_url", "")):
         agent.api_mode = "chat_completions"
         if hasattr(agent, "_transport_cache"):
@@ -1251,7 +1251,7 @@ def _memory_provider_init_kwargs(agent, platform) -> Dict[str, Any]:
     kwargs = {
         "session_id": agent.session_id,
         "platform": platform or "cli",
-        "hermes_home": str(get_hermes_home()),
+        "moor_home": str(get_moor_home()),
         # platform="cron" (scheduler) / "subagent" (delegate_task) → providers skip writes (MemoryProvider.initialize).
         "agent_context": platform if platform in ("cron", "subagent") else "primary",
     }
@@ -1339,7 +1339,7 @@ def _init_memory(agent, _agent_cfg, skip_memory, platform, memory_manager=None):
                 _mp = _load_mem(_mem_provider_name)
                 if _mp is None:
                     # The provider left core for the catalog (or was never installed): fetch it once.
-                    from hermes_cli.memory_provider_migration import recover_at_startup
+                    from moor_cli.memory_provider_migration import recover_at_startup
                     if recover_at_startup(_mem_provider_name):
                         _mp = _load_mem(_mem_provider_name)
                 if _mp and _mp.is_available():
@@ -1759,7 +1759,7 @@ def config_context_length_for_runtime(agent, config=None) -> Optional[int]:
     the configured default route, so an unrelated runtime never inherits it.
     """
     try:
-        from hermes_cli.config import get_compatible_custom_providers, load_config
+        from moor_cli.config import get_compatible_custom_providers, load_config
         _agent_cfg = config if isinstance(config, dict) else load_config()
         if not isinstance(_agent_cfg, dict):
             return None
@@ -2065,7 +2065,7 @@ def _enforce_minimum_context(agent):
         raise ValueError(
             f"Model {agent.model} has a context window of {_ctx:,} tokens, "
             f"which is below the minimum {MINIMUM_CONTEXT_LENGTH:,} required "
-            f"by Hermes Agent.  {remedy}"
+            f"by Moor Agent.  {remedy}"
         )
 
 

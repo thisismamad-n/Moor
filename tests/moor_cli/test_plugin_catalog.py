@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli import plugin_catalog as pc
 
@@ -144,7 +144,7 @@ def _fresh_cache(tmp_path, monkeypatch, doc: dict):
 
 
 def test_newer_in_tree_pin_outranks_a_fresh_live_cache(tmp_path, monkeypatch):
-    """Right after `hermes update` bumps an in-tree pin, a live cache fetched BEFORE the bump must not
+    """Right after `moor update` bumps an in-tree pin, a live cache fetched BEFORE the bump must not
     re-install the old sha: for the same entry the newer catalog wins (checkout catalog commit time vs
     the doc's generated_at). Live-only entries survive; an older checkout still defers to the doc."""
     old, new = SHA, "a" * 40

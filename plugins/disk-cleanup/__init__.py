@@ -44,7 +44,7 @@ def _extract_paths_from_terminal(args: Dict[str, Any], result: str) -> Set[str]:
     paths: Set[str] = set()
     cmd = args.get("command") or ""
     if isinstance(cmd, str) and cmd:
-        # Tokenise the command — catches `touch /tmp/hermes-x/test_foo.py`.
+        # Tokenise the command — catches `touch /tmp/moor-x/test_foo.py`.
         # ``posix`` follows the host so Windows backslash paths survive
         # (``shlex.split(posix=True)`` would eat them as escapes).
         # Non-posix mode keeps quote characters in tokens, so strip a fully
@@ -118,7 +118,7 @@ Subcommands:
 
 Categories: temp | test | research | download | chrome-profile | cron-output | other
 
-All operations are scoped to HERMES_HOME and /tmp/hermes-*.  # no-tmp: ok — legacy scratch scope this plugin cleans up
+All operations are scoped to MOOR_HOME and /tmp/moor-*.  # no-tmp: ok — legacy scratch scope this plugin cleans up
 Test files are auto-tracked on write_file / terminal and auto-cleaned at session end.
 """
 

@@ -88,10 +88,10 @@ def _is_provider_env_blocklisted(name: str) -> bool:
     """``name`` is a blocklisted provider/tool credential, matched the way the
     platform's environment resolves names: exact plus case-folded. On Windows
     the environment block is case-insensitive, so ``openai_api_key`` IS
-    ``OPENAI_API_KEY``; consistent with ``_is_hermes_internal_secret``, which
+    ``OPENAI_API_KEY``; consistent with ``_is_moor_internal_secret``, which
     already folds (``key.upper()``)."""
-    return (name in _HERMES_PROVIDER_ENV_BLOCKLIST
-            or name.upper() in _HERMES_PROVIDER_ENV_BLOCKLIST)
+    return (name in _MOOR_PROVIDER_ENV_BLOCKLIST
+            or name.upper() in _MOOR_PROVIDER_ENV_BLOCKLIST)
 
 # First-party platform credentials (``BUZZ_*``, driving the platform-mandated ``buzz``
 # CLI) carved out of the TERMINAL scrub only (``_make_run_env``,
@@ -204,9 +204,9 @@ def _is_moor_internal_secret(key: str) -> bool:
 # A's channel/user/role list as its own (#113270). The suffix is matched by shape so a gate
 # added to any adapter is covered without a second edit, but ONLY under a platform prefix
 # (``DISCORD_``, ``GATEWAY_``, a plugin adapter's name): an operator's own ``DEMO_ALLOWED_SENDER``
-# is script data, not a Hermes gate, and deleting it by name shape broke routed ``no_agent``
-# cron scripts (#119539). ``HERMES_*`` never counts (``HERMES_MEDIA_ALLOW_DIRS``,
-# ``HERMES_ALLOW_PRIVATE_URLS`` are process settings, not adapter gates).
+# is script data, not a Moor gate, and deleting it by name shape broke routed ``no_agent``
+# cron scripts (#119539). ``MOOR_*`` never counts (``MOOR_MEDIA_ALLOW_DIRS``,
+# ``MOOR_ALLOW_PRIVATE_URLS`` are process settings, not adapter gates).
 _PROFILE_GATE_ENV_MARKERS = (
     "_ALLOWED_", "_ALLOW_ALL_", "_ALLOW_FROM", "_ALLOW_BOTS", "_ALLOW_PUBLIC_", "_IGNORED_CHANNELS",
     "_NO_THREAD_CHANNELS", "_FREE_RESPONSE_CHANNELS", "_BACKFILL_CHANNELS", "_GROUP_ALLOWED",
@@ -251,7 +251,7 @@ def is_profile_gate_env(name: str, _prefixes: Optional[frozenset] = None) -> boo
     for ANOTHER profile must never inherit. A gate is a platform prefix AND a gate-shaped suffix;
     an operator variable that merely contains ``_ALLOWED_`` is not one."""
     upper = name.upper()
-    if upper.startswith("HERMES_") or upper.startswith("_"):
+    if upper.startswith("MOOR_") or upper.startswith("_"):
         return False
     if not any(marker in upper for marker in _PROFILE_GATE_ENV_MARKERS):
         return False

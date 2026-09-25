@@ -5,10 +5,10 @@ import pytest
 
 
 def _write_config(tmp_path, config: dict) -> None:
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    import hermes_yaml as yaml
-    (hermes_home / "config.yaml").write_text(yaml.safe_dump(config))
+    moor_home = tmp_path / "moor"
+    moor_home.mkdir(parents=True, exist_ok=True)
+    import moor_yaml as yaml
+    (moor_home / "config.yaml").write_text(yaml.safe_dump(config))
 
 
 def _write_auth_store(tmp_path, payload: dict) -> None:
@@ -198,13 +198,13 @@ def test_profile_dotenv_key_counts_as_explicit_when_process_env_lacks_it(tmp_pat
     is_provider_explicitly_configured. os.getenv hid the keyed provider until
     Refresh models ran against the bot's own backend.
     """
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     studio = root / "profiles" / "content-studio"
     studio.mkdir(parents=True)
     (root / "config.yaml").write_text("model: {}\n")
     (studio / "config.yaml").write_text("model: {}\n")
     (studio / ".env").write_text("DEEPSEEK_API_KEY=sk-studio-deepseek-key\n")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
     from agent import secret_scope
@@ -212,8 +212,8 @@ def test_profile_dotenv_key_counts_as_explicit_when_process_env_lacks_it(tmp_pat
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", False)
     monkeypatch.setattr(lpp, "_snapshot", None)
 
-    from hermes_cli.auth import is_provider_explicitly_configured
-    from hermes_cli.web_server_profiles import _config_profile_scope
+    from moor_cli.auth import is_provider_explicitly_configured
+    from moor_cli.web_server_profiles import _config_profile_scope
 
     assert is_provider_explicitly_configured("deepseek") is False
     with _config_profile_scope("content-studio"):
@@ -228,12 +228,12 @@ def test_dotenv_key_counts_when_shell_exports_the_var_empty(tmp_path, monkeypatc
     an empty ``DEEPSEEK_API_KEY=`` inherited from the parent shell must not hide
     a real key in .env (#77007) — the resolver would use that key, so the picker
     must list the provider."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
     monkeypatch.setenv("DEEPSEEK_API_KEY", "")
     _write_config(tmp_path, {"model": {}})
-    (tmp_path / "hermes" / ".env").write_text("DEEPSEEK_API_KEY=sk-dotenv-only-secret\n")
+    (tmp_path / "moor" / ".env").write_text("DEEPSEEK_API_KEY=sk-dotenv-only-secret\n")
 
-    from hermes_cli.auth import is_provider_explicitly_configured, resolve_api_key_provider_credentials
+    from moor_cli.auth import is_provider_explicitly_configured, resolve_api_key_provider_credentials
     assert resolve_api_key_provider_credentials("deepseek").get("api_key") == "sk-dotenv-only-secret"
     assert is_provider_explicitly_configured("deepseek") is True
 

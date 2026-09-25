@@ -117,7 +117,7 @@ def await_permission(
 def resolve_permission_timeout(timeout: float | None) -> float:
     """``None`` → the user's ``approvals.timeout`` (same knob as CLI/gateway prompts, default
     300 s). The ACP bridges used to hardcode 60 s, so a host whose approval card was still
-    waiting saw Hermes self-deny under it (#73403)."""
+    waiting saw Moor self-deny under it (#73403)."""
     if timeout is not None:
         return float(timeout)
     from tools.approval_context import _get_approval_timeout
@@ -128,7 +128,7 @@ def resolve_permission_timeout(timeout: float | None) -> float:
 def make_approval_callback(request_permission_fn: Callable, loop: asyncio.AbstractEventLoop,
                            session_id: str, timeout: float | None = None,
                            send_update: Callable[[object], None] | None = None) -> Callable[..., str]:
-    """Return a Hermes approval callback (``command, description, **kw`` as used by
+    """Return a Moor approval callback (``command, description, **kw`` as used by
     ``tools.approval.prompt_dangerous_approval()``) that bridges to the ACP
     connection's ``request_permission`` coroutine on ``loop``; auto-denies after ``timeout`` s
     (``None`` → ``approvals.timeout``, read per request)."""

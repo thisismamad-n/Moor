@@ -14,7 +14,7 @@ Spaced-repetition flashcards: create, review, quiz, export.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/productivity/memento-flashcards` |
+| Source | Optional — install with `moor skills install official/productivity/memento-flashcards` |
 | Path | `optional-skills/productivity/memento-flashcards` |
 | Version | `1.0.0` |
 | Author | Memento AI |
@@ -219,7 +219,7 @@ python3 ~/.moor/skills/productivity/memento-flashcards/scripts/youtube_quiz.py f
 This returns `{"title": "...", "transcript": "..."}` or an error.
 
 If the script reports `missing_dependency`, use `terminal` with a PM-prepared
-Hermes checkout to prepare the declared `youtube` extra, then reactivate:
+Moor checkout to prepare the declared `youtube` extra, then reactivate:
 
 ```bash
 python -c "import pm; pm.sync_venv(['youtube'], explicit=True)"
@@ -232,7 +232,7 @@ Follow the isolated development-home setup in
 before preparation. Retry `youtube_quiz.py` with that Python and the actual
 skill directory returned by `skill_view`. For a remote or sandbox terminal,
 prepare an independent helper environment on that host. Never pip-install into
-Hermes's selected environment.
+Moor's selected environment.
 
 **Step 3:** Generate 5 quiz questions from the transcript. Use these rules:
 

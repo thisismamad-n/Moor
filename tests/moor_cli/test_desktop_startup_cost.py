@@ -10,8 +10,8 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import main as cli_main
-from hermes_cli import main_desktop as desktop
+from moor_cli import main as cli_main
+from moor_cli import main_desktop as desktop
 
 
 def _tree(tmp_path):
@@ -29,14 +29,14 @@ def _tree(tmp_path):
 def test_current_packaged_launch_does_not_require_npm(tmp_path, monkeypatch):
     root, app, _ = _tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
-    executable = app / "Hermes.exe"
+    executable = app / "Moor.exe"
     args = argparse.Namespace(source=False, skip_build=False, force_build=False, build_only=False)
     with patch.object(desktop, "_desktop_launch_env", return_value=({}, [])), \
          patch.object(desktop, "_desktop_packaged_executable", return_value=executable), \
          patch.object(desktop, "_desktop_build_needed", return_value=False), \
          patch.object(desktop, "_register_linux_desktop_entry"), \
          patch.object(desktop, "_packaged_desktop_launch_command", return_value=[str(executable)]), \
-         patch("hermes_cli.main_install_repair._resolve_node_runtime_npm", return_value=None) as npm, \
+         patch("moor_cli.main_install_repair._resolve_node_runtime_npm", return_value=None) as npm, \
          patch.object(desktop.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as run, \
          pytest.raises(SystemExit) as exited:
         desktop.cmd_gui(args)

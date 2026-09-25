@@ -188,7 +188,7 @@ async def test_session_model_lock_persists_off_the_event_loop(adapter, session_d
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.post(
                 f"/api/sessions/{session_id}/model",
-                json={"provider": "nous", "model": "x-ai/grok-4.5", "require_model_lock": True})
+                json={"provider": "moor", "model": "x-ai/grok-4.5", "require_model_lock": True})
             assert resp.status == 200, await resp.text()
     assert seen and all(tid != loop_thread for tid in seen)
     assert session_db.get_session(session_id)["model"] == "x-ai/grok-4.5"
@@ -857,8 +857,8 @@ def test_confirmed_runtime_lock_rejects_provider_only_mismatch(adapter):
     class FakeAgent:
         provider = "fallback-provider"
         model = "some-model"
-        _hermes_api_runtime = {
-            "provider": "nous",
+        _moor_api_runtime = {
+            "provider": "moor",
             "model": "some-model",
             "route_source": "session_model_lock",
         }
@@ -866,8 +866,8 @@ def test_confirmed_runtime_lock_rejects_provider_only_mismatch(adapter):
     with pytest.raises(RuntimeError, match="confirmed model lock runtime mismatch"):
         adapter._turn_runtime_metadata(
             FakeAgent(),
-            route={"provider": "nous", "model": "some-model"},
-            requested_runtime={"provider": "nous", "model": "some-model"},
+            route={"provider": "moor", "model": "some-model"},
+            requested_runtime={"provider": "moor", "model": "some-model"},
             route_source="session_model_lock",
             confirmed_runtime_lock=True,
         )
@@ -884,7 +884,7 @@ def test_confirmed_runtime_lock_accepts_resolved_provider_identity(
     class FakeAgent:
         provider = actual_provider
         model = "some-model"
-        _hermes_api_runtime = {
+        _moor_api_runtime = {
             "provider": resolved_provider,
             "model": "some-model",
             "route_source": "session_model_lock",
@@ -1229,7 +1229,7 @@ async def test_interim_commentary_reaches_session_sse_and_responses_stream(adapt
         async with TestClient(TestServer(app)) as cli:
             sse = await (await cli.post(f"/api/sessions/{session_id}/chat/stream", json={"message": "go"})).text()
             responses = await (await cli.post(
-                "/v1/responses", json={"model": "hermes-agent", "input": "go", "stream": True})).text()
+                "/v1/responses", json={"model": "moor-agent", "input": "go", "stream": True})).text()
 
     def _events(body):
         out = []

@@ -1,6 +1,6 @@
 import type { McpCatalogResponse, McpServerSummary } from '@/types/moor'
 
-import { capabilityScoped, hermesApi, type ProfileScope, profileScoped } from './client'
+import { capabilityScoped, moorApi, type ProfileScope, profileScoped } from './client'
 
 export interface McpTestResult {
   ok: boolean
@@ -115,7 +115,7 @@ export function setMcpServerEnabled(name: string, enabled: boolean): Promise<{ o
 }
 
 export function getMcpCatalog(profile?: ProfileScope, detectApps = false): Promise<McpCatalogResponse> {
-  return window.hermesDesktop.api<McpCatalogResponse>({
+  return window.moorDesktop.api<McpCatalogResponse>({
     ...capabilityScoped(profile),
     path: `/api/mcp/catalog${detectApps ? '?detect_apps=true' : ''}`,
     ...(detectApps ? { timeoutMs: 5000 } : {})

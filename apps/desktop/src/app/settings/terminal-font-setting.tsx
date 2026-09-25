@@ -7,7 +7,7 @@ import {
   TERMINAL_FONT_SUGGESTIONS
 } from '@/app/right-sidebar/terminal/terminal-font'
 import { Button } from '@/components/ui/button'
-import { saveHermesConfig } from '@/hermes'
+import { saveMoorConfig } from '@/moor'
 import { useI18n } from '@/i18n'
 import { notifyError } from '@/store/notifications'
 import type { MoorConfigRecord } from '@/types/moor'
@@ -29,7 +29,7 @@ function fontFamilyFromConfig(config: MoorConfigRecord): string {
 export function TerminalFontSetting() {
   const { t } = useI18n()
   const copy = t.settings.appearance
-  const { data: loadedConfig, dataUpdatedAt, writeScope } = useHermesConfigRecord()
+  const { data: loadedConfig, dataUpdatedAt, writeScope } = useMoorConfigRecord()
   // draft === null ⇔ unseeded: nothing painted yet for this profile. The
   // profile-switch handler keeps it unseeded until a config refetch completes;
   // the timestamp is the freshness proof because React Query can reuse the
@@ -91,7 +91,7 @@ export function TerminalFontSetting() {
 
       // Sparse patch: PUT /api/config deep-merges, and echoing the cached
       // snapshot would overwrite keys other surfaces changed since it loaded.
-      void saveHermesConfig(setNested({}, 'terminal.font_family', value), writeScope)
+      void saveMoorConfig(setNested({}, 'terminal.font_family', value), writeScope)
         .then(result => {
           if (!result.ok) {
             throw new Error(t.settings.config.autosaveFailed)

@@ -51,16 +51,16 @@ describe('useMoorConfig refreshMoorConfig', () => {
   // missing key falls back to the DEFAULT_CONFIG default (on).
   it('mirrors display.show_reasoning and resets a missing key to the default', async () => {
     mockConfig({ display: { show_reasoning: 'false' } })
-    const { result } = renderHook(() => useHermesConfig({ activeSessionIdRef: { current: null } }))
+    const { result } = renderHook(() => useMoorConfig({ activeSessionIdRef: { current: null } }))
 
     await act(async () => {
-      await result.current.refreshHermesConfig()
+      await result.current.refreshMoorConfig()
     })
     expect($showReasoning.get()).toBe(false)
 
     mockConfig({})
     await act(async () => {
-      await result.current.refreshHermesConfig()
+      await result.current.refreshMoorConfig()
     })
     expect($showReasoning.get()).toBe(true)
   })

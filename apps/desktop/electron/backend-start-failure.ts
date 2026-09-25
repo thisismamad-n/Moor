@@ -144,7 +144,7 @@ export function isSshAuthFailedBootFailure(error: unknown): boolean {
 /**
  * Whether a failed remote boot should latch (into `backendStartFailure`)
  * because SSH rejected the credentials (#72698). Unlatched, every
- * `getConnection`/api call re-runs startHermes, re-emits `running: true` and
+ * `getConnection`/api call re-runs startMoor, re-emits `running: true` and
  * hides the boot-failure overlay, so its Gateway settings button — the only
  * way to fix the key — ignores clicks. Released by reset/repair/apply-config
  * like the host-key latch.

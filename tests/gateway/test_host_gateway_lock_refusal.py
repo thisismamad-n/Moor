@@ -13,7 +13,7 @@ import pytest
 
 @pytest.fixture
 def host_lock_dir(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
     from gateway import host_rendezvous as hr
     hr._lock_handles.clear()
     yield tmp_path
@@ -41,7 +41,7 @@ def test_second_host_gateway_is_refused_with_75_naming_the_owner_and_the_migrate
     from gateway import host_rendezvous as hr
     from gateway.restart import GATEWAY_FATAL_CONFIG_EXIT_CODE, GATEWAY_SERVICE_RESTART_EXIT_CODE
     from gateway.run import _claim_host_gateway_role
-    from hermes_cli.gateway_migrate import MIGRATE_COMMAND
+    from moor_cli.gateway_migrate import MIGRATE_COMMAND
 
     hr.publish_record(hr.ROLE_GATEWAY, profiles=("default", "coder"), home=str(host_lock_dir))
     owner = hr.read_record(hr.ROLE_GATEWAY, include_stale=True)
@@ -125,7 +125,7 @@ def test_an_unmigrated_standalone_fleet_starts_beside_the_owner_instead_of_spinn
     finally:
         handle.close()
 
-    from hermes_cli.gateway_migrate import MIGRATE_COMMAND
+    from moor_cli.gateway_migrate import MIGRATE_COMMAND
     logged = "\n".join(r.getMessage() for r in caplog.records)
     assert "standalone gateway owns this host" in logged
     assert MIGRATE_COMMAND in logged, "the bounded outcome must name the command that converges"
@@ -165,7 +165,7 @@ def test_a_multiplexing_owner_is_still_refused(host_lock_dir, monkeypatch):
 async def test_a_replace_unit_that_replaced_nothing_is_still_refused_when_it_loses_the_lock(
     host_lock_dir, tmp_path, monkeypatch,
 ):
-    """Every unit Hermes generates (launchd, systemd, s6) runs ``gateway run --replace``. When the
+    """Every unit Moor generates (launchd, systemd, s6) runs ``gateway run --replace``. When the
     attach check saw no owner yet (the record lands a moment after the owner's claim) nothing was
     replaced, and the lock is the only arbiter of the race. Reading ``--replace`` as ``--force``
     there started a second gateway beside the multiplexer, and the two fought for the same bot
@@ -178,7 +178,7 @@ async def test_a_replace_unit_that_replaced_nothing_is_still_refused_when_it_los
     from gateway.restart import GATEWAY_SERVICE_RESTART_EXIT_CODE
     from gateway.run import start_gateway
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     (tmp_path / "home").mkdir()
 
     class _RunnerMustNotStart:
@@ -195,8 +195,8 @@ async def test_a_replace_unit_that_replaced_nothing_is_still_refused_when_it_los
     monkeypatch.setattr("gateway.run._host_attach_or_none", AsyncMock(return_value=None))
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: None)
     monkeypatch.setattr("tools.skills_sync.sync_skills", lambda quiet=True: None)
-    monkeypatch.setattr("hermes_logging.setup_logging", lambda hermes_home, mode: tmp_path)
-    monkeypatch.setattr("hermes_logging._add_rotating_handler", lambda *args, **kwargs: None)
+    monkeypatch.setattr("moor_logging.setup_logging", lambda moor_home, mode: tmp_path)
+    monkeypatch.setattr("moor_logging._add_rotating_handler", lambda *args, **kwargs: None)
     monkeypatch.setattr("gateway.run.GatewayRunner", _RunnerMustNotStart)
     # The lock holder is a multiplexer: the standalone start-beside carve-out must not rescue a
     # --replace unit. Patched where _claim_host_gateway_role reads it; the request_serve_profile

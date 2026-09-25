@@ -1,9 +1,9 @@
 """s6 leg of the one-gateway-per-host convergence, shared by container boot and in-process migration.
 
 Inside the official image every profile has an s6 slot (``/run/service/gateway-<profile>``). The
-container's boot (``hermes_cli/container_boot.py``) registers every NAMED slot down and lets the
-root slot inherit their autostart intent; ``hermes gateway migrate --multiplex`` (and the hook
-``hermes update`` runs) must be able to do the same thing to a slot that is UP, from inside the
+container's boot (``moor_cli/container_boot.py``) registers every NAMED slot down and lets the
+root slot inherit their autostart intent; ``moor gateway migrate --multiplex`` (and the hook
+``moor update`` runs) must be able to do the same thing to a slot that is UP, from inside the
 running container, without a container restart. Both paths decide "which named intents fold into
 the root slot" through :func:`fold_named_slot_intent` so they can never disagree.
 """
@@ -36,7 +36,7 @@ def fold_named_slot_intent(default_prior_state: Optional[str],
 
     A named slot is never booted from its own intent (a started named slot IS a second gateway on
     this host); its ``running`` intent moves to the root slot, which is the process that serves it.
-    Without the fold an image only ever driven as ``hermes -p coder gateway start`` came up with
+    Without the fold an image only ever driven as ``moor -p coder gateway start`` came up with
     ZERO gateways: no root state, every named slot registered down, every action "registered".
     """
     folded = tuple(sorted(name for name, prior in named_states if prior in AUTOSTART_STATES))
@@ -45,14 +45,14 @@ def fold_named_slot_intent(default_prior_state: Optional[str],
 
 
 def named_slot_name(profile: str) -> str:
-    from hermes_cli.service_manager import S6_SERVICE_PREFIX
+    from moor_cli.service_manager import S6_SERVICE_PREFIX
     return f"{S6_SERVICE_PREFIX}{profile}"
 
 
 def running_named_slots(profiles: Sequence[str], manager=None) -> list[str]:
     """Named profiles whose s6 slot is UP right now — the only s6 state that is a second gateway.
 
-    A registered-down slot (what boot leaves behind) is a start target for ``hermes -p X gateway
+    A registered-down slot (what boot leaves behind) is a start target for ``moor -p X gateway
     start``, not a running gateway, and must never veto the multiplex default.
     """
     manager = manager or _manager()
@@ -84,7 +84,7 @@ def park_named_slot(profile: str, manager=None) -> None:
 
 
 def _wait_down(service_dir: Path, timeout_ms: int = 15000) -> None:
-    from hermes_cli.service_manager import _s6_run
+    from moor_cli.service_manager import _s6_run
     try:
         _s6_run("s6-svwait", "-d", "-t", str(timeout_ms), str(service_dir), timeout=timeout_ms / 1000 + 5)
     except Exception:
@@ -104,5 +104,5 @@ def bring_root_slot_up(manager=None) -> str:
 
 
 def _manager():
-    from hermes_cli.service_manager import S6ServiceManager
+    from moor_cli.service_manager import S6ServiceManager
     return S6ServiceManager()

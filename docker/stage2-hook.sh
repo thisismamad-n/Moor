@@ -248,20 +248,20 @@ if [ "$needs_chown" = true ]; then
     # created and managed exclusively by moor (see the s6-setuidgid mkdir
     # -p block below for the canonical list).
     for sub in cron sessions logs hooks memories skills skins plans workspace home profiles pairing platforms/pairing; do
-        if [ -e "$HERMES_HOME/$sub" ] && tree_has_non_hermes_owner "$HERMES_HOME/$sub"; then
-            chown_hermes_tree "$HERMES_HOME/$sub"
+        if [ -e "$MOOR_HOME/$sub" ] && tree_has_non_moor_owner "$MOOR_HOME/$sub"; then
+            chown_moor_tree "$MOOR_HOME/$sub"
         fi
     done
 fi
 
 # --- Immutable install tree ---
 # Do not chown runtime code or dependency trees under $INSTALL_DIR back to the
-# hermes user. Hosted/container instances keep mutable state under
-# $HERMES_HOME (/opt/data) and run with PYTHONDONTWRITEBYTECODE. Keeping
-# /opt/hermes root-owned and non-writable prevents an agent session from
+# moor user. Hosted/container instances keep mutable state under
+# $MOOR_HOME (/opt/data) and run with PYTHONDONTWRITEBYTECODE. Keeping
+# /opt/moor root-owned and non-writable prevents an agent session from
 # self-modifying the installed source, venv, TUI bundle, or node_modules and
 # bricking the gateway. On-demand dependency installs go to PM generations
-# under $HERMES_HOME/installs, never into this tree.
+# under $MOOR_HOME/installs, never into this tree.
 
 # Always reset ownership of $MOOR_HOME/profiles to moor on every
 # boot. Profile dirs and files can land owned by root when commands
@@ -368,41 +368,41 @@ fi
 # Use direct `mkdir -p` invocation (no `sh -c "..."` wrapper) so the
 # shell isn't a second interpreter — defends against $MOOR_HOME values
 # containing shell metacharacters. PR #30136 review item O2.
-as_hermes mkdir -p \
-    "$HERMES_HOME/backups" \
-    "$HERMES_HOME/cron" \
-    "$HERMES_HOME/sessions" \
-    "$HERMES_HOME/logs" \
-    "$HERMES_HOME/logs/gateways" \
-    "$HERMES_HOME/hooks" \
-    "$HERMES_HOME/memories" \
-    "$HERMES_HOME/skills" \
-    "$HERMES_HOME/skins" \
-    "$HERMES_HOME/plans" \
-    "$HERMES_HOME/workspace" \
-    "$HERMES_HOME/home" \
-    "$HERMES_HOME/pairing" \
-    "$HERMES_HOME/platforms/pairing"
+as_moor mkdir -p \
+    "$MOOR_HOME/backups" \
+    "$MOOR_HOME/cron" \
+    "$MOOR_HOME/sessions" \
+    "$MOOR_HOME/logs" \
+    "$MOOR_HOME/logs/gateways" \
+    "$MOOR_HOME/hooks" \
+    "$MOOR_HOME/memories" \
+    "$MOOR_HOME/skills" \
+    "$MOOR_HOME/skins" \
+    "$MOOR_HOME/plans" \
+    "$MOOR_HOME/workspace" \
+    "$MOOR_HOME/home" \
+    "$MOOR_HOME/pairing" \
+    "$MOOR_HOME/platforms/pairing"
 
 # --- XDG_RUNTIME_DIR ---
 # 0700 as dbus requires. It lives in world-writable /tmp under a predictable name
 # and holds the display-allocation lock, so it is a security boundary: refuse a
-# symlink or a directory someone else owns (chowning that one would hand hermes a
+# symlink or a directory someone else owns (chowning that one would hand moor a
 # directory whose creator keeps an fd into it), and chown rather than assume —
-# `usermod -u` above does not chown outside the home dir, so a HERMES_UID remap
+# `usermod -u` above does not chown outside the home dir, so a MOOR_UID remap
 # would leave it owned by the old uid and every Xfce/dbus/lock open would EACCES.
 if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
     xdg_owner=""
     if [ -e "$XDG_RUNTIME_DIR" ]; then xdg_owner=$(stat -c %u "$XDG_RUNTIME_DIR" 2>/dev/null || echo unknown); fi
     if refuse_symlinked_path "create" "$XDG_RUNTIME_DIR"; then
         :
-    elif [ -n "$xdg_owner" ] && [ "$xdg_owner" != "0" ] && [ "$xdg_owner" != "$actual_hermes_uid" ]; then
-        echo "[stage2] Warning: $XDG_RUNTIME_DIR is owned by uid $xdg_owner (not root or hermes) — refusing to adopt it"
+    elif [ -n "$xdg_owner" ] && [ "$xdg_owner" != "0" ] && [ "$xdg_owner" != "$actual_moor_uid" ]; then
+        echo "[stage2] Warning: $XDG_RUNTIME_DIR is owned by uid $xdg_owner (not root or moor) — refusing to adopt it"
     else
         mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || \
             echo "[stage2] Warning: could not create XDG_RUNTIME_DIR $XDG_RUNTIME_DIR (continuing)"
         if [ -d "$XDG_RUNTIME_DIR" ]; then
-            chown hermes:hermes "$XDG_RUNTIME_DIR" 2>/dev/null || \
+            chown moor:moor "$XDG_RUNTIME_DIR" 2>/dev/null || \
                 echo "[stage2] Warning: could not chown XDG_RUNTIME_DIR $XDG_RUNTIME_DIR (rootless?)"
             chmod 0700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
         fi
@@ -647,16 +647,16 @@ fi
 
 # --- Refresh the dependency generation for this image ---
 # Opt-in dependencies (lazy extras, plugin deps) live in PM generations on the
-# volume, selected by $HERMES_HOME/installs/*/facts.json. An image upgrade
+# volume, selected by $MOOR_HOME/installs/*/facts.json. An image upgrade
 # replaces uv.lock under that durable selection, so re-resolve it here, before
 # any supervised service boots onto a generation built for the previous image.
 # On failure (e.g. offline) PM falls back to the image's own environment and
 # keeps the extras recorded for the next boot or install. Then collect the
 # generations nothing selects any more: no service holds a lease yet, and
 # collect_generations keeps anything younger than a day.
-s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" -c '
+s6-setuidgid moor "$INSTALL_DIR/.venv/bin/python" -c '
 from pathlib import Path
-from hermes_cli.runtime_state import collect_generations
+from moor_cli.runtime_state import collect_generations
 from pm.environments import install_state_dir
 from pm.recovery import refresh_dependencies
 from pm.runtime import collect_runtime_generations
@@ -754,11 +754,11 @@ fi
 
 # --- Point agent-browser at the pinned Chromium binary ---
 # The image's Dockerfile pm-provisions pinned full Chromium into
-# $HERMES_RUNTIME_DIR (/opt/hermes/tools) at BUILD time and bakes the
-# resolved browser binary path into /etc/hermes/agent-browser-executable-path
+# $MOOR_RUNTIME_DIR (/opt/moor/tools) at BUILD time and bakes the
+# resolved browser binary path into /etc/moor/agent-browser-executable-path
 # (the layout differs per arch — chrome-linux64/chrome on amd64,
 # chromium-linux-arm64/chromium on arm64 — so it is resolved at build time,
-# not hard-coded). agent-browser (the runtime CLI Hermes spawns for the
+# not hard-coded). agent-browser (the runtime CLI Moor spawns for the
 # browser tool) doesn't recognise Playwright's directory layout in its own
 # cache scan and fails with "Auto-launch failed: Chrome not found" — even
 # though the binary is right there (#15697).
@@ -773,8 +773,8 @@ fi
 # - Quietly skipped when the baked path file is absent (e.g. custom builds
 #   that strip the pm tool store).
 if [ -z "${AGENT_BROWSER_EXECUTABLE_PATH:-}" ] && \
-        [ -f /etc/hermes/agent-browser-executable-path ]; then
-    browser_bin="$(cat /etc/hermes/agent-browser-executable-path)"
+        [ -f /etc/moor/agent-browser-executable-path ]; then
+    browser_bin="$(cat /etc/moor/agent-browser-executable-path)"
     if [ -n "$browser_bin" ] && [ -x "$browser_bin" ]; then
         echo "[stage2] Using pinned agent-browser Chromium binary: $browser_bin"
         # Write to s6's container_environment so with-contenv picks it

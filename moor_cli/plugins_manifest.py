@@ -18,7 +18,7 @@ from utils import fast_safe_load
 from moor_cli.plugin_capabilities import parse_declared_capabilities as _parse_declared_capabilities
 
 try:
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 except ImportError:  # pragma: no cover – yaml is optional at import time
     yaml = None  # type: ignore[assignment]
 
@@ -34,8 +34,8 @@ _KNOWN_MANIFEST_FIELDS: Set[str] = {
     "kind", "hooks", "label", "optional_env", "platforms", "external_dependencies",
     "pip_dependencies", "provides_browser_providers", "provides_web_providers",
     "manifest_version", "api_version", "requires_plugins", "python_dependencies", "config_schema",
-    "license", "homepage", "tags", "capabilities", "emits", "listens", "hermes", "depends",
-    "requires_hermes", "python_runtime",
+    "license", "homepage", "tags", "capabilities", "emits", "listens", "moor", "depends",
+    "requires_moor", "python_runtime",
 }
 
 # Highest manifest schema version this Moor understands.
@@ -45,7 +45,7 @@ _CONFIG_SCHEMA_TYPES: Dict[str, tuple] = {
     "str": (str,), "string": (str,), "int": (int,), "integer": (int,), "float": (int, float),
     "number": (int, float), "bool": (bool,), "boolean": (bool,), "list": (list,), "array": (list,),
     "dict": (dict,), "object": (dict,),
-    # ``secret`` values live in ``.env`` (see hermes_cli.plugins_settings), so a config.yaml copy is
+    # ``secret`` values live in ``.env`` (see moor_cli.plugins_settings), so a config.yaml copy is
     # only ever a stray string.
     "secret": (str,),
 }
@@ -393,9 +393,9 @@ class PluginManifest:
 _VERSION_COMPARATOR_RE = re.compile(r"^\s*(>=|<=|==|!=|>|<)\s*(.+?)\s*$")
 
 
-def running_hermes_version() -> str:
-    """Base release version of the Hermes code that is running."""
-    from hermes_cli.version_info import get_version_info
+def running_moor_version() -> str:
+    """Base release version of the Moor code that is running."""
+    from moor_cli.version_info import get_version_info
 
     return get_version_info().base_version
 
@@ -434,15 +434,15 @@ def version_satisfies(spec: str, current: str) -> bool:
     return True
 
 
-def requires_hermes_error(manifest: "PluginManifest") -> Optional[str]:
-    """Load-blocking reason when the manifest's ``requires_hermes`` rejects the running version."""
-    spec = manifest.get("requires_hermes", "") if isinstance(manifest, Mapping) else manifest.requires_hermes
+def requires_moor_error(manifest: "PluginManifest") -> Optional[str]:
+    """Load-blocking reason when the manifest's ``requires_moor`` rejects the running version."""
+    spec = manifest.get("requires_moor", "") if isinstance(manifest, Mapping) else manifest.requires_moor
     if not spec:
         return None
-    current = running_hermes_version()
+    current = running_moor_version()
     if version_satisfies(spec, current):
         return None
-    return f"requires hermes {spec}, running {current}"
+    return f"requires moor {spec}, running {current}"
 
 
 def portable_plugin_manifest(child: Path, source: str, prefix: str) -> PluginManifest:
@@ -507,7 +507,7 @@ def parse_manifest_file(
             # ``hooks:`` is the spelling the bundled manifests carried for months; external copies of it
             # must keep declaring the same thing (#108371).
             provides_hooks=data.get("provides_hooks", data.get("hooks", [])), source=source, path=str(plugin_dir),
-            kind=kind, key=key, requires_hermes=str(data.get("requires_hermes") or "").strip(),
+            kind=kind, key=key, requires_moor=str(data.get("requires_moor") or "").strip(),
             capabilities=_parse_declared_capabilities(data.get("capabilities"), name),
             **_parse_manifest_v2_fields(data, key), emits=data.get("emits") or [],
             listens=data.get("listens") or [],

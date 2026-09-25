@@ -359,7 +359,7 @@ class TestRunConversationCodexPath:
         monkeypatch.setattr(CodexAppServerSession, "run_turn", fake_run_turn)
 
         with patch(
-            "hermes_cli.config.load_config",
+            "moor_cli.config.load_config",
             return_value={"model": {"codex_bin": configured}},
         ):
             agent = _make_codex_agent()

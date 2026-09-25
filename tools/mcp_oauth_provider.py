@@ -27,10 +27,10 @@ _DISCOVERY_CONTEXT_LEAD = "Could not read authorization-server metadata"
 
 
 def _default_auth_request_user_agent() -> str:
-    """``Hermes-Agent/<version>`` for SDK-built OAuth requests that would otherwise carry no User-Agent at
+    """``moor-agent/<version>`` for SDK-built OAuth requests that would otherwise carry no User-Agent at
     all; versioned so an operator debugging a WAF block can tell which client they are looking at."""
-    from hermes_cli.version_info import get_version_info
-    return f"Hermes-Agent/{get_version_info().base_version}"
+    from moor_cli.version_info import get_version_info
+    return f"moor-agent/{get_version_info().base_version}"
 
 
 DEFAULT_AUTH_REQUEST_USER_AGENT = _default_auth_request_user_agent()
@@ -81,7 +81,7 @@ class MoorProviderMixin:
       endpoint rejects the exchange (looping the browser page) — coerce ``client_secret_post``.
     - ``token_user_agent`` (``oauth.user_agent``) is stamped onto token-endpoint requests only
       (some authorization servers/WAFs reject httpx's default); unset falls back to the shared
-      ``Hermes-Agent/<version>`` default, since a header-less token POST is 403'd by WAF-fronted
+      ``moor-agent/<version>`` default, since a header-less token POST is 403'd by WAF-fronted
       authorization servers (#115329).
     - Any 2xx token/refresh response is accepted; token bodies never leak into errors/logs."""
 
@@ -136,7 +136,7 @@ class MoorProviderMixin:
         appended here — never overwriting values already present in the query. Wraps once: every
         authorization runs through here, and the wrapper reads the issuer at call time."""
         inner = self.context.redirect_handler
-        if inner is None or getattr(inner, "_hermes_offline_access", False):
+        if inner is None or getattr(inner, "_moor_offline_access", False):
             return
         from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -151,10 +151,10 @@ class MoorProviderMixin:
             query.setdefault("prompt", "consent")
             await inner(urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)))
 
-        _with_offline_access._hermes_offline_access = True  # type: ignore[attr-defined]
+        _with_offline_access._moor_offline_access = True  # type: ignore[attr-defined]
         self.context.redirect_handler = _with_offline_access
 
-    async def _hermes_accept_origin_issued_metadata(self, response):
+    async def _moor_accept_origin_issued_metadata(self, response):
         """Accept a path-scoped authorization server's metadata document whose ``issuer`` is the origin
         it lives under (see ``metadata_issued_by_origin``); the SDK's exact-string check (RFC 8414 §3.3)
         would reject it and park the connection on an issuer mismatch (Strava, #116233).
@@ -163,7 +163,7 @@ class MoorProviderMixin:
         installed on the context here and the SDK is handed an empty 204: ``handle_auth_metadata_response``
         reads that as "stop trying", leaving the installed document in place. ``auth_server_url`` is left
         untouched, so the SEP-2352 credential binding still uses the advertised identifier (stable across
-        runs), while the RFC 9207 ``iss`` check and Hermes' refresh-token binding use the document's issuer.
+        runs), while the RFC 9207 ``iss`` check and Moor' refresh-token binding use the document's issuer.
         Every other response goes back to the SDK unchanged, including its issuer check."""
         # This compatibility shim is only for authorization-server metadata
         # responses. Never consume arbitrary 200 responses here: MCP resource
@@ -184,7 +184,7 @@ class MoorProviderMixin:
             return response
         if not metadata_issued_by_origin(metadata, self.context.auth_server_url, response):
             return response
-        self._hermes_logger.info(
+        self._moor_logger.info(
             "MCP OAuth: accepting authorization-server metadata from %s whose issuer %s is the origin of the "
             "advertised server %s", response.url, metadata.issuer, self.context.auth_server_url)
         self.context.oauth_metadata = metadata
@@ -192,12 +192,12 @@ class MoorProviderMixin:
 
     def _prepare_token_request(self, request):
         """Stamp a token/refresh request's User-Agent: the configured ``oauth.user_agent`` when set,
-        else the shared ``Hermes-Agent/<version>`` default. These requests are built by hand — the
+        else the shared ``moor-agent/<version>`` default. These requests are built by hand — the
         SDK's ``_exchange_token_authorization_code``/``_refresh_token`` and ``tools.mcp_oauth_device``
         — and travel through ``client.send()``, which never merges the client's default headers, so
         without a stamp the POST leaves with NO ``User-Agent`` at all and a WAF-fronted authorization
         server answers 403 (#115329)."""
-        ua = getattr(self, "_hermes_token_user_agent", None)  # tests build via __new__
+        ua = getattr(self, "_moor_token_user_agent", None)  # tests build via __new__
         if ua:
             request.headers["User-Agent"] = ua
         return stamp_default_user_agent(request)
@@ -279,7 +279,7 @@ class MoorProviderMixin:
                         if failure:
                             discovery_failures.append(failure)
                         elif getattr(sent, "status_code", None) == 200:
-                            sent = await self._hermes_accept_origin_issued_metadata(sent)
+                            sent = await self._moor_accept_origin_issued_metadata(sent)
             finally:
                 await self._moor_release_refresh_fence()
 

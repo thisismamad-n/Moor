@@ -109,7 +109,7 @@ def test_acp_set_session_model_rejected_while_turn_running(monkeypatch):
 
     called = {}
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "moor_cli.model_switch.switch_model",
         lambda **kw: called.setdefault("hit", kw))
     agent, made = _acp_agent()
     state = _state()
@@ -129,14 +129,14 @@ def test_acp_switch_model_carries_the_live_agent_toolsets_into_the_rebuild(monke
     (``_register_session_mcp_servers``); a rebuild that re-derived them from config.yaml dropped
     every session MCP tool after ``session/set_model`` or ``/model``."""
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "moor_cli.model_switch.switch_model",
         lambda **_kw: ModelSwitchResult(success=True, target_provider="anthropic", new_model="claude-sonnet-5"))
 
     agent, made = _acp_agent()
-    agent._switch_model(_state(enabled_toolsets=["hermes-acp", "mcp-demo-search"], disabled_toolsets=["browser"]),
+    agent._switch_model(_state(enabled_toolsets=["moor-acp", "mcp-demo-search"], disabled_toolsets=["browser"]),
                         "claude-sonnet-5")
 
-    assert made["enabled_toolsets"] == ["hermes-acp", "mcp-demo-search"]
+    assert made["enabled_toolsets"] == ["moor-acp", "mcp-demo-search"]
     assert made["disabled_toolsets"] == ["browser"]
 
 
@@ -148,7 +148,7 @@ def test_acp_set_session_model_rejection_is_invalid_params_and_leaves_session_un
 
     from acp.exceptions import RequestError
 
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model",
+    monkeypatch.setattr("moor_cli.model_switch.switch_model",
                         lambda **_kw: ModelSwitchResult(success=False, error_message="`nope` is not a model"))
     agent, _made = _acp_agent()
     state = _state()
@@ -157,7 +157,7 @@ def test_acp_set_session_model_rejection_is_invalid_params_and_leaves_session_un
         asyncio.run(agent.set_session_model("nope", "s1"))
     assert exc.value.code == -32602 and exc.value.data == {"details": "`nope` is not a model"}
 
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model",
+    monkeypatch.setattr("moor_cli.model_switch.switch_model",
                         lambda **_kw: ModelSwitchResult(success=True, new_model="other", target_provider="anthropic"))
 
     def _boom(**_kw):
@@ -189,7 +189,7 @@ def test_acp_set_session_model_does_not_run_queued_prompts_inside_the_rpc(monkey
 
     from acp.exceptions import RequestError
 
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model",
+    monkeypatch.setattr("moor_cli.model_switch.switch_model",
                         lambda **_kw: ModelSwitchResult(success=False, error_message="`nope` is not a model"))
     agent, _made = _acp_agent()
     state = _state()

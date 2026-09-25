@@ -29,7 +29,7 @@ import type { UpdaterApplyResultWire, UpdaterMechanism, UpdaterStatusWire, Updat
 export interface CheckoutStrategyDeps {
   resolveUpdateRoot: () => string
   readSourceUpdate: (root: string, opts: { force?: boolean }) => Promise<SourceUpdate | null>
-  hermesHome: string
+  moorHome: string
   isWindows: boolean
   isMac: boolean
   defaultUpdateBranch: string
@@ -37,7 +37,7 @@ export interface CheckoutStrategyDeps {
   resolveUpdaterBinary: () => string | null
   /**
    * True when one remote gateway serves this Desktop (app-global remote /
-   * cloud / SSH). The hand-off then tells `hermes update` not to (re)start a
+   * cloud / SSH). The hand-off then tells `moor update` not to (re)start a
    * local messaging gateway: with the same channel credentials as the remote
    * host it would become a competing long-poll consumer (#117529).
    */
@@ -45,10 +45,10 @@ export interface CheckoutStrategyDeps {
 
   emitUpdateProgress: (payload: { stage: string; message: string; percent: number | null }) => void
   rememberLog: (chunk: unknown) => void
-  startHermes: () => Promise<unknown>
+  startMoor: () => Promise<unknown>
   stopBackendsForUpdate: () => Promise<void>
   repairMacUpdaterHelper: (updater: string) => void | Promise<void>
-  preflightStateDb: (hermesHome: string, rememberLog: (chunk: string) => void) => void | Promise<void>
+  preflightStateDb: (moorHome: string, rememberLog: (chunk: string) => void) => void | Promise<void>
   runningAppBundle: () => string | null
   markQuittingForHandoff: () => void
   quit: () => void
@@ -56,14 +56,14 @@ export interface CheckoutStrategyDeps {
 
 /**
  * The manual command card for a checkout with no staged updater: the exact
- * `hermes update` line to run, branch-pinned to the checkout's current branch
- * for non-main (bare `hermes update` would silently switch the install
+ * `moor update` line to run, branch-pinned to the checkout's current branch
+ * for non-main (bare `moor update` would silently switch the install
  * off-branch).
  */
 export function buildManualUpdateCommand(currentBranch: string | null | undefined): string {
   return currentBranch && currentBranch !== 'HEAD' && currentBranch !== 'main'
-    ? `hermes update --branch ${currentBranch}`
-    : 'hermes update'
+    ? `moor update --branch ${currentBranch}`
+    : 'moor update'
 }
 
 /**
@@ -84,7 +84,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
       updateAvailable: true,
       behind: null,
       branch: deps.defaultUpdateBranch,
-      hermesRoot: root
+      moorRoot: root
     }
 
     status.mechanism = mechanism
@@ -113,7 +113,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     const targetLabel: string = status.channel ?? branch
 
     const manualCommand: string = status.channel
-      ? `hermes update --channel ${status.channel}`
+      ? `moor update --channel ${status.channel}`
       : buildManualUpdateCommand(branch)
 
     const updater: string | null = deps.resolveUpdaterBinary()
@@ -122,7 +122,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     // Earlier PM scripts still demand checkout/venv. Do not invoke that known
     // incompatible handoff: one exact-install CLI update obtains the new scripts.
     if (existsSync(path.join(root, 'pm')) && !existsSync(path.join(root, 'scripts', 'desktop-update', 'runtime.ps1'))) {
-      const launcher: string | null = resolveInstallationLauncher(root, deps.isWindows, deps.hermesHome)
+      const launcher: string | null = resolveInstallationLauncher(root, deps.isWindows, deps.moorHome)
 
       if (!launcher) {
         return { ok: false, error: 'installation-launcher-missing' }
@@ -133,26 +133,26 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
 
       const command: string = `${deps.isWindows ? '& ' : ''}${quote(launcher)} update ${targetArgs.map(quote).join(' ')}`
 
-      return { ok: true, manual: true, command, hermesRoot: root }
+      return { ok: true, manual: true, command, moorRoot: root }
     }
 
     if (!deps.isWindows && (!updater || status.channel)) {
       // macOS/Linux: hand off to the repo-owned posix script — same shape as
-      // Windows (quit → detached orchestrator → `hermes update` → relaunch),
+      // Windows (quit → detached orchestrator → `moor update` → relaunch),
       // minus the venv-lock gauntlet POSIX doesn't need. The old in-app
       // updater (applyUpdatesPosixInApp) is gone with everything it dragged
-      // in: the HERMES_DESKTOP_CHILD_PID reaper-exclusion dance (#37532),
+      // in: the MOOR_DESKTOP_CHILD_PID reaper-exclusion dance (#37532),
       // the in-window rebuild retry, and the relaunch-outcome matrix — the
       // script owns swap/relaunch, and the app is DEAD during the update so
       // there is nothing to reap around. Checkouts that predate the script
-      // get the manual `hermes update` card once; their next update pulls it.
+      // get the manual `moor update` card once; their next update pulls it.
       return await applyPosixHandoff(targetArgs, targetLabel, manualCommand)
     }
 
     if (!updater || status.channel) {
       // No staged updater binary — this is a CLI-installed user (they ran
-      // `hermes desktop`, never the Tauri installer that self-copies
-      // hermes-setup.exe into HERMES_HOME). On Windows the repo hand-off
+      // `moor desktop`, never the Tauri installer that self-copies
+      // moor-setup.exe into MOOR_HOME). On Windows the repo hand-off
       // script serves them just as well as installer users — it only needs
       // PowerShell and the checkout — so fall through to the normal hand-off
       // when the script exists. Only when the checkout predates the script do
@@ -167,13 +167,13 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
         )
         deps.emitUpdateProgress({ stage: 'manual', message: command, percent: null })
 
-        return { ok: true, manual: true, command, hermesRoot: updateRoot }
+        return { ok: true, manual: true, command, moorRoot: updateRoot }
       }
 
       deps.rememberLog('[updates] no staged updater; using repo hand-off script for CLI install')
     }
 
-    const handoffConflict = updateHandoffConflict(deps.hermesHome)
+    const handoffConflict = updateHandoffConflict(deps.moorHome)
 
     if (handoffConflict) {
       // A different updater already owns the marker — most often a previous
@@ -189,7 +189,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     deps.emitUpdateProgress({
       stage: 'restart',
       message:
-        'Updating Hermes — this window will close and the updater will open. Don’t reopen Hermes yourself; it restarts automatically when the update finishes.',
+        'Updating Moor — this window will close and the updater will open. Don’t reopen Moor yourself; it restarts automatically when the update finishes.',
       percent: 100
     })
     deps.repairMacUpdaterHelper(updater)
@@ -205,10 +205,10 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     // ── Pre-flight state.db integrity guard (#68474) ─────────────────
     // Emergency backup and header verification before the update touches
     // anything.  Runs while the backend is still alive.
-    await deps.preflightStateDb(deps.hermesHome, deps.rememberLog)
+    await deps.preflightStateDb(deps.moorHome, deps.rememberLog)
 
     if (deps.isWindows && resolveUpdateScriptHandoff(updateRoot)) {
-      const message = windowsUpdatePrerequisiteError(updateRoot, deps.hermesHome)
+      const message = windowsUpdatePrerequisiteError(updateRoot, deps.moorHome)
 
       if (message) {
         deps.emitUpdateProgress({ stage: 'error', message, percent: null })
@@ -229,7 +229,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     // months-stale updater logic — pre-#67369 cache resolver, pre-#74782
     // marker adoption — producing failures that were fixed on main long ago
     // (2026-08-09 incident). scripts/desktop-update/windows.ps1 ships WITH the
-    // checkout, so each `hermes update` refreshes the code that drives the
+    // checkout, so each `moor update` refreshes the code that drives the
     // next one. Checkouts that predate the script fall back to the binary
     // path unchanged.
     const scriptHandoff = resolveUpdateScriptHandoff(updateRoot)
@@ -265,10 +265,10 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
       const wrapped = wrapHandoffForDetachedConsole(scriptHandoff, wrappedArgs)
 
       child = spawnUpdaterProcess(wrapped.command, wrapped.args, {
-        cwd: deps.hermesHome,
+        cwd: deps.moorHome,
         env: {
-          ...sourceUpdateEnvironment(updateRoot, deps.hermesHome),
-          HERMES_UPDATE_STARTED_AT: String(updateStartedAt)
+          ...sourceUpdateEnvironment(updateRoot, deps.moorHome),
+          MOOR_UPDATE_STARTED_AT: String(updateStartedAt)
         },
         detached: wrapped.detached,
         stdio: 'ignore'
@@ -279,10 +279,10 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
       // the first moments of the hand-off — the script's step 0 overwrites it
       // with its own live $PID, and if the script never starts the wrapper's
       // dead pid makes the marker read as stale and self-delete (no wedge).
-      // The `hermes update` child adopts the SCRIPT's claim via
+      // The `moor update` child adopts the SCRIPT's claim via
       // update_lock.py's process-ancestry rule; no mtime heuristics needed.
       if (Number.isInteger(child.pid)) {
-        writeUpdateMarker(deps.hermesHome, child.pid, { startedAt: updateStartedAt })
+        writeUpdateMarker(deps.moorHome, child.pid, { startedAt: updateStartedAt })
       }
 
       deps.rememberLog(
@@ -290,9 +290,9 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
       )
     } else {
       child = spawnUpdaterProcess(updater, updaterArgs, {
-        cwd: deps.hermesHome,
+        cwd: deps.moorHome,
         env: {
-          ...sourceUpdateEnvironment(updateRoot, deps.hermesHome)
+          ...sourceUpdateEnvironment(updateRoot, deps.moorHome)
         },
         detached: true,
         stdio: 'ignore'
@@ -308,13 +308,13 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
       //
       // SKIPPED for pre-#74782 staged updaters: those have no self-PID
       // exclusion, so they read this very marker as a foreign live owner and
-      // abort with "Another Hermes update is already running (PID <itself>)" —
+      // abort with "Another Moor update is already running (PID <itself>)" —
       // an unbreakable loop, because the update that would replace the stale
       // binary is the one being refused. Losing the anti-respawn hardening is
       // strictly better than never updating again, and the updater still writes
       // its own marker moments later.
       if (Number.isInteger(child.pid) && stagedUpdaterSupportsPrewrittenMarker(updater)) {
-        writeUpdateMarker(deps.hermesHome, child.pid)
+        writeUpdateMarker(deps.moorHome, child.pid)
       } else if (Number.isInteger(child.pid)) {
         deps.rememberLog(
           `[updates] skipping marker pre-write: staged updater predates self-adopt (${updater}); it would refuse its own claim`
@@ -346,7 +346,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
 
       deps.rememberLog(`[updates] hand-off not viable, aborting quit: ${handoffOutcome.message}`)
       deps.emitUpdateProgress({ stage: 'error', message, percent: null })
-      deps.startHermes().catch(() => {})
+      deps.startMoor().catch(() => {})
 
       return { ok: false, error: 'updater-spawn-failed', message }
     }
@@ -373,10 +373,10 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     if (!handoff) {
       deps.emitUpdateProgress({ stage: 'manual', message: manualCommand, percent: null })
 
-      return { ok: true, manual: true, command: manualCommand, hermesRoot: updateRoot }
+      return { ok: true, manual: true, command: manualCommand, moorRoot: updateRoot }
     }
 
-    const handoffConflict = updateHandoffConflict(deps.hermesHome)
+    const handoffConflict = updateHandoffConflict(deps.moorHome)
 
     if (handoffConflict) {
       // Same hazard as the Windows path (#75778): a live foreign updater
@@ -388,7 +388,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     }
 
     // ── Pre-flight state.db integrity guard (#68474) ──
-    await deps.preflightStateDb(deps.hermesHome, deps.rememberLog)
+    await deps.preflightStateDb(deps.moorHome, deps.rememberLog)
 
     const args: string[] = [
       ...handoff.args,
@@ -399,7 +399,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
       String(process.pid)
     ]
 
-    // A remote-served Desktop owns no local messaging gateway: `hermes update
+    // A remote-served Desktop owns no local messaging gateway: `moor update
     // --gateway` would (re)start one here anyway, and with the same channel
     // credentials as the remote host it becomes a competing long-poll consumer
     // (#117529). Keep --gateway for the local-ownership default.
@@ -436,10 +436,10 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     }
 
     const child = spawnUpdaterProcess(handoff.command, args, {
-      cwd: deps.hermesHome,
+      cwd: deps.moorHome,
       env: {
-        ...sourceUpdateEnvironment(updateRoot, deps.hermesHome),
-        HERMES_UPDATE_STARTED_AT: String(updateStartedAt)
+        ...sourceUpdateEnvironment(updateRoot, deps.moorHome),
+        MOOR_UPDATE_STARTED_AT: String(updateStartedAt)
       },
       detached: true,
       stdio: 'ignore'
@@ -449,14 +449,14 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): UpdaterStrat
     // until the script claims the marker with its own pid as step 0. If the
     // script never starts, the dead pid reads as stale and self-deletes.
     if (Number.isInteger(child.pid)) {
-      writeUpdateMarker(deps.hermesHome, child.pid, { startedAt: updateStartedAt })
+      writeUpdateMarker(deps.moorHome, child.pid, { startedAt: updateStartedAt })
     }
 
     deps.rememberLog(`[updates] launched posix hand-off: ${handoff.scriptPath} (${targetLabel}); quitting to hand off`)
     deps.emitUpdateProgress({
       stage: 'restart',
       message:
-        'Updating Hermes — this window will close. Don’t reopen Hermes yourself; it restarts automatically when the update finishes.',
+        'Updating Moor — this window will close. Don’t reopen Moor yourself; it restarts automatically when the update finishes.',
       percent: 100
     })
 

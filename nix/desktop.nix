@@ -3,7 +3,7 @@
 # `moorAgent` is the fully-built `.#default` package — it ships the
 # `moor` binary with the venv, runtime PATH, bundled skills/plugins, etc.
 # already wired up.  We point the desktop at it via the existing
-# `HERMES_DESKTOP_HERMES` override env var, so the desktop's resolver
+# `MOOR_DESKTOP_MOOR` override env var, so the desktop's resolver
 # uses our fully wrapped binary before the mutable managed install.
 # No reimplementation of the agent resolution in this wrapper.
 {
@@ -13,7 +13,7 @@
   makeWrapper,
   moorNpmLib,
   electron,
-  hermesAgent,
+  moorAgent,
   installStampFile,
   generatedIcons,
   python3,
@@ -91,7 +91,7 @@ let
       # the exact Electron runtime shipped by this derivation, offline.
       mkdir -p "$TMPDIR/electron-headers"
       tar -xzf ${electronHeaders} -C "$TMPDIR/electron-headers" --strip-components=1
-      ${lib.getExe hermesNpmLib.node-gyp} rebuild \
+      ${lib.getExe moorNpmLib.node-gyp} rebuild \
         --directory=node_modules/node-pty \
         --build-from-source \
         --runtime=electron \
@@ -174,7 +174,7 @@ stdenv.mkDerivation {
       --replace-fail "process.resourcesPath" "'$out/share/moor-desktop'"
 
     # Wrap the nixpkgs electron binary to launch our app.  Set
-    # HERMES_DESKTOP_HERMES to the absolute path of the nix-built `hermes`
+    # MOOR_DESKTOP_MOOR to the absolute path of the nix-built `moor`
     # binary so the deployment override selects our fully wrapped binary
     # before any mutable managed install — venv with all deps,
     # bundled skills/plugins, runtime PATH (ripgrep/git/ffmpeg/etc).
@@ -187,7 +187,7 @@ stdenv.mkDerivation {
     # XDG launcher entry
     mkdir -p $out/share/applications $out/share/icons/hicolor/1024x1024/apps
     install -m 0644 ${generatedIcons}/apps/desktop/assets/icon.png \
-      $out/share/icons/hicolor/1024x1024/apps/hermes.png
+      $out/share/icons/hicolor/1024x1024/apps/moor.png
     export PYTHONPATH=$(mktemp -d)
     cp ${../moor_cli/linux_desktop_entry.py} "$PYTHONPATH/linux_desktop_entry.py"
     export DESKTOP_EXEC="$out/bin/moor-desktop"
@@ -202,7 +202,7 @@ stdenv.mkDerivation {
 
   meta = with lib; {
     description = "Native Electron desktop shell for Moor Agent";
-    homepage = "https://github.com/NousResearch/hermes-agent";
+    homepage = "https://github.com/thisismamad-n/Moor";
     license = licenses.mit;
     platforms = platforms.unix;
     mainProgram = "moor-desktop";

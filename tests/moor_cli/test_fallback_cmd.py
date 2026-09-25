@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 # ---------------------------------------------------------------------------
 # Shared fixture — isolate MOOR_HOME so save_config writes to tmp_path

@@ -479,7 +479,7 @@ def _should_use_native_vision_fast_path() -> bool:
     try:
         from agent.auxiliary_client import _read_main_provider, _read_main_model
         from agent.image_routing import decide_image_input_mode
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         provider = _read_main_provider()
         model = _read_main_model()
         cfg = load_config()
@@ -582,7 +582,7 @@ async def _prepare_image(
 def _too_large_message(image_data_url: str) -> str:
     return (
         f"Image too large for vision API: base64 payload is {len(image_data_url) / (1024 * 1024):.1f} MB "
-        f"(limit {_MAX_BASE64_BYTES / (1024 * 1024):.0f} MB) even after resizing. Run `hermes pm repair` "
+        f"(limit {_MAX_BASE64_BYTES / (1024 * 1024):.0f} MB) even after resizing. Run `moor pm repair` "
         f"to restore Pillow for auto-resize, or compress the image manually.")
 
 

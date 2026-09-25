@@ -92,10 +92,10 @@ test('every emitted PowerShell script keeps try blocks attached to their catch/f
 
       return 'CLEAR'
     }),
-    'C:\\Users\\alice\\.hermes'
+    'C:\\Users\\alice\\.moor'
   )
   scripts.push(
-    decode(atomicWindowsSpawnCommand({ hermesHome: 'C:\\Users\\alice\\.hermes', python: 'C:\\py\\python.exe' })),
+    decode(atomicWindowsSpawnCommand({ moorHome: 'C:\\Users\\alice\\.moor', python: 'C:\\py\\python.exe' })),
     decode(buildWindowsInteractiveCommand('C:\\work'))
   )
 

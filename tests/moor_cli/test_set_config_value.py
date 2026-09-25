@@ -6,7 +6,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.config import (
     config_command,
@@ -80,41 +80,41 @@ class TestGatewayPlatformsPrefixRedirect:
     """#115212: ``gateway.platforms.<p>.<field>`` lands on the top-level ``platforms.<p>.<field>``
     the gateway prefers, instead of a nested key that an existing top-level value shadows."""
 
-    def test_set_lands_on_top_level_platforms_block_the_loader_reads(self, _isolated_hermes_home, capsys):
-        (_isolated_hermes_home / "config.yaml").write_text(
+    def test_set_lands_on_top_level_platforms_block_the_loader_reads(self, _isolated_moor_home, capsys):
+        (_isolated_moor_home / "config.yaml").write_text(
             "platforms:\n  telegram:\n    enabled: false\n", encoding="utf-8")
         set_config_value("gateway.platforms.telegram.enabled", "true")
         out = capsys.readouterr().out
         assert "saved as platforms.telegram.enabled" in out
-        loaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        loaded = yaml.safe_load(_read_config(_isolated_moor_home))
         assert loaded["platforms"]["telegram"]["enabled"] is True
         assert "gateway" not in loaded
         from gateway.config import Platform, load_gateway_config
         assert load_gateway_config().platforms[Platform.TELEGRAM].enabled is True
 
     def test_nested_display_setting_still_reaches_display_platforms(self):
-        from hermes_cli.config import _redirect_platform_display_key
+        from moor_cli.config import _redirect_platform_display_key
         key, _ = _redirect_platform_display_key("gateway.platforms.telegram.streaming")
         assert key == "display.platforms.telegram.streaming"
 
-    def test_get_and_unset_still_reach_a_legacy_nested_only_value(self, _isolated_hermes_home, capsys):
+    def test_get_and_unset_still_reach_a_legacy_nested_only_value(self, _isolated_moor_home, capsys):
         """A config whose value lives ONLY under ``gateway.platforms`` is still honoured by the gateway
         (``merge_platform_sections``), so ``get`` must read it and ``unset`` must remove it instead of
         reporting "not set" while the gateway keeps the platform enabled."""
-        from hermes_cli.config import get_config_value, unset_config_value
+        from moor_cli.config import get_config_value, unset_config_value
 
         legacy = "gateway:\n  platforms:\n    telegram:\n      enabled: true\n"
-        (_isolated_hermes_home / "config.yaml").write_text(legacy, encoding="utf-8")
+        (_isolated_moor_home / "config.yaml").write_text(legacy, encoding="utf-8")
         get_config_value("gateway.platforms.telegram.enabled")
         assert capsys.readouterr().out.strip().lower() == "true"
 
         unset_config_value("gateway.platforms.telegram.enabled")
-        assert "gateway" not in (yaml.safe_load(_read_config(_isolated_hermes_home)) or {})
+        assert "gateway" not in (yaml.safe_load(_read_config(_isolated_moor_home)) or {})
 
         # set on top of a nested-only value leaves one source of truth, not a shadowed duplicate
-        (_isolated_hermes_home / "config.yaml").write_text(legacy, encoding="utf-8")
+        (_isolated_moor_home / "config.yaml").write_text(legacy, encoding="utf-8")
         set_config_value("gateway.platforms.telegram.enabled", "false")
-        loaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        loaded = yaml.safe_load(_read_config(_isolated_moor_home))
         assert loaded == {"platforms": {"telegram": {"enabled": False}}}
 
 
@@ -131,7 +131,7 @@ class TestConfigYamlRouting:
 
 
 
-    def test_tool_search_defer_is_recognized(self, _isolated_hermes_home, capsys):
+    def test_tool_search_defer_is_recognized(self, _isolated_moor_home, capsys):
         """tools.tool_search.defer is read by ToolSearchConfig.from_raw, so it must be a
         registered config key (not flagged as unrecognized) and coerce to a real list."""
         set_config_value("tools.tool_search.defer", '["todo_list", "skill_manage"]')
@@ -139,7 +139,7 @@ class TestConfigYamlRouting:
         captured = capsys.readouterr()
         assert "not a recognized config key" not in captured.out
         assert "not a recognized config key" not in captured.err
-        config = yaml.safe_load(_read_config(_isolated_hermes_home))
+        config = yaml.safe_load(_read_config(_isolated_moor_home))
         assert config["tools"]["tool_search"]["defer"] == ["todo_list", "skill_manage"]
 
 
@@ -148,7 +148,7 @@ class TestConfigYamlRouting:
     ):
         set_config_value("terminal.docker_shared_container_key", "off")
 
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         saved = yaml.safe_load(_read_config(_isolated_moor_home))
         assert saved["terminal"]["docker_shared_container_key"] == "off"
@@ -202,8 +202,8 @@ class TestConfigGetUnset:
         args = argparse.Namespace(config_command="unset", key="terminal.backend")
         config_command(args)
 
-        import hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home)) or {}
+        import moor_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_moor_home)) or {}
         assert reloaded == {}
         assert "TERMINAL_ENV=" not in _read_env(_isolated_moor_home)
         assert "Unset terminal.backend" in capsys.readouterr().out
@@ -221,8 +221,8 @@ class TestConfigGetUnset:
         args = argparse.Namespace(config_command="unset", key="platforms.teams.extra.access_token")
         config_command(args)
 
-        import hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_moor_home))
         assert "access_token" not in reloaded["platforms"]["teams"]["extra"]
         assert reloaded["platforms"]["teams"]["extra"]["tenant_id"] == "tenant"
         assert "Unset platforms.teams.extra.access_token" in capsys.readouterr().out
@@ -235,9 +235,9 @@ class TestConfigGetPhantomKeyNotice:
     """
 
     def test_unknown_nested_key_flags_on_stderr_and_keeps_stdout_parseable(
-        self, _isolated_hermes_home, capsys
+        self, _isolated_moor_home, capsys
     ):
-        (_isolated_hermes_home / "config.yaml").write_text(
+        (_isolated_moor_home / "config.yaml").write_text(
             "compression:\n  compressor:\n    enabled: true\n"
         )
 
@@ -249,11 +249,11 @@ class TestConfigGetPhantomKeyNotice:
         assert "not a recognized config key" in captured.err
 
     def test_unseeded_live_key_notice_hedges_instead_of_asserting_unread(
-        self, _isolated_hermes_home, capsys
+        self, _isolated_moor_home, capsys
     ):
         # The check is a DEFAULT_CONFIG walk; ``browser.cloud_provider`` is deliberately unseeded
         # yet read by tools/browser_tool_cloud.py, so the notice must not claim it is never read.
-        (_isolated_hermes_home / "config.yaml").write_text("browser:\n  cloud_provider: local\n")
+        (_isolated_moor_home / "config.yaml").write_text("browser:\n  cloud_provider: local\n")
 
         config_command(argparse.Namespace(config_command="get", key="browser.cloud_provider", json=False))
 
@@ -271,9 +271,9 @@ class TestConfigGetPhantomKeyNotice:
         ],
     )
     def test_recognized_and_custom_keys_are_not_flagged(
-        self, _isolated_hermes_home, capsys, key, body
+        self, _isolated_moor_home, capsys, key, body
     ):
-        (_isolated_hermes_home / "config.yaml").write_text(body)
+        (_isolated_moor_home / "config.yaml").write_text(body)
 
         args = argparse.Namespace(config_command="get", key=key, json=False)
         config_command(args)
@@ -309,8 +309,8 @@ class TestListNavigation:
 
         set_config_value("custom_providers.0.api_key", "new-a")
 
-        import hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_moor_home))
         # The list must still be a list
         assert isinstance(reloaded["custom_providers"], list)
         assert len(reloaded["custom_providers"]) == 2
@@ -337,8 +337,8 @@ class TestListNavigation:
 
         set_config_value("custom_providers.0.api_key", "rotated")
 
-        import hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_moor_home))
         entry = reloaded["custom_providers"][0]
         assert entry["api_key"] == "rotated"
         assert entry["name"] == "provider-a"
@@ -362,8 +362,8 @@ class TestListNavigation:
         # the canonical path.
         set_config_value("telegram.allowlist.1.role", "admin")
 
-        import hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_moor_home))
         allowlist = reloaded["telegram"]["allowlist"]
         assert isinstance(allowlist, list)
         assert allowlist[0] == {"name": "alice", "role": "admin"}
@@ -377,12 +377,12 @@ class TestListNavigation:
 
 class TestStringTypedConfigValues:
     @pytest.mark.parametrize("value", ["off", "true", "01"])
-    def test_string_typed_values_are_not_coerced(self, _isolated_hermes_home, value):
+    def test_string_typed_values_are_not_coerced(self, _isolated_moor_home, value):
         """Values stay strings when DEFAULT_CONFIG declares the leaf as a string."""
         set_config_value("approvals.mode", value)
 
-        import hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_moor_home))
         assert saved["approvals"]["mode"] == value
         assert isinstance(saved["approvals"]["mode"], str)
 
@@ -395,8 +395,8 @@ class TestStringTypedConfigValues:
     ):
         set_config_value(key, value)
 
-        import hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_moor_home))
         node = saved
         for part in key.split("."):
             node = node[part]
@@ -408,8 +408,8 @@ class TestStringTypedConfigValues:
         # (schema validation, #34067); coercion behavior is unchanged.
         set_config_value("custom.enabled", "off", force=True)
 
-        import hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_moor_home))
         assert saved["custom"]["enabled"] is False
 
 
@@ -483,9 +483,9 @@ class TestSchemaValidation:
         ("agent.gateway.strict", "gateway.strict"),
     ])
     def test_unknown_subkey_under_known_section_refused_before_write(
-        self, key, suggestion, _isolated_hermes_home, capsys
+        self, key, suggestion, _isolated_moor_home, capsys
     ):
-        config_path = _isolated_hermes_home / "config.yaml"
+        config_path = _isolated_moor_home / "config.yaml"
         config_path.write_text("model: gpt-4o\n", encoding="utf-8")
 
         with pytest.raises(SystemExit):
@@ -510,12 +510,12 @@ class TestSchemaValidation:
         ("gateway.filter_silence_narration", "false", False, None),
     ])
     def test_unknown_leaf_under_known_section_is_written_with_notice(
-        self, key, value, expected, suggestion, _isolated_hermes_home, capsys
+        self, key, value, expected, suggestion, _isolated_moor_home, capsys
     ):
         """Unseeded runtime settings are not proven typos merely by a schema walk."""
         set_config_value(key, value)
 
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        saved = yaml.safe_load(_read_config(_isolated_moor_home))
         section, name = key.split(".")
         assert saved[section][name] == expected
         out = capsys.readouterr().out
@@ -653,7 +653,7 @@ class TestMappingGuard:
     """
 
     def _write_config(self, tmp_path, data: dict):
-        import hermes_yaml as _yaml
+        import moor_yaml as _yaml
         (tmp_path / "config.yaml").write_text(_yaml.safe_dump(data))
 
     def test_bare_model_shorthand_preserves_siblings(self, _isolated_moor_home):
@@ -667,8 +667,8 @@ class TestMappingGuard:
             }
         })
         set_config_value("model", "claude-sonnet-4-20250514")
-        config_text = _read_config(_isolated_hermes_home)
-        import hermes_yaml as _yaml
+        config_text = _read_config(_isolated_moor_home)
+        import moor_yaml as _yaml
         parsed = _yaml.safe_load(config_text)
         assert parsed["model"]["default"] == "claude-sonnet-4-20250514"
         assert parsed["model"]["provider"] == "openai-api"
@@ -702,8 +702,8 @@ class TestMappingGuard:
             }
         })
         set_config_value("terminal", "zsh", force=True)
-        import hermes_yaml as _yaml
-        parsed = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as _yaml
+        parsed = _yaml.safe_load(_read_config(_isolated_moor_home))
         assert parsed["terminal"] == "zsh"
 
     def test_model_default_dotted_path_is_not_guarded(self, _isolated_moor_home):
@@ -715,8 +715,8 @@ class TestMappingGuard:
             }
         })
         set_config_value("model.default", "claude-opus-4")
-        import hermes_yaml as _yaml
-        parsed = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as _yaml
+        parsed = _yaml.safe_load(_read_config(_isolated_moor_home))
         assert parsed["model"]["default"] == "claude-opus-4"
         assert parsed["model"]["provider"] == "openai-api"
 
@@ -730,8 +730,8 @@ class TestMappingGuard:
             }
         })
         set_config_value("model", "claude-opus-4", force=True)
-        import hermes_yaml as _yaml
-        parsed = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as _yaml
+        parsed = _yaml.safe_load(_read_config(_isolated_moor_home))
         assert parsed["model"] == "claude-opus-4"
 
 
@@ -740,7 +740,7 @@ class TestScalarModelSubKeyPreservation:
 
     def test_scalar_model_id_preserved_after_provider_write(self, _isolated_moor_home):
         """Seed model: gpt-4o, then set model.provider → model.default must survive."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         set_config_value("model", "gpt-4o")
         set_config_value("model.provider", "openai")
@@ -753,7 +753,7 @@ class TestScalarModelSubKeyPreservation:
 
     def test_scalar_model_id_preserved_after_api_key_write(self, _isolated_moor_home):
         """model.api_key must also preserve the existing scalar model id."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         set_config_value("model", "claude-sonnet")
         # model.api_key is a sub-key (has a dot), so it stays in config.yaml
@@ -815,7 +815,7 @@ class TestLiteralDotKeyEscaping:
     """
 
     def _write_config(self, tmp_path, data: dict):
-        import hermes_yaml as _yaml
+        import moor_yaml as _yaml
         (tmp_path / "config.yaml").write_text(_yaml.safe_dump(data, sort_keys=False))
 
     def test_split_key_path_escaped_dot(self):
@@ -845,8 +845,8 @@ class TestLiteralDotKeyEscaping:
             '{"Wafer-ZDR": "required"}',
         )
 
-        import hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_moor_home))
         providers = saved["providers"]
         # No bogus ``qwen3`` nesting was created; the existing entry was updated.
         assert "qwen3" not in providers
@@ -874,8 +874,8 @@ class TestLiteralDotKeyEscaping:
         )
         config_command(args)
 
-        import hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_moor_home))
         assert "qwen3.5-397b-wafer-non-zdr" not in saved["providers"]
         assert saved["providers"]["openrouter"] == {"api_key": "or-keep"}
         assert "Unset providers.qwen3\\.5-397b-wafer-non-zdr" in capsys.readouterr().out
@@ -896,8 +896,8 @@ class TestLiteralDotKeyEscaping:
         )
         config_command(args)
 
-        import hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_moor_home))
         target = saved["providers"]["qwen3.5-397b-wafer-non-zdr"]
         assert "extra_headers" not in target
         assert target["api"] == "https://pass.wafer.ai/v1"
@@ -920,8 +920,8 @@ class TestLiteralDotKeyEscaping:
         """Nesting semantics for plain dotted keys are untouched."""
         set_config_value("terminal.backend", "docker")
 
-        import hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_moor_home))
         assert saved["terminal"]["backend"] == "docker"
 
 
@@ -996,11 +996,11 @@ class TestContainerTypeRefusal:
     echoed it back."""
 
     def _write_config(self, tmp_path, data: dict):
-        import hermes_yaml as _yaml
+        import moor_yaml as _yaml
         (tmp_path / "config.yaml").write_text(_yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 
-    def test_string_where_schema_wants_list_is_refused(self, _isolated_hermes_home, capsys):
-        self._write_config(_isolated_hermes_home, {"model": {"default": "m"}})
+    def test_string_where_schema_wants_list_is_refused(self, _isolated_moor_home, capsys):
+        self._write_config(_isolated_moor_home, {"model": {"default": "m"}})
 
         with pytest.raises(SystemExit):
             set_config_value("custom_providers", "plainstring")
@@ -1010,10 +1010,10 @@ class TestContainerTypeRefusal:
         err = capsys.readouterr().err
         assert "must be a list, got a string" in err
         assert "not valid YAML/JSON" in err
-        assert "custom_providers" not in _read_config(_isolated_hermes_home)
+        assert "custom_providers" not in _read_config(_isolated_moor_home)
 
-    def test_valid_literal_and_scalar_keys_still_write(self, _isolated_hermes_home):
-        self._write_config(_isolated_hermes_home, {"model": {"default": "m", "aliases": {"a": "p/m"}}})
+    def test_valid_literal_and_scalar_keys_still_write(self, _isolated_moor_home):
+        self._write_config(_isolated_moor_home, {"model": {"default": "m", "aliases": {"a": "p/m"}}})
 
         set_config_value("custom_providers", "[{name: ok, base_url: http://h/v1}]")
         set_config_value("model.default", "bar")
@@ -1022,32 +1022,32 @@ class TestContainerTypeRefusal:
         # --force keeps its documented meaning: replace a whole mapping section.
         set_config_value("model.aliases", "replaced", force=True)
 
-        import hermes_yaml as _yaml
-        saved = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as _yaml
+        saved = _yaml.safe_load(_read_config(_isolated_moor_home))
         assert saved["custom_providers"] == [{"name": "ok", "base_url": "http://h/v1"}]
         assert saved["model"] == {"default": "bar", "aliases": "replaced"}
 
     @pytest.mark.parametrize("key", ["model.aliases", "providers", "toolsets"])
     def test_unseeded_or_top_level_container_key_is_refused_without_on_disk_value(
-            self, _isolated_hermes_home, key):
+            self, _isolated_moor_home, key):
         # #114471 writer atom: the shape is fixed by the readers, not by what is on disk yet.
-        self._write_config(_isolated_hermes_home, {"model": {"default": "m"}})
+        self._write_config(_isolated_moor_home, {"model": {"default": "m"}})
 
         with pytest.raises(SystemExit):
             set_config_value(key, "notacontainer")
 
-        import hermes_yaml as _yaml
-        saved = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as _yaml
+        saved = _yaml.safe_load(_read_config(_isolated_moor_home))
         assert saved == {"model": {"default": "m"}}
 
-    def test_bare_name_for_string_list_slot_is_stored_as_one_item_list(self, _isolated_hermes_home):
+    def test_bare_name_for_string_list_slot_is_stored_as_one_item_list(self, _isolated_moor_home):
         # agent.disabled_toolsets readers accept a bare name (parse_config_string_list); keep it writable.
-        self._write_config(_isolated_hermes_home, {"model": {"default": "m"}})
+        self._write_config(_isolated_moor_home, {"model": {"default": "m"}})
 
         set_config_value("agent.disabled_toolsets", "web")
 
-        import hermes_yaml as _yaml
-        saved = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import moor_yaml as _yaml
+        saved = _yaml.safe_load(_read_config(_isolated_moor_home))
         assert saved["agent"]["disabled_toolsets"] == ["web"]
 
 
@@ -1068,10 +1068,10 @@ class TestProviderSwitchClearsBaseUrl:
         ("mylab", ROUTE),                        # named custom entry has its own endpoint
         ("anthropic", {"api_mode": "codex_responses"}),  # wire mode alone is old-route state
     ])
-    def test_switching_provider_clears_foreign_route(self, _isolated_hermes_home, capsys, target, seed_route):
-        self._seed(_isolated_hermes_home, {"provider": "opencode-go", "default": "gpt-5.3-codex", **seed_route})
+    def test_switching_provider_clears_foreign_route(self, _isolated_moor_home, capsys, target, seed_route):
+        self._seed(_isolated_moor_home, {"provider": "opencode-go", "default": "gpt-5.3-codex", **seed_route})
         set_config_value("model.provider", target)
-        model = yaml.safe_load(_read_config(_isolated_hermes_home))["model"]
+        model = yaml.safe_load(_read_config(_isolated_moor_home))["model"]
         assert model == {"provider": target, "default": "gpt-5.3-codex"}
         out = capsys.readouterr().out
         assert "Cleared" in out and "opencode-go" in out
@@ -1086,10 +1086,10 @@ class TestProviderSwitchClearsBaseUrl:
         ("model.provider", "custom", {"provider": "openai", "base_url": "https://api.openai.com/v1"}),
         ("model.provider", "anthropic", {"provider": "opencode-go", "base_url": "http://proxy.internal:8080/v1"}),
     ])
-    def test_route_that_belongs_to_target_is_kept(self, _isolated_hermes_home, capsys, key, target, seed):
-        self._seed(_isolated_hermes_home, {**seed, "default": "m"})
+    def test_route_that_belongs_to_target_is_kept(self, _isolated_moor_home, capsys, key, target, seed):
+        self._seed(_isolated_moor_home, {**seed, "default": "m"})
         set_config_value(key, target)
-        model = yaml.safe_load(_read_config(_isolated_hermes_home))["model"]
+        model = yaml.safe_load(_read_config(_isolated_moor_home))["model"]
         expected = {**seed, "default": "m", key.split(".", 1)[1]: target}
         assert model == expected
         out = capsys.readouterr().out

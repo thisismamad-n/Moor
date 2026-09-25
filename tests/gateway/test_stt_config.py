@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from gateway.config import GatewayConfig, Platform, load_gateway_config
 from gateway.platforms.event import MessageEvent, MessageType
@@ -17,9 +17,9 @@ def test_gateway_config_stt_disabled_from_dict_nested():
 
 
 def test_load_gateway_config_bridges_stt_enabled_from_config_yaml(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    moor_home = tmp_path / ".moor"
+    moor_home.mkdir()
+    (moor_home / "config.yaml").write_text(
         yaml.safe_dump({"stt": {"enabled": False}}),
         encoding="utf-8",
     )

@@ -17,8 +17,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from hermes_cli.local_runtime.binaries import select_backend
-from hermes_cli.local_runtime.detect import DetectedServer, probe_port
+from moor_cli.local_runtime.binaries import select_backend
+from moor_cli.local_runtime.detect import DetectedServer, probe_port
 
 
 # ── stub llama-server ────────────────────────────────────────
@@ -453,13 +453,13 @@ def test_boot_in_flight_real_gate(tmp_path, monkeypatch):
     monkeypatched it — and the real one threw TypeError on every call,
     silently disabling the boot wait). Enabled + installed PM engine
     -> True; either missing -> False."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    from hermes_cli.local_runtime import endpoint as ep
-    monkeypatch.setattr("hermes_cli.local_runtime.binaries.installed_engine", lambda: None)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    from moor_cli.local_runtime import endpoint as ep
+    monkeypatch.setattr("moor_cli.local_runtime.binaries.installed_engine", lambda: None)
 
     enabled = {"local_runtime": {"enabled": True}}
     assert ep._boot_in_flight(enabled) is False
-    monkeypatch.setattr("hermes_cli.local_runtime.binaries.installed_engine", lambda: object())
+    monkeypatch.setattr("moor_cli.local_runtime.binaries.installed_engine", lambda: object())
     assert ep._boot_in_flight(enabled) is True
     # Disabled -> False even when installed.
     assert ep._boot_in_flight({"local_runtime": {"enabled": False}}) is False
@@ -598,7 +598,7 @@ def test_bootstrap_skips_boot_with_no_staged_models(tmp_path, monkeypatch):
         called["spawn"] = True
         raise AssertionError("must not reach install/spawn")
 
-    monkeypatch.setattr("hermes_cli.local_runtime.binaries.installed_engine", _boom)
+    monkeypatch.setattr("moor_cli.local_runtime.binaries.installed_engine", _boom)
     result = bs.ensure_local_runtime({"local_runtime": {"enabled": True}})
     assert result is None
     assert called["spawn"] is False
@@ -706,9 +706,9 @@ def test_runtime_provider_seam_llamacpp_alias(tmp_path, monkeypatch, stub_server
 
 def test_configured_llamacpp_provider_wins_over_managed_alias(tmp_path, monkeypatch):
     """A providers.llamacpp endpoint is explicit configuration, not a managed-runtime request (#116143)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "moor_cli.config.load_config",
         lambda: {
             "providers": {
                 "llamacpp": {
@@ -723,10 +723,10 @@ def test_configured_llamacpp_provider_wins_over_managed_alias(tmp_path, monkeypa
         raise AssertionError("configured providers.llamacpp must resolve before managed detection")
 
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.endpoint.resolve_llamacpp_endpoint",
+        "moor_cli.local_runtime.endpoint.resolve_llamacpp_endpoint",
         _managed_alias_must_not_run,
     )
-    from hermes_cli.runtime_provider import _resolve_named_custom_runtime
+    from moor_cli.runtime_provider import _resolve_named_custom_runtime
 
     runtime = _resolve_named_custom_runtime(requested_provider="llamacpp")
 
@@ -768,19 +768,19 @@ def test_staged_local_model_resolves_without_a_running_server(tmp_path, monkeypa
     runs — selection starts it through the runtime seam). Selecting one must reach that seam instead
     of dying at the provider gate with "Unknown provider 'llamacpp'": the row's id and the resolver's
     are one definition, so an id the picker offers always resolves (#116249)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    _stage_local_model(tmp_path / ".hermes", "Qwen3.8-27B-IQ3_S-mtp")
-    monkeypatch.setattr("hermes_cli.local_runtime.detect.DEFAULT_PROBE_PORTS", ())
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    _stage_local_model(tmp_path / ".moor", "Qwen3.8-27B-IQ3_S-mtp")
+    monkeypatch.setattr("moor_cli.local_runtime.detect.DEFAULT_PROBE_PORTS", ())
 
-    from hermes_cli.providers import LLAMACPP_PROVIDER_ID, resolve_provider_full
+    from moor_cli.providers import LLAMACPP_PROVIDER_ID, resolve_provider_full
 
     pdef = resolve_provider_full(LLAMACPP_PROVIDER_ID, {}, [])
     assert pdef is not None, "staged model, but the picker's own provider id does not resolve"
     assert pdef.id == LLAMACPP_PROVIDER_ID
 
-    from hermes_cli.model_switch import switch_model
+    from moor_cli.model_switch import switch_model
 
-    result = switch_model("Qwen3.8-27B-IQ3_S-mtp", current_provider="nous",
+    result = switch_model("Qwen3.8-27B-IQ3_S-mtp", current_provider="moor",
                           current_model="Hermes-4.5", current_base_url="",
                           explicit_provider=LLAMACPP_PROVIDER_ID)
     assert result.success is False  # no server anywhere; the seam reports it
@@ -797,16 +797,16 @@ def test_external_server_on_a_configured_detect_port_is_used(tmp_path, monkeypat
     handler.props = {"build_info": "b10964-test", "model_path": "/models/ext-model.gguf",
                      "default_generation_settings": {"n_ctx": 4096}}
     handler.models = {"data": [{"id": "ext-model", "owned_by": "llamacpp"}]}
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".moor"
+    monkeypatch.setenv("MOOR_HOME", str(home))
     _stage_local_model(home, "ext-model")
     (home / "config.yaml").write_text(
         f"local_runtime:\n  enabled: false\n  detect_ports: [{port}]\n", encoding="utf-8")
-    monkeypatch.setattr("hermes_cli.local_runtime.detect.DEFAULT_PROBE_PORTS", ())
+    monkeypatch.setattr("moor_cli.local_runtime.detect.DEFAULT_PROBE_PORTS", ())
 
-    from hermes_cli.model_switch import switch_model
+    from moor_cli.model_switch import switch_model
 
-    result = switch_model("ext-model", current_provider="nous", current_model="Hermes-4.5",
+    result = switch_model("ext-model", current_provider="moor", current_model="Hermes-4.5",
                           current_base_url="", explicit_provider="llamacpp")
     assert result.success, result.error_message
     assert result.base_url == f"http://127.0.0.1:{port}/v1"
@@ -843,7 +843,7 @@ def test_bootstrap_reuses_running_server(tmp_path, monkeypatch, stub_server):
 
     called = []
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.binaries.installed_engine",
+        "moor_cli.local_runtime.binaries.installed_engine",
         lambda *a, **k: called.append(1))
     assert bootstrap.ensure_local_runtime({"local_runtime": {"enabled": True}}) is None
     assert called == []
@@ -865,7 +865,7 @@ def test_bootstrap_failure_never_raises(tmp_path, monkeypatch):
         raise RuntimeError("no network")
 
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.binaries.installed_engine", boom)
+        "moor_cli.local_runtime.binaries.installed_engine", boom)
     result = bootstrap.ensure_local_runtime({"local_runtime": {"enabled": True}})
     assert result is None  # no exception escaped
 
@@ -877,9 +877,9 @@ def test_ensure_local_runtime_serializes_racing_callers(tmp_path, monkeypatch):
     separate OS processes would) — only the cross-process file lock can serialize them."""
     import time as _time
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    from hermes_cli.local_runtime import bootstrap
-    from hermes_cli.local_runtime import supervisor as sup_mod
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    from moor_cli.local_runtime import bootstrap
+    from moor_cli.local_runtime import supervisor as sup_mod
 
     monkeypatch.setattr(bootstrap, "_SUPERVISOR", None)
     mdir = bootstrap.models_dir()
@@ -889,8 +889,8 @@ def test_ensure_local_runtime_serializes_racing_callers(tmp_path, monkeypatch):
     monkeypatch.setattr(bootstrap, "_generate_presets", lambda *a, **k: None)
     monkeypatch.setattr(bootstrap, "_presets_stale", lambda: False)
     monkeypatch.setattr(bootstrap, "_detect_gpu_vendor", lambda: None)
-    from hermes_cli.local_runtime.binaries import Engine
-    monkeypatch.setattr("hermes_cli.local_runtime.binaries.installed_engine",
+    from moor_cli.local_runtime.binaries import Engine
+    monkeypatch.setattr("moor_cli.local_runtime.binaries.installed_engine",
                         lambda backend: Engine("cpu", "b1", tmp_path / "llama-server"))
 
     spawns = []
@@ -937,8 +937,8 @@ def test_ensure_local_runtime_serializes_racing_callers(tmp_path, monkeypatch):
 def test_ensure_local_runtime_proceeds_when_boot_lock_is_unwritable(tmp_path, monkeypatch, caplog):
     """The boot lock lives outside the body's ``try/except``: an unwritable runtimes dir must
     degrade to a warning and an unlocked boot, never an OSError out of session start."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    from hermes_cli.local_runtime import bootstrap
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    from moor_cli.local_runtime import bootstrap
 
     monkeypatch.setattr(bootstrap, "_SUPERVISOR", None)
     mdir = bootstrap.models_dir()
@@ -947,8 +947,8 @@ def test_ensure_local_runtime_proceeds_when_boot_lock_is_unwritable(tmp_path, mo
     blocker = tmp_path / "not-a-dir"
     blocker.write_text("", encoding="utf-8")
     monkeypatch.setattr(bootstrap, "runtimes_root", lambda: blocker / "runtimes")  # mkdir -> OSError
-    monkeypatch.setattr("hermes_cli.local_runtime.endpoint._state_endpoint", lambda: None)
-    monkeypatch.setattr("hermes_cli.local_runtime.binaries.installed_engine", lambda backend: None)
+    monkeypatch.setattr("moor_cli.local_runtime.endpoint._state_endpoint", lambda: None)
+    monkeypatch.setattr("moor_cli.local_runtime.binaries.installed_engine", lambda backend: None)
 
     with caplog.at_level(logging.WARNING, logger=bootstrap.logger.name):
         result = bootstrap.ensure_local_runtime({"local_runtime": {"enabled": True}})

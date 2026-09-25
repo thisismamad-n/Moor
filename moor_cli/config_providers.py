@@ -515,7 +515,7 @@ def get_custom_provider_session_affinity_header(
     config: Optional[Dict[str, Any]] = None) -> str:
     """Header NAME declared as ``session_affinity_header`` on the route-matching entry, else "".
 
-    Opt-in per provider (default off): Hermes never ships a session identifier to an endpoint
+    Opt-in per provider (default off): Moor never ships a session identifier to an endpoint
     that did not ask for one (#86241).
     """
     for entry in _entries_for_route(base_url, custom_providers, config):
@@ -535,7 +535,7 @@ def get_custom_provider_context_length(
     Before this helper existed, the lookup was duplicated in ``run_agent.py``'s startup path only; every
     other path (notably ``/model`` switch) fell back to the 128K default. See #15779.
     """
-    from hermes_cli.config import get_compatible_custom_providers, load_config_readonly
+    from moor_cli.config import get_compatible_custom_providers, load_config_readonly
     if not model or not base_url:
         return None
     if custom_providers is None:

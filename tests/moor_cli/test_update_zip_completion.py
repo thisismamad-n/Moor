@@ -10,23 +10,23 @@ import zipfile
 
 import pytest
 
-from hermes_cli import main, update_cmd, update_cmd_fleet as fleet, update_cmd_maint as maint
-from hermes_cli import update_cmd_zip, update_receipt
-from hermes_cli.config_defaults import DEFAULT_CONFIG
-from hermes_cli.update_inventory import RuntimeRecord, UpdatePlan
-import hermes_yaml
+from moor_cli import main, update_cmd, update_cmd_fleet as fleet, update_cmd_maint as maint
+from moor_cli import update_cmd_zip, update_receipt
+from moor_cli.config_defaults import DEFAULT_CONFIG
+from moor_cli.update_inventory import RuntimeRecord, UpdatePlan
+import moor_yaml
 
 
 @pytest.fixture
 def zip_update(tmp_path, monkeypatch, isolated_source_completion):
     home = tmp_path / "home"
-    active = home / ".hermes"
+    active = home / ".moor"
     sibling = active / "profiles/other"
     sibling.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: home)
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(active))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "store"))
+    monkeypatch.setenv("MOOR_HOME", str(active))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(tmp_path / "store"))
     for profile in (active, sibling):
         (profile / "config.yaml").write_text(
             f"_config_version: {DEFAULT_CONFIG['_config_version'] - 1}\n"
@@ -41,18 +41,18 @@ def zip_update(tmp_path, monkeypatch, isolated_source_completion):
     root.mkdir()
     (root / "pyproject.toml").write_text('[project]\nversion="1.0"\n', encoding="utf-8")
     (root / "payload.txt").write_text("old", encoding="utf-8")
-    for name in ("tools/code.py", "apps/desktop/source.js", "apps/desktop/release/Hermes.exe",
+    for name in ("tools/code.py", "apps/desktop/source.js", "apps/desktop/release/Moor.exe",
                  "venv/keep", "node_modules/keep", ".env"):
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("retained", encoding="utf-8")
     archive = tmp_path / "source.zip"
     with zipfile.ZipFile(archive, "w") as out:
-        out.writestr("hermes-agent-main/pyproject.toml", '[project]\nversion="2.0"\n')
-        out.writestr("hermes-agent-main/payload.txt", "new")
+        out.writestr("moor-agent-main/pyproject.toml", '[project]\nversion="2.0"\n')
+        out.writestr("moor-agent-main/payload.txt", "new")
         for name in ("new-entry/data", "tools/code.py", "apps/desktop/source.js",
                      "venv/keep", "node_modules/keep", ".env"):
-            out.writestr("hermes-agent-main/" + name, "new")
+            out.writestr("moor-agent-main/" + name, "new")
     # Only redirect transport: extraction, staging, dirty recheck and swap run.
     monkeypatch.setattr("urllib.request.urlretrieve", lambda url, dst: urlretrieve(archive.as_uri(), dst))
     monkeypatch.setattr(main, "PROJECT_ROOT", root)
@@ -61,7 +61,7 @@ def zip_update(tmp_path, monkeypatch, isolated_source_completion):
     plan = UpdatePlan(install_method="git", expected_version="1.0", profiles=["default", "other"],
                       runtimes=[RuntimeRecord(kind="serve", profile="default", pid=99999999,
                                               supervisor="manual-serve")])
-    monkeypatch.setattr("hermes_cli.update_inventory.collect_runtime_inventory", lambda: plan)
+    monkeypatch.setattr("moor_cli.update_inventory.collect_runtime_inventory", lambda: plan)
     monkeypatch.setattr(main, "_pause_windows_gateways_for_update", lambda: token)
     monkeypatch.setattr("atexit.register", lambda *args: None)
     monkeypatch.setattr(main, "_desktop_packaged_executable", lambda root: None)
@@ -75,13 +75,13 @@ def zip_update(tmp_path, monkeypatch, isolated_source_completion):
         events.append("prepare")
         # The pre-update snapshot must reach the real cron-loss safety net.
         jobs.write_text('{"jobs": []}', encoding="utf-8")
-    monkeypatch.setattr("hermes_cli.source_build.build_update_products", prepare)
+    monkeypatch.setattr("moor_cli.source_build.build_update_products", prepare)
     # PM/builds and machine-level repair are independently covered. Keep real
     # config migration, profile env backfill, snapshot recovery and receipts.
-    monkeypatch.setattr("hermes_cli.macos_tcc_anchor.ensure_tcc_anchor", lambda: None)
+    monkeypatch.setattr("moor_cli.macos_tcc_anchor.ensure_tcc_anchor", lambda: None)
     monkeypatch.setattr(maint, "_print_post_update_notices_and_self_heals", lambda: None)
     monkeypatch.setattr(maint, "_print_bundled_skills_sync_report", lambda: None)
-    monkeypatch.setattr("hermes_cli.profiles.seed_profile_skills", lambda *a, **kw: {})
+    monkeypatch.setattr("moor_cli.profiles.seed_profile_skills", lambda *a, **kw: {})
     monkeypatch.setattr("plugins.memory.honcho.cli.sync_honcho_profiles_quiet", lambda: [])
     monkeypatch.setattr(update_cmd, "_reload_config_modules", lambda: None)
     monkeypatch.setattr(update_cmd, "_post_update_sqlite_runtime_status", lambda: (True, None))
@@ -89,7 +89,7 @@ def zip_update(tmp_path, monkeypatch, isolated_source_completion):
     monkeypatch.setattr(maint, "_refresh_dashboard_after_update", lambda **kwargs: None)
     monkeypatch.setattr(update_cmd, "_surviving_pre_update_serve_runtimes", lambda plan: [])
     monkeypatch.setattr(fleet, "_collect_fleet_snapshot", lambda *args: [])
-    monkeypatch.setattr("hermes_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
+    monkeypatch.setattr("moor_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
 
     def resume(received):
         assert received is token
@@ -135,7 +135,7 @@ def test_zip_command_migrates_profiles_recovers_snapshot_and_verifies_fleet(
     update_cmd._cmd_update_impl(SimpleNamespace(branch="main", yes=True), gateway_mode)
 
     for profile in (state.active, state.sibling):
-        config = hermes_yaml.safe_load((profile / "config.yaml").read_text())
+        config = moor_yaml.safe_load((profile / "config.yaml").read_text())
         assert config["_config_version"] == DEFAULT_CONFIG["_config_version"]
         assert config["model"]["default"] == "retained-model"
     assert (state.sibling / ".env").read_bytes() == (state.active / ".env").read_bytes()
@@ -143,7 +143,7 @@ def test_zip_command_migrates_profiles_recovers_snapshot_and_verifies_fleet(
     assert (state.root / "payload.txt").read_text() == "new"
     for name in ("tools/code.py", "apps/desktop/source.js", "new-entry/data"):
         assert (state.root / name).read_text(encoding="utf-8") == "new"
-    for name in ("apps/desktop/release/Hermes.exe", "venv/keep", "node_modules/keep", ".env"):
+    for name in ("apps/desktop/release/Moor.exe", "venv/keep", "node_modules/keep", ".env"):
         assert (state.root / name).read_text(encoding="utf-8") == "retained"
     assert state.events == ["prepare", *([("marker", True)] if gateway_mode else []),
                             "restart", "resume", "finalize"]
@@ -152,7 +152,7 @@ def test_zip_command_migrates_profiles_recovers_snapshot_and_verifies_fleet(
     assert receipt["runtime_outcomes"][0]["outcome"] == "restarted"
     assert update_receipt._current.get() is None
     assert state.token["resume_needed"] is False
-    assert not list(state.root.glob("*.hermes-update-*"))
+    assert not list(state.root.glob("*.moor-update-*"))
 
 
 @pytest.mark.parametrize("verdict", ["healthy", "unsafe-sqlite", "stale-fleet"])
@@ -208,7 +208,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
         rename = os.rename
 
         def fail_second_swap(src, dst):
-            if str(src).endswith(".hermes-update-staging"):
+            if str(src).endswith(".moor-update-staging"):
                 installed.append(dst)
                 if len(installed) == (5 if failure == "late-swap" else 2):
                     raise OSError("locked replacement")
@@ -221,7 +221,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
         copytree = shutil.copytree
 
         def fail_copy(src, dst, *args, **kwargs):
-            if str(dst).endswith(".hermes-update-staging"):
+            if str(dst).endswith(".moor-update-staging"):
                 raise OSError("staging disk full")
             return copytree(src, dst, *args, **kwargs)
         monkeypatch.setattr(shutil, "copytree", fail_copy)
@@ -230,7 +230,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
         def fail_preparation(*args, **kwargs):
             assert (state.root / "payload.txt").read_text() == "new"
             raise pm.InstallError("venv", "preparation stopped")
-        monkeypatch.setattr("hermes_cli.source_build.build_update_products", fail_preparation)
+        monkeypatch.setattr("moor_cli.source_build.build_update_products", fail_preparation)
         expected = pm.InstallError
     with pytest.raises(expected) as raised:
         update_cmd._cmd_update_impl(SimpleNamespace(branch="main", yes=True), gateway_mode=True)
@@ -248,7 +248,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
     assert not (state.sibling / ".env").exists()
     assert json.loads(state.jobs.read_text()) == state.original_jobs
     assert not (state.active / "logs/update_receipts/latest.json").exists()
-    assert not list(state.root.glob("*.hermes-update-*"))
+    assert not list(state.root.glob("*.moor-update-*"))
 
 
 @pytest.mark.parametrize("entry", ["payload.txt", "tools"])
@@ -257,9 +257,9 @@ def test_zip_recovers_crashed_backup_before_failed_copy_and_retry(zip_update, mo
 
     root = zip_update.root
     target = root / entry
-    backup = root / (entry + ".hermes-update-old")
+    backup = root / (entry + ".moor-update-old")
     target.rename(backup)
-    leftover = root / (entry + ".hermes-update-staging")
+    leftover = root / (entry + ".moor-update-staging")
     leftover.write_text("interrupted copy", encoding="utf-8")
     function = "copytree" if entry == "tools" else "copy2"
     original = getattr(shutil, function)
@@ -276,10 +276,10 @@ def test_zip_recovers_crashed_backup_before_failed_copy_and_retry(zip_update, mo
         assert error.value.code == 1
     witness = target / "code.py" if entry == "tools" else target
     assert witness.read_text(encoding="utf-8") == ("retained" if entry == "tools" else "old")
-    assert not list(root.glob("*.hermes-update-*"))
+    assert not list(root.glob("*.moor-update-*"))
     update_cmd_zip._download_and_swap_zip("main", "local fixture")
     assert witness.read_text(encoding="utf-8") == "new"
-    assert not list(root.glob("*.hermes-update-*"))
+    assert not list(root.glob("*.moor-update-*"))
 
 
 def test_atomic_directory_compat_entrypoint(tmp_path):
@@ -291,7 +291,7 @@ def test_atomic_directory_compat_entrypoint(tmp_path):
     update_cmd_zip._atomic_replace_dir(str(src), str(dst))
     assert {p.name for p in dst.iterdir()} == {"new"}
     assert (dst / "new").read_text(encoding="utf-8") == "new"
-    assert not list(tmp_path.glob("*.hermes-update-*"))
+    assert not list(tmp_path.glob("*.moor-update-*"))
 
 
 def test_zip_refuses_non_main_before_transport(zip_update, monkeypatch, capsys):

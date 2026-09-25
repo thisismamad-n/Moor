@@ -10,12 +10,12 @@ from pm import paths
 
 @pytest.mark.parametrize("record_executable", [False, True])
 def test_chromium_resolves_installed_binary_without_mutation(tmp_path, monkeypatch, record_executable):
-    from hermes_cli.browser_runtime import chromium_executable
+    from moor_cli.browser_runtime import chromium_executable
 
     home = tmp_path / "home"
     store = home / "tools"
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(store))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(store))
     monkeypatch.delenv("AGENT_BROWSER_EXECUTABLE_PATH", raising=False)
     lock = pm.Lockfile(paths.lockfile_path())
     target = pm.current_target()
@@ -44,11 +44,11 @@ def test_chromium_resolves_installed_binary_without_mutation(tmp_path, monkeypat
 
 
 def test_chromium_override_wins_without_installing(tmp_path, monkeypatch):
-    from hermes_cli.browser_runtime import chromium_executable
+    from moor_cli.browser_runtime import chromium_executable
 
     store = tmp_path / "missing-store"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(store))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(store))
     override = str(tmp_path / "external browser")
     monkeypatch.setenv("AGENT_BROWSER_EXECUTABLE_PATH", override)
 

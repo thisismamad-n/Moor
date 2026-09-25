@@ -100,16 +100,16 @@ Realtime mode is **speak-only**: `speaker.pcm` is streamed into the virtual mic 
 stdin-fed `paplay` / `ffmpeg` pump that follows the file as Realtime appends audio.
 Incoming speech is still the caption scrape (v1) — meeting audio is never sent to the
 Realtime session, so there is no barge-in on raw audio and no STT billing. After
-admission the bot unmutes itself if Meet seated it muted; `status.json` / `hermes meet
+admission the bot unmutes itself if Meet seated it muted; `status.json` / `moor meet
 status` report the result as `micState` (`unmuted`, `unmuted_clicked`, `unknown`).
 
 ## Remote node host
 
 On the node machine (e.g. user's Mac with a signed-in Chrome):
 ```bash
-hermes plugins enable google_meet
-hermes meet install
-hermes meet node run --display-name my-mac --host 0.0.0.0 --port 18789
+moor plugins enable google_meet
+moor meet install
+moor meet node run --display-name my-mac --host 0.0.0.0 --port 18789
 # prints the bearer token on first run; copy it
 ```
 

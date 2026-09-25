@@ -34,26 +34,26 @@ def set_multiplex_active(active: bool) -> None:
     """Mark whether the process is a profile multiplexer (get_secret fails closed).
 
     Activation also pins the launch home for routed-profile decisions
-    (``hermes_constants.pin_process_hermes_home``) unless an embedding host already pinned one:
+    (``moor_constants.pin_process_moor_home``) unless an embedding host already pinned one:
     from here on "is this task routed" compares the override against the home the process was
-    launched with, not against whatever a host later mirrors into ``os.environ["HERMES_HOME"]``.
+    launched with, not against whatever a host later mirrors into ``os.environ["MOOR_HOME"]``.
     Deactivation releases only the pin activation itself created — a transient toggle
     (``gateway_migrate._multiplex_read_mode``, a cron worker restoring the caller's mode) must not
     drop the host's explicit pin (#119242)."""
     global _MULTIPLEX_ACTIVE, _AUTO_PINNED_HOME
-    from hermes_constants import (
-        get_routing_process_hermes_home,
-        pin_process_hermes_home,
-        process_hermes_home_is_pinned,
+    from moor_constants import (
+        get_routing_process_moor_home,
+        pin_process_moor_home,
+        process_moor_home_is_pinned,
     )
     _MULTIPLEX_ACTIVE = bool(active)
     if _MULTIPLEX_ACTIVE:
-        if not process_hermes_home_is_pinned():
-            _AUTO_PINNED_HOME = get_routing_process_hermes_home()
-            pin_process_hermes_home(_AUTO_PINNED_HOME)
+        if not process_moor_home_is_pinned():
+            _AUTO_PINNED_HOME = get_routing_process_moor_home()
+            pin_process_moor_home(_AUTO_PINNED_HOME)
     elif _AUTO_PINNED_HOME is not None:
-        if get_routing_process_hermes_home() == _AUTO_PINNED_HOME:
-            pin_process_hermes_home(None)
+        if get_routing_process_moor_home() == _AUTO_PINNED_HOME:
+            pin_process_moor_home(None)
         _AUTO_PINNED_HOME = None
 
 
@@ -64,7 +64,7 @@ def is_multiplex_active() -> bool:
 class _BoundScope(NamedTuple):
     """An installed secret scope plus the home it was built for, when the binder
     declared one — the provenance ``serves_routed_profile`` needs when the binding
-    deliberately skips the HERMES_HOME override (kanban spawn-env builds, MCP
+    deliberately skips the MOOR_HOME override (kanban spawn-env builds, MCP
     owner scopes)."""
 
     mapping: Mapping[str, str]
@@ -73,21 +73,21 @@ class _BoundScope(NamedTuple):
 
 def serves_routed_profile() -> bool:
     """True when the current task runs for a profile other than the process's own: always under
-    multiplexing, else when a HERMES_HOME override names another home (dashboard/desktop backend,
+    multiplexing, else when a MOOR_HOME override names another home (dashboard/desktop backend,
     per-profile cron ticker) or a secret scope stamped with a foreign home is bound. The MCP
     registry scope and the check_fn cache key both follow this predicate so a served profile's
     view never aliases the launch profile's (#111151). A host that mirrors the turn's profile into
-    ``HERMES_HOME`` pins its own home with ``hermes_constants.pin_process_hermes_home`` so the
+    ``MOOR_HOME`` pins its own home with ``moor_constants.pin_process_moor_home`` so the
     mirror cannot flip this predicate."""
     if is_multiplex_active():
         return True
-    from hermes_constants import get_hermes_home_override, get_routing_process_hermes_home, hermes_home_key
-    own = hermes_home_key(get_routing_process_hermes_home())
+    from moor_constants import get_moor_home_override, get_routing_process_moor_home, moor_home_key
+    own = moor_home_key(get_routing_process_moor_home())
     bound = _SECRET_SCOPE.get()
-    if bound is not None and bound.profile_home and hermes_home_key(bound.profile_home) != own:
+    if bound is not None and bound.profile_home and moor_home_key(bound.profile_home) != own:
         return True
-    override = get_hermes_home_override()
-    return override is not None and hermes_home_key(override) != own
+    override = get_moor_home_override()
+    return override is not None and moor_home_key(override) != own
 
 
 _SECRET_SCOPE: ContextVar[Optional[_BoundScope]] = ContextVar("_SECRET_SCOPE", default=None)
@@ -126,7 +126,7 @@ def set_secret_scope(secrets: Optional[Mapping[str, str]], *, profile_home: Opti
 
     ``profile_home`` stamps the home the mapping was built for so
     ``serves_routed_profile`` detects a foreign-home scope even when the binder
-    deliberately skips the HERMES_HOME override."""
+    deliberately skips the MOOR_HOME override."""
     if secrets is None:
         return _SECRET_SCOPE.set(None)
     return _SECRET_SCOPE.set(_BoundScope(secrets, str(profile_home) if profile_home else None))
@@ -286,8 +286,8 @@ def _parse_env_value(raw_value: str) -> str:
 # revalidation on NFS, a vanished/unreadable file fails the open and is never cached (a transient
 # EACCES must not become "this profile has no secrets"), and the descriptor pins one inode so a
 # symlink repointed mid-read can't file one file's contents under another's identity.
-# ``invalidate_env_file_cache()`` is the explicit knob; ``hermes_cli.config.invalidate_env_cache()``
-# calls it for Hermes's own .env writers.
+# ``invalidate_env_file_cache()`` is the explicit knob; ``moor_cli.config.invalidate_env_cache()``
+# calls it for Moor's own .env writers.
 _ENV_FILE_CACHE: "OrderedDict[str, Tuple[tuple, Dict[str, str]]]" = OrderedDict()
 _ENV_FILE_CACHE_LOCK = threading.Lock()
 _ENV_FILE_CACHE_MAX = 64  # one entry per profile home in practice
@@ -330,7 +330,7 @@ def _parse_env_text(text: str) -> Dict[str, str]:
 
 
 def load_env_file(env_path: Path) -> Dict[str, str]:
-    """THE ``.env`` tokenizer: every reader (profile scope, ``hermes_cli.config.load_env``, the dashboard
+    """THE ``.env`` tokenizer: every reader (profile scope, ``moor_cli.config.load_env``, the dashboard
     scrub, skill secret capture, managed .env, setup prompts) parses through here so no two boundaries
     disagree on which keys/values a file defines. Dict only — never touches ``os.environ``. ``export``
     prefix, ``#`` comments, quote escapes reversed; a BOM is stripped so it doesn't prefix the first key.
@@ -369,7 +369,7 @@ def load_env_file(env_path: Path) -> Dict[str, str]:
     return secrets
 
 
-def build_profile_secret_scope(hermes_home: Path) -> Dict[str, str]:
+def build_profile_secret_scope(moor_home: Path) -> Dict[str, str]:
     """Build a profile's secret mapping from ``<home>/.env`` plus its external
     secret sources. Global vars are NOT copied in — ``get_secret`` reads those
     from ``os.environ`` — so the scope holds only profile secrets."""
@@ -390,12 +390,12 @@ def build_profile_secret_scope(hermes_home: Path) -> Dict[str, str]:
     return secrets
 
 
-def _is_process_home(hermes_home: Path) -> bool:
-    """Is *hermes_home* the profile this process serves as its own? Same launch-home identity as
-    ``serves_routed_profile()``: a host that mirrors a served profile into ``HERMES_HOME`` would
+def _is_process_home(moor_home: Path) -> bool:
+    """Is *moor_home* the profile this process serves as its own? Same launch-home identity as
+    ``serves_routed_profile()``: a host that mirrors a served profile into ``MOOR_HOME`` would
     otherwise seed the launch profile's bridged allow-all grant into that profile's scope."""
-    from hermes_constants import get_routing_process_hermes_home
+    from moor_constants import get_routing_process_moor_home
     try:
-        return Path(hermes_home).resolve() == get_routing_process_hermes_home().resolve()
+        return Path(moor_home).resolve() == get_routing_process_moor_home().resolve()
     except OSError:
         return False

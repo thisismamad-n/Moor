@@ -8,8 +8,8 @@ The loop now also runs on the ``-q`` path, driving follow-up turns through ``cli
 
 from __future__ import annotations
 
-from hermes_cli import kanban_db_dispatch as dispatch
-from hermes_cli.kanban_db import Task
+from moor_cli import kanban_db_dispatch as dispatch
+from moor_cli.kanban_db import Task
 
 def _task(**overrides) -> Task:
     base = dict(
@@ -22,11 +22,11 @@ def _task(**overrides) -> Task:
     return Task(**base)
 
 def test_goal_mode_worker_takes_the_same_stdout_rich_path_as_a_one_shot_worker(monkeypatch):
-    monkeypatch.setattr(dispatch, "_resolve_hermes_argv", lambda: ["hermes"])
+    monkeypatch.setattr(dispatch, "_resolve_moor_argv", lambda: ["moor"])
     monkeypatch.setattr(dispatch, "_resolve_worker_cli_toolsets", lambda home: None)
     plain = dispatch._worker_argv(_task(goal_mode=False), "worker", None)
     goal = dispatch._worker_argv(_task(goal_mode=True), "worker", None)
-    # The mode travels in HERMES_KANBAN_GOAL_MODE; the argv must not opt the worker out of
+    # The mode travels in MOOR_KANBAN_GOAL_MODE; the argv must not opt the worker out of
     # the tool feed that the Worker log is made of.
     assert goal == plain
     assert "-Q" not in goal

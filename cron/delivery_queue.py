@@ -76,7 +76,7 @@ def queue_path(home: Optional[Path] = None) -> Path:
     """The queue file of ``home`` (the active home when None); a test override wins."""
     if DELIVERY_DB is not None:
         return DELIVERY_DB
-    root = Path(home) if home is not None else get_hermes_home()
+    root = Path(home) if home is not None else get_moor_home()
     return root.resolve() / "cron" / "deliveries.db"
 
 

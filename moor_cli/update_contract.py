@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
-from hermes_cli.steward import STEWARD_APT_TERMUX, STEWARD_DESKTOP, STEWARD_DOCKER, STEWARD_NIX
+from moor_cli.steward import STEWARD_APT_TERMUX, STEWARD_DESKTOP, STEWARD_DOCKER, STEWARD_NIX
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ COMMIT_BUILD_UPDATE_MESSAGE = (
 
 
 def is_commit_build(project_root: Path) -> bool:
-    from hermes_cli.steward import read_install_stamp
+    from moor_cli.steward import read_install_stamp
 
     return read_install_stamp(project_root).get("source") == "commit-build"
 
@@ -60,7 +60,7 @@ _STEWARD_UPDATE_METHODS: dict[str, str] = {
 
 def _steward_refusal(steward: str) -> UpdateRefusal:
     """Refusal for a tree sealed by ``steward``."""
-    from hermes_cli.steward import steward_update_message
+    from moor_cli.steward import steward_update_message
 
     method = _STEWARD_UPDATE_METHODS.get(steward)
     if method == "docker":
@@ -69,7 +69,7 @@ def _steward_refusal(steward: str) -> UpdateRefusal:
         return _refusal(steward, method, lambda _command: steward_update_message(steward))
     # desktop-app and future package managers have no CLI remediation: the
     # steward's own instructions are the remediation, and
-    # recommended_update_command_for_method would falsely answer "hermes
+    # recommended_update_command_for_method would falsely answer "moor
     # update" for methods it doesn't know.
     command = (
         "Manage updates from within the desktop app"
@@ -113,14 +113,14 @@ def evaluate_update_admission(project_root: Path) -> Optional[UpdateRefusal]:
     # rung that covers ``desktop-app``, which the heuristics below never
     # detect (the payload has no .install_method stamp and no .git).
     try:
-        from hermes_cli.steward import sealed_steward
+        from moor_cli.steward import sealed_steward
 
         steward = sealed_steward(project_root)
         if steward is None:
-            from hermes_constants import is_termux
+            from moor_constants import is_termux
 
             if is_termux():
-                from hermes_cli.steward import SOURCE_ON_TERMUX_UPDATE_COMMAND, SOURCE_ON_TERMUX_UPDATE_MESSAGE
+                from moor_cli.steward import SOURCE_ON_TERMUX_UPDATE_COMMAND, SOURCE_ON_TERMUX_UPDATE_MESSAGE
 
                 return UpdateRefusal(
                     code=STEWARD_APT_TERMUX,

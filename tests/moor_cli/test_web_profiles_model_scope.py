@@ -1,6 +1,6 @@
 """``PUT /api/profiles/{name}/model`` must validate under the target profile's secret scope.
 
-``_write_profile_model`` used to enter only the HERMES_HOME override. Once the dashboard
+``_write_profile_model`` used to enter only the MOOR_HOME override. Once the dashboard
 has served a secondary profile (fail-closed multiplexing on), ``switch_model``'s
 ``key_env`` probe reads through ``get_secret``, which fails closed without an installed
 scope — the pick was rejected with "<provider> is not connected" even though the named
@@ -27,15 +27,15 @@ ACME_YAML = (
 
 @pytest.fixture()
 def homes(tmp_path, monkeypatch):
-    """A throwaway HERMES_HOME whose named profile carries its own ``.env`` credential.
+    """A throwaway MOOR_HOME whose named profile carries its own ``.env`` credential.
 
     The process env holds a DIFFERENT value for the same variable: a scoped read must
     resolve the profile's key, never the dashboard home's (fail-closed isolation).
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setenv("ACME_RELAY_KEY", "dashboard-home-key")
-    from hermes_cli import profiles as profiles_mod
-    from hermes_cli.config import invalidate_env_cache
+    from moor_cli import profiles as profiles_mod
+    from moor_cli.config import invalidate_env_cache
 
     demo = profiles_mod.get_profile_dir("demo")
     demo.mkdir(parents=True, exist_ok=True)
@@ -56,14 +56,14 @@ def probe(monkeypatch):
         captured["api_key"] = api_key
         return {"accepted": True, "persist": True, "recognized": True, "message": ""}
 
-    import hermes_cli.models_validate as mv
+    import moor_cli.models_validate as mv
     monkeypatch.setattr(mv, "validate_requested_model", _fake_validate)
     return captured
 
 
 @pytest.fixture()
 def client(homes):
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     with TestClient(web_server.app, raise_server_exceptions=False) as c:
         c.headers["Authorization"] = f"Bearer {web_server._SESSION_TOKEN}"
@@ -83,9 +83,9 @@ def test_model_pick_resolves_key_env_from_profile_scope(client, homes, probe):
     assert resp.status_code == 200, resp.text
     # The profile's key, not the dashboard home's value from the process env.
     assert probe["api_key"] == "profile-key"
-    from hermes_cli.config import load_config
-    from hermes_cli.web_server_profiles import _hermes_home_scope
-    with _hermes_home_scope(homes[1]):
+    from moor_cli.config import load_config
+    from moor_cli.web_server_profiles import _moor_home_scope
+    with _moor_home_scope(homes[1]):
         assert (load_config().get("model") or {}).get("default") == "acme/mini"
 
 
@@ -93,12 +93,12 @@ def test_model_pick_for_default_from_named_profile_launch(homes, probe, monkeypa
     """Dashboard launched from ``profiles/demo``: targeting ``default`` must scope the ROOT
     (name ``default``), not the root directory's basename, which is not a profile name."""
     root, demo = homes
-    monkeypatch.setenv("HERMES_HOME", str(demo))
+    monkeypatch.setenv("MOOR_HOME", str(demo))
     (root / ".env").write_text("ACME_RELAY_KEY=root-key\n", encoding="utf-8")
-    from hermes_cli.config import invalidate_env_cache, load_config
-    from hermes_cli.web_server_profiles import _hermes_home_scope
+    from moor_cli.config import invalidate_env_cache, load_config
+    from moor_cli.web_server_profiles import _moor_home_scope
     invalidate_env_cache()
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     with TestClient(web_server.app, raise_server_exceptions=False) as client:
         client.headers["Authorization"] = f"Bearer {web_server._SESSION_TOKEN}"
@@ -108,9 +108,9 @@ def test_model_pick_for_default_from_named_profile_launch(homes, probe, monkeypa
 
     assert resp.status_code == 200, resp.text
     assert probe["api_key"] == "root-key"  # the root's .env, not the launch profile's
-    with _hermes_home_scope(root):
+    with _moor_home_scope(root):
         assert (load_config().get("model") or {}).get("default") == "acme/mini"
-    with _hermes_home_scope(demo):
+    with _moor_home_scope(demo):
         assert (load_config().get("model") or {}).get("default") is None
 
 
@@ -133,12 +133,12 @@ def test_model_set_without_a_profile_pins_to_the_launch_home(client, homes):
     )
 
     assert resp.status_code == 200, resp.text
-    from hermes_cli.config import load_config
-    from hermes_cli.web_server_profiles import _hermes_home_scope
+    from moor_cli.config import load_config
+    from moor_cli.web_server_profiles import _moor_home_scope
 
-    with _hermes_home_scope(root):
+    with _moor_home_scope(root):
         assert (load_config().get("model") or {}).get("default") == "acme/mini"
-    with _hermes_home_scope(demo):
+    with _moor_home_scope(demo):
         assert (load_config().get("model") or {}).get("default") is None
 
 
@@ -148,22 +148,22 @@ def test_model_set_names_target_from_a_backend_launched_as_another_profile(homes
     root's) untouched; the follow-up for A lands on A only. This is the server half the
     Desktop relies on once every Settings request names the profile its page displays."""
     root, demo = homes
-    from hermes_cli import profiles as profiles_mod
-    from hermes_cli.config import invalidate_env_cache, load_config
-    from hermes_cli.web_server_profiles import _hermes_home_scope
+    from moor_cli import profiles as profiles_mod
+    from moor_cli.config import invalidate_env_cache, load_config
+    from moor_cli.web_server_profiles import _moor_home_scope
 
     other = profiles_mod.get_profile_dir("other")
     other.mkdir(parents=True, exist_ok=True)
     (other / "config.yaml").write_text(ACME_YAML, encoding="utf-8")
     (other / ".env").write_text("ACME_RELAY_KEY=other-key\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(demo))  # launched as A = demo
+    monkeypatch.setenv("MOOR_HOME", str(demo))  # launched as A = demo
     invalidate_env_cache()
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     body = {"scope": "main", "provider": "acme", "model": "acme/mini", "confirm_expensive_model": True}
 
     def model_of(home):
-        with _hermes_home_scope(home):
+        with _moor_home_scope(home):
             return (load_config().get("model") or {}).get("default")
 
     with TestClient(web_server.app, raise_server_exceptions=False) as client:

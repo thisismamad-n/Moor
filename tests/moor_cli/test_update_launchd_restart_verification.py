@@ -24,8 +24,8 @@ import subprocess
 
 import pytest
 
-import hermes_cli.gateway as gateway_cli
-import hermes_cli.update_cmd as update_cmd
+import moor_cli.gateway as gateway_cli
+import moor_cli.update_cmd as update_cmd
 
 LABEL = "ai.moor.gateway"
 
@@ -248,7 +248,7 @@ class TestInvokingProfileIsVerifiedLikeItsSiblings:
         ``launchctl list <label>`` exits 0 with a positive pid both before and
         after a reload that never happened, so "launchd supervises some pid"
         was already true of the very process the update meant to replace: the
-        update printed ``✓ Restarted ai.hermes.gateway`` over pre-update code.
+        update printed ``✓ Restarted ai.moor.gateway`` over pre-update code.
         The sibling loop has required a fresh pid since f29ee96
         (``_wait_for_launchd_service_pid(old_pid=...)``); this pins the same
         contract for the profile running the update.

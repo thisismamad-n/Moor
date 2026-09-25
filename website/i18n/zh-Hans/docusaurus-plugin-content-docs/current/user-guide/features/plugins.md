@@ -10,9 +10,9 @@ description: "通过插件系统为 Moor 添加自定义工具、hook 和集成"
 Moor 提供了一套插件系统，可在不修改核心代码的情况下添加自定义工具、hook（钩子）和集成。
 
 如果你想为自己、团队或某个项目创建自定义工具，这通常是正确的路径。开发者指南中的
-[Adding Tools](../../developer-guide/adding-tools.md) 页面针对的是存放在 `tools/` 和 `toolsets.py` 中的 Hermes 内置核心工具。
+[Adding Tools](../../developer-guide/adding-tools.md) 页面针对的是存放在 `tools/` 和 `toolsets.py` 中的 Moor 内置核心工具。
 
-**→ [构建 Hermes Plugin](../../developer-guide/plugins/index.md)** — 包含完整可运行示例的分步指南。
+**→ [构建 Moor Plugin](../../developer-guide/plugins/index.md)** — 包含完整可运行示例的分步指南。
 
 ## 快速概览
 
@@ -100,12 +100,12 @@ def register(ctx):
 | 添加 hook | `ctx.register_hook("post_tool_call", callback)` |
 | 添加斜杠命令 | `ctx.register_command(name, handler, description)` — 在 CLI 和 gateway 会话中添加 `/name` |
 | 从命令中调度工具 | `ctx.dispatch_tool(name, args)` — 调用已注册的工具，自动注入父 agent 上下文 |
-| 添加 CLI 命令 | `ctx.register_cli_command(name, help, setup_fn, handler_fn)` — 添加 `hermes <plugin> <subcommand>` |
+| 添加 CLI 命令 | `ctx.register_cli_command(name, help, setup_fn, handler_fn)` — 添加 `moor <plugin> <subcommand>` |
 | 注入消息 | `ctx.inject_message(content, role="user")` — 参见 [注入消息](#注入消息) |
 | 附带数据文件 | `Path(__file__).parent / "data" / "file.yaml"` |
 | 打包 skill | `ctx.register_skill(name, path)` — 命名空间为 `plugin:skill`，通过 `skill_view("plugin:skill")` 加载 |
-| 按环境变量控制 | 在 plugin.yaml 中设置 `requires_env: [API_KEY]` — 在 `hermes plugins install` 时提示输入 |
-| 通过 pip 分发 | `[project.entry-points."hermes_agent.plugins"]` |
+| 按环境变量控制 | 在 plugin.yaml 中设置 `requires_env: [API_KEY]` — 在 `moor plugins install` 时提示输入 |
+| 通过 pip 分发 | `[project.entry-points."moor_agent.plugins"]` |
 | 注册 gateway 平台（Discord、Telegram、IRC 等） | `ctx.register_platform(name, label, adapter_factory, check_fn, ...)` — 参见 [Adding Platform Adapters](../../developer-guide/adding-platform-adapters.md) |
 | 注册图像生成后端 | `ctx.register_image_gen_provider(provider)` — 参见 [Image Generation Provider Plugins](../../developer-guide/image-gen-provider-plugin.md) |
 | 注册视频生成后端 | `ctx.register_video_gen_provider(provider)` — 参见 [Video Generation Provider Plugins](../../developer-guide/video-gen-provider-plugin.md) |
@@ -118,11 +118,11 @@ def register(ctx):
 
 | 来源 | 路径 | 使用场景 |
 |--------|------|----------|
-| 内置 | `<repo>/plugins/` | 随 Hermes 附带 — 参见 [Built-in Plugins](./built-in-plugins.md) |
-| 用户 | `~/.hermes/plugins/` | 个人插件 |
-| 项目 | `.hermes/plugins/` | 项目专属插件（需要 `HERMES_ENABLE_PROJECT_PLUGINS=true`） |
-| pip | `hermes_agent.plugins` entry_points | 分发包 |
-| Nix | `services.hermes-agent.extraPlugins` / `extraPythonPackages` | NixOS 声明式安装 — 参见 [Nix Setup](../../getting-started/nix-setup.md#插件) |
+| 内置 | `<repo>/plugins/` | 随 Moor 附带 — 参见 [Built-in Plugins](./built-in-plugins.md) |
+| 用户 | `~/.moor/plugins/` | 个人插件 |
+| 项目 | `.moor/plugins/` | 项目专属插件（需要 `MOOR_ENABLE_PROJECT_PLUGINS=true`） |
+| pip | `moor_agent.plugins` entry_points | 分发包 |
+| Nix | `services.moor-agent.extraPlugins` / `extraPythonPackages` | NixOS 声明式安装 — 参见 [Nix Setup](../../getting-started/nix-setup.md#插件) |
 
 名称冲突时，后面的来源会覆盖前面的，因此与内置插件同名的用户插件会替换它。
 
@@ -188,7 +188,7 @@ moor plugins disable <name>     # 从允许列表移除并添加到禁用列表
 
 ## 可用 hook
 
-插件可注册 `hermes_cli.plugins.VALID_HOOKS` 当前接受的 24 个生命周期事件。**[Event Hooks 目录](./hooks.md#已发布的-plugin-hook-目录)**是精确触发时机、返回值处理、payload 字段和隐私说明的 canonical reference。
+插件可注册 `moor_cli.plugins.VALID_HOOKS` 当前接受的 24 个生命周期事件。**[Event Hooks 目录](./hooks.md#已发布的-plugin-hook-目录)**是精确触发时机、返回值处理、payload 字段和隐私说明的 canonical reference。
 
 | 描述性类别 | 已发布 hook |
 |---|---|
@@ -217,10 +217,10 @@ Memory provider 和 context engine 是 **provider 插件** — 每种类型同�
 
 | 想要添加… | 方式 | 编写指南 |
 |---|---|---|
-| LLM 可调用的**工具** | Python 插件 — `ctx.register_tool()` | [Build a Hermes Plugin](../../developer-guide/plugins/index.md) · [Adding Tools](../../developer-guide/adding-tools.md) |
-| **生命周期 hook**（LLM 前后、会话开始/结束、工具过滤） | Python 插件 — `ctx.register_hook()` | [Hooks reference](./hooks.md) · [Build a Hermes Plugin](../../developer-guide/plugins/index.md) |
-| CLI / gateway 的**斜杠命令** | Python 插件 — `ctx.register_command()` | [Build a Hermes Plugin](../../developer-guide/plugins/index.md) · [Extending the CLI](../../developer-guide/extending-the-cli.md) |
-| `hermes <thing>` 的**子命令** | Python 插件 — `ctx.register_cli_command()` | [Extending the CLI](../../developer-guide/extending-the-cli.md) |
+| LLM 可调用的**工具** | Python 插件 — `ctx.register_tool()` | [Build a Moor Plugin](../../developer-guide/plugins/index.md) · [Adding Tools](../../developer-guide/adding-tools.md) |
+| **生命周期 hook**（LLM 前后、会话开始/结束、工具过滤） | Python 插件 — `ctx.register_hook()` | [Hooks reference](./hooks.md) · [Build a Moor Plugin](../../developer-guide/plugins/index.md) |
+| CLI / gateway 的**斜杠命令** | Python 插件 — `ctx.register_command()` | [Build a Moor Plugin](../../developer-guide/plugins/index.md) · [Extending the CLI](../../developer-guide/extending-the-cli.md) |
+| `moor <thing>` 的**子命令** | Python 插件 — `ctx.register_cli_command()` | [Extending the CLI](../../developer-guide/extending-the-cli.md) |
 | 插件附带的**skill** | Python 插件 — `ctx.register_skill()` | [Creating Skills](../../developer-guide/creating-skills.md) |
 | **推理后端**（LLM provider：OpenAI 兼容、Codex、Anthropic-Messages、Bedrock） | Provider 插件 — 在 `plugins/model-providers/<name>/` 中调用 `register_provider(ProviderProfile(...))` | **[Model Provider Plugins](../../developer-guide/model-provider-plugin.md)** · [Adding Providers](../../developer-guide/adding-providers.md) |
 | **Gateway 频道**（Discord / Telegram / IRC / Teams 等） | 平台插件 — 在 `plugins/platforms/<name>/` 中调用 `ctx.register_platform()` | [Adding Platform Adapters](../../developer-guide/adding-platform-adapters.md) |
@@ -229,10 +229,10 @@ Memory provider 和 context engine 是 **provider 插件** — 每种类型同�
 | **图像生成后端**（DALL·E、SDXL 等） | 后端插件 — `ctx.register_image_gen_provider()` | [Image Generation Provider Plugins](../../developer-guide/image-gen-provider-plugin.md) |
 | **视频生成后端**（Veo、Kling、Pixverse、Grok-Imagine、Runway 等） | 后端插件 — `ctx.register_video_gen_provider()` | [Video Generation Provider Plugins](../../developer-guide/video-gen-provider-plugin.md) |
 | **TTS 后端**（任意 CLI — Piper、VoxCPM、Kokoro、xtts、语音克隆脚本等） | 配置驱动（推荐）— 在 `config.yaml` 的 `tts.providers.<name>` 下以 `type: command` 声明。或 Python 后端插件 — 对需要超出 shell 模板的 Python SDK / 流式引擎使用 `ctx.register_tts_provider()`。 | [TTS Setup](./tts.md#自定义命令提供商) · [Python plugin guide](./tts.md#python-插件提供商) |
-| **STT 后端**（自定义 whisper 二进制、本地 ASR CLI） | 配置驱动 — 将 `HERMES_LOCAL_STT_COMMAND` 环境变量设置为 shell 模板 | [Voice Message Transcription (STT)](./tts.md#语音消息转录stt) |
-| **通过 MCP 使用外部工具**（文件系统、GitHub、Linear、Notion、任意 MCP 服务器） | 配置驱动 — 在 `config.yaml` 中以 `command:` / `url:` 声明 `mcp_servers.<name>`。Hermes 自动发现服务器的工具并与内置工具一同注册。 | [MCP](./mcp.md) |
-| **额外 skill 来源**（自定义 GitHub 仓库、私有 skill 索引） | CLI — `hermes skills tap add <repo>` | [Skills Hub](./skills.md#skills-hub) · [发布自定义 tap](./skills.md#发布自定义-skill-tap) |
-| **Gateway 事件 hook**（在 `gateway:startup`、`session:start`、`agent:end`、`command:*` 时触发） | 将 `HOOK.yaml` + `handler.py` 放入 `~/.hermes/hooks/<name>/` | [Event Hooks](./hooks.md#gateway-event-hooks) |
+| **STT 后端**（自定义 whisper 二进制、本地 ASR CLI） | 配置驱动 — 将 `MOOR_LOCAL_STT_COMMAND` 环境变量设置为 shell 模板 | [Voice Message Transcription (STT)](./tts.md#语音消息转录stt) |
+| **通过 MCP 使用外部工具**（文件系统、GitHub、Linear、Notion、任意 MCP 服务器） | 配置驱动 — 在 `config.yaml` 中以 `command:` / `url:` 声明 `mcp_servers.<name>`。Moor 自动发现服务器的工具并与内置工具一同注册。 | [MCP](./mcp.md) |
+| **额外 skill 来源**（自定义 GitHub 仓库、私有 skill 索引） | CLI — `moor skills tap add <repo>` | [Skills Hub](./skills.md#skills-hub) · [发布自定义 tap](./skills.md#发布自定义-skill-tap) |
+| **Gateway 事件 hook**（在 `gateway:startup`、`session:start`、`agent:end`、`command:*` 时触发） | 将 `HOOK.yaml` + `handler.py` 放入 `~/.moor/hooks/<name>/` | [Event Hooks](./hooks.md#gateway-event-hooks) |
 | **Shell hook**（在事件时运行 shell 命令 — 通知、审计日志、桌面提醒） | 配置驱动 — 在 `config.yaml` 的 `hooks:` 下声明 | [Shell Hooks](./hooks.md#shell-hooks) |
 
 :::note
@@ -241,14 +241,14 @@ Memory provider 和 context engine 是 **provider 插件** — 每种类型同�
 
 ## NixOS 声明式插件
 
-在 NixOS 上，插件可通过模块选项声明式安装 — 无需 `hermes plugins install`。完整详情请参见 **[Nix Setup 指南](../../getting-started/nix-setup.md#插件)**。
+在 NixOS 上，插件可通过模块选项声明式安装 — 无需 `moor plugins install`。完整详情请参见 **[Nix Setup 指南](../../getting-started/nix-setup.md#插件)**。
 
 ```nix
 services.moor-agent = {
   # 目录插件（包含 plugin.yaml 的源码树）
   extraPlugins = [ (pkgs.fetchFromGitHub { ... }) ];
   # 入口点插件（pip 包）
-  extraPythonPackages = [ (config.services.hermes-agent.package.python.pkgs.buildPythonPackage { ... }) ];
+  extraPythonPackages = [ (config.services.moor-agent.package.python.pkgs.buildPythonPackage { ... }) ];
   # 在 config 中启用
   settings.plugins.enabled = [ "my-plugin" ];
 };
@@ -259,16 +259,16 @@ services.moor-agent = {
 ## 管理插件
 
 ```bash
-hermes plugins                                       # 统一交互式 UI
-hermes plugins list                                  # 表格：已启用 / 已禁用 / 未启用
-hermes plugins install user/repo                     # 从 Git 安装，然后提示 Enable? [y/N]
-hermes plugins install user/repo --enable            # 请求启用；依赖安装仍需单独同意
-hermes plugins install user/repo --no-enable         # 安装但保持禁用（无提示）
-hermes plugins update my-plugin                      # 拉取最新版本
-hermes plugins remove my-plugin                      # 卸载
-hermes plugins enable my-plugin                      # 添加到允许列表（普通插件）
-hermes plugins enable observability/langfuse         # 添加到允许列表（子分类插件）
-hermes plugins disable my-plugin                     # 从允许列表移除并添加到禁用列表
+moor plugins                                       # 统一交互式 UI
+moor plugins list                                  # 表格：已启用 / 已禁用 / 未启用
+moor plugins install user/repo                     # 从 Git 安装，然后提示 Enable? [y/N]
+moor plugins install user/repo --enable            # 请求启用；依赖安装仍需单独同意
+moor plugins install user/repo --no-enable         # 安装但保持禁用（无提示）
+moor plugins update my-plugin                      # 拉取最新版本
+moor plugins remove my-plugin                      # 卸载
+moor plugins enable my-plugin                      # 添加到允许列表（普通插件）
+moor plugins enable observability/langfuse         # 添加到允许列表（子分类插件）
+moor plugins disable my-plugin                     # 从允许列表移除并添加到禁用列表
 ```
 
 对于子分类目录下的插件（例如 `plugins/observability/langfuse/`、`plugins/image_gen/openai/`），使用完整的 `<category>/<plugin>` key — 这正是 `moor plugins list` 在 **Name** 列中显示的内容。
@@ -276,9 +276,9 @@ hermes plugins disable my-plugin                     # 从允许列表移除并�
 ### 更新检查、来源与依赖
 
 ```bash
-hermes plugins check-updates
-hermes plugins adopt my-plugin
-hermes plugins trust-update-url my-plugin
+moor plugins check-updates
+moor plugins adopt my-plugin
+moor plugins trust-update-url my-plugin
 ```
 
 Git 安装的来源和版本记录在 `.install-metadata.json`。
@@ -287,8 +287,8 @@ Git 安装的来源和版本记录在 `.install-metadata.json`。
 pip 入口点插件可报告发行包版本，但不会因此转为 Git 管理。
 
 Gateway 按 `plugins.auto_update_check_hours` 检查更新，默认 24 小时，`0` 关闭。
-`check-updates` 不改写插件文件。检查记录可通过 `hermes pm status` 和桌面同步状态查看。
-默认通过 `hermes plugins update NAME` 手动应用；`plugins.auto_apply: true` 才允许跟踪的 Git 插件自动更新。
+`check-updates` 不改写插件文件。检查记录可通过 `moor pm status` 和桌面同步状态查看。
+默认通过 `moor plugins update NAME` 手动应用；`plugins.auto_apply: true` 才允许跟踪的 Git 插件自动更新。
 固定版本、手动目录、来源漂移和 pip 发行包不参与自动应用。
 新引入或变更的 `update_url` 需通过 `trust-update-url` 审阅确认。
 

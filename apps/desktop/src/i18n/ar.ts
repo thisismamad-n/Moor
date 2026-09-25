@@ -176,7 +176,7 @@ export const ar = defineLocale({
   },
   notifications: {
     sharedProfileWarning:
-      'تستخدم نسخة أخرى من Hermes هذا الملف الشخصي. تتشارك النسختان إعداداته وبياناته، لذا قد تتعارض التغييرات. يمكنك المتابعة أو إغلاق النسخة الأخرى قبل إجراء تغييرات.',
+      'تستخدم نسخة أخرى من Moor هذا الملف الشخصي. تتشارك النسختان إعداداته وبياناته، لذا قد تتعارض التغييرات. يمكنك المتابعة أو إغلاق النسخة الأخرى قبل إجراء تغييرات.',
     region: 'الإشعارات',
     hide: 'إخفاء',
     show: 'إظهار',
@@ -241,8 +241,8 @@ export const ar = defineLocale({
       rejectAction: 'رفض',
       inputTitle: 'مطلوب إدخال',
       inputTitleNamed: session => `مطلوب إدخال — ${session}`,
-      inputBody: 'ينتظر Hermes ردّك.',
-      turnDoneTitle: 'أنهى Hermes',
+      inputBody: 'ينتظر Moor ردّك.',
+      turnDoneTitle: 'أنهى Moor',
       turnDoneBody: '',
       turnErrorTitle: 'فشلت الجولة',
       backgroundDoneTitle: 'انتهت المهمة في الخلفية',
@@ -541,7 +541,7 @@ export const ar = defineLocale({
       kinds: { bundled: 'مضمّنة', disk: 'على القرص', runtime: 'وقت التشغيل' },
       installModal: {
         installUncertain:
-          'توقف Hermes عن انتظار نتيجة التثبيت، لكن قد يستمر تثبيت المكوّن الإضافي. أغلق هذه النافذة وأعد فحص قائمة المكوّنات الإضافية قبل محاولة التثبيت مرة أخرى.',
+          'توقف Moor عن انتظار نتيجة التثبيت، لكن قد يستمر تثبيت المكوّن الإضافي. أغلق هذه النافذة وأعد فحص قائمة المكوّنات الإضافية قبل محاولة التثبيت مرة أخرى.',
         toolsConnected: n => `تم توصيل ${n} من الأدوات`,
         skillsReady: names => (names.length === 1 ? `المهارة ${names[0]} جاهزة` : `${names.length} من المهارات جاهزة`),
         nextChat: 'أدوات أخرى متاحة في دردشتك التالية',
@@ -703,7 +703,7 @@ export const ar = defineLocale({
         intro:
           'تبنَّ تعويذة petdex متحركة تطفو فوق التطبيق وتتفاعل مع ما يفعله Moor — تجري أثناء تنفيذ الأدوات، وتحتفل عند النجاح، وتعبس عند الأخطاء.',
         restartHint:
-          'تحتاج الحيوانات الأليفة إلى إعادة تشغيل سريعة — بدأ التطبيق العامل قبل إضافة هذه الميزة. أغلق Hermes وأعد فتحه، ثم ارجع إلى هنا.',
+          'تحتاج الحيوانات الأليفة إلى إعادة تشغيل سريعة — بدأ التطبيق العامل قبل إضافة هذه الميزة. أغلق Moor وأعد فتحه، ثم ارجع إلى هنا.',
         scaleTitle: 'الحجم',
         scaleDesc: 'غيّر حجم التعويذة الطافية. يُطبّق في كل مكان فورا.',
         chooseTitle: 'اختر حيوانا أليفا',
@@ -869,7 +869,7 @@ export const ar = defineLocale({
     config: {
       minimizeToTrayTitle: 'التصغير إلى علبة النظام',
       minimizeToTrayDesc:
-        'تصغير النوافذ أو إغلاق النافذة الرئيسية يخفيها في علبة النظام (شريط القوائم على macOS) مع استمرار Hermes في العمل. استخدم إنهاء Hermes من قائمة العلبة أو Cmd+Q للخروج. معطّل افتراضيًا ويُطبّق على هذا الجهاز فقط.',
+        'تصغير النوافذ أو إغلاق النافذة الرئيسية يخفيها في علبة النظام (شريط القوائم على macOS) مع استمرار Moor في العمل. استخدم إنهاء Moor من قائمة العلبة أو Cmd+Q للخروج. معطّل افتراضيًا ويُطبّق على هذا الجهاز فقط.',
       minimizeToTrayUnavailable:
         'علبة النظام غير متاحة. ستُصغّر النوافذ وتُغلق كالمعتاد. أوقف هذا الخيار ثم فعّله لإعادة المحاولة.',
       none: 'لا شيء',
@@ -895,26 +895,26 @@ export const ar = defineLocale({
       description:
         'اضغط ثم حرّر ⌘ + Option على Mac، أو Ctrl + Alt على Windows/Linux، لإظهار HUD من أي تطبيق. معطّل افتراضيًا ويُطبّق على هذا الجهاز فقط.',
       permission:
-        'اسمح لـ Hermes في إعدادات النظام ← الخصوصية والأمان ← مراقبة الإدخال، ثم أعد المحاولة. لا تسجّل هذه الإيماءة ضغطات المفاتيح ولا تلتقط الشاشة.',
+        'اسمح لـ Moor في إعدادات النظام ← الخصوصية والأمان ← مراقبة الإدخال، ثم أعد المحاولة. لا تسجّل هذه الإيماءة ضغطات المفاتيح ولا تلتقط الشاشة.',
       unavailable:
-        'تعذّر تشغيل مساعد إيماءة HUD أو توقف بشكل غير متوقع. أعد المحاولة أو أعد تشغيل Hermes. يظل اختصار HUD الحالي يعمل داخل Hermes.',
-      missingHelper: 'مساعد إيماءة HUD غير موجود في تثبيت Hermes هذا. حدّث Hermes أو أعد تثبيته، ثم أعد المحاولة.',
+        'تعذّر تشغيل مساعد إيماءة HUD أو توقف بشكل غير متوقع. أعد المحاولة أو أعد تشغيل Moor. يظل اختصار HUD الحالي يعمل داخل Moor.',
+      missingHelper: 'مساعد إيماءة HUD غير موجود في تثبيت Moor هذا. حدّث Moor أو أعد تثبيته، ثم أعد المحاولة.',
       unsupportedSession:
         'جلسة سطح المكتب هذه لا تدعم ضغطات مفاتيح التعديل على مستوى النظام. يتطلب Linux جلسة X11؛ Wayland غير مدعوم.'
     },
     screenshot: {
       enabledTitle: 'اختصار لقطة الشاشة',
       enabledDesc:
-        'اضغط مفتاحَي Command معًا من أي تطبيق لالتقاط النافذة الأمامية وإرفاقها بمسودة Hermes الحالية. لا يُرسل أي شيء تلقائيًا. معطّل افتراضيًا ويُطبَّق على جهاز Mac هذا فقط. قد تتضمن النافذة محتوى حساسًا، لذا راجع المرفق قبل الإرسال.',
+        'اضغط مفتاحَي Command معًا من أي تطبيق لالتقاط النافذة الأمامية وإرفاقها بمسودة Moor الحالية. لا يُرسل أي شيء تلقائيًا. معطّل افتراضيًا ويُطبَّق على جهاز Mac هذا فقط. قد تتضمن النافذة محتوى حساسًا، لذا راجع المرفق قبل الإرسال.',
       statusTitle: 'حالة اختصار لقطة الشاشة',
       checking: 'جارٍ التحقق من اختصار لقطة الشاشة…',
       disabled: 'اختصار لقطة الشاشة معطّل.',
       starting: 'جارٍ بدء رصد الاختصار. لم يصبح جاهزًا بعد.',
       ready: 'الاختصار جاهز. تُرفق اللقطات بالمسودة الحالية دون إرسالها.',
       inputPermission:
-        'يتيح إذن مراقبة الإدخال لـ Hermes رصد مفتاحَي Command أثناء استخدام تطبيق آخر. اسمح لـ Hermes في إعدادات النظام ← الخصوصية والأمان ← مراقبة الإدخال، ثم عُد إلى هنا وأعد المحاولة.',
+        'يتيح إذن مراقبة الإدخال لـ Moor رصد مفتاحَي Command أثناء استخدام تطبيق آخر. اسمح لـ Moor في إعدادات النظام ← الخصوصية والأمان ← مراقبة الإدخال، ثم عُد إلى هنا وأعد المحاولة.',
       screenPermission:
-        'يتيح إذن تسجيل الشاشة لـ Hermes التقاط نافذة التطبيق الأمامية عند استخدام هذا الاختصار. اسمح لـ Hermes في إعدادات النظام ← الخصوصية والأمان ← تسجيل الشاشة، ثم عُد إلى هنا وأعد المحاولة. أعد تشغيل Hermes إذا طلب macOS ذلك.',
+        'يتيح إذن تسجيل الشاشة لـ Moor التقاط نافذة التطبيق الأمامية عند استخدام هذا الاختصار. اسمح لـ Moor في إعدادات النظام ← الخصوصية والأمان ← تسجيل الشاشة، ثم عُد إلى هنا وأعد المحاولة. أعد تشغيل Moor إذا طلب macOS ذلك.',
       openSettings: 'فتح إعدادات النظام',
       retry: 'إعادة المحاولة',
       unavailable: 'اختصار لقطة الشاشة غير متاح. أعد المحاولة أو عطّله.',
@@ -1701,12 +1701,12 @@ export const ar = defineLocale({
     switchConnectionFailed: name => `تعذّر الاتصال بـ ${name}`,
     manageProfiles: 'إدارة الملفات الشخصية',
     fleet: {
-      localDevice: 'هذا الجهاز (خلفية محلية — تثبّت Hermes إن كان مفقودًا، وإلا تفتح جلسة جديدة)',
+      localDevice: 'هذا الجهاز (خلفية محلية — تثبّت Moor إن كان مفقودًا، وإلا تفتح جلسة جديدة)',
       switchDeviceTitle: 'التبديل إلى هذا الجهاز؟',
       switchDeviceDesc: 'يفتح هذا جلسة جديدة على هذا الحاسوب. تبقى المحادثة الحالية على البوابة الأخرى.',
       switchDeviceConfirm: 'تبديل',
       installDeviceTitle: 'التبديل إلى هذا الجهاز؟',
-      installDeviceDesc: 'سيُثبَّت Hermes محليًا ثم تُفتح جلسة جديدة على هذا الحاسوب. لا يبدأ التثبيت قبل التأكيد.',
+      installDeviceDesc: 'سيُثبَّت Moor محليًا ثم تُفتح جلسة جديدة على هذا الحاسوب. لا يبدأ التثبيت قبل التأكيد.',
       installDeviceConfirm: 'تثبيت محليًا',
       connectExistingInstead: 'الاتصال بموجود بدلًا من ذلك'
     },
@@ -1749,7 +1749,7 @@ export const ar = defineLocale({
     setAsDefault: 'تعيين كافتراضي',
     defaultProfile: 'الملف الشخصي الافتراضي',
     defaultSet: name => `أصبح ${name} الملف الافتراضي`,
-    defaultDescription: 'يُستخدم عند فتح Hermes وللمحادثات الجديدة. تبقى الجلسات الحالية في ملفاتها الشخصية.',
+    defaultDescription: 'يُستخدم عند فتح Moor وللمحادثات الجديدة. تبقى الجلسات الحالية في ملفاتها الشخصية.',
     failedSetDefault: 'تعذّر تعيين الملف الشخصي الافتراضي',
     setColor: color => `ضبط اللون ${color}`,
     autoColor: 'لون تلقائي',
@@ -1813,7 +1813,7 @@ export const ar = defineLocale({
     failedRename: 'فشل إعادة التسمية'
   },
   modelAssignment: {
-    saveFailed: 'لم يحفظ Hermes تغيير النموذج هذا.',
+    saveFailed: 'لم يحفظ Moor تغيير النموذج هذا.',
     confirmTitle: 'تحذير اختيار النموذج',
     confirmDetail: 'أكّد فقط إذا كنت تقبل هذه المقايضة.',
     confirmAction: 'تأكيد',
@@ -2218,7 +2218,7 @@ export const ar = defineLocale({
       '/resume': 'استئناف جلسة محفوظة',
       '/details': 'التحكم في مستوى تفاصيل النص',
       '/copy': 'نسخ التحديد أو آخر رسالة من المساعد',
-      '/quit': 'الخروج من hermes',
+      '/quit': 'الخروج من moor',
       '/start': 'تأكيد طلب بدء المنصة دون إرسال رد',
       '/new': 'بدء محادثة جديدة في تطبيق سطح المكتب',
       '/topic': 'تفعيل مواضيع الرسائل الخاصة في Telegram أو عرضها',
@@ -2242,19 +2242,19 @@ export const ar = defineLocale({
       '/journey': 'فتح رسم الذاكرة لعرض المهارات والذكريات عبر الزمن',
       '/queue': 'إضافة طلبات للدور التالي أو عرضها أو تعديلها أو حذفها أو نقلها أو مسحها',
       '/steer': 'إدراج رسالة بعد استدعاء الأداة التالي دون مقاطعة العمل',
-      '/goal': 'تحديد هدف مستمر يعمل عليه Hermes حتى إنجازه',
+      '/goal': 'تحديد هدف مستمر يعمل عليه Moor حتى إنجازه',
       '/heartbeat': 'تحديد طلب متكرر يعود إلى هذه الجلسة عندما تكون خاملة',
       '/refine': 'مراجعة هذه المحادثة وحفظ الدروس في الذاكرة أو المهارات',
       '/review': 'تشغيل وكيل فرعي مستقل لمراجعة العمل الذي نوقش',
       '/loop': 'تكرار طلب على فترات منتظمة في هذه الجلسة',
-      '/plan': 'كتابة خطة تنفيذ بتنسيق Markdown في .hermes/plans/ دون تنفيذها',
+      '/plan': 'كتابة خطة تنفيذ بتنسيق Markdown في .moor/plans/ دون تنفيذها',
       '/moa': 'تشغيل طلب باستخدام Mixture of Agents ثم استعادة النموذج',
       '/subgoal': 'إضافة معايير للهدف النشط أو إدارتها',
       '/status': 'عرض حالة الجلسة الحالية',
       '/egress': 'عرض حالة وكيل الاتصالات الصادرة في Docker',
       '/context': 'عرض استخدام السياق وتفاصيله وإحصاءات الضغط ومعدل المعالجة',
       '/whoami': 'عرض صلاحية الوصول إلى أوامر الشرطة المائلة',
-      '/profile': 'تبديل ملف Hermes الشخصي النشط',
+      '/profile': 'تبديل ملف Moor الشخصي النشط',
       '/codex-runtime': 'تبديل بيئة Codex app-server لنماذج OpenAI/Codex',
       '/personality': 'اختيار شخصية محددة مسبقًا',
       '/battery': 'تبديل عرض مؤشر البطارية الملون في شريط الحالة',
@@ -2278,10 +2278,10 @@ export const ar = defineLocale({
       '/browser': 'إدارة اتصال المتصفح عبر CDP [connect|disconnect|status] (بوابة محلية فقط)',
       '/palette': 'فتح لوحة الأوامر',
       '/usage': 'عرض استخدام الرموز وحدود الطلبات؛ reset يسترد إعادة ضبط محفوظة لحدود Codex',
-      '/subscription': 'عرض خطة Nous وتغييرها في المتصفح',
-      '/topup': 'عرض رصيد Nous وإدارة الفواتير',
+      '/subscription': 'عرض خطة Moor وتغييرها في المتصفح',
+      '/topup': 'عرض رصيد Moor وإدارة الفواتير',
       '/platform': 'إيقاف منصة بوابة متعثرة مؤقتًا أو استئنافها أو عرضها',
-      '/version': 'عرض إصدار Hermes Agent',
+      '/version': 'عرض إصدار Moor Agent',
       '/debug': 'رفع تقرير تصحيح يتضمن معلومات النظام والسجلات للحصول على رابط قابل للمشاركة',
       '/model': 'تبديل نموذج هذه الجلسة'
     },
@@ -2509,13 +2509,13 @@ export const ar = defineLocale({
     }
   },
   updates: {
-    discontinuedTitle: 'لم يعد إصدار Hermes هذا مدعومًا',
-    discontinuedBody: 'لم يعد إصدار Hermes هذا مدعومًا وقد يتوقف عن العمل — ألغِ تثبيته. ستبقى بياناتك على القرص.',
+    discontinuedTitle: 'لم يعد إصدار Moor هذا مدعومًا',
+    discontinuedBody: 'لم يعد إصدار Moor هذا مدعومًا وقد يتوقف عن العمل — ألغِ تثبيته. ستبقى بياناتك على القرص.',
     channels: { stable: 'مستقر', canary: 'تجريبي' },
     bundleSwapPending: 'أعد التشغيل لإكمال التحديث',
     bundleSwapPendingDesc:
-      'تم تثبيت التطبيق المحدَّث بالفعل — يكفي إعادة تشغيل Hermes لتحميله. لن تتأثر المحادثات أو الإعدادات.',
-    bundleSwapPendingAction: 'إعادة تشغيل Hermes',
+      'تم تثبيت التطبيق المحدَّث بالفعل — يكفي إعادة تشغيل Moor لتحميله. لن تتأثر المحادثات أو الإعدادات.',
+    bundleSwapPendingAction: 'إعادة تشغيل Moor',
     stages: {
       idle: 'جار التحضير...',
       prepare: 'جار التحضير...',
@@ -2534,13 +2534,13 @@ export const ar = defineLocale({
     checkFailedTitle: 'تعذّر التحقق من التحديثات',
     tryAgain: 'إعادة المحاولة',
     notAvailableTitle: 'التحديث غير متاح',
-    unsupportedMessage: 'لا يمكن لهذا الإصدار من Hermes تحديث نفسه من داخل التطبيق.',
-    appName: 'Hermes Desktop',
+    unsupportedMessage: 'لا يمكن لهذا الإصدار من Moor تحديث نفسه من داخل التطبيق.',
+    appName: 'Moor Desktop',
     version: value => `الإصدار ${value}`,
     versionUnavailable: 'الإصدار غير متاح',
     bundleOutOfSync: 'إصدار التطبيق قديم',
     bundleOutOfSyncDesc:
-      'تم تحديث وقت تشغيل Hermes، لكن تطبيق سطح المكتب نفسه لا يزال إصدارًا قديمًا — لن تظهر ميزات الواجهة الجديدة (مثل Bot Mode) حتى يتم تحديث التطبيق. شغّل التحديث أدناه لإعادة بناء التطبيق. إذا لم يختفِ هذا التحذير، فأعد التثبيت من أحدث مثبّت لسطح المكتب.',
+      'تم تحديث وقت تشغيل Moor، لكن تطبيق سطح المكتب نفسه لا يزال إصدارًا قديمًا — لن تظهر ميزات الواجهة الجديدة (مثل Bot Mode) حتى يتم تحديث التطبيق. شغّل التحديث أدناه لإعادة بناء التطبيق. إذا لم يختفِ هذا التحذير، فأعد التثبيت من أحدث مثبّت لسطح المكتب.',
     bundleOutOfSyncAction: 'الحصول على المثبّت',
     checkNow: 'التحقق الآن',
     checkingShort: 'جار التحقق...',
@@ -2569,9 +2569,9 @@ export const ar = defineLocale({
     versionDetailsDistributionDesktopMsix: 'تطبيق سطح المكتب (MSIX)',
     versionDetailsDistributionDesktopInstaller: 'تطبيق سطح المكتب (المُثبِّت)',
     versionDetailsDistributionSourceInstaller: 'المصدر (سكربت التثبيت)',
-    versionDetailsDistributionSourceInstallerDesktop: 'المصدر (سكربت التثبيت) + hermes desktop',
+    versionDetailsDistributionSourceInstallerDesktop: 'المصدر (سكربت التثبيت) + moor desktop',
     versionDetailsDistributionSource: 'المصدر',
-    versionDetailsDistributionSourceDesktop: 'المصدر + hermes desktop',
+    versionDetailsDistributionSourceDesktop: 'المصدر + moor desktop',
     versionDetailsDistributionStore: 'Microsoft Store',
     versionDetailsRuntimeEmbedded: 'وقت تشغيل مضمّن',
     versionDetailsRuntimeExternal: 'خارجي (يستخدم وقت تشغيل الجهاز)',
@@ -2579,7 +2579,7 @@ export const ar = defineLocale({
     versionDetailsInstallId: 'معرّف التثبيت',
     versionDetailsUncommittedChanges: '(+ تغييرات غير ملتزمة)',
     connectionRetry: 'تحقق من اتصالك وأعد المحاولة.',
-    gitUnusable: 'لم يتمكن Hermes من تشغيل Git على هذا الجهاز، لذا لم يتمكن من التحقق من التحديثات.',
+    gitUnusable: 'لم يتمكن Moor من تشغيل Git على هذا الجهاز، لذا لم يتمكن من التحقق من التحديثات.',
     latestBody: 'أنت تستخدم أحدث إصدار.',
     latestBodyBackend: 'الواجهة الخلفية تعمل بأحدث إصدار.',
     allSetTitle: 'كل شيء جاهز',
@@ -2588,7 +2588,7 @@ export const ar = defineLocale({
     availableTitleBackend: 'يتوفر تحديث للواجهة الخلفية',
     availableBodyBackend: 'إصدار أحدث من واجهة Moor الخلفية المتصلة جاهز للتثبيت.',
     availableBodyNoChangelog: 'إصدار أحدث جاهز. ملاحظات الإصدار غير متاحة لنوع التثبيت هذا.',
-    availableBodyRelease: (tag: string) => `Hermes ${tag} جاهز للتثبيت.`,
+    availableBodyRelease: (tag: string) => `Moor ${tag} جاهز للتثبيت.`,
     updateNow: 'التحديث الآن',
     maybeLater: 'ربما لاحقا',
     moreChanges: count => `+ ${count} تغيير${count === 1 ? '' : 'ات'} إضافي مُضمَّن.`,
@@ -2736,7 +2736,7 @@ export const ar = defineLocale({
     update: 'تحديث',
     flowSubtitles: {
       pkce: 'يفتح المتصفح لتسجيل الدخول ثم يتابع هنا',
-      device_code: 'يفتح صفحة تحقق في المتصفح — يتصل Hermes تلقائياً',
+      device_code: 'يفتح صفحة تحقق في المتصفح — يتصل Moor تلقائياً',
       external: 'سجل الدخول مرة واحدة في الطرفية ثم عد إلى المحادثة'
     },
     startingSignIn: provider => `جار بدء تسجيل الدخول لـ ${provider}...`,
@@ -3028,11 +3028,11 @@ export const ar = defineLocale({
   },
   interfaceMode: {
     title: 'وضع الواجهة',
-    hint: 'يغيّر ما يظهر، وليس ما يستطيع Hermes فعله.',
+    hint: 'يغيّر ما يظهر، وليس ما يستطيع Moor فعله.',
     sessionNote: 'يحدده الوضع البسيط. التغيير هنا يستمر لهذه الجلسة فقط؛ بدّل إلى المتقدم لجعله خيارك.',
     simple: {
       label: 'بسيط',
-      description: 'للتحدث مع Hermes. الشريط الجانبي والدردشة؛ بلا طرفية أو لوحات ملفات أو فروقات.'
+      description: 'للتحدث مع Moor. الشريط الجانبي والدردشة؛ بلا طرفية أو لوحات ملفات أو فروقات.'
     },
     advanced: {
       label: 'متقدم',
@@ -3415,7 +3415,7 @@ export const ar = defineLocale({
       'راجع الأمر قبل إدخال كلمة مرور sudo. تُرسل كلمة المرور إلى الوكيل الذي ينفّذه وتُحفظ مؤقتًا لهذه الجلسة.',
     sudoCommandUnavailable: 'لم يقدّم هذا الوكيل الأمر. ألغِ الطلب إذا لم تتمكن من التحقق منه في المحادثة.',
     sudoInstallDesc:
-      'يحتاج Hermes إلى كلمة مرور sudo لتثبيت حزم Bot Screen (TigerVNC + Xfce) على مضيف البوابة. تُرسل إلى ذلك المضيف فقط.',
+      'يحتاج Moor إلى كلمة مرور sudo لتثبيت حزم Bot Screen (TigerVNC + Xfce) على مضيف البوابة. تُرسل إلى ذلك المضيف فقط.',
     sudoPlaceholder: 'كلمة المرور',
     secretTitle: 'مطلوب سر',
     secretDesc: 'أدخل القيمة المطلوبة لمتابعة المهمة.',

@@ -8,7 +8,7 @@ import asyncio
 import time
 from typing import Any, Dict, List, Optional
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 from fastapi import APIRouter, HTTPException, Query
 
 from moor_cli.config import get_config_path, read_raw_config

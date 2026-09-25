@@ -35,7 +35,7 @@ except ImportError:
     # A copied skill must not install into an unrelated Python environment.
     pm = None
 
-# Ensure sibling modules (_hermes_home) are importable when run standalone.
+# Ensure sibling modules (_moor_home) are importable when run standalone.
 _SCRIPTS_DIR = str(Path(__file__).resolve().parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
@@ -96,23 +96,23 @@ def _format_missing_scopes(missing_scopes: list[str]) -> str:
 
 
 def install_deps():
-    """Sync Hermes' declared Google extra, ready for the next process."""
+    """Sync Moor' declared Google extra, ready for the next process."""
     if pm is None:
-        print("ERROR: Run this script in the Hermes environment; use hermes setup first.")
+        print("ERROR: Run this script in the Moor environment; use moor setup first.")
         return False
     try:
         pm.sync_venv(["google"], explicit=True)
     except Exception as exc:
         print(f"ERROR: Failed to install Google dependencies: {exc}")
         return False
-    print("Google dependencies synced. Restart Hermes, then rerun setup to continue OAuth.")
+    print("Google dependencies synced. Restart Moor, then rerun setup to continue OAuth.")
     return True
 
 
 def _ensure_deps():
     """Let PM check imports and stop if activation needs a new process."""
     if pm is None:
-        print("ERROR: Run this script in the Hermes environment; use hermes setup first.")
+        print("ERROR: Run this script in the Moor environment; use moor setup first.")
         sys.exit(1)
     try:
         pm.ensure_import("google")

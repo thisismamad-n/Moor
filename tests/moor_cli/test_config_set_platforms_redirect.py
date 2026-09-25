@@ -10,12 +10,12 @@ edit appeared to succeed while having no effect.
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 
-def _write_config(hermes_home: Path, data: dict) -> Path:
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    config_path = hermes_home / "config.yaml"
+def _write_config(moor_home: Path, data: dict) -> Path:
+    moor_home.mkdir(parents=True, exist_ok=True)
+    config_path = moor_home / "config.yaml"
     config_path.write_text(yaml.safe_dump(data))
     return config_path
 

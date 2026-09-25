@@ -16,12 +16,12 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 
-from hermes_cli.config import format_docker_update_message, recommended_update_command_for_method
-from hermes_cli.update_contract import COMMIT_BUILD_UPDATE_MESSAGE, is_commit_build
-from hermes_cli.version_info import get_version_info
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_gateway import _ACTION_LOG_FILES
-from hermes_cli.web_routers._common import http_failure
+from moor_cli.config import format_docker_update_message, recommended_update_command_for_method
+from moor_cli.update_contract import COMMIT_BUILD_UPDATE_MESSAGE, is_commit_build
+from moor_cli.version_info import get_version_info
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_gateway import _ACTION_LOG_FILES
+from moor_cli.web_routers._common import http_failure
 
 _log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
@@ -30,14 +30,14 @@ status_router = APIRouter()
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
 _dashboard_local_update_managed_externally = late("_dashboard_local_update_managed_externally", "moor_cli.web_server_files")
 _spawn_gateway_restart = late("_spawn_gateway_restart")
-_spawn_hermes_action = late("_spawn_hermes_action", "hermes_cli.web_server_gateway")
-detect_install_method = late("detect_install_method", "hermes_cli.config")
-get_hermes_home = late("get_hermes_home", "hermes_cli.config")
-_config_profile_scope = late("_config_profile_scope", "hermes_cli.web_server_profiles")
-_ACTION_COMMANDS = LateState("_ACTION_COMMANDS", "hermes_cli.web_server_gateway")
-_ACTION_IDS = LateState("_ACTION_IDS", "hermes_cli.web_server_gateway")
-_ACTION_PROCS = LateState("_ACTION_PROCS", "hermes_cli.web_server_gateway")
-_ACTION_RESULTS = LateState("_ACTION_RESULTS", "hermes_cli.web_server_gateway")
+_spawn_moor_action = late("_spawn_moor_action", "moor_cli.web_server_gateway")
+detect_install_method = late("detect_install_method", "moor_cli.config")
+get_moor_home = late("get_moor_home", "moor_cli.config")
+_config_profile_scope = late("_config_profile_scope", "moor_cli.web_server_profiles")
+_ACTION_COMMANDS = LateState("_ACTION_COMMANDS", "moor_cli.web_server_gateway")
+_ACTION_IDS = LateState("_ACTION_IDS", "moor_cli.web_server_gateway")
+_ACTION_PROCS = LateState("_ACTION_PROCS", "moor_cli.web_server_gateway")
+_ACTION_RESULTS = LateState("_ACTION_RESULTS", "moor_cli.web_server_gateway")
 
 
 def _server_path(name: str) -> Path:
@@ -217,9 +217,9 @@ def _update_refused(error: str, message: str, update_command: str) -> Dict[str, 
     }
 
 
-@router.post("/api/hermes/update")
-async def update_hermes():
-    """Kick off ``hermes update`` in the background."""
+@router.post("/api/moor/update")
+async def update_moor():
+    """Kick off ``moor update`` in the background."""
     if is_commit_build(_server_path("PROJECT_ROOT")):
         return _update_refused("commit-build", COMMIT_BUILD_UPDATE_MESSAGE, "")
 
@@ -259,9 +259,9 @@ _NON_APPLYABLE_MESSAGES = {
 }
 
 
-@router.get("/api/hermes/update/check")
-async def check_hermes_update(force: bool = False, profile: Optional[str] = None):
-    """Report whether a Hermes update is available, without applying it.
+@router.get("/api/moor/update/check")
+async def check_moor_update(force: bool = False, profile: Optional[str] = None):
+    """Report whether a Moor update is available, without applying it.
 
     Returns install_method ('apt'|'git'|'docker'|'nix'|'nixos'|'unknown'),
     current_version, behind (commits behind, 0 = up to date, -1 = unknown count,
@@ -303,7 +303,7 @@ async def check_hermes_update(force: bool = False, profile: Optional[str] = None
     # source_check.check_for_updates() handles git / nix-revision paths through the GitHub API and
     # caches the result for 24h. ``force`` busts the cache so "Check now" reflects reality.
     try:
-        from hermes_cli.source_check import check_for_updates
+        from moor_cli.source_check import check_for_updates
 
         with _config_profile_scope(profile):
             status = await asyncio.to_thread(check_for_updates, force=force)

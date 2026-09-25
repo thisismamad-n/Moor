@@ -27,16 +27,16 @@ _OPTIONAL_VALUE_FLAGS_FALLBACK: frozenset[str] = frozenset({"-c", "--continue"})
 
 
 def _cfg_path() -> str:
-    """``~/.hermes/config.yaml`` spelled for the active profile, for help text.
+    """``~/.moor/config.yaml`` spelled for the active profile, for help text.
 
     ``main._apply_profile_override`` builds this parser (via ``top_level_value_flag_sets``) BEFORE
-    it re-homes the process to the sticky ``active_profile``; ``get_hermes_home()`` would emit the
-    "[HERMES_HOME fallback] ... wrong profile" warning on every ``hermes`` command for that
+    it re-homes the process to the sticky ``active_profile``; ``get_moor_home()`` would emit the
+    "[MOOR_HOME fallback] ... wrong profile" warning on every ``moor`` command for that
     throwaway help string. Read the process home directly: after the override it IS the profile home.
     """
-    from hermes_constants import display_hermes_home, get_process_hermes_home
+    from moor_constants import display_moor_home, get_process_moor_home
 
-    return f"{display_hermes_home(get_process_hermes_home())}/config.yaml"
+    return f"{display_moor_home(get_process_moor_home())}/config.yaml"
 
 
 @lru_cache(maxsize=1)
@@ -89,52 +89,52 @@ def _inherited_flag(parser, *args, **kwargs):
 
 _EPILOGUE = """
 Examples:
-    hermes                        Start interactive chat
-    hermes chat -q "Hello"        Single query mode
-    hermes --tui                  Launch the modern TUI (or set display.interface: tui)
-    hermes --cli                  Force the classic REPL (overrides display.interface: tui)
-    hermes -c                     Resume the most recent session
-    hermes -c "my project"        Resume a session by name (latest in lineage)
-    hermes --resume <session_id>  Resume a specific session by ID
-    hermes --resume latest        Resume the most recent session (same as -c)
-    hermes --tui --resume latest --in ./dir   Resume ./dir's latest session in the TUI
-    hermes setup                  Run setup wizard
-    hermes logout                 Clear stored authentication
-    hermes auth add <provider>    Add a pooled credential
-    hermes auth list              List pooled credentials
-    hermes auth remove <p> <t>    Remove pooled credential by index, id, or label
-    hermes auth reset <p> [t]     Clear exhaustion status for a provider, or one credential
-    hermes auth priority <p> <t> <n>  Move a pooled credential to priority n (0 = tried first)
-    hermes auth refresh <p> [t]   Refresh a pooled OAuth credential and clear its cooldown
-    hermes model                  Select default model
-    hermes fallback [list]        Show fallback provider chain
-    hermes fallback add           Add a fallback provider (same picker as `hermes model`)
-    hermes fallback remove        Remove a fallback provider from the chain
-    hermes config                 View configuration
-    hermes config edit            Edit config in $EDITOR
-    hermes config set model gpt-4 Set a config value
-    hermes gateway                Run messaging gateway
-    hermes gateway install        Install gateway background service
-    hermes gateway start          Start the installed gateway service
-    hermes gateway stop           Stop the gateway service
-    hermes gateway status         Show gateway status
-    hermes -p <profile> <cmd>     Run any command against a named profile's
-                                  home (also --profile) — e.g. hermes -p coder gateway stop
-    hermes -s hermes-agent-dev,github-auth
-    hermes -w                     Start in isolated git worktree
-    hermes sessions list          List past sessions
-    hermes sessions browse        Interactive session picker
-    hermes sessions rename ID T   Rename/title a session
-    hermes logs                   View agent.log (last 50 lines)
-    hermes logs -f                Follow agent.log in real time
-    hermes logs errors            View errors.log
-    hermes logs --since 1h        Lines from the last hour
-    hermes debug share             Upload debug report for support
-    hermes console                Open the safe Hermes command console
-    hermes update                 Update to latest version
-    hermes dashboard              Start web UI dashboard (port 9119)
-    hermes dashboard --stop       Stop running dashboard processes
-    hermes dashboard --status     List running dashboard processes
+    moor                        Start interactive chat
+    moor chat -q "Hello"        Single query mode
+    moor --tui                  Launch the modern TUI (or set display.interface: tui)
+    moor --cli                  Force the classic REPL (overrides display.interface: tui)
+    moor -c                     Resume the most recent session
+    moor -c "my project"        Resume a session by name (latest in lineage)
+    moor --resume <session_id>  Resume a specific session by ID
+    moor --resume latest        Resume the most recent session (same as -c)
+    moor --tui --resume latest --in ./dir   Resume ./dir's latest session in the TUI
+    moor setup                  Run setup wizard
+    moor logout                 Clear stored authentication
+    moor auth add <provider>    Add a pooled credential
+    moor auth list              List pooled credentials
+    moor auth remove <p> <t>    Remove pooled credential by index, id, or label
+    moor auth reset <p> [t]     Clear exhaustion status for a provider, or one credential
+    moor auth priority <p> <t> <n>  Move a pooled credential to priority n (0 = tried first)
+    moor auth refresh <p> [t]   Refresh a pooled OAuth credential and clear its cooldown
+    moor model                  Select default model
+    moor fallback [list]        Show fallback provider chain
+    moor fallback add           Add a fallback provider (same picker as `moor model`)
+    moor fallback remove        Remove a fallback provider from the chain
+    moor config                 View configuration
+    moor config edit            Edit config in $EDITOR
+    moor config set model gpt-4 Set a config value
+    moor gateway                Run messaging gateway
+    moor gateway install        Install gateway background service
+    moor gateway start          Start the installed gateway service
+    moor gateway stop           Stop the gateway service
+    moor gateway status         Show gateway status
+    moor -p <profile> <cmd>     Run any command against a named profile's
+                                  home (also --profile) — e.g. moor -p coder gateway stop
+    moor -s moor-agent-dev,github-auth
+    moor -w                     Start in isolated git worktree
+    moor sessions list          List past sessions
+    moor sessions browse        Interactive session picker
+    moor sessions rename ID T   Rename/title a session
+    moor logs                   View agent.log (last 50 lines)
+    moor logs -f                Follow agent.log in real time
+    moor logs errors            View errors.log
+    moor logs --since 1h        Lines from the last hour
+    moor debug share             Upload debug report for support
+    moor console                Open the safe Moor command console
+    moor update                 Update to latest version
+    moor dashboard              Start web UI dashboard (port 9119)
+    moor dashboard --stop       Stop running dashboard processes
+    moor dashboard --status     List running dashboard processes
 
 For more help on a command:
     moor <command> --help

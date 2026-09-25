@@ -13,8 +13,8 @@ from argparse import Namespace
 import sys
 import types
 
-from hermes_cli import main as main_mod
-from hermes_cli import mcp_startup
+from moor_cli import main as main_mod
+from moor_cli import mcp_startup
 
 
 def _install_discover_spy(monkeypatch):
@@ -34,7 +34,7 @@ def _install_discover_spy(monkeypatch):
         ),
     )
     # The plain-chat path also arms MCP discovery. Its config probe imports
-    # ``hermes_cli.plugins`` (replaced by the stub above), fails, and falls
+    # ``moor_cli.plugins`` (replaced by the stub above), fails, and falls
     # back to "assume configured", which spawned a REAL ``cli-mcp-discovery``
     # daemon thread that was still importing ``tools.mcp_tool`` when pytest
     # exited. A daemon thread inside a C-extension import at interpreter

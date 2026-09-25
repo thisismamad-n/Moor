@@ -22,21 +22,21 @@ from moor_cli.web_server_gateway import _strip_session_list_rows
 from moor_cli.web_server_sessions import _maybe_auto_archive_for_profile, _session_latest_descendant
 from moor_cli.web_models import (
     BulkDeleteSessions, SessionImport, SessionOwnerBackfill, SessionPrune, SessionRename)
-from hermes_cli.web_routers._common import (
+from moor_cli.web_routers._common import (
     CORRUPT_STORE_DETAIL, corrupt_store_as_status, log as _log, destructive_profile, http_failure,
 )
-from hermes_state import is_malformed_db_error
-from hermes_state_errors import StateDbReplacedError, is_transient_sqlite_error
-from hermes_state_health import STORAGE_CORRUPT, note_storage_error, storage_state
+from moor_state import is_malformed_db_error
+from moor_state_errors import StateDbReplacedError, is_transient_sqlite_error
+from moor_state_health import STORAGE_CORRUPT, note_storage_error, storage_state
 
 list_router = APIRouter()
 search_router = APIRouter()
 manage_router = APIRouter()
 
-_cron_default_profile = late("_cron_default_profile", "hermes_cli.web_server_cron")
-_cron_profile_home = late("_cron_profile_home", "hermes_cli.web_server_cron")
-_open_session_db_for_profile = late("_open_session_db_for_profile", "hermes_cli.web_server_sessions")
-_session_db_path_for_profile = late("_session_db_path_for_profile", "hermes_cli.web_server_sessions")
+_cron_default_profile = late("_cron_default_profile", "moor_cli.web_server_cron")
+_cron_profile_home = late("_cron_profile_home", "moor_cli.web_server_cron")
+_open_session_db_for_profile = late("_open_session_db_for_profile", "moor_cli.web_server_sessions")
+_session_db_path_for_profile = late("_session_db_path_for_profile", "moor_cli.web_server_sessions")
 
 _NOT_FOUND = "Session not found"
 
@@ -564,11 +564,11 @@ def _with_tool_call_labels(message: dict) -> dict:
 def _history_profile_home(profile):
     if profile:
         return _cron_profile_home(profile)[1]
-    # An omitted profile reads this process's DB (including custom HERMES_HOME),
+    # An omitted profile reads this process's DB (including custom MOOR_HOME),
     # not necessarily the registered default profile used by cron routes.
-    from hermes_cli.config import get_hermes_home
+    from moor_cli.config import get_moor_home
 
-    return get_hermes_home()
+    return get_moor_home()
 
 
 def _project_for_display(messages: list, *, home=None) -> list:

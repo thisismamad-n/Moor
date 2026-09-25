@@ -11,10 +11,10 @@ import json
 
 import pytest
 
-from hermes_cli import models_pricing
-import hermes_cli.nous_account as account_mod
-from hermes_cli.models_pricing import _NOUS_POLICY_APPEND_MAX, nous_policy_allowed_ids, restrict_to_nous_policy
-from hermes_cli.nous_account import nous_policy_present
+from moor_cli import models_pricing
+import moor_cli.moor_account as account_mod
+from moor_cli.models_pricing import _MOOR_POLICY_APPEND_MAX, moor_policy_allowed_ids, restrict_to_moor_policy
+from moor_cli.moor_account import moor_policy_present
 
 
 def _jwt(claims: dict) -> str:
@@ -156,7 +156,7 @@ class TestMoorPolicyNotice:
 
     def test_shows_a_line_for_a_governed_org(self, monkeypatch):
         self._patch(monkeypatch, True)
-        assert account_mod.nous_policy_notice(removed=True).strip()
+        assert account_mod.moor_policy_notice(removed=True).strip()
 
     @pytest.mark.parametrize("present", [False, None])
     def test_silent_otherwise(self, monkeypatch, present):

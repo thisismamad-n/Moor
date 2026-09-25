@@ -3,7 +3,7 @@
 Build the real image and verify the actual runtime behavior:
 
   1. docker run --user <arbitrary-uid> is rejected with actionable guidance
-  2. --user <hermes-uid> (10000) is allowed (supported non-root start)
+  2. --user <moor-uid> (10000) is allowed (supported non-root start)
 
 Root start (the default) is covered by test_main_invocation.py.
 """

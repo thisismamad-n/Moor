@@ -728,7 +728,7 @@ class WeixinAdapter(OwnAccessPolicyMixin, BasePlatformAdapter):
         # Text debounce batching (Telegram pattern): iLink delivers messages individually, so rapid bursts would each
         # trigger a separate agent run. Telegram cadence and ceilings (#44883); ``0`` dispatches immediately.
         self._configure_text_batch_delays()
-        persisted = load_weixin_account(hermes_home, self._account_id) if self._account_id and not self._token else None
+        persisted = load_weixin_account(moor_home, self._account_id) if self._account_id and not self._token else None
         if persisted:
             self._token = str(persisted.get("token") or "").strip()
             self._base_url = str(persisted.get("base_url") or self._base_url).strip().rstrip("/")
@@ -832,7 +832,7 @@ class WeixinAdapter(OwnAccessPolicyMixin, BasePlatformAdapter):
                 # moved (an empty long-poll echoes the same buffer back every cycle).
                 if response.get("get_updates_buf") and str(response["get_updates_buf"]) != sync_buf:
                     sync_buf = str(response["get_updates_buf"])
-                    await asyncio.to_thread(_save_sync_buf, self._hermes_home, self._account_id, sync_buf)
+                    await asyncio.to_thread(_save_sync_buf, self._moor_home, self._account_id, sync_buf)
             except asyncio.CancelledError:
                 break
             except Exception as exc:
@@ -1159,7 +1159,7 @@ class WeixinAdapter(OwnAccessPolicyMixin, BasePlatformAdapter):
             item_lists.insert(0, [{"type": ITEM_TEXT, "text_item": {"text": self.format_message(caption)}}])
         last_message_id = ""
         for item_list in item_lists:
-            last_message_id = f"hermes-weixin-{uuid.uuid4().hex}"
+            last_message_id = f"moor-weixin-{uuid.uuid4().hex}"
             while True:
                 resp = await _send_items(
                     self._send_session, base_url=self._base_url, token=self._token, to=chat_id, item_list=item_list,

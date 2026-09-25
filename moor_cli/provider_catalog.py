@@ -36,7 +36,7 @@ class ProviderDescriptor:
     api_key_env_vars: tuple[str, ...]  # credential env vars (may be empty)
     base_url_env_var: str          # base-URL override env var (may be "")
     signup_url: str                # signup / console URL (may be "")
-    order: int                     # CANONICAL_PROVIDERS index — mirrors `hermes model`
+    order: int                     # CANONICAL_PROVIDERS index — mirrors `moor model`
 
 
 def tab_for_auth_type(auth_type: str) -> str:

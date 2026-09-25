@@ -230,20 +230,20 @@ On macOS and Linux the profile is not file-locked, but each authentication
 database is snapshotted through SQLite's online backup with a five-second
 budget, and a running Chrome typically holds `Login Data`, `Login Data For
 Account` and `Web Data` with a hot write lock that never yields within that
-budget (`Cookies` usually snapshots fine). When that happens Hermes stops the
+budget (`Cookies` usually snapshots fine). When that happens Moor stops the
 launch and names the databases it could not read — for example "chrome is
 running and holds the profile's Login Data, Login Data For Account, Web Data
 with a write lock" — so in practice **quit the browser before launching a
 real-profile session on macOS/Linux too**. You can reopen it once the session is
 up (the snapshot is a separate directory), but the auth files are re-synced on
 every fresh session launch, so a browser left running then hits the same lock.
-Hermes preserves committed
+Moor preserves committed
 WAL data through SQLite rather than falling back to a raw file copy, which could
 silently lose recent logins. Unreadable or corrupt databases also stop the
 launch, with the SQLite error named in the message.
 
-Set `browser.real_profile_autoclose: true` to let Hermes **offer to close the
-browser for you** when it's holding the profile lock (the Windows case). Even with this on, Hermes never
+Set `browser.real_profile_autoclose: true` to let Moor **offer to close the
+browser for you** when it's holding the profile lock (the Windows case). Even with this on, Moor never
 closes it automatically — when the profile is locked it always stops and the
 agent asks you first; only on your approval does it run `moor browser
 close-profile` (terminates the browser process tree bound to that profile,
@@ -630,12 +630,12 @@ AGENT_BROWSER_ARGS=--no-sandbox
 
 ### Install agent-browser CLI
 
-The installers and `hermes update` install `agent-browser` and its pinned
-Chromium through Hermes's package manager by default. If you installed with
+The installers and `moor update` install `agent-browser` and its pinned
+Chromium through Moor's package manager by default. If you installed with
 `--skip-browser` / `-SkipBrowser`, or the download failed, install them with:
 
 ```bash
-hermes pm install agent-browser
+moor pm install agent-browser
 ```
 
 This also undoes an earlier `--skip-browser` choice, so updates keep the

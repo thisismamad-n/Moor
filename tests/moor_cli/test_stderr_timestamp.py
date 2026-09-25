@@ -15,7 +15,7 @@ from gateway.restart import (
     GATEWAY_SERVICE_RESTART_EXIT_CODE,
     LAUNCHD_LABEL_ENV,
 )
-from hermes_cli import stderr_timestamp
+from moor_cli import stderr_timestamp
 
 _STALE_GATEWAY_ARGV = [
     sys.executable,
@@ -91,19 +91,19 @@ def test_prepare_skips_interactive_xpc_zero_even_for_gateway_argv():
     )
 
 
-def test_child_launchd_label_env_exports_only_hermes_job_labels():
-    assert stderr_timestamp._child_launchd_label_env(_LAUNCHD_ENV) == {LAUNCHD_LABEL_ENV: "ai.hermes.gateway-butler"}
+def test_child_launchd_label_env_exports_only_moor_job_labels():
+    assert stderr_timestamp._child_launchd_label_env(_LAUNCHD_ENV) == {LAUNCHD_LABEL_ENV: "ai.moor.gateway-butler"}
     # Interactive shells and the grandchild itself read "0": nothing to export. App-coalition labels
-    # (IDE integrated terminals) are not a Hermes job identity either.
+    # (IDE integrated terminals) are not a Moor job identity either.
     for env in ({"PATH": "/usr/bin", "XPC_SERVICE_NAME": "0"}, {"PATH": "/usr/bin"},
                 {"PATH": "/usr/bin", "XPC_SERVICE_NAME": "application.com.example.ide.123"}):
         assert stderr_timestamp._child_launchd_label_env(env) == {}
 
 
-@pytest.mark.parametrize("xpc, expected", [("ai.hermes.gateway-butler", "ai.hermes.gateway-butler"), ("0", "unset")],
+@pytest.mark.parametrize("xpc, expected", [("ai.moor.gateway-butler", "ai.moor.gateway-butler"), ("0", "unset")],
                          ids=["launchd-job", "foreground-xpc-zero"])
 def test_main_forwards_launchd_label_to_child_only_under_launchd(tmp_path, monkeypatch, xpc, expected):
-    """The gateway grandchild must resolve its job (drain cap, restart route) from HERMES_LAUNCHD_LABEL;
+    """The gateway grandchild must resolve its job (drain cap, restart route) from MOOR_LAUNCHD_LABEL;
     a foreground/unsupervised start must not inherit a fabricated one."""
     monkeypatch.setenv("XPC_SERVICE_NAME", xpc)
     monkeypatch.delenv(LAUNCHD_LABEL_ENV, raising=False)
@@ -207,7 +207,7 @@ def test_main_maps_gateway_ex_config_to_clean_stop(tmp_path):
     turn gateway EX_CONFIG (78) into that clean stop without swallowing the
     please-restart code (75) or a non-gateway child's 78."""
     log_path = tmp_path / "gateway.error.log"
-    gateway_tail = ["-m", "hermes_cli.main", "gateway", "run"]
+    gateway_tail = ["-m", "moor_cli.main", "gateway", "run"]
 
     rc_config = stderr_timestamp.main(
         [
@@ -250,7 +250,7 @@ def test_main_maps_gateway_ex_config_to_clean_stop(tmp_path):
 
 @pytest.mark.platforms("posix")  # POSIX signals
 def test_wrapper_forwards_sigusr1_restart_request_to_child(tmp_path):
-    """Regression for #101426: launchd owns the wrapper's PID, so ``hermes update`` sends its
+    """Regression for #101426: launchd owns the wrapper's PID, so ``moor update`` sends its
     drain-aware SIGUSR1 to the wrapper. It must reach the gateway child and the wrapper must
     report the child's planned exit code — not die of the signal itself (which makes launchd
     treat the restart as a crash and apply its back-off to every sibling profile)."""
@@ -264,7 +264,7 @@ def test_wrapper_forwards_sigusr1_restart_request_to_child(tmp_path):
         "sys.exit(1)\n"
     )
     wrapper = subprocess.Popen(
-        [sys.executable, "-m", "hermes_cli.stderr_timestamp", "--error-log", str(log_path), "--",
+        [sys.executable, "-m", "moor_cli.stderr_timestamp", "--error-log", str(log_path), "--",
          sys.executable, "-c", child],
         stderr=subprocess.DEVNULL,
         start_new_session=True,

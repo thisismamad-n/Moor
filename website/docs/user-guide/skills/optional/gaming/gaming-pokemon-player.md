@@ -14,7 +14,7 @@ Play Pokemon via headless emulator + RAM reads.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/gaming/pokemon-player` |
+| Source | Optional — install with `moor skills install official/gaming/pokemon-player` |
 | Path | `optional-skills/gaming/pokemon-player` |
 | Version | `1.0.0` |
 | Author | Teknium (teknium1), Moor Agent |
@@ -94,7 +94,7 @@ This is faster than loading via the API after startup.
 
 ### Step 1: OBSERVE — check state AND take a screenshot
 GET /state for position, HP, battle, dialog.
-GET /screenshot and save to ~/.hermes/cache/scratch/pokemon.png, then use vision_analyze.
+GET /screenshot and save to ~/.moor/cache/scratch/pokemon.png, then use vision_analyze.
 Always do BOTH — RAM state gives numbers, vision gives spatial awareness.
 
 ### Step 2: ORIENT

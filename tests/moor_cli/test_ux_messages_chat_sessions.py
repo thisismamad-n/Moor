@@ -6,8 +6,8 @@ Each test asserts the CONTRACT (what happened + the exact command pointer, raw d
 
 import pytest
 
-from hermes_cli.cli_chat_error_copy import chat_error_response
-from hermes_cli.cli_unknown_command import unknown_command_lines
+from moor_cli.cli_chat_error_copy import chat_error_response
+from moor_cli.cli_unknown_command import unknown_command_lines
 
 
 class _StatusError(Exception):
@@ -87,7 +87,7 @@ def test_sessions_db_open_failure_points_to_repair(monkeypatch, capsys):
     code = sessions_cmd.cmd_sessions(args, parser)
     out = capsys.readouterr().out
     assert code == 1
-    assert "hermes sessions repair" in out
+    assert "moor sessions repair" in out
 
 
 # ── cli-31: unknown slash command ──────────────────────────────────────────

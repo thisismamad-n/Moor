@@ -27,7 +27,7 @@ from unittest.mock import patch
 import pytest
 
 import cron.scheduler as scheduler_mod
-from hermes_constants import hermes_home_key
+from moor_constants import moor_home_key
 
 
 @pytest.fixture()
@@ -130,7 +130,7 @@ class TestTickReapsDeadOwnerClaims:
         monkeypatch.setattr(
             scheduler_mod,
             "_last_dead_owner_reap_at",
-            {hermes_home_key(scheduler_mod._get_hermes_home()):
+            {moor_home_key(scheduler_mod._get_moor_home()):
              time.monotonic() - scheduler_mod._DEAD_OWNER_REAP_INTERVAL_SECONDS - 1},
         )
         _run_tick()
@@ -222,9 +222,9 @@ def test_reap_throttle_is_profile_scoped(monkeypatch, tmp_path):
     home_a.mkdir()
     home_b.mkdir()
     monkeypatch.setattr(scheduler_mod, "_last_dead_owner_reap_at", {})
-    monkeypatch.setattr(scheduler_mod, "_get_hermes_home", lambda: home_a)
+    monkeypatch.setattr(scheduler_mod, "_get_moor_home", lambda: home_a)
     scheduler_mod._maybe_reap_dead_owners()
-    monkeypatch.setattr(scheduler_mod, "_get_hermes_home", lambda: home_b)
+    monkeypatch.setattr(scheduler_mod, "_get_moor_home", lambda: home_b)
     scheduler_mod._maybe_reap_dead_owners()
     assert len(calls) == 2, (
         "each profile must get its own dead-owner scan per cycle, "

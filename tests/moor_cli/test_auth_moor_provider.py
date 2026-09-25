@@ -11,7 +11,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from hermes_cli.auth import AuthError
+from moor_cli.auth import AuthError
 
 
 # =============================================================================
@@ -45,7 +45,7 @@ class TestResolveVerifyFallback:
         import certifi
         from truststore._ssl_constants import _original_SSLContext
 
-        from hermes_cli.auth import _resolve_verify
+        from moor_cli.auth import _resolve_verify
 
         result = _resolve_verify(auth_state={
             "tls": {"insecure": False, "ca_bundle": certifi.where()},
@@ -83,8 +83,8 @@ class TestResolveVerifyFallback:
         result = _resolve_verify(auth_state={"tls": {"insecure": "true"}})
         assert result is False
 
-def _setup_nous_auth(
-    hermes_home: Path,
+def _setup_moor_auth(
+    moor_home: Path,
     *,
     access_token: str = "",
     refresh_token: str = "refresh-old",
@@ -139,7 +139,7 @@ def _invoke_jwt(*, seconds: int = 3600, scope: object = "inference:invoke") -> s
         "exp": int(time.time() + seconds),
     })
 
-def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
+def test_resolve_moor_runtime_credentials_prefers_invoke_jwt_and_mirrors(
     tmp_path,
     monkeypatch,
 ):
@@ -172,7 +172,7 @@ def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
     assert pool_entries[0]["agent_key"] == token
     assert pool_entries[0]["source"] == auth_mod.MOOR_DEVICE_CODE_SOURCE
 
-def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
+def test_resolve_moor_runtime_credentials_invoke_jwt_is_idempotent(
     tmp_path,
     monkeypatch,
 ):
@@ -251,7 +251,7 @@ def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
         == original_obtained_at
     )
 
-def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
+def test_resolve_moor_runtime_credentials_reauths_when_invoke_scope_missing(
     tmp_path,
     monkeypatch,
 ):
@@ -277,14 +277,14 @@ def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
         auth_mod.resolve_moor_runtime_credentials()
 
     # No refresh token to redeem: the terminal state-shape code, with the JWT reason in the message.
-    assert exc.value.code == "nous_auth_missing_refresh_token"
+    assert exc.value.code == "moor_auth_missing_refresh_token"
     assert "missing_inference_invoke_scope" in str(exc.value)
     assert exc.value.relogin_required is True
     payload = json.loads((moor_home / "auth.json").read_text())
     assert payload["providers"]["moor"]["agent_key"] is None
     assert "credential_pool" not in payload or not payload["credential_pool"].get("moor")
 
-def test_nous_inference_auth_logs_do_not_include_secret_values(
+def test_moor_inference_auth_logs_do_not_include_secret_values(
     tmp_path,
     monkeypatch,
     caplog,
@@ -335,9 +335,9 @@ def test_nous_inference_auth_logs_do_not_include_secret_values(
     assert refreshed_token not in logged
     assert refresh_token not in logged
 
-def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
-    """get_nous_auth_status() should find Nous credentials in the pool
-    even when the auth store has no Nous provider entry — this is the
+def test_get_moor_auth_status_checks_credential_pool(tmp_path, monkeypatch):
+    """get_moor_auth_status() should find Moor credentials in the pool
+    even when the auth store has no Moor provider entry — this is the
     case when login happened via the dashboard device-code flow which
     saves to the pool only.
     """
@@ -375,8 +375,8 @@ def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
     assert status["logged_in"] is True
     assert "example.com" in str(status.get("portal_base_url", ""))
 
-def test_get_nous_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch):
-    """get_nous_auth_status() returns logged_in=False when both pool
+def test_get_moor_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch):
+    """get_moor_auth_status() returns logged_in=False when both pool
     and auth store are empty.
     """
     from moor_cli.auth import get_moor_auth_status
@@ -408,10 +408,10 @@ class TestLoginMoorSkipKeepsCurrent:
     """
 
     def _setup_home_with_openrouter(self, tmp_path, monkeypatch):
-        import hermes_yaml as yaml
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        import moor_yaml as yaml
+        moor_home = tmp_path / "moor"
+        moor_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
 
         config_path = moor_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
@@ -475,8 +475,8 @@ class TestLoginMoorSkipKeepsCurrent:
     def test_skip_keep_current_preserves_provider_and_model(self, tmp_path, monkeypatch):
         """User picks Skip → config.yaml untouched, Moor creds still saved."""
         import argparse
-        import hermes_yaml as yaml
-        from hermes_cli.auth import PROVIDER_REGISTRY, _login_nous
+        import moor_yaml as yaml
+        from moor_cli.auth import PROVIDER_REGISTRY, _login_moor
 
         moor_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
@@ -506,8 +506,8 @@ class TestLoginMoorSkipKeepsCurrent:
     def test_picking_model_switches_to_moor(self, tmp_path, monkeypatch):
         """User picks a Moor model → provider flips to moor with that model."""
         import argparse
-        import hermes_yaml as yaml
-        from hermes_cli.auth import PROVIDER_REGISTRY, _login_nous
+        import moor_yaml as yaml
+        from moor_cli.auth import PROVIDER_REGISTRY, _login_moor
 
         moor_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
@@ -533,8 +533,8 @@ class TestLoginMoorSkipKeepsCurrent:
         """Fresh install (no prior active_provider) → Skip clears active_provider
         instead of leaving it as moor."""
         import argparse
-        import hermes_yaml as yaml
-        from hermes_cli.auth import PROVIDER_REGISTRY, _login_nous
+        import moor_yaml as yaml
+        from moor_cli.auth import PROVIDER_REGISTRY, _login_moor
 
         moor_home = tmp_path / "moor"
         moor_home.mkdir(parents=True, exist_ok=True)
@@ -590,7 +590,7 @@ def _full_state_fixture() -> dict:
         "tls": {"insecure": False, "ca_bundle": None},
     }
 
-def test_persist_nous_credentials_idempotent_no_duplicate_pool_entries(tmp_path, monkeypatch):
+def test_persist_moor_credentials_idempotent_no_duplicate_pool_entries(tmp_path, monkeypatch):
     """Re-running persist must upsert — not accumulate duplicate device_code rows.
 
     Regression guard for the review comment on PR #11858: before normalisation,
@@ -703,7 +703,7 @@ def test_refresh_token_exchange_error_classification(
     non-5xx body that carries no OAuth ``error`` code must not be treated as a dead grant --
     except a 401/403, which always means the refresh token itself was rejected, unless the
     403/429 carries ``x-vercel-mitigated`` (the edge firewall answered, not the Portal; #120602)."""
-    from hermes_cli.auth import _is_terminal_nous_refresh_error, _refresh_access_token
+    from moor_cli.auth import _is_terminal_moor_refresh_error, _refresh_access_token
 
     class _FakeResponse:
         def __init__(self):
@@ -725,13 +725,13 @@ def test_refresh_token_exchange_error_classification(
         _refresh_access_token(
             client=_FakeClient(),
             portal_base_url="https://portal.nousresearch.com",
-            client_id="hermes-cli",
+            client_id="moor-cli",
             refresh_token="refresh-still-valid",
         )
 
     assert exc_info.value.code == expected_code
     assert exc_info.value.relogin_required is expected_terminal
-    assert _is_terminal_nous_refresh_error(exc_info.value) is expected_terminal
+    assert _is_terminal_moor_refresh_error(exc_info.value) is expected_terminal
     if expected_code in {"temporarily_unavailable", "upstream_blocked"}:
         assert exc_info.value.retryable is True
     if "Retry-After" in headers:
@@ -747,26 +747,26 @@ def test_refresh_token_exchange_error_classification(
     ],
     ids=["portal-503", "edge-deny-403", "edge-challenge-429"],
 )
-def test_runtime_refresh_503_preserves_nous_oauth_credentials(
+def test_runtime_refresh_503_preserves_moor_oauth_credentials(
     tmp_path, monkeypatch, status_code, headers, json_body, expected_code
 ):
     """The real runtime resolver must not quarantine a still-valid refresh token or demand a
     re-login during a Portal outage (#120976) or a Vercel Security Checkpoint deny/challenge on
     the token endpoint (#120602)."""
-    import hermes_cli.auth as auth_mod
-    import hermes_cli.auth_nous as auth_nous
+    import moor_cli.auth as auth_mod
+    import moor_cli.auth_moor as auth_moor
 
-    hermes_home = tmp_path / "hermes"
+    moor_home = tmp_path / "moor"
     access_token = _invoke_jwt(seconds=3600)
     refresh_token = "refresh-still-valid"
-    _setup_nous_auth(
-        hermes_home,
+    _setup_moor_auth(
+        moor_home,
         access_token=access_token,
         refresh_token=refresh_token,
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
 
     class _FakeResponse:
         def __init__(self):
@@ -788,12 +788,12 @@ def test_runtime_refresh_503_preserves_nous_oauth_credentials(
         def post(self, *args, **kwargs):
             return _FakeResponse()
 
-    monkeypatch.setattr(auth_nous, "_nous_http_client", lambda *args: _FakeClient())
+    monkeypatch.setattr(auth_moor, "_moor_http_client", lambda *args: _FakeClient())
 
     with pytest.raises(AuthError) as exc_info:
-        auth_mod.resolve_nous_runtime_credentials(force_refresh=True)
+        auth_mod.resolve_moor_runtime_credentials(force_refresh=True)
 
-    state = auth_mod.get_provider_auth_state("nous")
+    state = auth_mod.get_provider_auth_state("moor")
     assert state["access_token"] == access_token
     assert state["refresh_token"] == refresh_token
     assert "last_auth_error" not in state
@@ -904,7 +904,7 @@ def test_shared_store_write_and_read_roundtrip(shared_store_env):
     # cross-profile useful).
     assert "agent_key" not in loaded
 
-def test_persist_nous_credentials_mirrors_to_shared_store(
+def test_persist_moor_credentials_mirrors_to_shared_store(
     tmp_path, monkeypatch, shared_store_env,
 ):
     """persist_moor_credentials must populate BOTH per-profile auth.json

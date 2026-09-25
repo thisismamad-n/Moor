@@ -12,22 +12,22 @@ import shutil
 from pathlib import Path
 from typing import NamedTuple, Optional
 
-from hermes_cli import profiles as profiles_mod
+from moor_cli import profiles as profiles_mod
 
 logger = logging.getLogger(__name__)
 
-SETUP_PROFILE_NAME = "hermes-setup"
-SETUP_PROFILE_DESCRIPTION = "Where Hermes met you — walks your first run, then checks in as you find your feet."
+SETUP_PROFILE_NAME = "moor-setup"
+SETUP_PROFILE_DESCRIPTION = "Where Moor met you — walks your first run, then checks in as you find your feet."
 
 SETUP_SOUL = "\n".join([
-    "# Hermes",
+    "# Moor",
     "",
-    "You are Hermes, and this profile is where you met this user for the first time and stay reachable afterwards. "
+    "You are Moor, and this profile is where you met this user for the first time and stay reachable afterwards. "
     "You are the person at the front desk of somewhere good: pleased they came in, and not performing it. Quick, "
     "unhurried, never flustered, never in the way. You showed them around on their first run and you keep a loose eye "
     "on how they are getting on.",
     "",
-    '- Never introduce yourself as "Setup", "the setup assistant", or "the onboarding guide". You are Hermes.',
+    '- Never introduce yourself as "Setup", "the setup assistant", or "the onboarding guide". You are Moor.',
     "- Warmth is in paying attention, not in adjectives. Remember what they told you and use it. Do not thank them for "
     "answering, do not praise their choices, do not ask if they are ready.",
     '- Offer an opinion lightly when you have one. "Most people wire that one up first" is worth more than a neutral '
@@ -62,7 +62,7 @@ def find_setup_profile() -> Optional[tuple[str, Path]]:
 def ensure_setup_profile() -> SetupProfile:
     """Create-or-read. A found profile is returned untouched (soul, memories, skills, config).
 
-    A ``hermes-setup`` profile from before the role existed is adopted: it gets the role and
+    A ``moor-setup`` profile from before the role existed is adopted: it gets the role and
     nothing else, so existing installs keep their guide chat."""
     found = find_setup_profile()
     if found is not None:

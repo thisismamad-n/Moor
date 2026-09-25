@@ -153,7 +153,7 @@ def _get_firecrawl_client() -> Any:
     managed fallback billed to Moor); never-configured → direct when present, else managed. Raises ValueError
     when the resolved path is unusable."""
     wt = _wt()
-    from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, read_selection, selection_error
+    from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, read_selection, selection_error
     selected = read_selection("web")
     direct_config = _get_direct_firecrawl_config()
 
@@ -170,9 +170,9 @@ def _get_firecrawl_client() -> Any:
         return message + " " + _backend_helpers.moor_tool_gateway_unavailable_message("managed Firecrawl web tools")
 
     # (resolved config, log detail, error message) per selection state; the message is built lazily.
-    if selected == NOUS_MANAGED_PROVIDER:
-        resolved, log, message = _managed(), "the Nous Subscription web selection is stored but the tool gateway is unavailable.", lambda: selection_error(
-            "web", NOUS_MANAGED_PROVIDER, "the Nous Tool Gateway is not available (not entitled or unreachable)")
+    if selected == MOOR_MANAGED_PROVIDER:
+        resolved, log, message = _managed(), "the Moor Subscription web selection is stored but the tool gateway is unavailable.", lambda: selection_error(
+            "web", MOOR_MANAGED_PROVIDER, "the Moor Tool Gateway is not available (not entitled or unreachable)")
     elif selected is not None or _is_explicit_firecrawl_selection():
         # Stored vendor selection (shared name, or a per-capability key naming firecrawl): direct only (no
         # credentials → explicit selection unlocks keyless cloud mode). A per-capability key naming ANOTHER

@@ -235,7 +235,7 @@ moor cron create "*/15 * * * *" \
 |----------|-----------|-------------|
 | `cronjob --no-agent`（本页） | 你的脚本，由 Moor 调度 | 不需要推理的周期性看门狗 / 告警 / 指标 |
 | `cronjob`（默认，LLM） | 带可选预检脚本的 agent | 消息内容需要对数据进行推理时 |
-| OS cron + `curl` 到 [webhook 订阅](../user-guide/messaging/webhooks.md) | 你的脚本，由 OS 调度 | 当 Hermes 本身可能不健康时（即被监控对象） |
+| OS cron + `curl` 到 [webhook 订阅](../user-guide/messaging/webhooks.md) | 你的脚本，由 OS 调度 | 当 Moor 本身可能不健康时（即被监控对象） |
 
 对于必须在 **gateway 宕机时也能触发**的关键系统健康看门狗，请使用 OS 级 cron 配合 `curl` 调用 Moor webhook 订阅（或任何外部告警端点）——这些作为独立 OS 进程运行，不依赖 Moor 是否在线。当被监控对象是外部系统时，in-gateway 调度器才是正确选择。
 

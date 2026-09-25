@@ -6,11 +6,11 @@ description: "Start-to-finish walkthrough: subscribe, set up, switch models, ena
 
 # Run Moor Agent with Moor Portal
 
-This guide walks you through running Hermes Agent on a [Nous Portal](https://portal.nousresearch.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [Nous Portal integration page](../integrations/nous-portal.md). This page is the task script.
+This guide walks you through running Moor Agent on a [Moor Portal](https://portal.nousresearch.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [Moor Portal integration page](../integrations/moor-portal.md). This page is the task script.
 
 ## Prerequisites
 
-- Hermes Agent installed ([Quickstart](../getting-started/quickstart.md))
+- Moor Agent installed ([Quickstart](../getting-started/quickstart.md))
 - A web browser on the machine you're setting up (or SSH port forwarding — see [OAuth over SSH](./oauth-over-ssh.md))
 - About 5 minutes
 
@@ -91,7 +91,7 @@ Try something that exercises both the model and the Tool Gateway:
 Hey, search the web for "Moor Agent release notes" and summarize the top 3 hits.
 ```
 
-You should see Hermes call `web_search` (through the gateway) and respond with a summary. If the search runs and the response makes sense, you're done — the Portal is wired up end to end.
+You should see Moor call `web_search` (through the gateway) and respond with a summary. If the search runs and the response makes sense, you're done — the Portal is wired up end to end.
 
 ## 5. Pick the model you actually want
 
@@ -120,7 +120,7 @@ moor config set model.default anthropic/claude-sonnet-4.6
 
 ### Don't pick Hermes-4 for agent work
 
-Hermes-4-70B and Hermes-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them for conversation/research work through the [subscription proxy](../user-guide/features/subscription-proxy.md) from non-agent tools. For Hermes Agent itself, stick to the frontier agentic models above.
+Hermes-4-70B and Hermes-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them for conversation/research work through the [subscription proxy](../user-guide/features/subscription-proxy.md) from non-agent tools. For Moor Agent itself, stick to the frontier agentic models above.
 
 The Portal's own [info page](https://portal.nousresearch.com/info) carries this warning too — it's the official Moor guidance, not just a moor-side opinion.
 
@@ -172,7 +172,7 @@ The cron job runs unattended, calls the model + web search + summarization all t
 
 ## Profiles and multi-user setups
 
-If you use [Hermes profiles](../user-guide/profiles.md) (e.g. a separate config per project), each profile is an independent credential island: a profile that has never signed in to the Portal fails closed instead of adopting another profile's session. Sign in once per profile with `hermes -p <name> portal` — when a shared Portal session already exists on the machine it offers to import it without a browser round-trip, and from then on the shared token store keeps that profile's token current. See [Profile setup](../integrations/nous-portal.md#profile-setup).
+If you use [Moor profiles](../user-guide/profiles.md) (e.g. a separate config per project), each profile is an independent credential island: a profile that has never signed in to the Portal fails closed instead of adopting another profile's session. Sign in once per profile with `moor -p <name> portal` — when a shared Portal session already exists on the machine it offers to import it without a browser round-trip, and from then on the shared token store keeps that profile's token current. See [Profile setup](../integrations/moor-portal.md#profile-setup).
 
 For team setups where multiple humans share a machine, each human has their own Portal account → each home directory holds its own `~/.moor/auth.json` → no token sharing across users. This is the right boundary.
 
@@ -235,7 +235,7 @@ The Portal catalog draws on OpenRouter's model list (300+) plus models served th
 /model openai/o1-2025-12-17
 ```
 
-If a model is genuinely unavailable, [open an issue](https://github.com/NousResearch/hermes-agent/issues) — most gaps are routing config we can update.
+If a model is genuinely unavailable, [open an issue](https://github.com/thisismamad-n/Moor/issues) — most gaps are routing config we can update.
 
 ### Billing not appearing on my Portal account
 
@@ -268,9 +268,9 @@ That's the deal. If you're using more than two of those backends anyway, the sub
 
 ## See also
 
-- **[Nous Portal integration page](../integrations/nous-portal.md)** — Overview of what's in the subscription
+- **[Moor Portal integration page](../integrations/moor-portal.md)** — Overview of what's in the subscription
 - **[Tool Gateway](../user-guide/features/tool-gateway.md)** — Full details on every gateway-routed tool
-- **[Subscription proxy](../user-guide/features/subscription-proxy.md)** — Use your Portal subscription from non-Hermes tools
+- **[Subscription proxy](../user-guide/features/subscription-proxy.md)** — Use your Portal subscription from non-Moor tools
 - **[Voice mode](../user-guide/features/voice-mode.md)** — Set up voice conversations on the Portal subscription
 - **[OAuth over SSH](./oauth-over-ssh.md)** — Remote / headless login patterns
-- **[Profiles](../user-guide/profiles.md)** — Share one Portal login across multiple Hermes configurations
+- **[Profiles](../user-guide/profiles.md)** — Share one Portal login across multiple Moor configurations

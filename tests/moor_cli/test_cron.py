@@ -9,9 +9,9 @@ from types import SimpleNamespace
 import pytest
 
 from cron.jobs import create_job, get_job, list_jobs, load_jobs, pause_job, save_jobs
-from hermes_cli import cron as cron_cli
-from hermes_cli.cron import cron_command
-from hermes_cli.subcommands.cron import build_cron_parser
+from moor_cli import cron as cron_cli
+from moor_cli.cron import cron_command
+from moor_cli.subcommands.cron import build_cron_parser
 
 
 @pytest.fixture()
@@ -261,7 +261,7 @@ class TestCronListStatusRendering:
     """`cron list` must never paint an undelivered run as a success (#83993)."""
 
     def test_default_list_includes_paused_jobs(self, tmp_cron_dir, capsys, monkeypatch):
-        monkeypatch.setattr("hermes_cli.gateway.find_gateway_pids", lambda: [1])
+        monkeypatch.setattr("moor_cli.gateway.find_gateway_pids", lambda: [1])
         job = create_job(prompt="Paused digest", schedule="every 1h")
         pause_job(job["id"])
 
@@ -575,10 +575,10 @@ class TestStatusSurfacesDeadScheduler:
         # so an unrelated host record can never make this profile look served. (Superseded by the
         # tests/conftest.py hook in #118097 once that lands.)
         lock_dir.mkdir(exist_ok=True)
-        monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(lock_dir))
-        monkeypatch.setattr("hermes_cli.gateway.find_gateway_pids", lambda: [])
+        monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(lock_dir))
+        monkeypatch.setattr("moor_cli.gateway.find_gateway_pids", lambda: [])
         monkeypatch.setattr(
-            "hermes_cli.gateway.named_profile_served_by_running_multiplexer", lambda: None
+            "moor_cli.gateway.named_profile_served_by_running_multiplexer", lambda: None
         )
         monkeypatch.setattr("gateway.status.is_gateway_runtime_lock_active", lambda: False)
 
@@ -628,7 +628,7 @@ class TestStatusSurfacesDeadScheduler:
         # The in-chat `/cron` overview and `/cron list` (classic CLI + Ink TUI forward to the
         # same handler) read the same rows; a 7h-past stamp must not read as an upcoming run,
         # while a paused job keeps its plain label — pausing is why it did not fire.
-        from hermes_cli.cli_commands_mixin import CLICommandsMixin
+        from moor_cli.cli_commands_mixin import CLICommandsMixin
 
         class _Host(CLICommandsMixin):
             pass
@@ -659,7 +659,7 @@ class TestSlashCronRunSkipped:
     run is the same shape) must print the refusal, never ``Triggered … next scheduler tick``."""
 
     def test_refused_run_prints_reason_not_triggered(self, tmp_cron_dir, capsys):
-        from hermes_cli.cli_commands_mixin import CLICommandsMixin
+        from moor_cli.cli_commands_mixin import CLICommandsMixin
 
         class _Host(CLICommandsMixin):
             pass

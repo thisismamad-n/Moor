@@ -308,7 +308,7 @@ describe('disband', () => {
     // A lagging mirror (its tombstone push failed) still projects the room
     // with a higher CAS revision and no tombstone. Pulling it must not
     // resurrect the room — and the durable room map must stay clean.
-    room.gateway.uiMeta['hermes-bots-groups'] = {
+    room.gateway.uiMeta['moor-bots-groups'] = {
       rooms: {
         'id:room-1': {
           log: [{ at: 1, from: { kind: 'user', name: 'You' }, id: 'b1', text: 'go' }],

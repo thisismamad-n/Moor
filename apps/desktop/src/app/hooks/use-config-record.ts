@@ -2,15 +2,15 @@ import { useStore } from '@nanostores/react'
 import { replaceEqualDeep, useQuery } from '@tanstack/react-query'
 
 import {
-  getHermesConfigRecord,
+  getMoorConfigRecord,
   peekConfigReadOrigin,
   type ProfileScope,
   profileScopeKey,
   retainConfigReadOrigin
-} from '@/hermes'
+} from '@/moor'
 import { queryClient } from '@/lib/query-client'
 import { $activeConnectionId } from '@/store/connections'
-import type { HermesConfigRecord } from '@/types/hermes'
+import type { MoorConfigRecord } from '@/types/moor'
 
 // One shared cache for the whole profile config record (`GET /api/config`).
 // Every settings surface (MCP, model, config) reads and writes through this key
@@ -50,27 +50,27 @@ function configRecordSlot(profile: ProfileScope | undefined, connectionId: null 
   return active ? `${active}::${scope}` : scope
 }
 
-export const hermesConfigKey = (
+export const moorConfigKey = (
   profile?: ProfileScope,
   connectionId: null | string | undefined = $activeConnectionId.get()
 ) => {
   const slot = configRecordSlot(profile, connectionId)
 
-  return slot == null ? HERMES_CONFIG_KEY : ([...HERMES_CONFIG_KEY, slot] as const)
+  return slot == null ? MOOR_CONFIG_KEY : ([...MOOR_CONFIG_KEY, slot] as const)
 }
 
 // staleTime 0 → serve cache instantly, background-revalidate on every mount.
 // `profile` scopes both the query key and the fetch. Omitting it still targets
 // the app-wide active profile (`profileScoped(undefined)` fallback), but the
 // cache slot is the active gateway's — not the bare root key.
-export const useHermesConfigRecord = (profile?: ProfileScope) => {
+export const useMoorConfigRecord = (profile?: ProfileScope) => {
   // Reactive read, not a store getter: under the React Compiler a value with
   // no reactive inputs is computed once per component instance, so a
   // getter-based key would freeze on the first gateway and keep serving its
   // record after a switch.
   const connectionId = useStore($activeConnectionId)
   const query = useQuery({
-    queryKey: hermesConfigKey(profile, connectionId),
+    queryKey: moorConfigKey(profile, connectionId),
     // null/undefined both mean "no override" → fetch with undefined so
     // capabilityScoped falls back to the app-wide active profile (passing null
     // would wrongly target the primary backend).
@@ -80,26 +80,26 @@ export const useHermesConfigRecord = (profile?: ProfileScope) => {
       // key. A refetch of the slot we are leaving must not store the new
       // gateway's record there — that is the other machine's config.yaml.
       if (connectionId && $activeConnectionId.get() !== connectionId) {
-        const cached = queryClient.getQueryData<HermesConfigRecord>(hermesConfigKey(profile, connectionId))
+        const cached = queryClient.getQueryData<MoorConfigRecord>(moorConfigKey(profile, connectionId))
 
         if (cached !== undefined) {
           return cached
         }
       }
 
-      return getHermesConfigRecord(profile ?? undefined)
+      return getMoorConfigRecord(profile ?? undefined)
     },
     staleTime: 0,
     // Keep structural sharing so an unchanged refetch (every consumer mount at
     // staleTime 0, every invalidate) yields the SAME object and consumers'
     // memos/autosave effects don't re-arm. The read origin lives in a WeakMap
     // keyed by the record, so re-stamp whatever object survives the merge with
-    // the origin of the NEW fetch (`next`, bound by getHermesConfigRecord) —
+    // the origin of the NEW fetch (`next`, bound by getMoorConfigRecord) —
     // otherwise a retained object would keep routing writes to the gateway
     // that served the previous GET.
     structuralSharing: (previous: unknown, next: unknown) =>
       retainConfigReadOrigin(
-        replaceEqualDeep(previous as HermesConfigRecord | undefined, next as HermesConfigRecord),
+        replaceEqualDeep(previous as MoorConfigRecord | undefined, next as MoorConfigRecord),
         next as object
       )
   })
@@ -109,7 +109,7 @@ export const useHermesConfigRecord = (profile?: ProfileScope) => {
   // subscribes each consumer to fetchStatus/dataUpdatedAt/… churn. The getter
   // reads `query.data` through the proxy, so only `data` is tracked.
   //
-  // `undefined`, never `null`: callers hand this straight to saveHermesConfig
+  // `undefined`, never `null`: callers hand this straight to saveMoorConfig
   // with sparse `setNested({}, …)` patches, so the WeakMap misses and the
   // fallback is capabilityScoped(writeScope) → profileScoped(writeScope).
   // profileScoped(undefined) keeps the app-wide `_apiProfile`; profileScoped
@@ -124,17 +124,17 @@ export const useHermesConfigRecord = (profile?: ProfileScope) => {
   return query as typeof query & { writeScope: ReturnType<typeof peekConfigReadOrigin> }
 }
 
-// setHermesConfigCache writes the active gateway's record. The key is resolved
+// setMoorConfigCache writes the active gateway's record. The key is resolved
 // at WRITE time, not when the writer is created, so a writer memoized by a
 // long-lived settings panel (keyed only on the profile name) lands on whichever
 // gateway is active when the save happens — the same row its query reads.
-const writeHermesConfigCache =
-  (keyFor: () => ReturnType<typeof hermesConfigKey>) =>
+const writeMoorConfigCache =
+  (keyFor: () => ReturnType<typeof moorConfigKey>) =>
   (
     next:
-      HermesConfigRecord | undefined | ((previous: HermesConfigRecord | undefined) => HermesConfigRecord | undefined)
+      MoorConfigRecord | undefined | ((previous: MoorConfigRecord | undefined) => MoorConfigRecord | undefined)
   ) =>
-    void queryClient.setQueryData<HermesConfigRecord>(keyFor(), previous => {
+    void queryClient.setQueryData<MoorConfigRecord>(keyFor(), previous => {
       const record = typeof next === 'function' ? next(previous) : next
 
       // setQueryData also runs the hook's structuralSharing (query.setData →
@@ -145,9 +145,9 @@ const writeHermesConfigCache =
       return record ? retainConfigReadOrigin(record, previous) : record
     })
 
-export const setHermesConfigCache = writeHermesConfigCache(() => hermesConfigKey())
-export const hermesConfigCacheWriter = (profile?: ProfileScope) =>
-  writeHermesConfigCache(() => hermesConfigKey(profile))
+export const setMoorConfigCache = writeMoorConfigCache(() => moorConfigKey())
+export const moorConfigCacheWriter = (profile?: ProfileScope) =>
+  writeMoorConfigCache(() => moorConfigKey(profile))
 
 export const invalidateMoorConfig = (profile?: ProfileScope) =>
   queryClient.invalidateQueries({ queryKey: moorConfigKey(profile) })

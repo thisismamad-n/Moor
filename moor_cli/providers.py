@@ -23,6 +23,7 @@ class MoorOverlay:
     extra_env_vars: Tuple[str, ...] = ()  # env vars models.dev doesn't list
     base_url_override: str = ""           # override if models.dev URL is wrong/missing
     base_url_env_var: str = ""            # env var for user-custom base URL
+    keyless: bool = False
 
 
 MOOR_OVERLAYS: Dict[str, MoorOverlay] = {
@@ -52,21 +53,22 @@ MOOR_OVERLAYS: Dict[str, MoorOverlay] = {
     "minimax": MoorOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_BASE_URL"),
     "minimax-oauth": MoorOverlay(transport="anthropic_messages", auth_type="oauth_external",
                                    base_url_override="https://api.minimax.io/anthropic"),
-    "minimax-cn": HermesOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_CN_BASE_URL"),
-    "deepseek": HermesOverlay(base_url_env_var="DEEPSEEK_BASE_URL"),
-    "alibaba": HermesOverlay(base_url_env_var="DASHSCOPE_BASE_URL"),
-    "alibaba-coding-plan": HermesOverlay(base_url_env_var="ALIBABA_CODING_PLAN_BASE_URL"),
-    "vercel": HermesOverlay(is_aggregator=True),
-    "opencode": HermesOverlay(is_aggregator=True, base_url_env_var="OPENCODE_ZEN_BASE_URL"),
-    "opencode-go": HermesOverlay(is_aggregator=True, base_url_env_var="OPENCODE_GO_BASE_URL"),
-    "kilo": HermesOverlay(is_aggregator=True, base_url_env_var="KILOCODE_BASE_URL"),
-    "huggingface": HermesOverlay(is_aggregator=True, base_url_env_var="HF_BASE_URL"),
-    "novita": HermesOverlay(is_aggregator=True, base_url_env_var="NOVITA_BASE_URL"),
-    "xai": HermesOverlay(transport="codex_responses", base_url_override="https://api.x.ai/v1", base_url_env_var="XAI_BASE_URL"),
-    "nvidia": HermesOverlay(base_url_override="https://integrate.api.nvidia.com/v1", base_url_env_var="NVIDIA_BASE_URL"),
-    "xiaomi": HermesOverlay(base_url_env_var="XIAOMI_BASE_URL"),
-    "tencent-tokenhub": HermesOverlay(base_url_env_var="TOKENHUB_BASE_URL"),
-    "tencent-tokenplan": HermesOverlay(transport="anthropic_messages",
+    "minimax-cn": MoorOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_CN_BASE_URL"),
+    "deepseek": MoorOverlay(base_url_env_var="DEEPSEEK_BASE_URL"),
+    "alibaba": MoorOverlay(base_url_env_var="DASHSCOPE_BASE_URL"),
+    "alibaba-coding-plan": MoorOverlay(base_url_env_var="ALIBABA_CODING_PLAN_BASE_URL"),
+    "vercel": MoorOverlay(is_aggregator=True),
+    "opencode": MoorOverlay(is_aggregator=True, base_url_env_var="OPENCODE_ZEN_BASE_URL"),
+    "opencode-go": MoorOverlay(is_aggregator=True, base_url_env_var="OPENCODE_GO_BASE_URL"),
+    "opencode-free": MoorOverlay(is_aggregator=True, base_url_override="https://opencode.ai/zen/v1", keyless=True),
+    "kilo": MoorOverlay(is_aggregator=True, base_url_env_var="KILOCODE_BASE_URL"),
+    "huggingface": MoorOverlay(is_aggregator=True, base_url_env_var="HF_BASE_URL"),
+    "novita": MoorOverlay(is_aggregator=True, base_url_env_var="NOVITA_BASE_URL"),
+    "xai": MoorOverlay(transport="codex_responses", base_url_override="https://api.x.ai/v1", base_url_env_var="XAI_BASE_URL"),
+    "nvidia": MoorOverlay(base_url_override="https://integrate.api.nvidia.com/v1", base_url_env_var="NVIDIA_BASE_URL"),
+    "xiaomi": MoorOverlay(base_url_env_var="XIAOMI_BASE_URL"),
+    "tencent-tokenhub": MoorOverlay(base_url_env_var="TOKENHUB_BASE_URL"),
+    "tencent-tokenplan": MoorOverlay(transport="anthropic_messages",
                                        base_url_override="https://api.lkeap.cloud.tencent.com/plan/anthropic",
                                        base_url_env_var="TOKENPLAN_BASE_URL"),
     "arcee": MoorOverlay(base_url_override="https://api.arcee.ai/api/v1", base_url_env_var="ARCEE_BASE_URL"),
@@ -114,7 +116,7 @@ class ProviderDef:
 # -- Aliases: human-friendly / legacy names grouped by canonical (models.dev where possible) id;
 # ``ALIASES`` is the inverted lookup table. ---------------------------------------------------
 _ALIAS_GROUPS: Dict[str, Tuple[str, ...]] = {
-    "moor": ("nous", "nousresearch", "moor-portal"),  # LEGACY-REBRAND-COMPAT: fallback provider alias
+    "moor": ("moor", "nousresearch", "moor-portal"),  # LEGACY-REBRAND-COMPAT: fallback provider alias
     "openrouter": ("openai",), "zai": ("glm", "z-ai", "z.ai", "zhipu"), "xai": ("x-ai", "x.ai", "grok"),
     "xai-oauth": ("grok-oauth", "xai-oauth", "x-ai-oauth", "xai-grok-oauth"),
     "nvidia": ("nim", "nvidia-nim", "build-nvidia", "nemotron"),
@@ -123,7 +125,8 @@ _ALIAS_GROUPS: Dict[str, Tuple[str, ...]] = {
     "anthropic": ("claude", "claude-code"), "github-copilot": ("copilot", "github"),
     "copilot-acp": ("github-copilot-acp",), "openai-codex": ("chatgpt", "chatgpt-codex"),
     "vercel": ("ai-gateway", "aigateway", "vercel-ai-gateway"),
-    "opencode": ("opencode-zen", "zen"), "opencode-go": ("go", "opencode-go-sub"), "kilo": ("kilocode", "kilo-code", "kilo-gateway"),
+    "opencode": ("opencode-zen", "zen"), "opencode-go": ("go", "opencode-go-sub"),
+    "opencode-free": ("free", "opencode_free"), "kilo": ("kilocode", "kilo-code", "kilo-gateway"),
     "deepseek": ("deep-seek",), "alibaba": ("dashscope", "aliyun", "qwen", "alibaba-cloud"),
     "alibaba-coding-plan": ("alibaba_coding", "alibaba-coding", "alibaba_coding_plan"),
     "huggingface": ("hf", "hugging-face", "huggingface-hub"), "novita": ("novita-ai", "novitaai"),
@@ -147,7 +150,7 @@ _LABEL_OVERRIDES: Dict[str, str] = {
     "upstage": "Upstage Solar", "actual": "Actual Computer", "tencent-tokenhub": "Tencent TokenHub",
     "nebius-token-factory": "Nebius Token Factory", "tencent-tokenplan": "Tencent TokenPlan", "lmstudio": "LM Studio",
     "local": "Local endpoint", "bedrock": "AWS Bedrock", "vertex": "Google Vertex AI", "ollama-cloud": "Ollama Cloud",
-    "xai-oauth": "xAI Grok OAuth (SuperGrok / Premium+)",
+    "xai-oauth": "xAI Grok OAuth (SuperGrok / Premium+)", "opencode-free": "OpenCode Free",
 }
 
 
@@ -209,7 +212,7 @@ def get_provider(name: str, *, allow_network: bool = True) -> Optional[ProviderD
         return _overlay_pdef(canonical, overlay, _LABEL_OVERRIDES.get(canonical, canonical), overlay.extra_env_vars,
                              overlay.base_url_override, "", "moor")
     # Plugin-registered profiles (plugins/model-providers/<name>/) absent from models.dev and
-    # HERMES_OVERLAYS would otherwise be "Unknown provider" in /model, --provider and model-switch
+    # MOOR_OVERLAYS would otherwise be "Unknown provider" in /model, --provider and model-switch
     # even though the picker lists them. Only profiles with a literal or env-configured endpoint
     # resolve at this rung: placeholder profiles like ``custom`` (aliases ollama/local/vllm) ship
     # an empty base_url and are completed by config.yaml custom_providers — resolving them would
@@ -485,17 +488,17 @@ def _lossy_alias_registry_pdef(raw: str, canonical: str) -> Optional[ProviderDef
 
 
 # The local llama.cpp runtime's provider id + aliases: ONE definition, shared by the resolver rung
-# below and the picker's Local row (``hermes_cli/inventory.py``) — the two drifting apart is what
+# below and the picker's Local row (``moor_cli/inventory.py``) — the two drifting apart is what
 # made the row's own id unresolvable.
 LLAMACPP_PROVIDER_ID = "llamacpp"
 LLAMACPP_ALIASES: Tuple[str, ...] = (LLAMACPP_PROVIDER_ID, "llama.cpp", "llama-cpp")
 
 
 def _has_staged_local_models() -> bool:
-    """True when GGUFs are staged under the Hermes home's ``models/`` — the model the picker's Local
+    """True when GGUFs are staged under the Moor home's ``models/`` — the model the picker's Local
     row offers, which the runtime seam serves by booting/attaching a server on selection."""
     try:
-        from hermes_cli.local_runtime.bootstrap import staged_model_ids
+        from moor_cli.local_runtime.bootstrap import staged_model_ids
         return bool(staged_model_ids())
     except Exception:
         return False
@@ -509,8 +512,8 @@ def _llamacpp_pdef() -> Optional[ProviderDef]:
     made that row offer a provider the resolver rejected ("Unknown provider 'llamacpp'"). Without
     this rung model-switch rejected the very provider the Local Models 'Use' flow writes to config."""
     try:
-        from hermes_cli.config import load_config_readonly
-        from hermes_cli.local_runtime.endpoint import resolve_llamacpp_endpoint
+        from moor_cli.config import load_config_readonly
+        from moor_cli.local_runtime.endpoint import resolve_llamacpp_endpoint
         endpoint = resolve_llamacpp_endpoint(config=load_config_readonly(), wait_for_boot_s=0)
     except Exception:
         endpoint = None
@@ -565,7 +568,7 @@ def resolve_provider_full(name: str, user_providers: Optional[Dict[str, Any]] = 
         pass
     # Plugin profiles whose endpoint is minted at runtime (empty base_url, e.g. a token exchange
     # that also returns the host) are still real providers: /model --provider, the model picker
-    # and `hermes model` must not reject them as unknown. Last rung, so every user-configured
+    # and `moor model` must not reject them as unknown. Last rung, so every user-configured
     # entry above wins; the bare ``custom`` placeholder is excluded because model-switch completes
     # it from the current endpoint (see get_provider).
     pdef = _plugin_profile_pdef(canonical)

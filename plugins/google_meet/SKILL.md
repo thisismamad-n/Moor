@@ -43,11 +43,11 @@ Pick `realtime` only when the user actually wants the agent to speak. It costs r
 Easiest path — run the built-in installer:
 
 ```bash
-hermes plugins enable google_meet
-hermes meet install                 # PM dependencies + Chromium (transcribe only)
-hermes meet install --realtime      # + pulseaudio-utils / brew blackhole+ffmpeg
-hermes meet auth                    # optional; skips guest-lobby wait
-hermes meet setup                   # preflight checks
+moor plugins enable google_meet
+moor meet install                 # PM dependencies + Chromium (transcribe only)
+moor meet install --realtime      # + pulseaudio-utils / brew blackhole+ffmpeg
+moor meet auth                    # optional; skips guest-lobby wait
+moor meet setup                   # preflight checks
 ```
 
 `moor meet install --realtime` prompts before running `sudo apt-get` (Linux)
@@ -66,9 +66,9 @@ For manual realtime audio setup:
 For a remote node:
 ```bash
 # on the user's Mac (where Chrome is signed in):
-hermes plugins enable google_meet
-hermes meet install
-hermes meet node run --display-name my-mac    # persistent server
+moor plugins enable google_meet
+moor meet install
+moor meet node run --display-name my-mac    # persistent server
 # copy the printed token
 
 # on the gateway:

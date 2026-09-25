@@ -337,7 +337,7 @@ class GatewayAuthorizationMixin:
         return (adapter, profile) if registered else None
 
     def _authorization_home_for_source(self, source: SessionSource):
-        """HERMES_HOME whose allowlist admits *source*: the identity's transport home (or the
+        """MOOR_HOME whose allowlist admits *source*: the identity's transport home (or the
         ingress-stamped one), else the home of the profile owning the adapter that delivers it.
         ``None`` = authorize in the ambient scope (multiplex off, or no live adapter — the check then
         fails closed on its own).

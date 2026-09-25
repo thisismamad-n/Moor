@@ -58,8 +58,8 @@ def test_delivery_is_idempotent_fenced_and_permanent(tmp_path, terminal_status):
 def test_live_dm_bom_readers_preserve_pinned_intent(tmp_path, monkeypatch, intent_state):
     from pathlib import Path
 
-    from hermes_cli.active_sessions import try_acquire_active_session
-    from hermes_state import SessionDB
+    from moor_cli.active_sessions import try_acquire_active_session
+    from moor_state import SessionDB
     from tools import bot_live_delivery as mailbox, bot_mode_dm
 
     db = SessionDB(db_path=tmp_path / "state.db")

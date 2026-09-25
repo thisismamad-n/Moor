@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import struct
 
-from hermes_cli.local_runtime.gguf import read_gguf_header
+from moor_cli.local_runtime.gguf import read_gguf_header
 
 
 def test_reader_sizes_mxfp4_tensor_blocks(tmp_path):

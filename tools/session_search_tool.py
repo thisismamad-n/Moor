@@ -15,8 +15,8 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
-from hermes_state_common import _BOUNDARY_END_REASONS
-from hermes_time import safe_strftime
+from moor_state_common import _BOUNDARY_END_REASONS
+from moor_time import safe_strftime
 
 # Hidden from browsing/searching — integrations (MOOR_SESSION_SOURCE=tool), delegate
 # subagent runs, kanban workers are not the user's history.

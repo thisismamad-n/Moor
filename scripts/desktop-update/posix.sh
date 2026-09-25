@@ -10,7 +10,7 @@
 #
 # CONTRACT (keep in sync with apps/desktop/electron/main.ts):
 #   bash scripts/desktop-update/posix.sh
-#     --install-root <path>    repo checkout (HERMES_HOME/hermes-agent)
+#     --install-root <path>    repo checkout (MOOR_HOME/moor-agent)
 #     [--branch <ref> | --channel stable|canary|main]  default: branch main
 #     --desktop-pid <pid>      the Electron main process to wait out
 #     [--relaunch-target <p>]  mac: running .app to swap+reopen;
@@ -76,11 +76,11 @@ TARGET_ARGS=(--branch "$BRANCH")
 [ -z "$CHANNEL" ] || TARGET_ARGS=(--channel "$CHANNEL")
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HERMES_HOME="${HERMES_HOME:-${INSTALL_ROOT:+$(dirname "$INSTALL_ROOT")}}"
-HERMES_HOME="${HERMES_HOME:-${TMPDIR:-/tmp}}"
-export HERMES_HOME
-MARKER="$HERMES_HOME/.hermes-update-in-progress"
-LOG_DIR="$HERMES_HOME/logs"; mkdir -p "$LOG_DIR" 2>/dev/null || true
+MOOR_HOME="${MOOR_HOME:-${INSTALL_ROOT:+$(dirname "$INSTALL_ROOT")}}"
+MOOR_HOME="${MOOR_HOME:-${TMPDIR:-/tmp}}"
+export MOOR_HOME
+MARKER="$MOOR_HOME/.moor-update-in-progress"
+LOG_DIR="$MOOR_HOME/logs"; mkdir -p "$LOG_DIR" 2>/dev/null || true
 LOG="$LOG_DIR/desktop-update-handoff.log"
 RESULT="$MOOR_HOME/.moor-update-result.json"
 STATUS="${TMPDIR:-/tmp}/moor-update-status.$$"
@@ -759,28 +759,28 @@ start_ui
 LEGACY_INSTALL=0
 [ -d "$INSTALL_ROOT/pm" ] || LEGACY_INSTALL=1
 select_update_invoke() {
-  HERMES_BIN="$INSTALL_ROOT/.hermes/bin/hermes"
-  if [ -x "$HERMES_BIN" ]; then
-    UPDATE_INVOKE=("$HERMES_BIN")
+  MOOR_BIN="$INSTALL_ROOT/.moor/bin/moor"
+  if [ -x "$MOOR_BIN" ]; then
+    UPDATE_INVOKE=("$MOOR_BIN")
     return 0
   fi
-  if [ -f "$INSTALL_ROOT/hermes_cli/_launchers.py" ]; then
+  if [ -f "$INSTALL_ROOT/moor_cli/_launchers.py" ]; then
     local candidate version reported expected
     expected="$(cd "$INSTALL_ROOT" && pwd -P)" || return 1
-    for candidate in "$HOME/.local/bin/hermes" "$HERMES_HOME/bin/hermes"; do
+    for candidate in "$HOME/.local/bin/moor" "$MOOR_HOME/bin/moor"; do
       [ -x "$candidate" ] || continue
       version="$("$candidate" --version 2>/dev/null)" || continue
       reported="$(printf '%s\n' "$version" | sed -n 's/^Install directory: //p')"
       [ -d "$reported" ] || continue
       [ "$(cd "$reported" && pwd -P)" = "$expected" ] || continue
-      HERMES_BIN="$candidate"
+      MOOR_BIN="$candidate"
       UPDATE_INVOKE=("$candidate")
       return 0
     done
   fi
   if [ "$LEGACY_INSTALL" -eq 1 ] && [ ! -d "$INSTALL_ROOT/pm" ]; then
-    HERMES_BIN="$INSTALL_ROOT/venv/bin/hermes"
-    [ -x "$HERMES_BIN" ] || return 1
+    MOOR_BIN="$INSTALL_ROOT/venv/bin/moor"
+    [ -x "$MOOR_BIN" ] || return 1
     if [ "$(uname)" = Darwin ]; then
       tcc_anchor_heal "$INSTALL_ROOT/venv/bin" || log "TCC anchor rescue failed ($TCC_HEAL_STATE)"
     fi
@@ -789,7 +789,7 @@ select_update_invoke() {
   fi
   return 1
 }
-select_update_invoke || { FINAL_CODE=3 FINAL_MSG="Update aborted: the installation launcher at $HERMES_BIN is missing. Repair this installation."; log "$FINAL_MSG"; exit 3; }
+select_update_invoke || { FINAL_CODE=3 FINAL_MSG="Update aborted: the installation launcher at $MOOR_BIN is missing. Repair this installation."; log "$FINAL_MSG"; exit 3; }
 
 # Run FROM the install root: `moor update` resolves the tree it mutates
 # from the working directory, and we inherit the Desktop's cwd (which can be
@@ -802,11 +802,11 @@ cd "$INSTALL_ROOT" || {
   log "$FINAL_MSG"; exit 3
 }
 export PYTHONUNBUFFERED=1
-# The takeover children (hermes update -> _update_takeover/update_finish and
+# The takeover children (moor update -> _update_takeover/update_finish and
 # the PM sync / build stages they drive) publish their stages back into the
 # shim's UI through this file; without a watching UI the variable is simply
 # absent and the helper no-ops.
-export HERMES_UPDATE_STATUS_FILE="$STATUS"
+export MOOR_UPDATE_STATUS_FILE="$STATUS"
 # --keep-stash: never re-apply local source edits after the update (they stay
 # parked in git stash). Probe --help first: older installed backends don't
 # know the flag and argparse would abort with exit 2, which collides with the
@@ -861,7 +861,7 @@ trap 'on_signal TERM' TERM
 # Pre-PM update code could report a failed desktop build with exit zero.
 # Current composition propagates failure and never enters this legacy repair.
 if [ "$LEGACY_INSTALL" -eq 1 ] && [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "Desktop build failed"; then
-  log "desktop build failed inside hermes update; retrying build"
+  log "desktop build failed inside moor update; retrying build"
   publish_stage "Rebuilding Desktop"
   "${UPDATE_INVOKE[@]}" desktop --force-build --build-only >> "$LOG" 2>&1 || {
     FINAL_CODE=6 FINAL_MSG="Code and dependencies updated, but the Desktop app rebuild failed - you are running the previous build. Run moor desktop --force-build from a terminal to retry."

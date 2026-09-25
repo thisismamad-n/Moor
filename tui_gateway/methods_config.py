@@ -160,7 +160,7 @@ def _cfg_get_reasoning(params):
     else:
         raw_effort = (cfg.get("agent") or {}).get("reasoning_effort", "")
         if isinstance(raw_effort, dict):  # {enabled, effort} form: render the tier, never str(dict)
-            from hermes_constants import parse_reasoning_effort
+            from moor_constants import parse_reasoning_effort
             parsed = parse_reasoning_effort(raw_effort) or {}
             raw_effort = False if parsed.get("enabled") is False else parsed.get("effort")
         # YAML `reasoning_effort: false` means thinking disabled, not "unset".
@@ -277,7 +277,7 @@ def _(rid, params: dict) -> dict:
     the call blocks up to ``SETUP_READY_WAIT_SECONDS`` for it, so a client's first poll lands after
     the free-tier identity exists (or has been refused) rather than racing the mint. A record that
     says ``False`` is reconciled with the config files first (``reconcile_record``): a provider
-    added after boot — the Models page, a picker key, ``hermes setup`` from a shell — flips it
+    added after boot — the Models page, a picker key, ``moor setup`` from a shell — flips it
     without a restart. If the record
     is still missing after the wait, or a named profile is asked about, today's live probe answers.
     The record's fields ride along additively (``ready``, ``free_tier``, ``other_providers``)."""

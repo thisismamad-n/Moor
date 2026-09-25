@@ -271,11 +271,11 @@ class ScopedProvMemoryProvider(MemoryProvider):
         ``is_available`` reads the launch profile's credential must still resolve it from the
         launch home's ``.env`` instead of rendering "unavailable" with no visible error
         (``probe_availability`` swallows the ``UnscopedSecretError``)."""
-        from hermes_constants import get_hermes_home
-        from hermes_cli.web_server_dashboard import _invalidate_plugins_hub_cache
+        from moor_constants import get_moor_home
+        from moor_cli.web_server_dashboard import _invalidate_plugins_hub_cache
         from tui_gateway.launch_profile_policy import activate_multi_profile_hosting
 
-        home = get_hermes_home()
+        home = get_moor_home()
         (home / ".env").write_text("SCOPEDPROV_API_KEY=launch-key\n", encoding="utf-8")
         plugin_dir = home / "plugins" / "scopedprov"
         plugin_dir.mkdir(parents=True)
@@ -326,8 +326,8 @@ class TestPairingEndpoints:
         from gateway.pairing import PairingStore
         from moor_constants import get_moor_home
 
-        (get_hermes_home() / "profiles" / "work").mkdir(parents=True, exist_ok=True)
-        (get_hermes_home() / "profiles" / "work" / "config.yaml").write_text("{}\n")  # identity marker
+        (get_moor_home() / "profiles" / "work").mkdir(parents=True, exist_ok=True)
+        (get_moor_home() / "profiles" / "work" / "config.yaml").write_text("{}\n")  # identity marker
         PairingStore().generate_code("telegram", "global-1", "GlobalGuy")
         PairingStore(profile="work").generate_code("telegram", "work-1", "WorkGal")
 
@@ -391,7 +391,7 @@ class TestWebhookEndpoints:
         assert subs[0]["script"] == "todoist_filter.py"
 
     def test_enable_platform_starts_gateway_restart(self, monkeypatch):
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
 
         _web_server_gateway._ACTION_PROCS.pop("gateway-restart", None)
         restart_calls = []
@@ -423,7 +423,7 @@ class TestWebhookEndpoints:
 
 
     def test_enable_platform_reuses_inflight_gateway_restart(self, monkeypatch):
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
 
         _web_server_gateway._ACTION_PROCS.pop("gateway-restart", None)
 
@@ -799,7 +799,7 @@ class TestUpdateCheckEndpoint:
         # Stub the shared checker so the contract is deterministic (no network).
         import moor_cli.banner as banner
 
-        monkeypatch.setattr("hermes_cli.source_check.check_for_updates", lambda **kw: {"behind": 5, "commits": []})
+        monkeypatch.setattr("moor_cli.source_check.check_for_updates", lambda **kw: {"behind": 5, "commits": []})
 
         r = self.client.get("/api/moor/update/check")
         assert r.status_code == 200
@@ -1127,8 +1127,8 @@ def test_desktop_lifespan_terminates_managed_gateway_restart(monkeypatch):
         def terminate(self):
             calls.append("terminate")
 
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
-    monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
+    monkeypatch.setenv("MOOR_DESKTOP", "1")
+    monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
     monkeypatch.setattr(ws, "_warm_gateway_module", lambda: None)
     monkeypatch.setattr(ws, "_start_desktop_cron_ticker", lambda *_args: None)
     monkeypatch.setitem(_web_server_gateway._ACTION_PROCS, "gateway-restart", _FakeRunningProc())

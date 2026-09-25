@@ -197,7 +197,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_title_unique
 
 `user_id` is the principal on the other end of the session: messaging adapters
 store the platform sender id, and `desktop` / dashboard sessions opened through
-an authenticated `hermes serve` (OAuth or the basic username/password provider)
+an authenticated `moor serve` (OAuth or the basic username/password provider)
 store the login as `<provider>:<user id>` (for example `basic:alice`). Sessions
 with nobody behind them — anonymous loopback use, `subagent`, `cron`, `kanban`
 — keep it empty. The value is set when the row is created and never inferred
@@ -236,7 +236,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages(session_id, id);
 Notes:
 - `tool_calls` is stored as a JSON string (serialized list of tool call objects)
 - `reasoning_details`, `codex_reasoning_items`, and `codex_message_items` are stored as JSON strings
-- `reasoning_details` is always kept in history; on the chat-completions wire it is replayed only to OpenRouter and the Nous Portal (every other chat-completions route gets a copy without it, since strict schemas reject the field)
+- `reasoning_details` is always kept in history; on the chat-completions wire it is replayed only to OpenRouter and the Moor Portal (every other chat-completions route gets a copy without it, since strict schemas reject the field)
 - Desktop history hydration retains assistant sidecars in both REST and JSON-RPC (`session.resume`, `session.activate`, `session.history`) projections, including rows with reasoning and tool calls. REST may return the SQLite JSON string while RPC returns decoded items; Desktop accepts both. A final Responses reply may live only in `codex_message_items` while `content` is empty. Canonical content still takes precedence, and analysis/commentary items are not promoted to reply text.
 - `reasoning` stores the raw reasoning text for providers that expose it
 - A reasoning-only clean stop (empty `content`, `finish_reason=stop`, reasoning present) is answered with the reasoning text, but the assistant row is never written with that text as `content`: `content` stays empty, the text lives in `reasoning`/`reasoning_content`, and `api_content` carries it so the next request replays the answer byte-identically. History surfaces therefore show it as reasoning, not as a reply.
@@ -317,18 +317,18 @@ _CHECKPOINT_EVERY_N_WRITES = 50
 ```
 
 When a writer exhausts its budget the turn ends with
-`session_persistence_failed:locked` and, on Linux, `hermes_state_lockowners`
+`session_persistence_failed:locked` and, on Linux, `moor_state_lockowners`
 logs a WARNING naming the process that held the lock at that moment
-(`PID 594094 (hermes --worktree --yolo) holds WAL write lock on state.db-shm`),
+(`PID 594094 (moor --worktree --yolo) holds WAL write lock on state.db-shm`),
 read from `/proc/locks` — SQLite's byte-range `fcntl` locks encode the lock kind
 in their offset (`state.db-shm` byte 120 = WAL write, 121 = checkpoint,
 123-127 = read slots; the 1 GiB pending-byte page on `state.db` = rollback-journal
 PENDING/RESERVED/SHARED). The open-descriptor scan cannot make this distinction
-because every Hermes process has the DB open. Look for that line in
-`~/.hermes/logs/errors.log` next to the `database is locked` failure.
+because every Moor process has the DB open. Look for that line in
+`~/.moor/logs/errors.log` next to the `database is locked` failure.
 
 Lock contention is recognised by SQLite result code (`SQLITE_BUSY` /
-`SQLITE_LOCKED`, `hermes_state_errors.is_sqlite_lock_error`), not by message
+`SQLITE_LOCKED`, `moor_state_errors.is_sqlite_lock_error`), not by message
 text. In rollback-journal (`delete`) mode a lock lost inside FTS5's table
 constructor arrives as `SQLITE_BUSY` with the text `vtable constructor failed:
 messages_fts`; it is treated like `database is locked`. Opening a writable
@@ -344,8 +344,8 @@ answers 503 (busy), not 500.
 ```python
 from moor_state import SessionDB
 
-db = SessionDB()                           # Default: ~/.hermes/state.db
-db = SessionDB(db_path=Path("~/.hermes/cache/scratch/test.db").expanduser())  # Custom path
+db = SessionDB()                           # Default: ~/.moor/state.db
+db = SessionDB(db_path=Path("~/.moor/cache/scratch/test.db").expanduser())  # Custom path
 ```
 
 ### Create and Manage Sessions

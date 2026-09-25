@@ -16,8 +16,8 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_cli.update_receipt as ur
-from hermes_cli import update_cmd, update_cmd_maint
+import moor_cli.update_receipt as ur
+from moor_cli import update_cmd, update_cmd_maint
 
 
 @pytest.fixture()
@@ -25,9 +25,9 @@ def receipt_home(tmp_path, monkeypatch):
     """Isolated MOOR_HOME for receipt writes."""
     home = tmp_path / ".moor"
     home.mkdir()
-    # ``_receipt_dir`` resolves through ``hermes_constants.get_hermes_home`` (env var), not
-    # ``hermes_cli.config`` — patch where production reads.
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    # ``_receipt_dir`` resolves through ``moor_constants.get_moor_home`` (env var), not
+    # ``moor_cli.config`` — patch where production reads.
+    monkeypatch.setenv("MOOR_HOME", str(home))
     # The open receipt is per-context; the scope isolates it from any enclosing receipt.
     with ur.update_receipt_scope():
         yield home
@@ -259,7 +259,7 @@ class TestFleetClassification:
             json.dumps(gateway_record), encoding="utf-8"
         )
         monkeypatch.setattr(
-            "hermes_cli.version_info.get_code_identity",
+            "moor_cli.version_info.get_code_identity",
             lambda refresh=False: {"sha": expected_sha, "short_sha": expected_sha[:8],
                                    "version": "1.0", "source": "git"},
         )
@@ -285,7 +285,7 @@ class TestFleetClassification:
         home.mkdir()
         monkeypatch.setenv("MOOR_HOME", str(home))
         monkeypatch.setattr(
-            "hermes_cli.version_info.get_code_identity",
+            "moor_cli.version_info.get_code_identity",
             lambda refresh=False: {"sha": "a" * 40, "short_sha": "a" * 8,
                                    "version": "1.0", "source": "git"},
         )
@@ -424,7 +424,7 @@ class TestGatewayStatusStamping:
         import gateway.status as gs
 
         monkeypatch.setattr(
-            "hermes_cli.version_info.get_code_identity",
+            "moor_cli.version_info.get_code_identity",
             lambda refresh=False: {"sha": "c" * 40, "short_sha": "c" * 8,
                                    "version": "2.0", "source": "git"},
         )
@@ -438,7 +438,7 @@ class TestGatewayStatusStamping:
         def _boom(refresh=False):
             raise RuntimeError("no build info")
 
-        monkeypatch.setattr("hermes_cli.version_info.get_code_identity", _boom)
+        monkeypatch.setattr("moor_cli.version_info.get_code_identity", _boom)
         record = gs._build_runtime_status_record()
         # Must not raise, and must not stamp bogus values.
         assert "code_sha" not in record

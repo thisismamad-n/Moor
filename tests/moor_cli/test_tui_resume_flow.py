@@ -146,7 +146,7 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
         sys.modules,
         "moor_cli.runtime_provider",
         mod(
-            "hermes_cli.runtime_provider",
+            "moor_cli.runtime_provider",
             resolve_runtime_with_fallback=lambda _cfg, **_kwargs: (
                 {
                     "api_key": "k",
@@ -174,7 +174,7 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
 
 
 def test_launch_tui_exports_model_provider_and_toolsets(monkeypatch, main_mod):
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)
+    monkeypatch.setenv("MOOR_PYTHON", sys.executable)
     captured = {}
     active_path_during_call = None
 

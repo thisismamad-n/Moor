@@ -73,7 +73,7 @@ def test_store_and_load_photon_token(tmp_moor_home: Path) -> None:
 
 
 @pytest.mark.platforms("posix")  # POSIX mode bits only
-def test_save_auth_never_world_readable(tmp_hermes_home: Path) -> None:
+def test_save_auth_never_world_readable(tmp_moor_home: Path) -> None:
     """auth.json must be created 0o600 — no window at process umask."""
     photon_auth.store_photon_token("secret-token")
     mode = (tmp_moor_home / "auth.json").stat().st_mode & 0o777

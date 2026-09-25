@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli._scan_venv_blockers import _is_pausable_gateway
+from moor_cli._scan_venv_blockers import _is_pausable_gateway
 
 
 @pytest.mark.parametrize(
@@ -24,13 +24,13 @@ from hermes_cli._scan_venv_blockers import _is_pausable_gateway
         r'"C:\Users\u\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\python.exe"'
         "  -m moor_cli.main gateway run --replace",
         # profile-scoped gateway
-        "python.exe -m hermes_cli.main --profile work gateway run",
+        "python.exe -m moor_cli.main --profile work gateway run",
         # A profile named gateway must not shadow the subcommand token.
-        "python.exe -m hermes_cli.main --profile gateway gateway run",
-        "python.exe -m hermes_cli.main -p gateway gateway run",
+        "python.exe -m moor_cli.main --profile gateway gateway run",
+        "python.exe -m moor_cli.main -p gateway gateway run",
         # bare gateway defaults to run
-        "python.exe -m hermes_cli.main gateway",
-        "PYTHON.EXE -m hermes_cli.main GATEWAY RUN",
+        "python.exe -m moor_cli.main gateway",
+        "PYTHON.EXE -m moor_cli.main GATEWAY RUN",
     ],
 )
 def test_is_pausable_gateway_accepts_gateway_run_chains(cmdline: str) -> None:
@@ -41,10 +41,10 @@ def test_is_pausable_gateway_accepts_gateway_run_chains(cmdline: str) -> None:
     "cmdline",
     [
         # Desktop backends are not messaging gateways.
-        "python.exe -m hermes_cli.main serve --host 127.0.0.1 --port 8756",
-        "python.exe -m hermes_cli.main gateway stop",
-        "python.exe -m hermes_cli.main gateway status",
-        "python.exe -m hermes_cli.main gateway install",
+        "python.exe -m moor_cli.main serve --host 127.0.0.1 --port 8756",
+        "python.exe -m moor_cli.main gateway stop",
+        "python.exe -m moor_cli.main gateway status",
+        "python.exe -m moor_cli.main gateway install",
         "python.exe",
         "python.exe myscript.py gateway run",
         "",
@@ -64,16 +64,16 @@ def test_is_pausable_gateway_import_failure_fails_closed(monkeypatch):
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", unavailable)
-    assert _is_pausable_gateway("python -m hermes_cli.main gateway run") is False
+    assert _is_pausable_gateway("python -m moor_cli.main gateway run") is False
 
 
 def _run_legacy_cli(tmp_path, *args):
     # -S omits site-packages, including psutil: this entry point must work on
     # a half-updated tree, without inspecting or terminating live processes.
     return subprocess.run(
-        [sys.executable, "-S", "-m", "hermes_cli._scan_venv_blockers", *args],
+        [sys.executable, "-S", "-m", "moor_cli._scan_venv_blockers", *args],
         cwd=Path(__file__).resolve().parents[2],
-        env={**os.environ, "HERMES_HOME": str(tmp_path), "PYTHONPATH": ""},
+        env={**os.environ, "MOOR_HOME": str(tmp_path), "PYTHONPATH": ""},
         capture_output=True,
         text=True,
         timeout=15,

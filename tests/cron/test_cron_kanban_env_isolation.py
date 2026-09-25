@@ -381,10 +381,10 @@ def test_dispatcher_grants_only_the_assigned_worker_scope(tmp_path, monkeypatch)
     worker.chmod(0o700)
     monkeypatch.setenv("MOOR_BIN", str(worker))
     # Building a new worker under an existing task must replace, not inherit, its scope.
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "prior-task")
+    monkeypatch.setenv("MOOR_KANBAN_TASK", "prior-task")
     # A dispatcher launched from an agent's shell carries the descendant fence itself; the worker it
     # grants a task to must not (an inherited marker fences the worker's own heartbeat + handoff).
-    monkeypatch.setenv("HERMES_DELEGATED_CHILD_CONTEXT", str(tmp_path))
+    monkeypatch.setenv("MOOR_DELEGATED_CHILD_CONTEXT", str(tmp_path))
     pid = _default_spawn(task, str(tmp_path), board="default")
     assert pid is not None
     os.waitpid(pid, 0)  # windows-footgun: ok — Linux-only real dispatcher spawn

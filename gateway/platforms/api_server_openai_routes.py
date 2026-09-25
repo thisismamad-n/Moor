@@ -398,8 +398,8 @@ class _ResponsesStream:
 
     async def emit_status(self, payload: Dict[str, Any]) -> None:
         """Lifecycle/warning status (provider wait, auto-recovery countdown, fallback switch) as a
-        ``hermes.status`` custom event; not a Responses output item."""
-        await self.response.write(self._api._sse_frame(payload, event="hermes.status"))
+        ``moor.status`` custom event; not a Responses output item."""
+        await self.response.write(self._api._sse_frame(payload, event="moor.status"))
 
     # queue tag -> (method name, payload adapter)
     _TAG_HANDLERS = {
@@ -586,7 +586,7 @@ class OpenAICompatRoutesMixin:
                 stream_q.put_threadsafe(("__reasoning__", text))
         def _on_status(kind, message=None):
             # Lifecycle/warning status (provider wait, auto-recovery countdown, fallback switch) as a
-            # ``hermes.status`` event, so a client sees why the stream is silent instead of a dead socket.
+            # ``moor.status`` event, so a client sees why the stream is silent instead of a dead socket.
             from gateway.platforms.api_server import _redact_api_error_text
             text = _redact_api_error_text(message if message is not None else kind or "").strip()
             if text:
@@ -713,7 +713,7 @@ class OpenAICompatRoutesMixin:
             session_history_delivery=("1" if provided_session_id else ""))
         # This is presentation only. The ordinary API-key/session authorization
         # above still applies; it grants no internal ingress or control authority.
-        if provided_session_id and body.get("hermes_notification_category") == "diagnostic":
+        if provided_session_id and body.get("moor_notification_category") == "diagnostic":
             run_kwargs["notification_category"] = "diagnostic"
         if stream:
             _stream_q = ThreadSafeAsyncQueue()
@@ -764,7 +764,7 @@ class OpenAICompatRoutesMixin:
         outcome, err = await self._run_idempotent(
             request, body, _compute_completion, log_label="chat completions",
             fingerprint_keys=["model", "provider", "model_options", "messages", "tools", "tool_choice", "stream",
-                              "hermes_notification_category"],
+                              "moor_notification_category"],
             route="chat_completions",
         )
         if err is not None:
@@ -805,12 +805,12 @@ class OpenAICompatRoutesMixin:
         if reasoning_text and not presentation_muted:
             response_data["choices"][0]["message"]["reasoning_content"] = reasoning_text
         if is_partial or is_failed or not completed:
-            response_data["hermes"] = _hermes_extras(
+            response_data["moor"] = _moor_extras(
                 completed, is_partial, is_failed, "" if presentation_muted else err_msg, finish_reason)
-            response_headers["X-Hermes-Completed"] = "false"
-            response_headers["X-Hermes-Partial"] = "true" if is_partial else "false"
+            response_headers["X-moor-completed"] = "false"
+            response_headers["X-moor-partial"] = "true" if is_partial else "false"
             if err_msg and not presentation_muted:
-                response_headers["X-Hermes-Error"] = _redact_api_error_text(err_msg, limit=200)
+                response_headers["X-moor-error"] = _redact_api_error_text(err_msg, limit=200)
         return web.json_response(response_data, headers=response_headers)
 
     async def _run_idempotent(
@@ -881,13 +881,13 @@ class OpenAICompatRoutesMixin:
                     break
                 if isinstance(delta, tuple) and len(delta) == 2 and delta[0] == "__tool_progress__":
                     # Custom event: tool lifecycle for frontends without markers in history.
-                    await response.write(_sse_frame(delta[1], event="hermes.tool.progress"))
+                    await response.write(_sse_frame(delta[1], event="moor.tool.progress"))
                 elif isinstance(delta, tuple) and len(delta) == 2 and delta[0] == "__reasoning__":
                     # DeepSeek-style ``delta.reasoning_content`` (#99552), the field Open WebUI,
                     # opencode and the Vercel AI SDK render as a thinking block.
                     await response.write(_sse_frame(_chunk({"reasoning_content": delta[1]})))
                 elif isinstance(delta, tuple) and len(delta) == 2 and delta[0] == "__status__":
-                    await response.write(_sse_frame(delta[1], event="hermes.status"))
+                    await response.write(_sse_frame(delta[1], event="moor.status"))
                 elif isinstance(delta, tuple) and len(delta) == 2 and delta[0] == "__approval__":
                     await response.write(_sse_frame(delta[1], event="approval.request"))
                 else:
@@ -917,7 +917,7 @@ class OpenAICompatRoutesMixin:
                     finish_chunk["error"] = {
                         "message": err_msg,
                         "type": type(agent_error).__name__ if agent_error else "agent_error"}
-                finish_chunk["hermes"] = _hermes_extras(
+                finish_chunk["moor"] = _moor_extras(
                     completed, is_partial, is_failed, "" if presentation_muted else err_msg, finish_reason)
             await response.write(_sse_frame(finish_chunk))
             await response.write(b"data: [DONE]\n\n")
@@ -1167,7 +1167,7 @@ class OpenAICompatRoutesMixin:
                 "instructions": instructions, "session_id": _effective_session_id})
             if conversation:
                 response_store.set_conversation(conversation, response_id)
-        response_headers = {"X-Hermes-Session-Id": _effective_session_id}
+        response_headers = {"X-moor-session-Id": _effective_session_id}
         if gateway_session_key:
             response_headers["X-moor-session-Key"] = gateway_session_key
         return web.json_response(response_data, headers=response_headers)

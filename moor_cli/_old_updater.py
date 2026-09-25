@@ -36,7 +36,7 @@ def _historical_context() -> tuple[dict, list[dict], Any]:
             # A declared-but-unassigned version in its innermost known frame
             # proves early entry; a None value is still a post-capture value.
             if (restart_update is None
-                    and frame.f_globals.get("__name__") in ("hermes_cli.update_cmd", "hermes_cli.main")
+                    and frame.f_globals.get("__name__") in ("moor_cli.update_cmd", "moor_cli.main")
                     and frame.f_code.co_name in ("_cmd_update_impl", "cmd_update")
                     and "pre_update_version" in frame.f_code.co_varnames):
                 restart_update = "pre_update_version" not in frame.f_locals
@@ -49,7 +49,7 @@ def _historical_context() -> tuple[dict, list[dict], Any]:
             frame = frame.f_back
     finally:
         del frame
-    receipt_module = sys.modules.get("hermes_cli.update_receipt")
+    receipt_module = sys.modules.get("moor_cli.update_receipt")
     receipt_slot = vars(receipt_module).get("_current") if receipt_module else None
     get_current = getattr(receipt_slot, "get", None)
     current = get_current() if get_current is not None else receipt_slot
@@ -76,9 +76,9 @@ def _historical_context() -> tuple[dict, list[dict], Any]:
 def _run_child(request: dict) -> tuple[int, dict]:
     """One JSON exchange; the old process never imports the updated graph."""
     root = Path(__file__).resolve().parents[1]
-    home = os.environ.get("HERMES_HOME")
-    constants = sys.modules.get("hermes_constants")
-    override = vars(constants).get("_HERMES_HOME_OVERRIDE") if constants else None
+    home = os.environ.get("MOOR_HOME")
+    constants = sys.modules.get("moor_constants")
+    override = vars(constants).get("_MOOR_HOME_OVERRIDE") if constants else None
     if override is not None:
         value = override.get()
         if isinstance(value, (str, Path)) and value:
@@ -87,17 +87,17 @@ def _run_child(request: dict) -> tuple[int, dict]:
     env = {key: value for key, value in os.environ.items()
            if not key.startswith(("PYTHON", "UV_")) and key != "VIRTUAL_ENV"}
     if home:
-        env["HERMES_HOME"] = home
-    env.setdefault("HERMES_UPDATE_HANDOFF_PID", str(os.getpid()))
+        env["MOOR_HOME"] = home
+    env.setdefault("MOOR_UPDATE_HANDOFF_PID", str(os.getpid()))
     # Everything the user saw so far came from the OLD updater; say so before the
     # new one (package manager) takes over, so logs show where the switch happened.
     print("→ Handing off to the new updater (package manager) for the rest of this update...", flush=True)
-    with tempfile.TemporaryDirectory(prefix="hermes-update-takeover-") as directory:
+    with tempfile.TemporaryDirectory(prefix="moor-update-takeover-") as directory:
         context = Path(directory) / "request.json"
         result = Path(directory) / "result.json"
         context.write_text(json.dumps(request), encoding="utf-8")
         child = subprocess.run(
-            [sys.executable, "-I", "-S", "-B", "-X", "utf8", str(root / "hermes_cli/_update_takeover.py"),
+            [sys.executable, "-I", "-S", "-B", "-X", "utf8", str(root / "moor_cli/_update_takeover.py"),
              str(context), str(result)], cwd=root, env=env,
         )
         completed = json.loads(result.read_text(encoding="utf-8-sig")) if result.is_file() else {}
@@ -116,8 +116,8 @@ def stop_for_relaunch(*, incomplete: bool = False) -> NoReturn:
         # A newly retired completion hook has no complete captured worklist.
         # It must not start another update or invent a successful receipt.
         print(
-            "You're updating from an older version of Hermes Agent. "
-            "To complete this update, run `hermes update` again.",
+            "You're updating from an older version of Moor Agent. "
+            "To complete this update, run `moor update` again.",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -135,7 +135,7 @@ def stop_for_relaunch(*, incomplete: bool = False) -> NoReturn:
             if hasattr(receipt_slot, "set"):
                 receipt_slot.set(None)
             elif receipt_slot is not None:
-                vars(sys.modules["hermes_cli.update_receipt"])["_current"] = None
+                vars(sys.modules["moor_cli.update_receipt"])["_current"] = None
     except (OSError, ValueError, TypeError) as exc:
         _result = 1
         print(f"Update takeover failed: {exc}", file=sys.stderr, flush=True)

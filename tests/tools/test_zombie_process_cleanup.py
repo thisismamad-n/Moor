@@ -456,5 +456,5 @@ class TestDelegationCleanup:
             release_child.set()
             if child_started.is_set():
                 assert child_finished.wait(timeout=10)
-            reset_hermes_home_override(profile_token)
+            reset_moor_home_override(profile_token)
             relay_runtime._reset_for_tests()

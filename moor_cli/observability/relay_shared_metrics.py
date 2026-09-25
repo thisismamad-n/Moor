@@ -13,7 +13,7 @@ from time import monotonic_ns
 from typing import Any, Callable
 
 from agent import relay_runtime
-from hermes_cli.version_info import get_version_info
+from moor_cli.version_info import get_version_info
 
 from .shared_metrics import SharedMetricsStore
 from . import shared_metrics_contract as contract
@@ -739,7 +739,7 @@ class _Runtime:
         )
         try:
             popped = self._guarded(
-                "Hermes shared-metrics task close failed",
+                "Moor shared-metrics task close failed",
                 self._run_in_task, task, relay_runtime.pop_relay_scope_if_top, self.relay, task.handle,
                 output=fields, metadata=self._event_metadata(),
             )

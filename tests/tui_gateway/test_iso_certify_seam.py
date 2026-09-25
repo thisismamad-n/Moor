@@ -1,5 +1,5 @@
 """The AC-4 synthetic heavy-turn agent (``tui_gateway/synthetic_turn.py``) is a
-test seam: it must stay dead unless ``HERMES_ISO_CERTIFY_SYNTH_TURN=1``.
+test seam: it must stay dead unless ``MOOR_ISO_CERTIFY_SYNTH_TURN=1``.
 """
 
 from __future__ import annotations

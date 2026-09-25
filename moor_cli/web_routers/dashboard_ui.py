@@ -12,10 +12,10 @@ from typing import Callable, Optional
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.config import cfg_get
-from hermes_cli.web_routers._common import config_scoped_to_thread
-from hermes_cli.web_server_dashboard import (
+from moor_cli.web_deps import LateState, late
+from moor_cli.config import cfg_get
+from moor_cli.web_routers._common import config_scoped_to_thread
+from moor_cli.web_server_dashboard import (
     _BUILTIN_DASHBOARD_THEMES, _discover_user_themes, _invalidate_plugins_hub_cache, _merged_plugins_hub,
 )
 from moor_cli.web_server_memory import _normalize_memory_provider_name, _require_memory_provider_ready
@@ -29,12 +29,12 @@ router = APIRouter()
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
 _get_dashboard_plugins = late("_get_dashboard_plugins")
 _require_token = late("_require_token")
-load_config = late("load_config", "hermes_cli.config")
-save_config = late("save_config", "hermes_cli.config")
+load_config = late("load_config", "moor_cli.config")
+save_config = late("save_config", "moor_cli.config")
 # Home + secret scope for one request. NOT ``_profile_scope``: the bodies below clone/pull over the
 # network and hold the scope for their whole duration, and ``_profile_scope`` also holds the
 # process-global skills lock.
-_config_profile_scope = late("_config_profile_scope", "hermes_cli.web_server_profiles")
+_config_profile_scope = late("_config_profile_scope", "moor_cli.web_server_profiles")
 _CONFIG_MUTATION_LOCK = LateState("_CONFIG_MUTATION_LOCK")
 
 
@@ -254,21 +254,21 @@ async def _named_plugin_action(request: Request, name: str, action: Callable[[st
 
 @router.post("/api/dashboard/agent-plugins/{name:path}/enable")
 async def post_agent_plugin_enable(request: Request, name: str):
-    from hermes_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
+    from moor_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
     return await _named_plugin_action(request, name, lambda n: dashboard_set_agent_plugin_enabled(n, enabled=True),
                                       "Enable failed.", rescan=False)
 
 
 @router.post("/api/dashboard/agent-plugins/{name:path}/disable")
 async def post_agent_plugin_disable(request: Request, name: str):
-    from hermes_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
+    from moor_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
     return await _named_plugin_action(request, name, lambda n: dashboard_set_agent_plugin_enabled(n, enabled=False),
                                       "Disable failed.", rescan=False)
 
 
 @router.post("/api/dashboard/agent-plugins/{name:path}/update")
 async def post_agent_plugin_update(request: Request, name: str):
-    from hermes_cli.plugins_cmd import dashboard_update_user_plugin
+    from moor_cli.plugins_cmd import dashboard_update_user_plugin
     # Body is optional: ``{"accept_capabilities": true}`` applies a re-pin the user confirmed after a
     # ``consent_required`` answer.
     try:
@@ -283,31 +283,31 @@ async def post_agent_plugin_update(request: Request, name: str):
 
 @router.delete("/api/dashboard/agent-plugins/{name:path}")
 async def delete_agent_plugin(request: Request, name: str):
-    from hermes_cli.plugins_cmd import dashboard_remove_user_plugin
+    from moor_cli.plugins_cmd import dashboard_remove_user_plugin
     return await _named_plugin_action(request, name, dashboard_remove_user_plugin, "Remove failed.", rescan=True)
 
 
 @router.post("/api/dashboard/agent-plugins/activate")
 async def post_agent_plugin_activate(request: Request):
-    """``hermes plugins install`` / ``enable`` in another process asks this backend to load the plugin
+    """``moor plugins install`` / ``enable`` in another process asks this backend to load the plugin
     for ``home`` and hand its MCP servers and skills to that profile's open chats
-    (``hermes_cli.plugins_activation.load_and_go_live``). ``home`` must be a profile this host serves."""
+    (``moor_cli.plugins_activation.load_and_go_live``). ``home`` must be a profile this host serves."""
     _require_token(request)
     try:
         body = await request.json()
     except Exception:
         body = {}
     name = _validate_plugin_name(str((body or {}).get("name") or ""))
-    from hermes_constants import get_hermes_home, hermes_home_key, profile_name_for_home
+    from moor_constants import get_moor_home, moor_home_key, profile_name_for_home
     home = Path(str((body or {}).get("home") or "")).expanduser()
     profile = profile_name_for_home(home) if str(home) not in ("", ".") else None
     if profile is None:
-        raise HTTPException(status_code=400, detail="Not a Hermes profile home.")
-    from hermes_cli.plugins_activation import load_and_go_live
+        raise HTTPException(status_code=400, detail="Not a Moor profile home.")
+    from moor_cli.plugins_activation import load_and_go_live
 
     def _run():
         with _config_profile_scope(None if profile == "default" else profile):
-            if hermes_home_key(get_hermes_home()) != hermes_home_key(home):
+            if moor_home_key(get_moor_home()) != moor_home_key(home):
                 raise HTTPException(status_code=400, detail="Home is not served by this backend.")
             return {"ok": True, "activation": load_and_go_live(name)}
 

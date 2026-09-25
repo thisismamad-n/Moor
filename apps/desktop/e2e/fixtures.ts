@@ -73,14 +73,14 @@ function isCredentialEnvVar(name: string): boolean {
   return CREDENTIAL_SUFFIXES.some((suffix) => name.endsWith(suffix))
 }
 
-// Runtime state of whatever Hermes launched this run. A spec driven from inside
-// an agent's terminal inherits HERMES_YOLO_MODE, HERMES_INTERACTIVE,
-// HERMES_SESSION_ID…, and the sandboxed backend then skips approvals or binds
+// Runtime state of whatever Moor launched this run. A spec driven from inside
+// an agent's terminal inherits MOOR_YOLO_MODE, MOOR_INTERACTIVE,
+// MOOR_SESSION_ID…, and the sandboxed backend then skips approvals or binds
 // the caller's session — the approval spec failed locally on the leaked yolo
 // flag while CI (which never has these) stayed green. The fixtures set every
-// HERMES_* the app needs themselves; only the harness's own knobs pass.
-function isInheritedHermesRuntimeVar(name: string): boolean {
-  return name.startsWith('HERMES_') && !name.startsWith('HERMES_DESKTOP_') && !name.startsWith('HERMES_E2E_')
+// MOOR_* the app needs themselves; only the harness's own knobs pass.
+function isInheritedMoorRuntimeVar(name: string): boolean {
+  return name.startsWith('MOOR_') && !name.startsWith('MOOR_DESKTOP_') && !name.startsWith('MOOR_E2E_')
 }
 
 function stripCredentials(env: Record<string, string | undefined>): Record<string, string> {
@@ -91,7 +91,7 @@ function stripCredentials(env: Record<string, string | undefined>): Record<strin
       continue
     }
 
-    if (isCredentialEnvVar(key) || isInheritedHermesRuntimeVar(key)) {
+    if (isCredentialEnvVar(key) || isInheritedMoorRuntimeVar(key)) {
       continue
     }
 
@@ -200,19 +200,19 @@ export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}
 
   return {
     ...clean,
-    HERMES_HOME: sandbox.hermesHome,
-    HERMES_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
-    HERMES_DESKTOP_IGNORE_EXISTING: '1',
-    // One `hermes serve` per host, and profile roots are HOME-anchored
-    // (`~/.hermes/profiles`, the default profile's own home): without both of
+    MOOR_HOME: sandbox.moorHome,
+    MOOR_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
+    MOOR_DESKTOP_IGNORE_EXISTING: '1',
+    // One `moor serve` per host, and profile roots are HOME-anchored
+    // (`~/.moor/profiles`, the default profile's own home): without both of
     // these a local e2e run attaches to the developer's running backend or
     // lists and writes their real profiles, and chats through their real
     // model and state.db instead of the sandbox + mock provider. CI never has
     // either, so only local runs ever took that path.
-    HERMES_DESKTOP_ISOLATED_BACKEND: '1',
+    MOOR_DESKTOP_ISOLATED_BACKEND: '1',
     HOME: sandbox.root,
-    HERMES_DESKTOP_HERMES_ROOT: REPO_ROOT,
-    HERMES_DESKTOP_APP_NAME: `HermesE2E-${Date.now()}`,
+    MOOR_DESKTOP_MOOR_ROOT: REPO_ROOT,
+    MOOR_DESKTOP_APP_NAME: `MoorE2E-${Date.now()}`,
     // `app.close()` in teardown must exit even when a spec leaves a turn
     // mid-flight — otherwise the quit confirmation waits on a click that no
     // one is there to make, and the worker dies on a teardown timeout.
@@ -430,8 +430,8 @@ export async function setupDeadBackend(options: DeadBackendOptions = {}): Promis
   // Same writer the install-e2e harness uses, pointed at a dead endpoint: one
   // shape for "an external OpenAI-compatible provider", never a named 'mock'.
   const deadUrl = 'http://127.0.0.1:1'
-  writeMockProviderConfig(sandbox.hermesHome, deadUrl)
-  writeEnvFile(sandbox.hermesHome, 'e2e-mock-key', deadUrl)
+  writeMockProviderConfig(sandbox.moorHome, deadUrl)
+  writeEnvFile(sandbox.moorHome, 'e2e-mock-key', deadUrl)
 
   const env = buildAppEnv(sandbox, options.fakeError ? { MOOR_DESKTOP_BOOT_FAKE_ERROR: 'Failed to connect to Moor backend: connection refused' } : {})
   const { app, page } = await launchDesktop(env)

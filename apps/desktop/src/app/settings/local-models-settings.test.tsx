@@ -21,7 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vite
 import { I18nProvider } from '@/i18n'
 import { queryClient } from '@/lib/query-client'
 import { localModelsKey, localModelsOwner, watchLocalRuntimeJobs } from '@/store/local-runtime-jobs'
-import type { LocalCatalogModel, LocalHardware, LocalModelsStatus, LocalRuntimeJob } from '@/types/hermes'
+import type { LocalCatalogModel, LocalHardware, LocalModelsStatus, LocalRuntimeJob } from '@/types/moor'
 
 import { LocalModelsSettings } from './local-models-settings'
 
@@ -597,7 +597,7 @@ describe('BrowseSection', () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(400)
       })
-      expect(hermes.searchHFModels).toHaveBeenCalledWith('qwen', 20, { connectionId: null, profile: 'default' })
+      expect(moor.searchHFModels).toHaveBeenCalledWith('qwen', 20, { connectionId: null, profile: 'default' })
       expect(screen.getByText('unsloth/Qwen3.8-27B-GGUF')).toBeTruthy()
 
       fireEvent.click(screen.getByRole('button', { name: /show files/i }))
@@ -617,7 +617,7 @@ describe('BrowseSection', () => {
       await act(async () => {
         await vi.runOnlyPendingTimersAsync()
       })
-      expect(hermes.downloadBrowsedModel).toHaveBeenCalledWith(
+      expect(moor.downloadBrowsedModel).toHaveBeenCalledWith(
         'unsloth/Qwen3.8-27B-GGUF',
         ['Qwen3.8-27B-Q4_K_M.gguf'],
         { connectionId: null, profile: 'default' }

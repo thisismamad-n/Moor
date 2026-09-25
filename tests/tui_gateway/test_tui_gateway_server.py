@@ -764,7 +764,7 @@ def test_session_context_explicit_cwd_for_ephemeral_task(monkeypatch, tmp_path):
 
 
 def _write_profile_cfg(home: Path, cwd: str | None) -> Path:
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     home.mkdir(parents=True, exist_ok=True)
     cfg = {"terminal": {"cwd": cwd}} if cwd is not None else {}
@@ -963,7 +963,7 @@ def test_completion_cwd_prefers_profile_over_stale_env(monkeypatch, tmp_path):
     stale.mkdir()
 
     monkeypatch.setenv("TERMINAL_CWD", str(stale))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path / "launch-home")
+    monkeypatch.setattr(server, "_moor_home", tmp_path / "launch-home")
     monkeypatch.setattr(server, "_profile_home", lambda name: home if name else None)
 
     assert server._completion_cwd({"profile": "ef-design"}) == str(profile_b)
@@ -987,7 +987,7 @@ def test_completion_cwd_prefers_launch_config_over_stale_env(monkeypatch, tmp_pa
     launch_home = _write_profile_cfg(tmp_path / "launch-home", str(configured))
 
     monkeypatch.setenv("TERMINAL_CWD", str(stale))
-    monkeypatch.setattr(server, "_hermes_home", launch_home)
+    monkeypatch.setattr(server, "_moor_home", launch_home)
     monkeypatch.setattr(server, "_profile_home", lambda _name: None)
 
     assert server._completion_cwd({}) == str(configured)
@@ -1004,7 +1004,7 @@ def test_default_session_cwd_prefers_launch_config(monkeypatch, tmp_path):
     launch_home = _write_profile_cfg(tmp_path / "launch-home", str(configured))
 
     monkeypatch.setenv("TERMINAL_CWD", str(stale))
-    monkeypatch.setattr(server, "_hermes_home", launch_home)
+    monkeypatch.setattr(server, "_moor_home", launch_home)
 
     assert server._default_session_cwd() == str(configured)
 
@@ -2530,7 +2530,7 @@ def test_history_to_messages_types_the_failed_turn_boundary_for_resume():
         {"role": "user", "content": "b"},
         {"role": "assistant", "content": PARTIAL_FAILED_TURN_NOTICE},  # legacy untyped row
         {"role": "user", "content": "c"},
-        {"role": "assistant", "content": f"Quoting Hermes: {FAILED_TURN_NOTICE}"},  # a real reply
+        {"role": "assistant", "content": f"Quoting Moor: {FAILED_TURN_NOTICE}"},  # a real reply
     ]
 
     assert [m.get("display_kind") for m in server._history_to_messages(history)] == [
@@ -2921,17 +2921,17 @@ def _two_repo_project_skill_sessions(tmp_path, monkeypatch) -> tuple[Path, Path]
     def repo(name: str, skill: str) -> Path:
         r = tmp_path / name
         (r / ".git").mkdir(parents=True)
-        (r / ".hermes" / "skills" / skill).mkdir(parents=True)
-        (r / ".hermes" / "skills" / skill / "SKILL.md").write_text(
+        (r / ".moor" / "skills" / skill).mkdir(parents=True)
+        (r / ".moor" / "skills" / skill / "SKILL.md").write_text(
             f"---\nname: {skill}\ndescription: from {name}\n---\n\n# {skill}\n\nBODY OF {skill.upper()}\n")
         return r
 
     repo_a, repo_b = repo("proj-a", "alpha-skill"), repo("proj-b", "beta-skill")
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     (home / "skills").mkdir(parents=True)
     (home / "config.yaml").write_text(
         f"skills:\n  external_dirs: []\n  trusted_project_dirs: ['{repo_a}', '{repo_b}']\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(skills_tool, "SKILLS_DIR", home / "skills")
     monkeypatch.setattr(skill_utils, "_skills_cfg", lambda: {
         "external_dirs": [], "trusted_project_dirs": [str(repo_a), str(repo_b)]})
@@ -8225,8 +8225,8 @@ def test_config_set_yolo_toggles_session_scope():
 
 def test_config_set_yolo_stale_session_id_is_refused_not_process_scoped(monkeypatch):
     """A runtime id the backend no longer holds must answer 4001 so the client resumes, not flip
-    the process HERMES_YOLO_MODE that every child spawned afterwards inherits."""
-    monkeypatch.setenv("HERMES_YOLO_MODE", "0")  # setenv, not delenv: undo must also drop a leaked "1"
+    the process MOOR_YOLO_MODE that every child spawned afterwards inherits."""
+    monkeypatch.setenv("MOOR_YOLO_MODE", "0")  # setenv, not delenv: undo must also drop a leaked "1"
 
     with patch.dict(server._sessions, {}, clear=True):
         resp = server.handle_request(
@@ -8238,12 +8238,12 @@ def test_config_set_yolo_stale_session_id_is_refused_not_process_scoped(monkeypa
         )
 
     assert resp.get("error", {}).get("code") == 4001, resp
-    assert os.environ["HERMES_YOLO_MODE"] == "0"
+    assert os.environ["MOOR_YOLO_MODE"] == "0"
 
 
 def test_config_set_yolo_global_scope_writes_approvals_mode(tmp_path, monkeypatch):
     """Shift+click the desktop zap -> scope="global" flips persistent approvals.mode."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"approvals": {"mode": "manual"}}))
@@ -8274,7 +8274,7 @@ def test_config_set_yolo_global_scope_writes_approvals_mode(tmp_path, monkeypatc
 def test_config_get_approval_mode_uses_smart_default_when_key_is_missing(
     tmp_path, monkeypatch
 ):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     monkeypatch.setattr(server, "_moor_home", tmp_path)
     # Point the canonical resolver (load_config → env MOOR_HOME) at the
@@ -8294,7 +8294,7 @@ def test_config_get_approval_mode_uses_smart_default_when_key_is_missing(
 def test_config_get_approval_mode_fails_safe_to_manual_for_invalid_explicit_value(
     tmp_path, monkeypatch
 ):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     monkeypatch.setattr(server, "_moor_home", tmp_path)
     # _load_approval_mode delegates to the canonical resolver in
@@ -8313,7 +8313,7 @@ def test_config_get_approval_mode_fails_safe_to_manual_for_invalid_explicit_valu
 
 
 def test_config_get_approval_mode_normalizes_yaml_off(tmp_path, monkeypatch):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     monkeypatch.setattr(server, "_moor_home", tmp_path)
     # See fail-safe test above: the canonical resolver reads via
@@ -8332,7 +8332,7 @@ def test_config_get_approval_mode_normalizes_yaml_off(tmp_path, monkeypatch):
 def test_config_set_approval_mode_persists_three_way_value_and_emits_live_status(
     tmp_path, monkeypatch
 ):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     monkeypatch.setattr(server, "_moor_home", tmp_path)
     # config.set writes via server._moor_home, but the post-write
@@ -8367,7 +8367,7 @@ def test_pet_gallery_quoted_false_enabled_reports_disabled(tmp_path, monkeypatch
     quoted YAML value kept the petdex mascot enabled against the operator's
     explicit intent.
     """
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     monkeypatch.setattr(server, "_moor_home", tmp_path)
     monkeypatch.setenv("MOOR_HOME", str(tmp_path))
@@ -8446,7 +8446,7 @@ def test_config_set_approval_mode_rejects_unknown_value():
 
 def test_config_set_yolo_global_scope_honors_explicit_value(tmp_path, monkeypatch):
     """An explicit value pins global approvals.mode regardless of prior state."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"approvals": {"mode": "manual"}}))
@@ -8688,7 +8688,7 @@ def test_config_get_busy_survives_non_dict_display(monkeypatch):
 
 
 def test_config_set_statusbar_survives_non_dict_display(tmp_path, monkeypatch):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"display": "broken"}))
@@ -8708,7 +8708,7 @@ def test_config_set_statusbar_survives_non_dict_display(tmp_path, monkeypatch):
 
 
 def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(
@@ -8738,7 +8738,7 @@ def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
 
 
 def test_config_set_section_writes_per_section_override(tmp_path, monkeypatch):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     monkeypatch.setattr(server, "_moor_home", tmp_path)
@@ -8757,7 +8757,7 @@ def test_config_set_section_writes_per_section_override(tmp_path, monkeypatch):
 
 
 def test_config_set_section_clears_override_on_empty_value(tmp_path, monkeypatch):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(
@@ -9322,7 +9322,7 @@ def test_complete_slash_leaves_argument_stages_alone(monkeypatch):
 def test_config_get_reasoning_renders_dict_form_custom_tier(tmp_path, monkeypatch):
     """`agent.reasoning_effort: {enabled: true, effort: thinking}` (a provider's bespoke tier)
     must read back as the tier name, not `str(dict)`."""
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_moor_home", tmp_path)
     (tmp_path / "config.yaml").write_text(
         "agent:\n  reasoning_effort:\n    enabled: true\n    effort: thinking\n", encoding="utf-8"
     )
@@ -11514,17 +11514,17 @@ def test_commands_catalog_includes_plugin_commands(monkeypatch):
 
 def test_plugin_slash_command_runs_under_the_session_env(monkeypatch):
     # TUI/Desktop sibling of #108698: command.dispatch and slash.exec ran plugin handlers on the RPC
-    # thread with no HERMES_SESSION_* binding, so a handler reading get_session_env() saw "" (or the
+    # thread with no MOOR_SESSION_* binding, so a handler reading get_session_env() saw "" (or the
     # launch process's inherited values) instead of the session it was invoked from.
     from gateway.session_context import get_session_env
 
     seen = {}
 
     def handler(arg):
-        seen["key"] = get_session_env("HERMES_SESSION_KEY")
+        seen["key"] = get_session_env("MOOR_SESSION_KEY")
         return f"ok:{arg}"
 
-    monkeypatch.setattr("hermes_cli.plugins.get_plugin_command_handler",
+    monkeypatch.setattr("moor_cli.plugins.get_plugin_command_handler",
                         lambda name: handler if name == "whoami" else None)
     monkeypatch.setattr(server, "_sessions", {"sid-p": {"session_key": "agent:tui:key-p", "cwd": ""}})
 
@@ -11533,7 +11533,7 @@ def test_plugin_slash_command_runs_under_the_session_env(monkeypatch):
     assert res["result"] == {"type": "plugin", "output": "ok:x"}
     assert seen["key"] == "agent:tui:key-p"
     # Nothing leaks past the RPC.
-    assert get_session_env("HERMES_SESSION_KEY") in ("", None)
+    assert get_session_env("MOOR_SESSION_KEY") in ("", None)
 
 
 def test_session_status_reads_live_gateway_agent(monkeypatch):
@@ -16522,13 +16522,13 @@ def test_model_save_key_reconciles_the_launch_profiles_stale_setup_record(monkey
     """The gated picker's own chat waits on ``setup.status``, which answers from the boot record:
     a key saved for the launch profile must flip a ``False`` record (+ ``setup.ready``) at once;
     a key saved for another profile (``profile`` param) must leave the launch record alone."""
-    from hermes_cli import free_tier_bootstrap as fb
+    from moor_cli import free_tier_bootstrap as fb
 
-    monkeypatch.setattr("hermes_cli.auth.PROVIDER_REGISTRY", {"test-provider": types.SimpleNamespace(
+    monkeypatch.setattr("moor_cli.auth.PROVIDER_REGISTRY", {"test-provider": types.SimpleNamespace(
         name="Test Provider", auth_type="api_key", api_key_env_vars=("TEST_PROVIDER_API_KEY",))})
-    monkeypatch.setattr("hermes_cli.config.is_managed", lambda: False)
-    monkeypatch.setattr("hermes_cli.credential_lifecycle.save_provider_env_credential", Mock())
-    monkeypatch.setattr("hermes_cli.inventory.build_models_payload", Mock(return_value={"providers": []}))
+    monkeypatch.setattr("moor_cli.config.is_managed", lambda: False)
+    monkeypatch.setattr("moor_cli.credential_lifecycle.save_provider_env_credential", Mock())
+    monkeypatch.setattr("moor_cli.inventory.build_models_payload", Mock(return_value={"providers": []}))
     monkeypatch.setenv("TEST_PROVIDER_API_KEY", "previous-value")  # save_key exports the new key
     monkeypatch.setattr(fb, "_inventory_other_providers", lambda: True)
     monkeypatch.setattr(fb, "_resolve_inference", lambda: "test-provider")
@@ -16591,7 +16591,7 @@ def test_prompt_submit_releases_old_history_before_heap_trim(monkeypatch, tmp_pa
     session = _session(agent=_Agent())
     profile_home = tmp_path / "profiles" / "worker"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     session["profile_home"] = str(profile_home)
     session["history"] = [old]
     del old
@@ -16601,10 +16601,10 @@ def test_prompt_submit_releases_old_history_before_heap_trim(monkeypatch, tmp_pa
         monkeypatch.setattr(server, "_get_usage", lambda _a: {})
         monkeypatch.setattr(server, "render_message", lambda _t, _c: "")
         monkeypatch.setattr(server, "_emit", lambda *a: None)
-        monkeypatch.setattr(server, "set_hermes_home_override", lambda _home: object())
-        monkeypatch.setattr(server, "reset_hermes_home_override", lambda _token: order.append("reset_home"))
+        monkeypatch.setattr(server, "set_moor_home_override", lambda _home: object())
+        monkeypatch.setattr(server, "reset_moor_home_override", lambda _token: order.append("reset_home"))
         monkeypatch.setattr(server, "_session_profile_runtime_scope", lambda _session, **_kw: contextlib.nullcontext())
-        monkeypatch.setattr("hermes_cli.mem_trim.trim_memory", _trim)
+        monkeypatch.setattr("moor_cli.mem_trim.trim_memory", _trim)
 
         resp = server.handle_request(
             {"id": "1", "method": "prompt.submit", "params": {"session_id": "sid_trim", "text": "hi"}})
@@ -19095,7 +19095,7 @@ def test_reap_idle_sessions_closes_only_evictable(monkeypatch):
 
 def _periodic_trim_calls(monkeypatch):
     """Stub the reaper's side effects and capture trim_memory calls (delayed import → patch the module attr)."""
-    import hermes_cli.mem_trim as mem_trim
+    import moor_cli.mem_trim as mem_trim
 
     calls = []
     monkeypatch.setattr(server, "_session_pending_kind", lambda sid: "")
@@ -19161,7 +19161,7 @@ def test_turn_completion_trim_skips_while_another_session_is_running(monkeypatch
 
 
 def test_reap_idle_sessions_logs_trim_failure(monkeypatch, caplog):
-    import hermes_cli.mem_trim as mem_trim
+    import moor_cli.mem_trim as mem_trim
 
     _periodic_trim_calls(monkeypatch)
     monkeypatch.setattr(mem_trim, "trim_memory", lambda **_kw: (_ for _ in ()).throw(RuntimeError("boom")))
@@ -20867,7 +20867,7 @@ def test_save_cfg_preserves_user_comments(tmp_path, monkeypatch):
     assert "# provider rationale" in text
     assert "# trailing skin note" in text
 
-    import hermes_yaml as _yaml
+    import moor_yaml as _yaml
 
     parsed = _yaml.safe_load(text)
     assert parsed["display"]["skin"] == "mono"

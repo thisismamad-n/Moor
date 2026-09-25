@@ -607,7 +607,7 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
             "    print('MOOR_UTF16:OK')\n"
             "    print(json.dumps(out, ensure_ascii=True))\n"
             "except Exception:\n"
-            "    print('HERMES_UTF16:NO'); sys.exit(0)\n"
+            "    print('MOOR_UTF16:NO'); sys.exit(0)\n"
         )
 
         result = self._exec_python_snippet(snippet)

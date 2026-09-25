@@ -5,11 +5,11 @@ description: Fail-closed attribution middleware for Sabi's local adaptive routin
 maintainer: Atroci
 tier: community
 category: models
-subdir: packages/adapters/hermes/plugin
-docs_url: https://github.com/vizuh/sabi/blob/main/docs/adapters/hermes.md
+subdir: packages/adapters/moor/plugin
+docs_url: https://github.com/vizuh/sabi/blob/main/docs/adapters/moor.md
 version: "0.1.0"
 capabilities:
   provides_tools: []
   provides_hooks: []
   provides_middleware: [llm_request]
-  requires_env: [SABI_HERMES_BASE_URL]
+  requires_env: [SABI_MOOR_BASE_URL]

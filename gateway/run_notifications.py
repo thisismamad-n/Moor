@@ -1070,8 +1070,8 @@ class GatewayNotificationsMixin:
             message = (
                 "⚠️ Session database reported a corruption error confined to the search index "
                 "(FTS5); the message tables are not damaged. Messages may not be persisted until "
-                f"it is repaired: run `hermes {profile_arg}doctor --fix`, then restart the gateway. Do not run "
-                f"recovery tools or restore a backup unless `hermes {profile_arg}doctor` confirms damage."
+                f"it is repaired: run `moor {profile_arg}doctor --fix`, then restart the gateway. Do not run "
+                f"recovery tools or restore a backup unless `moor {profile_arg}doctor` confirms damage."
             )
         else:
             from moor_state_user_copy import describe_storage_failure
@@ -1082,7 +1082,7 @@ class GatewayNotificationsMixin:
             # opened its store at startup and stays broken until it is restarted.
             action = failure.action
             if failure.cause not in _SELF_CLEARING_STORAGE_CAUSES:
-                action = f"{action} Then `hermes {profile_arg}gateway restart`."
+                action = f"{action} Then `moor {profile_arg}gateway restart`."
             message = (
                 "⚠️ Session database unavailable — messages may not be saved and /resume will be "
                 f"empty. Cause: {failure.gloss}. {action}"
@@ -1562,7 +1562,7 @@ class GatewayNotificationsMixin:
             from tui_gateway.launch_profile_policy import async_launch_profile_scope_if_multiplexed
             return async_launch_profile_scope_if_multiplexed()
         profile_home = self._resolve_profile_home_for_source(source)
-        if get_hermes_home_override() == str(profile_home):
+        if get_moor_home_override() == str(profile_home):
             return contextlib.nullcontext()  # already inside this profile's scope
         return _async_profile_runtime_scope(profile_home)
 

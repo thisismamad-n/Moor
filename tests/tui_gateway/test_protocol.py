@@ -1166,9 +1166,9 @@ def test_make_agent_accepts_list_system_prompt(server, monkeypatch):
 
 
 def test_config_roundtrip(server, tmp_path, monkeypatch):
-    # monkeypatch, not assignment: a bare ``server._hermes_home = tmp_path`` outlives this test and every
+    # monkeypatch, not assignment: a bare ``server._moor_home = tmp_path`` outlives this test and every
     # later ``_load_cfg()`` in the process reads this file's ``model: test/model`` shorthand.
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_moor_home", tmp_path)
     server._save_cfg({"model": "test/model"})
     assert server._load_cfg()["model"] == "test/model"
 
@@ -1556,10 +1556,10 @@ def test_approval_that_ends_before_its_settle_hook_attaches_is_still_withdrawn(s
 
 
 def test_peerless_global_broadcast_never_reaches_stdout_in_ws_backend(capture, monkeypatch):
-    """`hermes serve` / dashboard speak JSON-RPC over WS only; Desktop captures their stdout
+    """`moor serve` / dashboard speak JSON-RPC over WS only; Desktop captures their stdout
     into desktop.log. After the last WS client leaves, the change watcher keeps ticking —
     its sessions.changed / setup.ready / session.reclaimed frames must be dropped, not
-    printed (~1100 `[hermes] {"jsonrpc": ...}` lines in desktop.log)."""
+    printed (~1100 `[moor] {"jsonrpc": ...}` lines in desktop.log)."""
     server, buf = capture
     monkeypatch.setattr(server, "_stdio_is_rpc_channel", False, raising=False)
     a = _RecordingTransport()

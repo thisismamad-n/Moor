@@ -398,7 +398,7 @@ def _reap_stale_executions(job_name: str) -> None:
     Best-effort self-heal: must not block dispatch."""
     try:
         # Reap any execution row this job (or any job) left stranded 'claimed'/ 'running' by a dead owner
-        # process -- e.g. a PRIOR one-shot `hermes cron run` invocation whose dispatched runner died with
+        # process -- e.g. a PRIOR one-shot `moor cron run` invocation whose dispatched runner died with
         # the exiting process before writing a terminal status (issue #86721). Safe and cheap: provably-dead
         # owners (PID gone, or PID reused by a different process per its start time) are reaped, as is a
         # live owner whose claim is older than the derived stale bound (the process itself is not killed).
@@ -460,7 +460,7 @@ def _try_dispatch_background_run(
     ``{"claimed": True, "dispatched": False, ...}`` when the pool was full and it ran inline."""
     job_id = job["id"]
     job_name = str(job.get("name") or job_id)
-    # Reap BEFORE the async/sync branch: the one-shot `hermes cron run` path returns early
+    # Reap BEFORE the async/sync branch: the one-shot `moor cron run` path returns early
     # below, and this is the only moment it heals a stale claim left by a killed prior run (#113923).
     _reap_stale_executions(job_name)
 
@@ -969,9 +969,9 @@ CRONJOB_SCHEMA = {
     "name": "cronjob_manage",
     "description": """Manage scheduled cron jobs: action='create' schedules a job from a prompt and/or skills; 'list' inspects jobs; 'update'/'pause'/'resume'/'remove' manage one by job_id (always list first — never guess job IDs); 'run' fires a job immediately in the BACKGROUND (returns a handle at once, outcome re-enters the conversation when done — do not wait or poll; optional 'prompt' adds transient context for that fire only).
 
-Jobs run on the main agent model (whatever `hermes model` is set to when they fire) unless pinned.
+Jobs run on the main agent model (whatever `moor model` is set to when they fire) unless pinned.
 
-Jobs run in a fresh session with no current-chat context, so prompts must be self-contained, and the agent's FINAL RESPONSE is what gets delivered — cron runs are autonomous and cannot ask questions. Jobs run on the main agent model (whatever `hermes model` is set to when they fire) unless the user pins one. Prefer updating an existing job over creating near-duplicates.""",
+Jobs run in a fresh session with no current-chat context, so prompts must be self-contained, and the agent's FINAL RESPONSE is what gets delivered — cron runs are autonomous and cannot ask questions. Jobs run on the main agent model (whatever `moor model` is set to when they fire) unless the user pins one. Prefer updating an existing job over creating near-duplicates.""",
     "parameters": {
         "type": "object",
         "properties": {
@@ -987,7 +987,7 @@ Jobs run in a fresh session with no current-chat context, so prompts must be sel
             },
             "pinned": {
                 "type": "boolean",
-                "description": "For create/update. ONLY set when the user explicitly asks to pin (or unpin) a job's model. pinned=true locks the CURRENT main agent model (and its provider) onto the job so later `hermes model` / `/model` changes never touch it; pinned=false releases the lock so the job follows the main agent model again. Never set it on your own initiative: by default jobs follow the main model."
+                "description": "For create/update. ONLY set when the user explicitly asks to pin (or unpin) a job's model. pinned=true locks the CURRENT main agent model (and its provider) onto the job so later `moor model` / `/model` changes never touch it; pinned=false releases the lock so the job follows the main agent model again. Never set it on your own initiative: by default jobs follow the main model."
             },
             "prompt": {
                 "type": "string",

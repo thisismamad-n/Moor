@@ -50,12 +50,12 @@ understanding so it is not "fixed" wrongly a second time.
 | 2 | `apps/bootstrap-installer/src-tauri/src/install_script.rs` `download()` | Same slug hardcoded in the `format!()` URL |
 | 3 | `apps/bootstrap-installer/src-tauri/build.rs` | Baked commit/branch pins but **no repo slug** — the binary could not know its own fork |
 | 4 | `apps/desktop/scripts/write-build-stamp.mjs` | Stamped commit/branch but **no repo slug** — same gap on the Electron side |
-| 5 | `scripts/install.ps1` `$RepoUrlSsh/$RepoUrlHttps`, ZIP fallback URLs | `github.com/NousResearch/hermes-agent` (clone source) |
+| 5 | `scripts/install.ps1` `$RepoUrlSsh/$RepoUrlHttps`, ZIP fallback URLs | `github.com/thisismamad-n/Moor` (clone source) |
 | 6 | `scripts/install.sh` `REPO_URL_SSH/_HTTPS` | Same |
 
 ### 2.2 Why `scripts/rebrand.py` never caught them
 
-The rebrand engine's FORK phase rewrites `github.com/NousResearch/hermes-agent`
+The rebrand engine's FORK phase rewrites `github.com/thisismamad-n/Moor`
 URLs to the fork — but only when it *knows* the fork (flag
 `--github-fork`, `$MOOR_GITHUB_FORK`, or auto-detect from `origin`). This
 checkout's `origin` **is** upstream, so fork rewriting is skipped by design.

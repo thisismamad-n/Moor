@@ -982,7 +982,7 @@ describe('createSlashHandler', () => {
     expect(rpc).toHaveBeenCalledWith('session.save', { session_id: 'sid-abc' })
 
     await vi.waitFor(() => {
-      expect(ctx.transcript.sys).toHaveBeenCalledWith(expect.stringContaining('/tmp/hermes_conversation_test.json'))
+      expect(ctx.transcript.sys).toHaveBeenCalledWith(expect.stringContaining('/tmp/moor_conversation_test.json'))
     })
   })
 

@@ -11,22 +11,22 @@ import asyncio
 import time
 import urllib.parse
 from fastapi import APIRouter
-from hermes_cli.web_routers._common import (
+from moor_cli.web_routers._common import (
     REDACTED_CREDENTIAL_WRITE_DETAIL, http_failure, is_redacted_credential_preview,
     redacted_credential_preview, scoped_to_thread,
 )
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_config import (
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_config import (
     _apply_main_model_assignment, _denormalize_config_from_web, _normalize_config_for_web, _schema_with_dynamic_provider_options,
     _validated_main_model_selection,
 )
-from hermes_cli.web_server_profiles import (
+from moor_cli.web_server_profiles import (
     _approval_mode_of, _broadcast_gateway_session_info, _is_other_profile, _parse_model_entries,
 )
 from fastapi import HTTPException, Request
-from hermes_cli.config import DEFAULT_CONFIG, OPTIONAL_ENV_VARS, read_raw_config, require_readable_config_before_write, custom_endpoint_key_env, coerce_provider_id, find_provider_entry, get_compatible_custom_providers, _ENV_REF_RE, _deep_merge
-from hermes_cli.config_providers import _canonical_api_mode, _custom_provider_entry_to_provider_config
-from hermes_cli.web_models import ConfigUpdate, EnvVarUpdate, EnvVarDelete, EnvVarReveal, CustomEndpointUpdate
+from moor_cli.config import DEFAULT_CONFIG, OPTIONAL_ENV_VARS, read_raw_config, require_readable_config_before_write, custom_endpoint_key_env, coerce_provider_id, find_provider_entry, get_compatible_custom_providers, _ENV_REF_RE, _deep_merge
+from moor_cli.config_providers import _canonical_api_mode, _custom_provider_entry_to_provider_config
+from moor_cli.web_models import ConfigUpdate, EnvVarUpdate, EnvVarDelete, EnvVarReveal, CustomEndpointUpdate
 from typing import Any, Dict, List, Optional, Tuple
 
 _log = logging.getLogger("moor_cli.web_server")
@@ -110,7 +110,7 @@ async def get_schema(profile: Optional[str] = None):
 @config_router.get("/api/egress/status")
 async def get_egress_status(profile: Optional[str] = None):
     """Dashboard/Desktop-readable egress proxy status and remediation text."""
-    from hermes_cli.proxy_cli import format_status_text
+    from moor_cli.proxy_cli import format_status_text
     with _config_profile_scope(profile):  # reads the profile's ``proxy:`` config block
         return {"text": format_status_text()}
 
@@ -567,7 +567,7 @@ def _write_custom_endpoint(cfg: Dict[str, Any], body: CustomEndpointUpdate) -> T
     })
     # A Responses-only or Anthropic-compatible host 404s on the runtime's
     # Chat Completions default, so the panel pins the transport the same way
-    # ``hermes model`` does (``api_mode``; the runtime also reads the v12
+    # ``moor model`` does (``api_mode``; the runtime also reads the v12
     # ``transport`` spelling, so drop it rather than let the two disagree).
     # ``None`` = older UI payload: keep whatever is hand-written. See #93622.
     if body.api_mode is not None:
@@ -604,7 +604,7 @@ def _write_custom_endpoint(cfg: Dict[str, Any], body: CustomEndpointUpdate) -> T
     alias = details.get(model)
     canonical = (alias.canonical_model or "").strip() if alias is not None else ""
     if canonical and canonical != model:
-        from hermes_constants import parse_reasoning_effort
+        from moor_constants import parse_reasoning_effort
         effort = (alias.reasoning_effort or "").strip().lower()
         if parse_reasoning_effort(effort) is not None:
             agent_cfg = cfg.get("agent") if isinstance(cfg.get("agent"), dict) else {}
@@ -844,7 +844,7 @@ _TRANSPORT_LABELS = {"chat_completions": "Chat Completions", "codex_responses": 
 def _auto_api_mode(base_url: str) -> str:
     """The transport the runtime falls back to for an endpoint without a pinned ``api_mode``
     (same resolver as ``runtime_provider_custom._custom_runtime``)."""
-    from hermes_cli.runtime_provider import _detect_api_mode_for_url
+    from moor_cli.runtime_provider import _detect_api_mode_for_url
     return _detect_api_mode_for_url(base_url) or "chat_completions"
 
 

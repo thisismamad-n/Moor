@@ -203,9 +203,9 @@ async def _call_verifier(verifier, *args, **kwargs):
     return await asyncio.to_thread(verifier, *args, **kwargs)
 
 
-def _hermes_version() -> str:
+def _moor_version() -> str:
     """Canonical base version for API protocol and compatibility payloads."""
-    from hermes_cli.version_info import get_version_info
+    from moor_cli.version_info import get_version_info
     return get_version_info().base_version
 
 
@@ -1100,7 +1100,7 @@ class _ProviderAuthResolutionError(RuntimeError):
     def user_text(self) -> str:
         """Raw-surface failure line. A quota/429 cap with valid credentials must not be labelled an
         authentication failure — the cause chain (RuntimeError -> AuthError) tells them apart (#89401)."""
-        from hermes_cli.auth import is_rate_limited_auth_error
+        from moor_cli.auth import is_rate_limited_auth_error
 
         cause = self.__cause__
         cause = getattr(cause, "__cause__", None) if isinstance(cause, RuntimeError) else cause
@@ -1202,9 +1202,9 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         self._app: Optional["web.Application"] = None
         self._runner: Optional["web.AppRunner"] = None
         self._site: Optional["web.TCPSite"] = None
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
         self._response_store = ResponseStore()  # this home's; a /p/<profile>/ route gets its own
-        self._response_store_home = str(get_hermes_home())
+        self._response_store_home = str(get_moor_home())
         self._response_stores: Dict[str, ResponseStore] = {}
         self._response_store_lock = threading.Lock()
         _api_runs._initialize_run_state(self, store_factory=RunIdempotencyStore)
@@ -1336,7 +1336,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
     def _resolve_api_server_int(key: str, *, default: int) -> int:
         """Integer setting under gateway.api_server (unreadable config -> default; negatives -> 0)."""
         try:
-            from hermes_cli.config import cfg_get, load_config
+            from moor_cli.config import cfg_get, load_config
             value = int(cfg_get(load_config(), "gateway", "api_server", key, default=default))
         except Exception:
             return default
@@ -1349,7 +1349,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         from moor_cli.model_switch import resolve_effective_model
         profile_name = ""
         with suppress(Exception):
-            from hermes_cli.profiles import get_active_profile_name
+            from moor_cli.profiles import get_active_profile_name
             profile = get_active_profile_name()  # launch profile, pre-identity (advertised model name)
             if profile and profile not in {"default", "custom"}:
                 profile_name = profile
@@ -1726,8 +1726,8 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
     def _current_response_store(self) -> "ResponseStore":
         """Responses state of the routed profile's home. Conversation names are client-chosen, so one
         shared store let any profile's key read, chain onto and overwrite another's (#84253)."""
-        from hermes_constants import get_hermes_home
-        home = get_hermes_home()
+        from moor_constants import get_moor_home
+        home = get_moor_home()
         if str(home) == self._response_store_home:
             return self._response_store
         with self._response_store_lock:
@@ -3291,7 +3291,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
     async def _answer_through_live_bot_chat(self, ctx: Dict[str, Any]) -> Optional["web.Response"]:
         """Hand a turn aimed at a canonical Bot Chat that a Desktop holds live to that owner.
 
-        This is the ``hermes peer dm`` transport. Running the turn here would make this process a
+        This is the ``moor peer dm`` transport. Running the turn here would make this process a
         second writer beside the lease holder: the open chat never shows the message or the reply,
         its live context never learns of them, and the two transcripts interleave in state.db.
         Local and relayed DMs already hand such a message to the owner's mailbox
@@ -3307,12 +3307,12 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         headers = self._session_headers(session_id, ctx["gateway_session_key"])
         if record["status"] == "settled":
             return web.json_response(
-                {"object": "hermes.session.chat.completion", "session_id": session_id,
+                {"object": "moor.session.chat.completion", "session_id": session_id,
                  "message": {"role": "assistant", "content": record.get("reply") or ""},
                  "usage": {}, "runtime": {}, "delivery_id": delivery_id}, headers=headers)
         if record["status"] in ("queued", "claimed"):
             return web.json_response(
-                {"object": "hermes.session.chat.queued", "session_id": session_id,
+                {"object": "moor.session.chat.queued", "session_id": session_id,
                  "status": record["status"], "delivery_id": delivery_id}, status=202, headers=headers)
         return _error_response(record.get("error") or f"Bot Chat delivery {record['status']}", 502,
                                code=record.get("reason") or record["status"], headers=headers)
@@ -3379,7 +3379,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
     @_admit_api_agent_request
     async def _handle_session_chat(self, request: "web.Request") -> "web.Response":
         """POST /api/sessions/{session_id}/chat — one synchronous agent turn (plus the delivery lanes'
-        one bounded re-run of a transient failure; ``hermes peer dm`` is the client)."""
+        one bounded re-run of a transient failure; ``moor peer dm`` is the client)."""
         from tools.bot_failure_reasons import RETRY_NONE, result_retry_action
         # This turn runs through _run_agent, so it already COUNTS toward the cap (#7483).
         # Spending the budget without checking it refused every other caller while never

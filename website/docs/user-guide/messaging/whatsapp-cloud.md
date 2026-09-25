@@ -8,9 +8,9 @@ description: "Set up Moor Agent as a WhatsApp bot via Meta's official Business C
 
 Python dependency commands on this page use a
 [PM-prepared source checkout](../../reference/package-management.md#developer-workflow).
-After a dependency change, reactivate the checkout and restart Hermes.
+After a dependency change, reactivate the checkout and restart Moor.
 
-Hermes can connect to WhatsApp through Meta's **official** WhatsApp Business Cloud API. This is the production-grade path: no Node.js bridge subprocess, no QR codes, no account-ban risk.
+Moor can connect to WhatsApp through Meta's **official** WhatsApp Business Cloud API. This is the production-grade path: no Node.js bridge subprocess, no QR codes, no account-ban risk.
 
 In exchange:
 
@@ -313,7 +313,7 @@ Meta only allows **free-form messages** within a 24-hour window after the user's
 
 Moor warns the agent about this window in its system prompt, so the model knows to mention it when scheduling delayed messages.
 
-Message-template support (the workaround for outside-window sends) is not yet implemented in Moor. If you need it, please [open an issue](https://github.com/NousResearch/hermes-agent/issues) — it's planned but waiting on a clear demand signal.
+Message-template support (the workaround for outside-window sends) is not yet implemented in Moor. If you need it, please [open an issue](https://github.com/thisismamad-n/Moor/issues) — it's planned but waiting on a clear demand signal.
 
 ### Group chats
 
@@ -369,7 +369,7 @@ If the model emits tool-call-shaped text instead of a structured call, it usuall
 
 ### STT (voice note transcription) returns empty / "could not transcribe"
 
-The default `stt.provider: local` requires `python -c "import pm; pm.sync_venv(['stt-whisper'], explicit=True)"`.  If you're a Nous subscriber, you can route STT through the managed gateway instead — select **Nous Subscription** for speech-to-text in `hermes tools`, or set it directly:
+The default `stt.provider: local` requires `python -c "import pm; pm.sync_venv(['stt-whisper'], explicit=True)"`.  If you're a Moor subscriber, you can route STT through the managed gateway instead — select **Moor Subscription** for speech-to-text in `moor tools`, or set it directly:
 
 ```bash
 moor config set stt.provider moor

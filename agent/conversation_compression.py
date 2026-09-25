@@ -223,7 +223,7 @@ _COMPRESSOR_ATTEMPT_LOCK = threading.Lock()
 # worker and fallback threads each see their own generation. Callers outside the dispatch machinery
 # (manual compress, legacy paths) read None and keep unguarded historical behavior.
 _COMPRESSOR_ATTEMPT_GENERATION: contextvars.ContextVar[Any] = contextvars.ContextVar(
-    "hermes_compressor_attempt_generation", default=None
+    "moor_compressor_attempt_generation", default=None
 )
 
 
@@ -3730,7 +3730,7 @@ def _commit_compaction(
                     # The kept exchanges are durable rows under the watermark, so the archive below covers
                     # them too. Store them after the head in the same transaction, with the seam the caller
                     # would build, and count their originals as carried duplicates like compress()'s tail.
-                    from hermes_cli.partial_compress import rejoin_compressed_head_and_tail
+                    from moor_cli.partial_compress import rejoin_compressed_head_and_tail
                     persisted = rejoin_compressed_head_and_tail(compressed, verbatim_tail)
                     tail_count += len(verbatim_tail)
                 from agent.conversation_compression_archive import coverage_for_commit

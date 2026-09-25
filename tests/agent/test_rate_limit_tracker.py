@@ -7,7 +7,7 @@ from agent.rate_limit_tracker import (
     parse_rate_limit_headers,
 )
 
-# ── Sample headers from Nous inference API ──────────────────────────────
+# ── Sample headers from Moor inference API ──────────────────────────────
 
 MOOR_HEADERS = {
     "x-ratelimit-limit-requests": "800",

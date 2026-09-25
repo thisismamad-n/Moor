@@ -165,7 +165,7 @@ Two auth-flavored corollaries worth naming because they are easy to get wrong:
 ## Guest content never opens anything by itself
 
 Untrusted HTML runs in two places: sandboxed `allow-scripts` iframes (artifact
-previews) and the preview pane's `<webview>` (`persist:hermes-preview`). Neither
+previews) and the preview pane's `<webview>` (`persist:moor-preview`). Neither
 may drive the OS browser without the user's hand on it (GHSA-9f4c-93c8-jc8g):
 `setWindowOpenHandler` denies everything and never opens a URL as a side
 effect (`electron/window-open-policy.ts`), and the webview has no
@@ -175,7 +175,7 @@ A guest page's `target="_blank"` links (Streamlit's "Ask Google" traceback
 button) reach the OS browser through one explicit bridge instead:
 
 - `main.ts` installs `electron/preview-guest-preload-entry.ts` via
-  `will-attach-webview`, keyed on the `persist:hermes-preview` partition only.
+  `will-attach-webview`, keyed on the `persist:moor-preview` partition only.
   It is the app's only guest preload; a new webview does not inherit it unless
   it opts into that partition.
 - The preload runs in the isolated world, exposes nothing to the page, and
@@ -184,7 +184,7 @@ button) reach the OS browser through one explicit bridge instead:
   `dispatchEvent(click)` from page script is dropped there; page `window.open`
   stays blocked.
 - `PreviewPane` admits `http:`/`https:` only (`src/lib/preview-external.ts`)
-  and hands the URL to the existing `hermes:openExternal` IPC, which applies
+  and hands the URL to the existing `moor:openExternal` IPC, which applies
   main's URL policy. `file:` is excluded on purpose: a guest must never reach
   `shell.openPath`.
 

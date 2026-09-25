@@ -465,7 +465,7 @@ class TestWindowlessGatewayRestartSpec:
         is preserved verbatim.
 
         ``platforms("windows")``: faking this on Linux needed two more fakes to hold
-        it up — a pre-import so the lazy ``hermes_cli.gateway`` import didn't
+        it up — a pre-import so the lazy ``moor_cli.gateway`` import didn't
         re-run ``gateway/status``'s ``import msvcrt`` branch, and a mock of
         ``get_moor_home`` because the real one's ``Path.resolve()`` consults
         sysconfig and blew up under the platform patch. Both workarounds were

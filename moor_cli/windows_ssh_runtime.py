@@ -351,24 +351,24 @@ def terminate_owned(pid: int, creation_time_ns: int, moor_path: str, spawn_nonce
     return True
 
 
-def _resolve_direct_command(hermes_path: str) -> list[str]:
+def _resolve_direct_command(moor_path: str) -> list[str]:
     """Ask the configured installation for its direct, boot-selecting command.
 
     The port owner must be the process we lock, not a console-launcher child.
     No assumption about python.exe beside an external bin launcher is valid.
     """
-    out = subprocess.run([hermes_path, "--print-runtime-command"], capture_output=True,
+    out = subprocess.run([moor_path, "--print-runtime-command"], capture_output=True,
                          text=True, encoding="utf-8", errors="replace", timeout=30)
     if out.returncode != 0:
-        raise ValueError("could not resolve Hermes runtime; refresh this installation's launcher")
+        raise ValueError("could not resolve Moor runtime; refresh this installation's launcher")
     try:
         command = json.loads(out.stdout)
     except ValueError as exc:
-        raise ValueError("Hermes launcher did not report a runtime command") from exc
+        raise ValueError("Moor launcher did not report a runtime command") from exc
     if (not isinstance(command, list) or not command
             or not all(isinstance(part, str) and "\x00" not in part for part in command)
             or not os.path.isabs(command[0]) or not os.path.isfile(command[0])):
-        raise ValueError("Hermes launcher reported an invalid runtime command")
+        raise ValueError("Moor launcher reported an invalid runtime command")
     return command
 
 
@@ -383,7 +383,7 @@ def spawn_backend(payload: dict[str, Any]) -> dict[str, Any]:
     profile = str(payload.get("profile") or "")
     if len(profile) > 256 or any(ch in profile for ch in "\x00\r\n"):
         raise ValueError("invalid profile")
-    args = _resolve_direct_command(hermes_path)
+    args = _resolve_direct_command(moor_path)
     if profile:
         args.extend(["--profile", profile])
     args.extend(["serve", "--isolated", "--host", "127.0.0.1", "--port", "0",

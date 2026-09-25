@@ -105,7 +105,7 @@ def _guard_service_domain(plan: MigrationPlan, profile: ProfileGateway) -> Optio
     reference = plan.default.services or ([target] if target is not None else [])
     if set(profile.services) == set(reference):
         return None
-    from hermes_cli.gateway_migrate import _service_label as _kind_label
+    from moor_cli.gateway_migrate import _service_label as _kind_label
     against = (f"the default gateway runs under {_service_label(plan.default)}" if plan.default.services
                else f"the fleet converges on {_kind_label(target)}")
     return (f"Profile '{profile.name}' runs under {_service_label(profile)} while {against}: "

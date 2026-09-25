@@ -18,7 +18,7 @@ def test_script_termination_reaps_descendants(tmp_path, monkeypatch, trigger, to
     import psutil
     from cron import scheduler, scheduler_script
 
-    monkeypatch.setattr(scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(scheduler, "_get_moor_home", lambda: tmp_path)
     monkeypatch.setattr(scheduler_script, "_get_script_timeout", lambda: 3 if trigger == "timeout" else 60)
     scripts = tmp_path / "scripts"
     scripts.mkdir()

@@ -190,7 +190,7 @@ def test_doctor_removes_temp_home_when_staging_copy_fails(
     import tempfile
 
 
-    from hermes_cli import plugin_dev
+    from moor_cli import plugin_dev
 
     plugin = tmp_path / "sample"
     plugin.mkdir()
@@ -228,7 +228,7 @@ def test_doctor_loads_model_provider_plugins_through_provider_discovery(tmp_path
     """`kind: model-provider` registers a ProviderProfile at import and has no register(ctx);
     doctor must judge it by that contract and leave the live registry untouched."""
     import providers
-    from hermes_cli.plugin_dev import doctor_plugin
+    from moor_cli.plugin_dev import doctor_plugin
 
     plugin = tmp_path / "acme-provider"
     plugin.mkdir()

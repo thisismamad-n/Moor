@@ -1,4 +1,4 @@
-import type { ConnectionRequestPayload, ToolLabel } from '@hermes/shared'
+import type { ConnectionRequestPayload, ToolLabel } from '@moor/shared'
 
 import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
 
@@ -226,7 +226,7 @@ export interface MemoryProviderConfig {
 }
 
 /** Transport pinned on a custom endpoint; `''` = let the runtime auto-detect. Same
- * choices as `hermes model`'s custom-provider setup (#93622). */
+ * choices as `moor model`'s custom-provider setup (#93622). */
 export type CustomEndpointApiMode = '' | 'anthropic_messages' | 'chat_completions' | 'codex_responses'
 
 /** One `/v1/models` row; a gateway may advertise a reasoning alias
@@ -1041,7 +1041,7 @@ export interface ProfileCreatePayload {
 export interface ProfileInfo {
   /** Presentation-only label override (profile.yaml display_name). */
   display_name?: string
-  /** Bot Mode title (profile.yaml ui_meta['hermes-bots'].title) — the name the
+  /** Bot Mode title (profile.yaml ui_meta['moor-bots'].title) — the name the
    *  Bots roster shows for this profile. Presentation-only. */
   bot_title?: string
   has_env: boolean

@@ -99,7 +99,7 @@ def test_reconcile_retries_failed_first_connect_only_after_cooldown(monkeypatch,
     from tools import mcp_tool_discovery as disc
     from tools import mcp_tool_loop as _loop
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(_config, "_load_mcp_config", lambda: {"ghost": {"url": "https://x/mcp"}})
     discovered: list = []
     monkeypatch.setattr(disc, "discover_mcp_tools", lambda *a, **k: discovered.append(1) or [])
@@ -139,7 +139,7 @@ def test_reconcile_counts_adopted_shared_connection_as_live(monkeypatch, tmp_pat
     from tools import mcp_tool_config as _config
     from tools import mcp_tool_discovery as disc
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(_config, "_load_mcp_config", lambda: {"x": {"url": "https://x/mcp"}})
     monkeypatch.setattr(mcp_tool, "_mcp_registry_scope", lambda: "B")
     discovered: list = []

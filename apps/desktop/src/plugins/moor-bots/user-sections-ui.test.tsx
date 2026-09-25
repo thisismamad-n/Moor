@@ -4,10 +4,10 @@
  * check — a bare check misses the legacy `keyCode === 229` commit-Enter some
  * IMEs (macOS Chinese) still fire after `compositionend`, letting a CJK user's
  * in-flight composition submit/rename with truncated text. See group-chat-parts'
- * identical guard (#93528) for the same class in a sibling hermes-bots surface.
+ * identical guard (#93528) for the same class in a sibling moor-bots surface.
  */
 
-import type * as HermesSdk from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
@@ -20,8 +20,8 @@ beforeAll(() => {
   Element.prototype.releasePointerCapture = vi.fn()
 })
 
-vi.mock('@hermes/plugin-sdk', async importOriginal => {
-  const sdk = await importOriginal<typeof HermesSdk>()
+vi.mock('@moor/plugin-sdk', async importOriginal => {
+  const sdk = await importOriginal<typeof MoorSdk>()
 
   return {
     ...sdk,

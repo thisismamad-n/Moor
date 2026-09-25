@@ -70,14 +70,14 @@ def get_project_root() -> Path:
 def code_removal_refusal() -> "str | None":
     """Why the uninstaller must not remove this tree's code, or ``None``.
 
-    A git checkout (the install.sh / install.ps1 / `hermes desktop` layout)
+    A git checkout (the install.sh / install.ps1 / `moor desktop` layout)
     is ours to remove. A sealed tree (no ``.git``) belongs to a steward —
     the Nix store, the bundled desktop app, a Docker image — and only the
     steward removes it. Returns the user-facing refusal text for sealed
-    trees; the text always points at ``hermes uninstall --data`` for the
+    trees; the text always points at ``moor uninstall --data`` for the
     user-data cleanup that IS allowed everywhere.
     """
-    from hermes_cli.steward import sealed_steward, steward_uninstall_message
+    from moor_cli.steward import sealed_steward, steward_uninstall_message
 
     steward = sealed_steward(get_project_root())
     if steward is None:
@@ -124,22 +124,22 @@ def remove_path_from_shell_configs():
             content = config_path.read_text(encoding="utf-8-sig")
             original_content = content
             
-            # Remove lines containing hermes-agent or hermes PATH entries
+            # Remove lines containing moor-agent or moor PATH entries
             new_lines = []
             skip_next = False
             
             for line in content.split('\n'):
-                # Skip the "# Hermes Agent" comment and following line
-                if '# Hermes Agent' in line or '# hermes-agent' in line:
+                # Skip the "# Moor Agent" comment and following line
+                if '# Moor Agent' in line or '# moor-agent' in line:
                     skip_next = True
                     continue
-                if skip_next and ('hermes' in line.lower() and 'PATH' in line):
+                if skip_next and ('moor' in line.lower() and 'PATH' in line):
                     skip_next = False
                     continue
                 skip_next = False
                 
-                # Remove any PATH line containing hermes
-                if 'hermes' in line.lower() and ('PATH=' in line or 'path=' in line.lower()):
+                # Remove any PATH line containing moor
+                if 'moor' in line.lower() and ('PATH=' in line or 'path=' in line.lower()):
                     continue
                     
                 new_lines.append(line)
@@ -163,23 +163,23 @@ def remove_path_from_shell_configs():
 
 
 def remove_wrapper_script():
-    """Remove the hermes wrapper script if it exists."""
+    """Remove the moor wrapper script if it exists."""
     wrapper_paths = [
-        Path.home() / ".local" / "bin" / "hermes",
-        Path.home() / ".local" / "bin" / "hermes-acp",
-        Path.home() / ".local" / "bin" / "hermes-agent",
-        Path("/usr/local/bin/hermes"),
-        Path("/usr/local/bin/hermes-acp"),
-        Path("/usr/local/bin/hermes-agent"),
+        Path.home() / ".local" / "bin" / "moor",
+        Path.home() / ".local" / "bin" / "moor-acp",
+        Path.home() / ".local" / "bin" / "moor-agent",
+        Path("/usr/local/bin/moor"),
+        Path("/usr/local/bin/moor-acp"),
+        Path("/usr/local/bin/moor-agent"),
     ]
     
     removed = []
     for wrapper in wrapper_paths:
         if wrapper.exists():
             try:
-                # Check if it's our wrapper (contains hermes_cli reference)
+                # Check if it's our wrapper (contains moor_cli reference)
                 content = wrapper.read_text(encoding="utf-8-sig")
-                if 'hermes_cli' in content or 'hermes-agent' in content:
+                if 'moor_cli' in content or 'moor-agent' in content:
                     wrapper.unlink()
                     removed.append(wrapper)
             except Exception as e:
@@ -196,12 +196,12 @@ def _node_symlink_candidate_dirs() -> "list[Path]":
     return dirs
 
 
-def remove_node_symlinks(hermes_home: Path) -> list:
+def remove_node_symlinks(moor_home: Path) -> list:
     """Remove the node/npm/npx symlinks the installer placed on PATH.
 
     Historical POSIX installs (``scripts/install.sh`` before pm owned the
     Node runtime) symlinked node/npm/npx into the same directory as the
-    ``hermes`` command:
+    ``moor`` command:
 
     - ``/usr/local/bin/`` on root FHS installs (Linux, uid 0)
     - ``~/.local/bin/`` otherwise (the common non-root case)
@@ -209,11 +209,11 @@ def remove_node_symlinks(hermes_home: Path) -> list:
     We check all candidate directories so that uninstall works regardless of
     how the install was done (e.g. a root FHS install that placed links in
     ``/usr/local/bin``, or an older install that used ``~/.local/bin`` before
-    the FHS fix).  Only symlinks that resolve into this Hermes home's ``node``
+    the FHS fix).  Only symlinks that resolve into this Moor home's ``node``
     directory are removed — links the user has repointed elsewhere (nvm, fnm,
     etc.) are left untouched.
     """
-    node_dir = (hermes_home / "node").resolve()
+    node_dir = (moor_home / "node").resolve()
 
     def _unlink_ours(link: Path) -> bool:
         # Only act on symlinks — never delete a real binary the user put here.
@@ -238,7 +238,7 @@ def uninstall_gateway_service():
     - Linux: user + system systemd services (with proper DBUS env setup)
     - macOS: launchd plists
     - Windows: Scheduled Task + Startup-folder fallback, via ``gateway_windows``
-    - All platforms: standalone ``hermes gateway run`` processes
+    - All platforms: standalone ``moor gateway run`` processes
     """
     import platform
     stopped_something = False
@@ -409,13 +409,13 @@ def remove_portable_tooling_windows(moor_home: Path) -> list[Path]:
     return _remove_each((t for t in targets if t.exists()), lambda t: shutil.rmtree(t) or True)
 
 
-def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
-    """Delete managed-runtime trees a PRE-SPLIT install left in HERMES_HOME.
+def remove_legacy_runtime_trees(moor_home: Path) -> list[Path]:
+    """Delete managed-runtime trees a PRE-SPLIT install left in MOOR_HOME.
 
     Runtime artifacts are install-scoped now, so the current locations go
     away with ``rmtree(project_root)``. But a checkout OUTSIDE the home
-    (the common case: ``~/src/hermes-agent``) used to put its node/uv
-    under ``$HERMES_HOME`` — that tree survives removing the checkout and
+    (the common case: ``~/src/moor-agent``) used to put its node/uv
+    under ``$MOOR_HOME`` — that tree survives removing the checkout and
     survives "keep my data" uninstalls, because it is not data.
 
     Only the exact managed layout is removed: ``node/`` (a tree the
@@ -425,7 +425,7 @@ def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
     """
     removed: list[Path] = []
 
-    node_tree = hermes_home / "node"
+    node_tree = moor_home / "node"
     if node_tree.is_dir():
         try:
             shutil.rmtree(node_tree, ignore_errors=False)
@@ -434,7 +434,7 @@ def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
             log_warn(f"Could not remove {node_tree}: {e}")
 
     for uv_name in ("uv", "uv.exe"):
-        uv_binary = hermes_home / "bin" / uv_name
+        uv_binary = moor_home / "bin" / uv_name
         if uv_binary.is_file():
             try:
                 uv_binary.unlink()
@@ -446,13 +446,13 @@ def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
 
 
 def remove_windows_bin_launchers(*, windows: bool | None = None) -> list[Path]:
-    """Delete the managed binary dir (the default Hermes root's ``bin``).
+    """Delete the managed binary dir (the default Moor root's ``bin``).
 
-    The dir holds only hermes-owned launcher copies (the relocatable venv's
+    The dir holds only moor-owned launcher copies (the relocatable venv's
     console scripts, staged onto PATH by first-run repair) — pm keeps uv in
     its own store entry, so nothing shared lives here and the whole dir goes.
     Every uninstall mode deletes the code checkout, so a surviving launcher
-    would dangle: ``hermes`` in a new terminal resolves and then errors on
+    would dangle: ``moor`` in a new terminal resolves and then errors on
     its missing venv target, which reads worse than command-not-found.
 
     A launcher that IS this process's own trampoline is mandatory-locked
@@ -467,8 +467,8 @@ def remove_windows_bin_launchers(*, windows: bool | None = None) -> list[Path]:
     if not windows:
         return []
     try:
-        from hermes_constants import get_default_hermes_root
-        bin_dir = get_default_hermes_root() / "bin"
+        from moor_constants import get_default_moor_root
+        bin_dir = get_default_moor_root() / "bin"
     except Exception as e:
         log_warn(f"Could not locate the managed binary dir: {e}")
         return []
@@ -555,10 +555,10 @@ def _uninstall_profile(profile) -> None:
 
 def run_data_uninstall(args):
     """Erase this home's data, preserving installed runtimes and sibling profiles."""
-    from hermes_cli.data_cleanup import plan_data_removal, remove_data
-    from hermes_cli.gui_uninstall import desktop_userdata_dir
+    from moor_cli.data_cleanup import plan_data_removal, remove_data
+    from moor_cli.gui_uninstall import desktop_userdata_dir
 
-    home = get_hermes_home()
+    home = get_moor_home()
     try:
         userdata = getattr(args, "desktop_userdata", None)
         plan = plan_data_removal(home, get_project_root(), Path(userdata) if userdata else desktop_userdata_dir())
@@ -566,7 +566,7 @@ def run_data_uninstall(args):
         log_warn(str(exc))
         raise SystemExit(1) from exc
     if not plan.remove:
-        print(f"No Hermes user data found in {home}.")
+        print(f"No Moor user data found in {home}.")
         return
     print("Data-only removal: installed code and other profiles stay intact.")
     print("Will remove:")
@@ -581,7 +581,7 @@ def run_data_uninstall(args):
         return
     if not bool(getattr(args, "yes", False)) and not _confirm_yes("to remove this home's data"):
         return
-    from hermes_cli.data_cleanup_holders import quiescent_home
+    from moor_cli.data_cleanup_holders import quiescent_home
 
     try:
         with quiescent_home(plan.home):
@@ -592,22 +592,22 @@ def run_data_uninstall(args):
     for path in removed:
         log_success(f"Removed {path}")
     if failed:
-        print("Hermes data was only partially removed. Surviving targets:")
+        print("Moor data was only partially removed. Surviving targets:")
         for path, reason in failed:
             log_warn(f"{path}: {reason}")
         raise SystemExit(1)
-    log_success("Hermes data removed.")
+    log_success("Moor data removed.")
 
 
 def run_gui_uninstall(args):
     """GUI-only uninstall: remove the Chat GUI, leave the agent + data intact.
 
-    Mirrors ``hermes uninstall --gui``. Removes the desktop app's built
+    Mirrors ``moor uninstall --gui``. Removes the desktop app's built
     artifacts, the packaged app bundle (best-effort), and the Electron
-    userData dir — nothing under ``$HERMES_HOME`` config/sessions/.env, and
+    userData dir — nothing under ``$MOOR_HOME`` config/sessions/.env, and
     never the Python agent or its venv.
     """
-    from hermes_cli.gui_uninstall import (
+    from moor_cli.gui_uninstall import (
         agent_is_installed,
         gui_install_summary,
         uninstall_gui,
@@ -615,8 +615,8 @@ def run_gui_uninstall(args):
 
     _refuse_if_steward_owned()
 
-    hermes_home = get_hermes_home()
-    summary = gui_install_summary(hermes_home)
+    moor_home = get_moor_home()
+    summary = gui_install_summary(moor_home)
     skip_confirm = bool(getattr(args, "yes", False))
 
     print()
@@ -663,8 +663,8 @@ def run_uninstall(args):
     Run the uninstall process.
     
     Options:
-    - Full uninstall: removes code + ~/.hermes/ (configs, data, logs)
-    - Keep data: removes code but keeps ~/.hermes/ for future reinstall
+    - Full uninstall: removes code + ~/.moor/ (configs, data, logs)
+    - Keep data: removes code but keeps ~/.moor/ for future reinstall
     """
     _refuse_if_steward_owned()
 
@@ -874,21 +874,21 @@ def _perform_uninstall(
             "No Windows installer artifacts to remove")
 
     # 4c. Remove managed-runtime trees a PRE-SPLIT install left in
-    #     HERMES_HOME. Current installs keep these inside the checkout, so
+    #     MOOR_HOME. Current installs keep these inside the checkout, so
     #     step 4 already removed them — but a checkout outside the home
-    #     (~/src/hermes-agent) used to leave its node/uv behind, surviving
+    #     (~/src/moor-agent) used to leave its node/uv behind, surviving
     #     both the checkout removal and a "keep my data" uninstall. They
     #     are install tooling, not data, so removing them is correct in
     #     either mode.
     log_info("Removing managed runtime trees...")
-    removed_runtimes = remove_legacy_runtime_trees(hermes_home)
+    removed_runtimes = remove_legacy_runtime_trees(moor_home)
     if removed_runtimes:
         for path in removed_runtimes:
             log_success(f"Removed {path}")
     else:
         log_info("No legacy runtime trees to remove")
 
-    # 5. Optionally remove ~/.hermes/ data directory (and named profiles)
+    # 5. Optionally remove ~/.moor/ data directory (and named profiles)
     if full_uninstall:
         # 5a. Named profiles' homes live under <default>/profiles/ (swept by the rmtree below),
         #     but their services + alias scripts live OUTSIDE the default root.
@@ -942,14 +942,14 @@ class _UninstallArgs:
 
 
 def main(argv=None) -> int:
-    """Module entrypoint: ``python -m hermes_cli.uninstall --mode <gui|lite|full|data>``.
+    """Module entrypoint: ``python -m moor_cli.uninstall --mode <gui|lite|full|data>``.
 
     Exists so the desktop app can run the uninstall under a Python interpreter
     OUTSIDE the venv being deleted. On Windows, ``lite``/``full`` rmtree the
     venv that contains the running ``python.exe`` — and a running .exe is
     mandatory-locked, so doing that from the venv's own interpreter half-fails.
     The desktop launches this with the system Python + ``PYTHONPATH=<agentRoot>``
-    so ``import hermes_cli`` resolves from source while the venv is torn down.
+    so ``import moor_cli`` resolves from source while the venv is torn down.
 
     ``data`` removes user data only (no code) and is the one mode allowed on
     steward-owned installs (Nix, the bundled desktop app, Docker); the

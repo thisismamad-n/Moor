@@ -156,7 +156,7 @@ class TestGetServicePidsAllProfiles:
             return ("gui/501", 123)
 
         with (
-            patch("hermes_cli.gateway.supports_systemd_services", return_value=False),
+            patch("moor_cli.gateway.supports_systemd_services", return_value=False),
             patch(
                 "moor_cli.gateway.get_launchd_label",
                 return_value="ai.moor.gateway.myprofile",
@@ -198,7 +198,7 @@ class TestGetServicePidsAllProfiles:
             return ("gui/501", pid) if pid else (None, None)
 
         with (
-            patch("hermes_cli.gateway.supports_systemd_services", return_value=False),
+            patch("moor_cli.gateway.supports_systemd_services", return_value=False),
             patch(
                 "moor_cli.gateway.get_launchd_label",
                 return_value="ai.moor.gateway",
@@ -242,7 +242,7 @@ class TestGetServicePidsAllProfiles:
         """systemd scope is unaffected by the all_profiles switch — it already
         lists every moor-gateway* unit unconditionally."""
         with (
-            patch("hermes_cli.gateway.supports_systemd_services", return_value=True),
+            patch("moor_cli.gateway.supports_systemd_services", return_value=True),
             patch("subprocess.run") as mock_run,
         ):
             def _run_side_effect(args, **kwargs):

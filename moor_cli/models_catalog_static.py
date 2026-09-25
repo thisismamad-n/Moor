@@ -52,7 +52,7 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     )
 ]
 
-# OpenRouter entries the Nous Portal does not carry (routing/fast variants, free tier —
+# OpenRouter entries the Moor Portal does not carry (routing/fast variants, free tier —
 # ``stealth/union-alpha`` is a $0 stealth SKU without the ``:free`` suffix).
 _OPENROUTER_ONLY = {
     "anthropic/claude-opus-5-fast", "anthropic/claude-opus-4.8-fast", "meta/muse-spark-1.2",
@@ -243,6 +243,17 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "nemotron-3-ultra-free", "nemotron-3.5-lightning-free",
         "muse-spark-1.2-contributor-free", "muse-spark-1.3-contributor-free",
     ],
+    # OpenCode keyless free tier — OFFLINE FLOOR only. provider_model_ids("opencode-free")
+    # revalidates live against GET /zen/v1/models and filters to the anonymous tier, so this list
+    # may lag the relay (intentional). Known-delisted models are REMOVED (the offline fallback must
+    # not offer a model that 401s; x-preview-f-free delisted 2026-08-26, hy3-free and
+    # laguna-s-2.1-free delisted 2026-09-09, and deepseek-v4-flash-free delisted
+    # 2026-09-15 — all removed from this offline floor after their relay delisting).
+    "opencode-free": [
+        "mimo-v2.5-free",
+        "nemotron-3-ultra-free", "nemotron-3.5-lightning-free", "muse-spark-1.2-contributor-free",
+        "muse-spark-1.3-contributor-free",
+    ],
     # Synced against opencode.ai/docs/go + live GET /zen/go/v1/models. Known-delisted models are
     # REMOVED (the live-first merge would otherwise keep offering a model that 401s): "ox-alpha-free"
     # — the Go-subscription twin of Zen's Ox Alpha — was delisted 2026-09-09.
@@ -346,6 +357,7 @@ CANONICAL_PROVIDERS: list[ProviderEntry] = [ProviderEntry(*row) for row in (
     ("kilocode", "Kilo Code", "Kilo Code (Kilo Gateway API)"),
     ("opencode-zen", "OpenCode Zen", "OpenCode Zen (Curated models, pay-as-you-go)"),
     ("opencode-go", "OpenCode Go", "OpenCode Go (Open models subscription)"),
+    ("opencode-free", "OpenCode Free", "OpenCode Free (Keyless anonymous free tier on Zen relay)"),
     ("bedrock", "AWS Bedrock", "AWS Bedrock (Claude, Nova, Llama, DeepSeek; IAM or API key)"),
     ("azure-foundry", "Azure Foundry", "Azure Foundry (OpenAI-style or Anthropic-style endpoint, your Azure AI deployment)"),
     ("ai-gateway", "Vercel AI Gateway", "Vercel AI Gateway (Multi-model aggregator)"),
@@ -374,8 +386,8 @@ def sync_plugin_provider_catalog() -> int:
 
     Runs at import and again from ``providers._sync_auth_registry`` whenever a profile is registered
     after this module was imported. The import-time pass alone observes a *partial* registry: a
-    plugin whose own imports pull ``hermes_cli.models`` in mid-``_discover_providers()``, or a
-    profile registered later at runtime, would otherwise never reach the picker, ``hermes model``,
+    plugin whose own imports pull ``moor_cli.models`` in mid-``_discover_providers()``, or a
+    profile registered later at runtime, would otherwise never reach the picker, ``moor model``,
     ``/model`` or the Desktop ``model.options`` list until restart — the catalog twin of the auth
     registry window (#102123). Idempotent by slug; built-in rows are never rewritten.
     """
@@ -417,7 +429,7 @@ PROVIDER_GROUPS: dict[str, tuple[str, str, list[str]]] = {
     "google":   ("Google Gemini",   "Google AI Studio (API key)",                     ["gemini"]),
     "openai":   ("OpenAI",          "ChatGPT/Codex subscription or direct OpenAI API", ["openai-codex", "openai-api"]),
     "qwen":     ("Qwen",            "Qwen Cloud / DashScope, Coding Plan, Token Plan & Qwen CLI OAuth", ["alibaba", "alibaba-cn", "alibaba-coding-plan", "alibaba-coding-plan-cn", "alibaba-token-plan", "alibaba-token-plan-cn", "qwen-oauth"]),
-    "opencode": ("OpenCode",        "Zen pay-as-you-go or Go subscription", ["opencode-zen", "opencode-go"]),
+    "opencode": ("OpenCode",        "Zen pay-as-you-go, Go subscription, or free tier", ["opencode-zen", "opencode-go", "opencode-free"]),
     "copilot":  ("GitHub Copilot",  "GitHub token API or copilot --acp process",       ["copilot", "copilot-acp"]),
     "tencent":  ("Tencent Hy",      "Hy4 / Hy3 via TokenHub & TokenPlan", ["tencent-tokenhub", "tencent-tokenplan"]),
 }
@@ -485,7 +497,8 @@ _PROVIDER_ALIASES = dict((
     ("minimax-china", "minimax-cn"), ("minimax_cn", "minimax-cn"), ("minimax-portal", "minimax-oauth"),
     ("minimax-global", "minimax-oauth"), ("minimax_oauth", "minimax-oauth"), ("claude", "anthropic"),
     ("claude-code", "anthropic"), ("deep-seek", "deepseek"), ("opencode", "opencode-zen"), ("zen", "opencode-zen"),
-    ("go", "opencode-go"), ("opencode-go-sub", "opencode-go"), ("aigateway", "ai-gateway"), ("vercel", "ai-gateway"),
+    ("go", "opencode-go"), ("opencode-go-sub", "opencode-go"), ("free", "opencode-free"),
+    ("opencode_free", "opencode-free"), ("aigateway", "ai-gateway"), ("vercel", "ai-gateway"),
     ("vercel-ai-gateway", "ai-gateway"), ("kilo", "kilocode"), ("kilo-code", "kilocode"),
     ("kilo-gateway", "kilocode"), ("dashscope", "alibaba"), ("aliyun", "alibaba"), ("qwen", "alibaba"),
     ("alibaba-cloud", "alibaba"), ("qwen-portal", "qwen-oauth"), ("hf", "huggingface"),
@@ -544,6 +557,7 @@ _BORROWED_MODEL_PROVIDERS: frozenset[str] = frozenset()
 # surfaced newest model stays on top when the live API lags. Zen/Go re-expose dozens of vendors
 # and rotate them often, so their stale curated entries must not pollute the top.
 _LIVE_FIRST_PICKER_PROVIDERS: frozenset[str] = frozenset({"opencode-zen", "opencode-go", "meta-ai"})
+_KEYLESS_STABLE_CACHE_PROVIDERS: frozenset[str] = frozenset({"opencode-free"})
 
 
 # Models supporting OpenAI Priority Processing (service_tier="priority"; see
@@ -566,7 +580,7 @@ _MODELS_DEV_PREFERRED: frozenset[str] = frozenset({
 })
 
 
-# OpenRouter-style ids -> Copilot ids. Dash-notation Claude ids are accepted too: Hermes' default
+# OpenRouter-style ids -> Copilot ids. Dash-notation Claude ids are accepted too: Moor' default
 # Claude IDs use hyphens (Anthropic native) but Copilot's API only accepts dot-notation, so a
 # copilot + hyphenated default would otherwise hit HTTP 400 "model_not_supported".
 _COPILOT_MODEL_ALIASES = dict((

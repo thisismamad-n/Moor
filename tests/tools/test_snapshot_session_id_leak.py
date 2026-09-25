@@ -14,7 +14,7 @@ The fix strips the per-session bridged vars (MOOR_SESSION_* / UI /
 CRON_AUTO_DELIVER_) from the snapshot at both dump sites in
 ``tools/environments/base_session_env.py``; they are re-injected fresh on every
 command. The same dump must drop the scope markers a delegate_task child / cron
-run stamps per command (HERMES_DELEGATED_CHILD_CONTEXT, HERMES_CRON_SESSION), or
+run stamps per command (MOOR_DELEGATED_CHILD_CONTEXT, MOOR_CRON_SESSION), or
 the parent's next command is misread as that child (#90782, #71941).
 """
 
@@ -106,13 +106,13 @@ def test_export_dump_drops_every_bridged_var_and_the_delegation_marker():
     from gateway.session_context import _VAR_MAP
 
     scoped = [*_VAR_MAP, DELEGATED_CHILD_ENV_MARKER]
-    exports = "; ".join([f'export {n}="x"' for n in scoped] + ['export HERMES_HOME="/h"', 'export MYVAR="keep"'])
+    exports = "; ".join([f'export {n}="x"' for n in scoped] + ['export MOOR_HOME="/h"', 'export MYVAR="keep"'])
     out = subprocess.run(
         ["bash", "-c", f"{exports}; {_export_dump_excluding_session_vars('/dev/stdout')}"],
         capture_output=True, text=True, check=True).stdout
     leaked = [n for n in scoped if f"declare -x {n}=" in out]
     assert not leaked, f"persisted into the snapshot: {leaked}"
-    assert 'declare -x HERMES_HOME="/h"' in out
+    assert 'declare -x MOOR_HOME="/h"' in out
     assert 'declare -x MYVAR="keep"' in out
 
 

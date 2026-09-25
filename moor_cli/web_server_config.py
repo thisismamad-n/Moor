@@ -14,7 +14,7 @@ from moor_cli.config import (
     find_provider_entry,
     read_raw_config,
 )
-from hermes_cli.web_server_memory import _normalize_memory_provider_name
+from moor_cli.web_server_memory import _normalize_memory_provider_name
 from tools.wake_word import _PROVIDER_PREFERENCE
 
 if TYPE_CHECKING:
@@ -104,8 +104,8 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "auth.adopt_external_logins": {
         "type": "boolean",
         "description": (
-            "Borrow and refresh the Codex CLI / Claude Code logins when Hermes has no usable login of its own. "
-            "Off: Hermes uses only its own logins (`hermes auth add <provider>`)."
+            "Borrow and refresh the Codex CLI / Claude Code logins when Moor has no usable login of its own. "
+            "Off: Moor uses only its own logins (`moor auth add <provider>`)."
         ),
         "category": "security",
     },
@@ -497,7 +497,7 @@ def _validated_main_model_selection(
         # wire protocol it mandates: ``model.base_url`` and ``model.api_mode`` are persisted
         # together, so a mode derived from the displaced host would route the submitted endpoint
         # over the wrong wire.
-        from hermes_cli.providers import determine_api_mode
+        from moor_cli.providers import determine_api_mode
         url = base_url.strip()
         result = replace(result, base_url=url,
                          api_mode=determine_api_mode(result.target_provider, url))
@@ -692,8 +692,8 @@ def _prepare_main_assignment(cfg: dict, provider: str, model: str, base_url: str
 
 def _apply_main_assignment_sync(cfg: dict, provider: str, model: str, base_url: str, api_key: str,
                                 prepared: "Optional[tuple[str, ModelSwitchResult]]" = None) -> dict:
-    from hermes_cli.config import save_config
-    from hermes_cli.free_tier_bootstrap import reconcile_record
+    from moor_cli.config import save_config
+    from moor_cli.free_tier_bootstrap import reconcile_record
     base_url, result = prepared or _prepare_main_assignment(cfg, provider, model, base_url, api_key)
     provider, model = result.target_provider, result.new_model
     provider_entry = _provider_entry(cfg, provider)

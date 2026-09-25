@@ -2,7 +2,7 @@
 
 Regression: the CANONICAL_PROVIDERS auto-extend skipped every plugin profile whose ``auth_type``
 was not ``api_key``, so an out-of-tree external-process (ACP) or OAuth provider loaded, inferred and
-was invisible to ``/model``, ``hermes model`` and ``list_available_providers()`` — while the in-tree
+was invisible to ``/model``, ``moor model`` and ``list_available_providers()`` — while the in-tree
 copilot-acp row (same auth_type, hand-written entry) appeared. Visibility is gated by credentials
 downstream, so admission by slug is safe (#102421).
 """
@@ -15,7 +15,7 @@ import pytest
 
 def _register(monkeypatch, profile):
     import providers
-    from hermes_cli import auth
+    from moor_cli import auth
 
     monkeypatch.setitem(providers._REGISTRY, profile.name, profile)
     monkeypatch.delitem(auth.PROVIDER_REGISTRY, profile.name, raising=False)
@@ -31,7 +31,7 @@ def _register(monkeypatch, profile):
 @pytest.mark.parametrize("auth_type", ["external_process", "oauth_external", "oauth_device_code", "api_key"])
 def test_plugin_profiles_are_admitted_by_slug_not_auth_type(auth_type):
     from providers.base import ProviderProfile
-    from hermes_cli.models_catalog_static import CANONICAL_PROVIDERS, _plugin_provider_enters_picker
+    from moor_cli.models_catalog_static import CANONICAL_PROVIDERS, _plugin_provider_enters_picker
 
     assert _plugin_provider_enters_picker(ProviderProfile(name="acme-plugin", auth_type=auth_type)) is True
     # A plugin re-declaring a built-in slug is deduped, never doubled (bedrock is aws_sdk in-tree).
@@ -44,7 +44,7 @@ def test_external_process_plugin_authenticated_flag_tracks_binary_and_catalog_us
     """The row's authenticated flag is the real binary-resolves gate (not a hardcoded slug), and the
     profile's fallback_models is its catalog when the subprocess probe yields nothing."""
     from providers.base import ProviderProfile
-    from hermes_cli import models, models_catalog_static
+    from moor_cli import models, models_catalog_static
 
     exe = tmp_path / "acme-acp"
     exe.write_text("#!/bin/sh\nexit 0\n")

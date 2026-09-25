@@ -124,7 +124,7 @@ class LedgerEntry:
     host: str = ""
     port: Optional[int] = None
     profile: str = ""
-    hermes_home: str = ""
+    moor_home: str = ""
 
 
 def _ledger_path() -> Path:
@@ -203,12 +203,12 @@ def register_self(purpose: str, *, project_root: Optional[Path] = None, detail: 
     pruned on every write. ``detail`` may carry ``host``/``port``/``profile`` so the update
     pipeline can relaunch a manually-started serve with its real bind address.
     """
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
 
     tag = parse_spawn_tag(os.environ.get(SPAWN_ENV_VAR))
     spawner_pid, spawner_create = (tag.spawner_pid, tag.spawner_create) if tag else _desktop_spawner_identity()
     entry = _new_entry(os.getpid(), _process_create_time(), purpose, project_root, spawner_pid, spawner_create)
-    entry.hermes_home = hermes_home_key()
+    entry.moor_home = moor_home_key()
     if detail:
         try:
             entry.host = str(detail.get("host") or "")
@@ -230,18 +230,18 @@ def register_self(purpose: str, *, project_root: Optional[Path] = None, detail: 
 def is_desktop_owned_backend(argv: Optional[Sequence[str]] = None) -> bool:
     """Whether this process is the backend Desktop spawned and owns.
 
-    ``HERMES_DESKTOP=1`` is inherited by every shell and agent child the app launches, so the
+    ``MOOR_DESKTOP=1`` is inherited by every shell and agent child the app launches, so the
     flag alone is not ownership proof (same class as #116107). Desktop hands its backend a
     per-spawn credential the terminal pane never receives (and the terminal tool's env policy
-    strips from agent children): the local pool spawn mints ``HERMES_DASHBOARD_SESSION_TOKEN``,
+    strips from agent children): the local pool spawn mints ``MOOR_DASHBOARD_SESSION_TOKEN``,
     the SSH spawn passes a 0600 token FILE on argv and deliberately sets no token env var.
     ``argv`` defaults to this process's own.
     """
-    if os.environ.get("HERMES_DESKTOP") != "1":
+    if os.environ.get("MOOR_DESKTOP") != "1":
         return False
-    if os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN"):
+    if os.environ.get("MOOR_DASHBOARD_SESSION_TOKEN"):
         return True
-    from hermes_cli._startup_fast import is_desktop_ssh_backend_argv
+    from moor_cli._startup_fast import is_desktop_ssh_backend_argv
 
     return is_desktop_ssh_backend_argv(list(sys.argv[1:] if argv is None else argv))
 

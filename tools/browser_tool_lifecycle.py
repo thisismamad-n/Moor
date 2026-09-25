@@ -77,7 +77,7 @@ def _emergency_cleanup_all_sessions():
             return
         _bt._cleanup_done = True
     except Exception:
-        # Interpreter shutdown (or a half-updated tree mid-`hermes update` where the
+        # Interpreter shutdown (or a half-updated tree mid-`moor update` where the
         # origin's fresh import fails, e.g. #112437): no resolvable state, nothing to clean.
         return
 

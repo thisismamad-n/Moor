@@ -1,7 +1,7 @@
 import { liveSessionProjectId } from '@/app/chat/sidebar/projects/workspace-groups'
 import { pathLeaf } from '@/lib/display-path'
 import { $projectOwnerBySessionId } from '@/store/projects'
-import type { ProjectInfo, SessionInfo } from '@/types/hermes'
+import type { ProjectInfo, SessionInfo } from '@/types/moor'
 
 /**
  * The PROJECT a session belongs to, as a label for the sidebar card.

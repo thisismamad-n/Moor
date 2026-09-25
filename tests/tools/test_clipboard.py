@@ -17,8 +17,8 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from hermes_platform.host import runtime as host_runtime
-from hermes_cli.clipboard import (
+from moor_platform.host import runtime as host_runtime
+from moor_cli.clipboard import (
     has_clipboard_image,
     _linux_save,
     _macos_pngpaste,
@@ -51,7 +51,7 @@ FAKE_JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 100
 
 class TestClipboardChildStdin:
     def test_probe_uses_devnull_stdin(self):
-        with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("moor_cli.clipboard.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             assert _probe(["clipboard-tool"], 3, lambda result: result.returncode == 0)
         assert mock_run.call_args.kwargs["stdin"] == subprocess.DEVNULL
@@ -64,7 +64,7 @@ class TestClipboardChildStdin:
             kwargs["stdout"].write(FAKE_PNG)
             return MagicMock(returncode=0)
 
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("moor_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _pipe_to_file(["clipboard-tool"], dest) is True
         assert dest.read_bytes() == FAKE_PNG
 
@@ -130,7 +130,7 @@ class TestMacosOsascript:
 class TestMacosClipboardFileUrl:
     """Finder / file-copy puts «class furl» on the clipboard, not PNGf/TIFF.
 
-    Other apps still paste the image; Hermes must treat a local image file-url
+    Other apps still paste the image; Moor must treat a local image file-url
     as a clipboard image too.
     """
 
@@ -148,14 +148,14 @@ class TestMacosClipboardFileUrl:
     def test_only_copied_image_files_are_clipboard_images(self, tmp_path, name, expected):
         src = tmp_path / name
         src.write_bytes(FAKE_PNG)
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=self._furl_run(src)):
+        with patch("moor_cli.clipboard.subprocess.run", side_effect=self._furl_run(src)):
             assert _macos_has_image() is expected
 
     def test_copied_image_file_saves_as_png(self, tmp_path):
         src = tmp_path / "shot.png"
         src.write_bytes(FAKE_PNG)
         dest = tmp_path / "out.png"
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=self._furl_run(src)):
+        with patch("moor_cli.clipboard.subprocess.run", side_effect=self._furl_run(src)):
             assert _macos_osascript(dest) is True
         assert dest.read_bytes().startswith(b"\x89PNG")
 

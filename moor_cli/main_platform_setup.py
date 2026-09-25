@@ -105,7 +105,7 @@ def _whatsapp_install_bridge(bridge_dir) -> bool:
 
     npm = find_node_executable("npm")
     try:
-        env = with_hermes_node_path()
+        env = with_moor_node_path()
         if npm is None:
             env = pm.ensure("npm", explicit=True).env
             installed = pm.installed_package("npm")
@@ -201,7 +201,7 @@ def cmd_whatsapp(args):
     with contextlib.suppress(KeyboardInterrupt):
         subprocess.run(
             [node, str(bridge_script), "--pair-only", "--session", str(session_dir)],
-            cwd=str(bridge_dir), env=with_hermes_node_path())
+            cwd=str(bridge_dir), env=with_moor_node_path())
 
     print()
     if not (session_dir / "creds.json").exists():

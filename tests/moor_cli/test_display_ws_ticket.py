@@ -3,8 +3,8 @@ an expired ticket, or one for another provider is refused before any socket is d
 
 from __future__ import annotations
 
-from hermes_cli.dashboard_auth import ws_tickets
-from hermes_cli.web_routers import display
+from moor_cli.dashboard_auth import ws_tickets
+from moor_cli.web_routers import display
 
 
 class _Ws:
@@ -21,9 +21,9 @@ def test_display_ticket_must_be_a_bot_desktop_ticket_pinned_to_a_profile_home(mo
     assert display._consume_display_ticket(_Ws(display_ticket=unpinned)) is None
 
     good = ws_tickets.mint_ticket(user_id="display:v", provider="bot-desktop",
-                                  extra={"hermes_home": "/srv/hermes/bot-a", "viewer_id": "v"})
+                                  extra={"moor_home": "/srv/moor/bot-a", "viewer_id": "v"})
     info = display._consume_display_ticket(_Ws(display_ticket=good))
-    assert info and info["hermes_home"] == "/srv/hermes/bot-a" and info["viewer_id"] == "v"
+    assert info and info["moor_home"] == "/srv/moor/bot-a" and info["viewer_id"] == "v"
     assert display._consume_display_ticket(_Ws(display_ticket=good)) is None, "single use"
 
 
@@ -36,7 +36,7 @@ def test_a_bad_ticket_is_refused_with_a_close_frame_the_renderer_can_read(monkey
     from starlette.testclient import TestClient
     from starlette.websockets import WebSocketDisconnect
 
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     ws_tickets._reset_for_tests()
     prev = {k: getattr(web_server.app.state, k, None) for k in ("auth_required", "bound_host")}
@@ -45,7 +45,7 @@ def test_a_bad_ticket_is_refused_with_a_close_frame_the_renderer_can_read(monkey
     client = TestClient(web_server.app)
     try:
         used = ws_tickets.mint_ticket(user_id="display:v", provider="bot-desktop",
-                                      extra={"hermes_home": "/srv/hermes/bot-a", "viewer_id": "v"})
+                                      extra={"moor_home": "/srv/moor/bot-a", "viewer_id": "v"})
         ws_tickets.consume_ticket(used)
         with client.websocket_connect(f"/api/display/ws?display_ticket={used}") as conn:  # handshake completes
             with pytest.raises(WebSocketDisconnect) as exc:

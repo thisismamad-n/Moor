@@ -27,7 +27,7 @@ const { hostMock, mergeServerMeta, trackInboundActivity } = vi.hoisted(() => ({
   trackInboundActivity: vi.fn()
 }))
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { atom } = await import('nanostores')
   const { useQuery } = await import('@tanstack/react-query')
 
@@ -39,7 +39,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
     useValue: (store: { get: () => unknown }) => store.get()
   }
 })
-vi.mock('./shared', () => ({ getPluginCtx: () => null, ID: 'hermes-bots' }))
+vi.mock('./shared', () => ({ getPluginCtx: () => null, ID: 'moor-bots' }))
 vi.mock('./profile-ops', () => ({ mergeServerMeta, pullServerAvatars: vi.fn() }))
 vi.mock('./roster-actions', () => ({ trackInboundActivity }))
 vi.mock('./soul', () => ({ backfillMessagingProtocol: vi.fn() }))

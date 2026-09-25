@@ -426,7 +426,7 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
           action: { label: m.restartAgain, onClick: () => void runGatewayRestart() },
           secondaryAction: {
             label: m.openLogs,
-            onClick: () => void window.hermesDesktop?.revealLogs?.().catch(() => undefined)
+            onClick: () => void window.moorDesktop?.revealLogs?.().catch(() => undefined)
           }
         })
       }

@@ -57,7 +57,7 @@ def _args(**overrides):
 # ---------------------------------------------------------------------------
 
 
-def test_cmd_install_failure_returns_1(hermes_home, monkeypatch):
+def test_cmd_install_failure_returns_1(moor_home, monkeypatch):
     def boom(**kw):
         raise RuntimeError("download failed")
     monkeypatch.setattr(ip, "install_iron_proxy", boom)
@@ -70,7 +70,7 @@ def test_cmd_install_failure_returns_1(hermes_home, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_cmd_setup_from_bitwarden_refuses_on_empty_vault(hermes_home, monkeypatch):
+def test_cmd_setup_from_bitwarden_refuses_on_empty_vault(moor_home, monkeypatch):
     """If BW returns {} (empty vault / scoped wrong / unreachable), fail
     loud rather than silently writing credential_source: bitwarden."""
 
@@ -218,7 +218,7 @@ def test_cmd_start_refuses_when_bitwarden_mode_but_disabled(moor_home, monkeypat
     assert rc == 1
 
 
-def test_cmd_setup_audit_log_failure_is_warning_not_abort(hermes_home, monkeypatch):
+def test_cmd_setup_audit_log_failure_is_warning_not_abort(moor_home, monkeypatch):
     """On the pinned v0.39 the daemon never writes audit.log, so a
     pre-create failure must not abort the wizard."""
 

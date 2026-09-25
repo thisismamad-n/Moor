@@ -15,12 +15,12 @@ Author in-repo SKILL.md files: frontmatter and structure.
 | | |
 |---|---|
 | Source | Bundled (installed by default) |
-| Path | `skills/software-development/hermes-agent-skill-authoring` |
+| Path | `skills/software-development/moor-agent-skill-authoring` |
 | Version | `2.0.0` |
 | Author | Moor Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
-| Tags | `skills`, `authoring`, `hermes-agent`, `conventions`, `skill-md` |
+| Tags | `skills`, `authoring`, `moor-agent`, `conventions`, `skill-md` |
 | Related skills | [`requesting-code-review`](../../bundled/software-development/software-development-requesting-code-review.md) |
 
 ## Reference: full SKILL.md

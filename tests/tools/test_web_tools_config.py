@@ -444,7 +444,7 @@ class TestParallelClientConfig:
     def test_client_follows_the_key_reload_applies(self):
         """/reload (reload_env) fixing or removing the key reaches the next call: the client built
         with the old key is never handed out again."""
-        from hermes_cli.config import get_env_path, reload_env
+        from moor_cli.config import get_env_path, reload_env
         from plugins.web.parallel.provider import _get_sync_client as _get_parallel_client
         with patch.dict(os.environ):
             get_env_path().write_text("PARALLEL_API_KEY=typo-key\n")
@@ -666,7 +666,7 @@ class TestCheckWebApiKey:
         has_xai_credentials probe -> check_fn -> get_tool_definitions. The web
         toolset must serve zero tools (xai can never be dispatched to), and it
         must light up once a real web key joins."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))  # isolate auth.json / credential pool
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))  # isolate auth.json / credential pool
         monkeypatch.setenv("XAI_API_KEY", "xai-test-key")
         for k in ("PERPLEXITY_API_KEY", "SEARXNG_URL", "BRAVE_SEARCH_API_KEY"):
             monkeypatch.delenv(k, raising=False)
@@ -984,7 +984,7 @@ def test_xai_only_gate_agrees_with_dispatcher_when_web_xai_plugin_loaded(monkeyp
     from agent import web_search_registry as registry
     from plugins.web.xai.provider import XAIWebSearchProvider
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setenv("XAI_API_KEY", "xai-test-key")
     for k in ("PERPLEXITY_API_KEY", "SEARXNG_URL", "BRAVE_SEARCH_API_KEY", "TAVILY_API_KEY", "EXA_API_KEY"):
         monkeypatch.delenv(k, raising=False)

@@ -396,7 +396,7 @@ export async function updateAgentPlugin(
 }
 
 /** Uninstall a user-installed agent plugin (backend `plugins.manage remove`;
- *  deletes `<HERMES_HOME>/plugins/<name>` and its install metadata). Drops the
+ *  deletes `<MOOR_HOME>/plugins/<name>` and its install metadata). Drops the
  *  row locally on success — callers rescan so a unified package's desktop half
  *  is pruned too. Returns whether the plugin was removed. */
 export async function removeAgentPlugin(

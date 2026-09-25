@@ -811,7 +811,7 @@ class TestCatalogProviderAlias:
         assert info is not None and info.provider_id == "deepseek" and info.context_window == 128000
 
     def test_mistyped_alias_warns_once_and_keeps_the_configured_slug(self, caplog):
-        """``catalog_provider: deepsek`` is neither a Hermes provider id nor a models.dev id: warn
+        """``catalog_provider: deepsek`` is neither a Moor provider id nor a models.dev id: warn
         once (per process, like the unknown-key warning) and keep ``ModelInfo.provider_id`` on the
         configured slug instead of leaking the typo as a vendor id."""
         import logging
@@ -1263,7 +1263,7 @@ class TestModelOverrides:
         """
         import importlib
 
-        import hermes_cli.config as hc
+        import moor_cli.config as hc
 
         home = tmp_path / "moor"
         home.mkdir()

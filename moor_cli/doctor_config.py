@@ -4,7 +4,7 @@ Split out of ``moor_cli/doctor.py``."""
 from __future__ import annotations
 
 import os
-from hermes_cli.doctor_report import (
+from moor_cli.doctor_report import (
     Finding, _fail_and_issue, _section, check_bool, check_fail, check_info, check_ok, check_warn, doctor_check,
     warn_on_error,
 )
@@ -269,8 +269,8 @@ def _validate_model_config(config_path, issues: list) -> None:
 def _validate_auxiliary_config(config_path, issues: list) -> None:
     """Resolve every routed ``auxiliary.<task>`` block through the real entry point the tasks use and report
     the ones that fail — an unresolvable block otherwise silently runs the task on the main model (#116055)."""
-    from hermes_cli.config import read_user_config_raw
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from moor_cli.config import read_user_config_raw
+    from moor_cli.runtime_provider import resolve_runtime_provider
     from utils import base_url_hostname
     aux = read_user_config_raw(config_path).get("auxiliary")
     routed = {name: block for name, block in (aux.items() if isinstance(aux, dict) else ())
@@ -307,7 +307,7 @@ def _check_config_file(should_fix: bool, f: Finding) -> None:
     elif (PROJECT_ROOT / 'cli-config.yaml').exists():
         check_ok("cli-config.yaml exists (in project directory)")
     elif should_fix:
-        from hermes_cli.config import seed_config_file
+        from moor_cli.config import seed_config_file
         from_template = seed_config_file(config_path, PROJECT_ROOT / 'cli-config.yaml.example')
         check_ok(f"Created {_DHH}/config.yaml from {'cli-config.yaml.example' if from_template else 'defaults'}")
         f.fixed += 1
@@ -429,7 +429,7 @@ def _drift_legacy_custom_providers(f: Finding, should_fix: bool, config_path) ->
     the version bump; an entry hand-written afterwards lives on in the retired list store (dual-read by the
     picker and the Custom Endpoints page) instead of the ``providers:`` map every other surface edits.
     """
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
     raw_config = read_user_config_raw(config_path)
     legacy = raw_config.get("custom_providers")
     if not isinstance(legacy, list):
@@ -457,15 +457,15 @@ def _check_channel_record_hygiene() -> None:
     """Stale per-install channel records (``update.installs.<sha16>``).
 
     Same report-don't-delete posture as the state sweep. Three shapes
-    (hermes_cli.update_channel.stale_channel_records): a record whose path
+    (moor_cli.update_channel.stale_channel_records): a record whose path
     holds a DIFFERENT install now (``replaced``), a record whose path is
     gone (``missing``), and a record no live install-state folder claims
     (``unclaimed``). Keep-on-doubt: doctor names the config key, the user
     removes it.
     """
     try:
-        from hermes_cli.config import load_config
-        from hermes_cli.update_channel import stale_channel_records
+        from moor_cli.config import load_config
+        from moor_cli.update_channel import stale_channel_records
 
         stale = stale_channel_records(load_config() or {})
     except Exception as exc:

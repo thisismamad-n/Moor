@@ -1,7 +1,7 @@
 """Source-install launchers shared by setup, installers, and Windows repair.
 
 Launchers execute store Python in isolated mode. They set the install's
-default home and load hermes_bootstrap before the entry point. Bootstrap
+default home and load moor_bootstrap before the entry point. Bootstrap
 reads the selected dependency generation at each start.
 
 Windows uses distlib executables or a command-file fallback. POSIX uses
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 from pm.environments import store_root
 
 
-def runtime_command(repo_root: Path, args=(), *, module: str = "hermes_cli.main",
+def runtime_command(repo_root: Path, args=(), *, module: str = "moor_cli.main",
                     code: str | None = None, python: str | Path | None = None,
                     home: str | Path | None = None) -> list[str]:
     """An installation-bound command, safe to persist across dependency GC.
@@ -37,14 +37,14 @@ def runtime_command(repo_root: Path, args=(), *, module: str = "hermes_cli.main"
     entry = f"exec({code!r})" if code is not None else (
         f"runpy.run_module({module!r}, run_name='__main__', alter_sys=True)")
     default_home = (f"{str(home)!r}" if home is not None else
-                    "str(__import__('hermes_constants').get_default_hermes_root())")
+                    "str(__import__('moor_constants').get_default_moor_root())")
     bootstrap = (
         "import os, sys, runpy; "
         "os.environ.pop('PYTHONHOME', None); os.environ.pop('PYTHONPATH', None); "
         "os.environ.pop('VIRTUAL_ENV', None); "
         f"sys.path.insert(0, {str(root)!r}); "
-        f"os.environ['HERMES_HOME'] = os.environ.get('HERMES_HOME') or {default_home}; "
-        "import hermes_bootstrap; "
+        f"os.environ['MOOR_HOME'] = os.environ.get('MOOR_HOME') or {default_home}; "
+        "import moor_bootstrap; "
         + entry
     )
     return [str(python), "-I", "-c", bootstrap, *args]
@@ -55,14 +55,14 @@ def print_runtime_command(repo_root: Path, argv: list[str]) -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Resolve this installation's launch command.")
-    parser.add_argument("--module", default="hermes_cli.main")
+    parser.add_argument("--module", default="moor_cli.main")
     parser.add_argument("args", nargs=argparse.REMAINDER)
     options = parser.parse_args(argv)
     args = options.args[1:] if options.args[:1] == ["--"] else options.args
     print(json.dumps(runtime_command(repo_root, args, module=options.module)))
 
 
-def installation_command(repo_root: Path, args=(), *, module: str = "hermes_cli.main",
+def installation_command(repo_root: Path, args=(), *, module: str = "moor_cli.main",
                          python: str | Path | None = None, home: str | Path | None = None) -> list[str]:
     """Persist a source launcher, never the versioned tool it currently uses.
 
@@ -73,18 +73,18 @@ def installation_command(repo_root: Path, args=(), *, module: str = "hermes_cli.
     root = Path(repo_root)
     if resolve_store_python(root) is None:
         return runtime_command(root, args, module=module, python=python, home=home)
-    prefix = [] if module == "hermes_cli.main" else ["--run-module", module]
-    return [str(root / ".hermes" / "bin" / "hermes"), *prefix, *args]
+    prefix = [] if module == "moor_cli.main" else ["--run-module", module]
+    return [str(root / ".moor" / "bin" / "moor"), *prefix, *args]
 
 #: Launcher command names — keep in lockstep with scripts/install.ps1
-#: Publish-UserCommand and hermes_cli/_install_repair.py.
-WINDOWS_BIN_LAUNCHERS = ("hermes", "hermes-acp")
+#: Publish-UserCommand and moor_cli/_install_repair.py.
+WINDOWS_BIN_LAUNCHERS = ("moor", "moor-acp")
 
 #: command name -> (entry module, callable) — mirrors pyproject.toml
 #: [project.scripts].
 ENTRY_POINTS = {
-    "hermes": ("hermes_cli.main", "main"),
-    "hermes-acp": ("acp_adapter.entry", "main"),
+    "moor": ("moor_cli.main", "main"),
+    "moor-acp": ("acp_adapter.entry", "main"),
 }
 
 
@@ -140,12 +140,12 @@ def exe_is_venv_bound(exe: Path, venv_dir: Path | None) -> bool:
         return False
     needles = set()
     for interpreter in (
-        venv_dir / "Scripts" / "hermes.exe",
-        venv_dir / "Scripts" / "hermes-acp.exe",
+        venv_dir / "Scripts" / "moor.exe",
+        venv_dir / "Scripts" / "moor-acp.exe",
         venv_dir / "Scripts" / "python.exe",
         venv_dir / "bin" / "python3",
-        venv_dir / "bin" / "hermes",
-        venv_dir / "bin" / "hermes-acp",
+        venv_dir / "bin" / "moor",
+        venv_dir / "bin" / "moor-acp",
     ):
         for enc in ("utf-8", "utf-16-le"):
             try:
@@ -276,17 +276,17 @@ def _launcher_script(name: str, repo_root: Path, dependencies: Path | None) -> s
         "os.environ.pop('PYTHONPATH', None)\n"
         f"sys.path.insert(0, {str(repo_root.resolve())!r})\n"
         "if sys.argv[1:2] == ['--print-runtime-command']: sys.dont_write_bytecode = True\n"
-        "from hermes_constants import get_default_hermes_root\n"
-        "os.environ['HERMES_HOME'] = os.environ.get('HERMES_HOME') or str(get_default_hermes_root())\n"
+        "from moor_constants import get_default_moor_root\n"
+        "os.environ['MOOR_HOME'] = os.environ.get('MOOR_HOME') or str(get_default_moor_root())\n"
         "if sys.argv[1:2] == ['--print-runtime-command']:\n"
         "    from pathlib import Path\n"
-        "    from hermes_cli._launchers import print_runtime_command\n"
+        "    from moor_cli._launchers import print_runtime_command\n"
         f"    print_runtime_command(Path({str(repo_root.resolve())!r}), sys.argv[2:])\n"
         "    sys.exit(0)\n"
-        "import hermes_bootstrap\n"
+        "import moor_bootstrap\n"
         "if sys.argv[1:2] == ['--run-module']:\n"
         "    import runpy\n"
-        "    if len(sys.argv) < 3: sys.exit('hermes: --run-module needs a module')\n"
+        "    if len(sys.argv) < 3: sys.exit('moor: --run-module needs a module')\n"
         "    module = sys.argv.pop(2)\n"
         "    del sys.argv[1]\n"
         "    runpy.run_module(module, run_name='__main__', alter_sys=True)\n"
@@ -326,17 +326,17 @@ def _owns_launcher(target: Path, root: Path) -> bool:
     except (OSError, UnicodeError, ValueError):
         return False
     paths = {str(root / p) for p in (
-        "hermes", "run_agent.py", "venv/bin/python", "venv/bin/python3",
-        ".hermes/bin/hermes", ".hermes/bin/hermes-acp",
+        "moor", "run_agent.py", "venv/bin/python", "venv/bin/python3",
+        ".moor/bin/moor", ".moor/bin/moor-acp",
     )}
     # Current store launchers pass this Python bootstrap as one shell argument.
     bootstrap = f"sys.path.insert(0, {str(root)!r})"
     if paths.intersection(tokens) or any(bootstrap in token for token in tokens):
         return True
-    # The historical updater wrote ACP as a sibling-hermes forwarder. Adopt
+    # The historical updater wrote ACP as a sibling-moor forwarder. Adopt
     # it only when that sibling demonstrably belongs to this installation.
-    if target.name == "hermes-acp":
-        sibling = target.with_name("hermes")
+    if target.name == "moor-acp":
+        sibling = target.with_name("moor")
         return (tokens == ["exec", str(sibling), "acp", "$@"]
                 and _owns_launcher(sibling, root))
     return False
@@ -354,8 +354,8 @@ def _publish_conveniences(root: Path, out_dir: Path, names, *, create: bool = Tr
         if (not create or target.exists() or target.is_symlink()) and not _owns_launcher(target, root):
             continue
         before = target.lstat().st_mtime_ns if target.exists() or target.is_symlink() else None
-        command = ([str(root / ".hermes/bin/hermes"), "--run-module", "run_agent"]
-                   if name == "hermes-agent" else [str(root / ".hermes/bin" / name)])
+        command = ([str(root / ".moor/bin/moor"), "--run-module", "run_agent"]
+                   if name == "moor-agent" else [str(root / ".moor/bin" / name)])
         if _write_shell(target, command) is None:
             raise OSError(f"could not publish launcher {target}")
         published[target] = before != target.lstat().st_mtime_ns
@@ -382,7 +382,7 @@ def stage_launcher(name: str, repo_root: Path, out_dir: Path) -> Path | None:
 def ensure_install_launchers(repo_root: Path, out_dir: Path) -> list[str]:
     """Publish exact-install commands; conveniences follow them across Python repins."""
     root = Path(repo_root).resolve()
-    local = root / ".hermes" / "bin"
+    local = root / ".moor" / "bin"
     local.mkdir(parents=True, exist_ok=True)
     written = [str(path) for name in WINDOWS_BIN_LAUNCHERS
                if (path := stage_launcher(name, root, local)) is not None]
@@ -412,7 +412,7 @@ def expose_cli(project_root: Path | None = None, *, create: bool = True) -> dict
 
     root = Path(project_root or install_root()).resolve()
     if _is_windows():
-        # The installer stages the user-facing commands into $HERMES_HOME\bin
+        # The installer stages the user-facing commands into $MOOR_HOME\bin
         # and registers that directory in the User PATH. An update skipped both
         # (this used to answer "windows-installer-owned"), so a machine updated
         # from a release predating that convention kept the old
@@ -420,14 +420,14 @@ def expose_cli(project_root: Path | None = None, *, create: bool = True) -> dict
         return _expose_windows_user_bin(root, create=create)
     if create:
         try:
-            from hermes_cli.config import load_config
+            from moor_cli.config import load_config
         except ImportError:
             # Installers expose after sync; never invent a config reader here.
             return {"ok": True, "skipped": "config-unavailable"}
         cli_cfg = (load_config() or {}).get("cli", {})
         if isinstance(cli_cfg, dict) and not cli_cfg.get("expose_on_path", True):
             return {"ok": True, "skipped": "config-disabled"}
-    from hermes_cli.steward import read_install_stamp
+    from moor_cli.steward import read_install_stamp
 
     if _is_bundled_payload(root):
         if create and sys.platform == "darwin":
@@ -438,19 +438,19 @@ def expose_cli(project_root: Path | None = None, *, create: bool = True) -> dict
     if resolve_store_python(root) is None:
         return {"ok": True, "skipped": "no-store-python"}
     try:
-        local = root / ".hermes" / "bin"
+        local = root / ".moor" / "bin"
         if len(ensure_install_launchers(root, local)) != len(WINDOWS_BIN_LAUNCHERS):
             return {"ok": False, "error": "source launcher publication failed"}
         dirs = [Path.home() / ".local" / "bin"]
         # Repair existing FHS/custom-home exposure, but never create new global
         # entries or reclaim a convenience that was repointed to another root.
-        from hermes_constants import get_default_hermes_root
-        for directory in (get_default_hermes_root() / "bin", Path("/usr/local/bin")):
-            if directory not in dirs and (not create or _owns_launcher(directory / "hermes", root)):
+        from moor_constants import get_default_moor_root
+        for directory in (get_default_moor_root() / "bin", Path("/usr/local/bin")):
+            if directory not in dirs and (not create or _owns_launcher(directory / "moor", root)):
                 dirs.append(directory)
         written = []
         for directory in dirs:
-            published = _publish_conveniences(root, directory, (*WINDOWS_BIN_LAUNCHERS, "hermes-agent"), create=create)
+            published = _publish_conveniences(root, directory, (*WINDOWS_BIN_LAUNCHERS, "moor-agent"), create=create)
             written.extend(path.name for path, changed in published.items() if changed)
         return {"ok": True, "written": written}
     except OSError as exc:
@@ -508,14 +508,14 @@ def _broadcast_environment_change() -> None:
 def _expose_windows_user_bin(root: Path, *, create: bool) -> dict:
     """Windows twin of expose_cli's POSIX half.
 
-    Stage the user-facing commands into ``$HERMES_HOME\\bin`` and register that
+    Stage the user-facing commands into ``$MOOR_HOME\\bin`` and register that
     directory in the User PATH -- the same two things scripts/install.ps1 does --
     so an update converges a machine installed under the older venv\\Scripts
     convention instead of leaving it there forever.
     """
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
 
-    directory = get_default_hermes_root() / "bin"
+    directory = get_default_moor_root() / "bin"
     try:
         if not create:
             # Bootstrap: repair only commands we already own, enable nothing new.
@@ -537,7 +537,7 @@ def _is_bundled_payload(root: Path) -> bool:
     sibling-directory sniff; a .git tree is a dev checkout regardless."""
     if (root / ".git").exists():
         return False
-    from hermes_cli.steward import STEWARD_DESKTOP, read_install_stamp
+    from moor_cli.steward import STEWARD_DESKTOP, read_install_stamp
 
     stamp = read_install_stamp(root)
     if not stamp:
@@ -546,7 +546,7 @@ def _is_bundled_payload(root: Path) -> bool:
 
 
 def _symlink_sealed_launchers(payload_bin) -> dict:
-    """Link ~/.local/bin/{hermes,hermes-agent,hermes-acp} at a sealed
+    """Link ~/.local/bin/{moor,moor-agent,moor-acp} at a sealed
     bundle's own prebuilt shims (macOS only).
 
     Symlinks, not copies: the shims are signed as part of the app bundle,
@@ -556,7 +556,7 @@ def _symlink_sealed_launchers(payload_bin) -> dict:
 
     Ownership guard mirrors expose_cli's wrapper logic: an existing
     entry is replaced only when it is ours — a symlink into THIS app
-    bundle's payload — or missing/broken. A user's own `hermes` (pipx,
+    bundle's payload — or missing/broken. A user's own `moor` (pipx,
     another checkout's wrapper) is never touched.
     """
     link_dir = Path.home() / ".local" / "bin"
@@ -564,7 +564,7 @@ def _symlink_sealed_launchers(payload_bin) -> dict:
     written: list[str] = []
     try:
         link_dir.mkdir(parents=True, exist_ok=True)
-        for name in ("hermes", "hermes-agent", "hermes-acp"):
+        for name in ("moor", "moor-agent", "moor-acp"):
             source = payload_bin / name
             if not source.is_file():
                 continue
@@ -601,9 +601,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     repo_root = Path(__file__).resolve().parents[1]
     if resolve_store_python(repo_root) is None:
-        parser.exit(1, "hermes: store interpreter is missing; finish pm install before publishing launchers\n")
+        parser.exit(1, "moor: store interpreter is missing; finish pm install before publishing launchers\n")
     args.out_dir.mkdir(parents=True, exist_ok=True)
     written = ensure_install_launchers(repo_root, args.out_dir)
     if len(written) != len(ENTRY_POINTS):
-        parser.exit(1, "hermes: launcher publication failed\n")
+        parser.exit(1, "moor: launcher publication failed\n")
     print("\n".join(written))

@@ -1,8 +1,8 @@
 [package]
-name = "hermes-bootstrap"
+name = "moor-bootstrap"
 version = "0.0.0"
-description = "Hermes Setup — signed installer that drives scripts/install.ps1"
-authors = ["Nous Research <info@nousresearch.com>"]
+description = "Moor Setup — signed installer that drives scripts/install.ps1"
+authors = ["Moor inc. <info@nousresearch.com>"]
 edition = "2021"
 rust-version = "1.77"
 

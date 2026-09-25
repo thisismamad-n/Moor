@@ -29,7 +29,7 @@ def switch_deferred_by_reset(agent, reason: "FailoverReason | None", reset_at) -
     if reason not in _RATE_LIMIT_FAILOVER_REASONS or getattr(agent, "_fallback_activated", False):
         return False
     try:
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         threshold = float((load_config() or {}).get("fallback", {}).get("min_switch_reset_seconds") or 0)
     except Exception:
         return False

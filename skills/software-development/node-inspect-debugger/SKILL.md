@@ -111,7 +111,7 @@ npm i -g chrome-remote-interface        # or project-local
 node --inspect-brk=9229 target.js &
 ```
 
-Driver script (save as `~/.hermes/cache/scratch/cdp-debug.js`):
+Driver script (save as `~/.moor/cache/scratch/cdp-debug.js`):
 
 ```javascript
 const CDP = require('chrome-remote-interface');
@@ -164,14 +164,14 @@ const CDP = require('chrome-remote-interface');
 Run it:
 
 ```bash
-node ~/.hermes/cache/scratch/cdp-debug.js
+node ~/.moor/cache/scratch/cdp-debug.js
 ```
 
 moor-specific note: `chrome-remote-interface` is NOT in `ui-tui/package.json`. Install it to a throwaway location if you don't want to dirty the project:
 
 ```bash
-mkdir -p ~/.hermes/cache/scratch/cdp-tools && cd ~/.hermes/cache/scratch/cdp-tools && npm i chrome-remote-interface
-NODE_PATH=~/.hermes/cache/scratch/cdp-tools/node_modules node ~/.hermes/cache/scratch/cdp-debug.js
+mkdir -p ~/.moor/cache/scratch/cdp-tools && cd ~/.moor/cache/scratch/cdp-tools && npm i chrome-remote-interface
+NODE_PATH=~/.moor/cache/scratch/cdp-tools/node_modules node ~/.moor/cache/scratch/cdp-debug.js
 ```
 
 ## Debugging Moor ui-tui
@@ -246,8 +246,8 @@ await client.Profiler.enable();
 await client.Profiler.start();
 await new Promise(r => setTimeout(r, 5000));
 const { profile } = await client.Profiler.stop();
-require('fs').writeFileSync('~/.hermes/cache/scratch/cpu.cpuprofile', JSON.stringify(profile));
-// Open ~/.hermes/cache/scratch/cpu.cpuprofile in Chrome DevTools → Performance tab
+require('fs').writeFileSync('~/.moor/cache/scratch/cpu.cpuprofile', JSON.stringify(profile));
+// Open ~/.moor/cache/scratch/cpu.cpuprofile in Chrome DevTools → Performance tab
 ```
 
 ```javascript
@@ -256,7 +256,7 @@ await client.HeapProfiler.enable();
 const chunks = [];
 client.HeapProfiler.addHeapSnapshotChunk(({ chunk }) => chunks.push(chunk));
 await client.HeapProfiler.takeHeapSnapshot({ reportProgress: false });
-require('fs').writeFileSync('~/.hermes/cache/scratch/heap.heapsnapshot', chunks.join(''));
+require('fs').writeFileSync('~/.moor/cache/scratch/heap.heapsnapshot', chunks.join(''));
 ```
 
 ## Common Pitfalls

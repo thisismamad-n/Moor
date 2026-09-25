@@ -150,7 +150,7 @@ def refresh_moor_auth_keepalive_once(
     *, min_key_ttl_seconds: int = MOOR_INVOKE_JWT_MIN_TTL_SECONDS,
     min_access_ttl_seconds: Optional[int] = None, timeout_seconds: Optional[float] = None,
 ) -> bool:
-    """Refresh Nous auth once if credentials are configured (pool entry first, then singleton state)."""
+    """Refresh Moor auth once if credentials are configured (pool entry first, then singleton state)."""
     # This runs in a bare daemon thread, so it does not inherit a request's ContextVars. Once a
     # gateway multiplexes profiles, even the launch profile must bind its own scope before a
     # credential read; otherwise the fail-closed routing reader warns on every tick.
@@ -162,17 +162,17 @@ def refresh_moor_auth_keepalive_once(
         )
         if pool_result is not None:
             return pool_result
-        if not get_provider_auth_state("nous"):
+        if not get_provider_auth_state("moor"):
             return False
         try:
-            resolve_nous_runtime_credentials(timeout_seconds=_timeout_seconds(timeout_seconds))
-            logger.debug("Nous auth keepalive: refreshed singleton auth state")
+            resolve_moor_runtime_credentials(timeout_seconds=_timeout_seconds(timeout_seconds))
+            logger.debug("Moor auth keepalive: refreshed singleton auth state")
             return True
         except Exception as exc:
             if isinstance(exc, AuthError) and exc.relogin_required:
-                logger.info("Nous auth keepalive requires re-login: %s", exc)
+                logger.info("Moor auth keepalive requires re-login: %s", exc)
             else:
-                logger.debug("Nous auth keepalive failed: %s", exc)
+                logger.debug("Moor auth keepalive failed: %s", exc)
             return False
 
 

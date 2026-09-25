@@ -56,7 +56,7 @@ def _git_stdout(git_cmd, args, cwd, **kw) -> Optional[str]:
 def _prune_orphan_rescue_refs(
     git_cmd, cwd, branch, keep=_ORPHAN_RESCUE_REFS_TO_KEEP, max_age_days=_ORPHAN_RESCUE_REF_MAX_AGE_DAYS
 ) -> None:
-    """Expire old rescue refs (``refs/hermes-update-backups/<kind>-<branch>-<ts>-<sha>``).
+    """Expire old rescue refs (``refs/moor-update-backups/<kind>-<branch>-<ts>-<sha>``).
 
     ``<kind>`` is ``orphan`` (no common ancestor) or ``diverged`` (local commits on the target
     branch). Both are written before the same ``reset --hard`` and both pin objects, so both
@@ -71,11 +71,11 @@ def _prune_orphan_rescue_refs(
     those objects include a full working-tree snapshot (the autostash orphan commit), which can be multi-GB
     when the tree holds large stray files. See #87694.
     """
-    from hermes_cli.update_cmd_git import _git_run
+    from moor_cli.update_cmd_git import _git_run
     with suppress(OSError):
         stale: set[str] = set()
         for kind in ("orphan", "diverged"):
-            prefix = f"refs/hermes-update-backups/{kind}-{branch}-"
+            prefix = f"refs/moor-update-backups/{kind}-{branch}-"
             list_result = _git_run(
                 git_cmd, ["for-each-ref", "--format=%(refname)", "--sort=refname", f"{prefix}*"], cwd)
             if list_result.returncode != 0:
@@ -130,7 +130,7 @@ def _assess_parked_branch_switch(git_cmd: list[str], cwd: Path, current_branch: 
     - (False, "disabled"|"dirty"|"unverifiable") — caller must NOT touch the branch. Dirty is the
       genuinely unsafe case: uncommitted work riding an autostash across branches.
     A config read failure must not disable the safety checks: fall through with the default."""
-    from hermes_cli.update_cmd_git import _git_run
+    from moor_cli.update_cmd_git import _git_run
     try:
         from moor_cli.config import load_config
         _update_cfg = (load_config() or {}).get("updates", {})
@@ -367,7 +367,7 @@ _FETCH_FAILURE_RULES = (
     # key (or lack of one) was the cause (#82169).
     (lambda s: "Permission denied (publickey)" in s or "Host key verification failed" in s,
      "✗ SSH authentication failed — check your SSH key is added to GitHub, or switch"
-     " `origin` to HTTPS: `git remote set-url origin https://github.com/NousResearch/hermes-agent.git`."),
+     " `origin` to HTTPS: `git remote set-url origin https://github.com/thisismamad-n/Moor.git`."),
 )
 
 
@@ -414,7 +414,7 @@ def _portable_git_candidates() -> list:
     profile-scoped MOOR_HOME (``<root>/profiles/<name>``), so a profile-scoped ``moor update`` must look
     there (monerostar review, #87876).
     """
-    from hermes_constants import get_default_hermes_root, get_hermes_home
+    from moor_constants import get_default_moor_root, get_moor_home
     candidates = []
     with suppress(Exception):
         candidates += [root / "git" / "mingw64" / "libexec" / "git-core" / "git.exe" for root in (get_default_moor_root(), Path(get_moor_home()))]
@@ -484,7 +484,7 @@ def _discard_lockfile_churn(git_cmd, repo_root):
     lock that is the root or ANY workspace ``package.json`` (reverting it under a dirty ``apps/desktop``
     manifest desyncs spec and lock and every later ``npm ci`` fails, #112378); a nested lock is kept only
     with its sibling manifest. Best-effort."""
-    from hermes_cli.update_cmd_git import _git_run
+    from moor_cli.update_cmd_git import _git_run
     with suppress(Exception):
         diff = _git_run(git_cmd, ["diff", "--name-only"], repo_root)
         if diff.returncode != 0:
@@ -522,7 +522,7 @@ def _normalize_managed_eol(git_cmd, repo_root):
     reuses its build-pinned ``install.ps1`` forever — so ``moor update``, which ships with the checkout
     itself, is the only path left that can fix them. See #67730.
     """
-    from hermes_cli.update_cmd_git import _git_run
+    from moor_cli.update_cmd_git import _git_run
     # -c, not config: evaluate the tree as it WOULD look pinned, persisting nothing.
     probe = git_cmd + ["-c", "core.autocrlf=false"]
 

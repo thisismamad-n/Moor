@@ -10,7 +10,7 @@ import subprocess
 import urllib.error
 import urllib.request
 
-from hermes_cli.update_channel import STABLE_TAG_RE, is_canary_tag
+from moor_cli.update_channel import STABLE_TAG_RE, is_canary_tag
 
 logger = logging.getLogger(__name__)
 _PUBLIC_BASE = "https://hermes-assets.nousresearch.com"
@@ -25,7 +25,7 @@ _SHA = re.compile(r"[0-9a-f]{40}")
 def source_repository(git_cmd=None, cwd=None) -> str:
     """GitHub forks own their releases; other origins must mirror official tags."""
     if git_cmd is not None:
-        from hermes_cli.source_check import source_git_env
+        from moor_cli.source_check import source_git_env
 
         result = subprocess.run(
             [*git_cmd, "config", "--get", "remote.origin.url"], cwd=cwd,
@@ -67,14 +67,14 @@ def _resolve_channel(name: str, repository: str):
     GitHub fallback is allowed when a record is unavailable; the one exception
     is an unpublished ``main`` record, which resolves to the main branch.
     """
-    from hermes_cli.release_channels import ChannelReader
+    from moor_cli.release_channels import ChannelReader
 
     return ChannelReader(_PUBLIC_BASE, repository=repository).resolve(name)
 
 
 def resolve_source_target(channel: str, git_cmd=None, cwd=None, *, repository=None) -> SourceTarget:
     """Resolve every subscription, including default labels, through R2."""
-    from hermes_cli.release_channels import ChannelNotFound, validate_name
+    from moor_cli.release_channels import ChannelNotFound, validate_name
 
     validate_name(channel)
     repository = repository or source_repository(git_cmd, cwd)
@@ -127,7 +127,7 @@ def _refuse_retirement_downgrade(request: dict, terminal: dict, git_cmd, cwd) ->
         if tuple(map(int, installed_version.split("."))) > tuple(map(int, request["sourceVersion"].split("."))):
             raise ValueError("Source retirement would downgrade a newer source version; select the destination channel explicitly")
     if git_cmd is not None:
-        from hermes_cli.source_check import source_git_env
+        from moor_cli.source_check import source_git_env
 
         result = subprocess.run(
             [*git_cmd, "rev-list", "--ancestry-path", f"{request['commit']}..HEAD"], cwd=cwd,
@@ -156,7 +156,7 @@ def _refuse_retirement_downgrade(request: dict, terminal: dict, git_cmd, cwd) ->
 
 def _read(url: str, *, missing_ok: bool = False) -> str | None:
     request = urllib.request.Request(url, headers={
-        "User-Agent": "hermes-update", "Cache-Control": "no-cache",
+        "User-Agent": "moor-update", "Cache-Control": "no-cache",
         "Accept": "application/json, text/html",
     })
     try:
@@ -175,7 +175,7 @@ class _BuildMetadata(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         fields = dict(attrs)
-        if tag == "meta" and fields.get("name") == "hermes-build":
+        if tag == "meta" and fields.get("name") == "moor-build":
             self.tags.append(fields.get("content"))
 
 
@@ -268,7 +268,7 @@ def resolve_source_release(channel: str, git_cmd=None, cwd=None, *, repository=N
         if not isinstance(sha, str) or not _SHA.fullmatch(sha):
             raise ValueError(f"No published commit for release {tag}")
         if git_cmd is not None:
-            from hermes_cli.source_check import source_git_env
+            from moor_cli.source_check import source_git_env
 
             ref = f"refs/tags/{tag}"
             result = subprocess.run(

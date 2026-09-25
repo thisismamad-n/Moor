@@ -12,9 +12,9 @@ from __future__ import annotations
 import pytest
 
 from agent.account_usage import build_credits_view
-from hermes_cli.nous_account import NousPortalAccountInfo, NousPaidServiceAccessInfo
+from moor_cli.moor_account import MoorPortalAccountInfo, MoorPaidServiceAccessInfo
 
-def _account(**kwargs) -> NousPortalAccountInfo:
+def _account(**kwargs) -> MoorPortalAccountInfo:
     kwargs.setdefault("logged_in", True)
     kwargs.setdefault("source", "account_api")
     kwargs.setdefault("fresh", True)

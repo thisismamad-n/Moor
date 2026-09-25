@@ -18,7 +18,7 @@ _firecrawl_client = _firecrawl_client_config = _parallel_client = _async_paralle
 
 from plugins.web.firecrawl.provider import _is_tool_gateway_ready, check_firecrawl_api_key
 from tools.debug_helpers import DebugSession
-from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, read_selection, selection_exists
+from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, read_selection, selection_exists
 from tools.url_safety import async_is_safe_url
 from tools.web_tools_rescue import _managed_search_fallback, _rescue_eligible, _rescue_search
 from tools.web_tools_truncate import _effective_char_limit, _trim_results, _truncate_results, convert_base64_images_to_links
@@ -105,8 +105,8 @@ def _get_backend() -> str:
     ``web.extract_backend``) name only their own capability and never reroute the other (#113017)."""
     configured = _configured_backend()
     if configured:
-        # "nous" (managed subscription) is serviced by firecrawl, routed through the managed Tool Gateway.
-        return "firecrawl" if configured == NOUS_MANAGED_PROVIDER else configured
+        # "moor" (managed subscription) is serviced by firecrawl, routed through the managed Tool Gateway.
+        return "firecrawl" if configured == MOOR_MANAGED_PROVIDER else configured
     if read_selection("web") is not None:
         # Shared selection exists (use_gateway) but no shared name: firecrawl, no ladder.
         return "firecrawl"
@@ -152,19 +152,19 @@ def _keyless_backend() -> Optional[str]:
 
 
 def _managed_web_search() -> bool:
-    """True when web_search is on the managed Nous route: the stored ``nous`` selection, or a
+    """True when web_search is on the managed Moor route: the stored ``moor`` selection, or a
     never-configured install whose autodetect lands on the gateway. A stored vendor selection never is."""
     if _configured_backend("search_backend"):
         return False
     selected = read_selection("web")
     if selected is not None:
-        return selected == NOUS_MANAGED_PROVIDER
+        return selected == MOOR_MANAGED_PROVIDER
     return _get_backend() == "firecrawl" and not (_has_env("FIRECRAWL_API_KEY") or _has_env("FIRECRAWL_API_URL")) and _is_tool_gateway_ready()
 
 
 def _get_search_backend() -> str:
     """Backend for web_search: ``web.search_backend`` (strict, no probe) > ``web.backend`` > autodetect.
-    The managed Nous route serves search from Perplexity (extract stays on Firecrawl); managed Firecrawl
+    The managed Moor route serves search from Perplexity (extract stays on Firecrawl); managed Firecrawl
     is the per-call fallback, see ``_memoized_search``."""
     return _configured_backend("search_backend") or ("perplexity" if _managed_web_search() else _get_backend())
 

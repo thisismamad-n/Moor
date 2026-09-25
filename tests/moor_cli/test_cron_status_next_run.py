@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from cron import jobs as job_store
-from hermes_cli.cron import _print_active_jobs_summary
+from moor_cli.cron import _print_active_jobs_summary
 
 
 @pytest.fixture(autouse=True)
@@ -14,8 +14,8 @@ def _frozen_clock(monkeypatch):
     # Freeze both the scheduler's clock (normalisation) and the CLI's (overdue check): the
     # fixtures below are 2026-11 instants and must never start reading as overdue.
     now = datetime(2026, 10, 31, tzinfo=ZoneInfo("America/New_York"))
-    monkeypatch.setattr(job_store, "_hermes_now", lambda: now)
-    monkeypatch.setattr("hermes_time.now", lambda: now)
+    monkeypatch.setattr(job_store, "_moor_now", lambda: now)
+    monkeypatch.setattr("moor_time.now", lambda: now)
 
 
 @pytest.mark.parametrize("later,earlier", [

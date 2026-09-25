@@ -15,7 +15,7 @@ import sys
 
 import pytest
 
-from hermes_cli.sqlite_safe_read import (
+from moor_cli.sqlite_safe_read import (
     connect_tracked,
     has_live_connection,
 )
@@ -297,7 +297,7 @@ class TestReportDatabaseJournalModes:
 
         out = capsys.readouterr().out
         assert "state.db is in WAL mode on a cross-VM filesystem" in out
-        assert "hermes sessions set-journal-mode delete" in out
+        assert "moor sessions set-journal-mode delete" in out
 
     def test_vulnerable_runtime_wal_db_is_exposed(self, tmp_path, capsys):
         _make_db(tmp_path / "state.db", journal_mode="WAL")
@@ -424,7 +424,7 @@ class TestConfiguredDeleteNeverApplied:
 
         out = capsys.readouterr().out
         assert "state.db is in WAL mode" in out and "despite database.journal_mode=delete" in out
-        assert "never live-downgraded" in out and "hermes sessions set-journal-mode delete" in out
+        assert "never live-downgraded" in out and "moor sessions set-journal-mode delete" in out
         assert "state.db: WAL journal mode" not in out
         assert ("To clear the exposure:" in out) is exposed
 
@@ -433,7 +433,7 @@ class TestConfiguredDeleteNeverApplied:
         # subprocess holding a real connection is named by PID; the doctor process itself is not a holder.
         db = tmp_path / "state.db"
         _make_db(db, journal_mode="WAL")
-        monkeypatch.setattr("hermes_state_wal.resolve_journal_mode", lambda: "delete")
+        monkeypatch.setattr("moor_state_wal.resolve_journal_mode", lambda: "delete")
         holder = subprocess.Popen(
             [sys.executable, "-c",
              "import os, sqlite3, sys; c = sqlite3.connect(sys.argv[1]); c.execute('SELECT count(*) FROM t'); "
@@ -455,8 +455,8 @@ class TestConfiguredDeleteNeverApplied:
 
     def test_partial_holder_scan_is_never_an_all_clear(self, tmp_path, capsys, monkeypatch):
         _make_db(tmp_path / "state.db", journal_mode="WAL")
-        monkeypatch.setattr("hermes_state_wal.resolve_journal_mode", lambda: "delete")
-        monkeypatch.setattr("hermes_state_holders.foreign_state_db_holders",
+        monkeypatch.setattr("moor_state_wal.resolve_journal_mode", lambda: "delete")
+        monkeypatch.setattr("moor_state_holders.foreign_state_db_holders",
                             lambda path: [(-1, "open-file scan unavailable")])
 
         doctor_platform._report_database_journal_modes(tmp_path, (3, 51, 3))

@@ -13,7 +13,7 @@ import type {
   MemoryStatusResponse
 } from '@/types/moor'
 
-import { capabilityScoped, hermesApi, type OwnerScope, ownerScoped, type ProfileScope, profileScoped } from './client'
+import { capabilityScoped, moorApi, type OwnerScope, ownerScoped, type ProfileScope, profileScoped } from './client'
 
 export const AUDIO_SPEAK_MIN_REQUEST_TIMEOUT_MS = 180_000
 export const AUDIO_SPEAK_MAX_REQUEST_TIMEOUT_MS = 600_000
@@ -187,7 +187,7 @@ export function transcribeAudio(dataUrl: string, mimeType?: string): Promise<Aud
 // `owner` = the speaking session's (connection, profile) — a Bot's own TTS
 // voice on its own gateway; omitted halves → the active scope.
 export function speakText(text: string, owner?: OwnerScope): Promise<AudioSpeakResponse> {
-  return hermesApi<AudioSpeakResponse>({
+  return moorApi<AudioSpeakResponse>({
     ...ownerScoped(owner),
     path: '/api/audio/speak',
     method: 'POST',
@@ -249,11 +249,11 @@ export function getGhAuthStatus(refresh = false): Promise<{ available: boolean; 
 // ---------------------------------------------------------------------------
 
 export function runDoctor(): Promise<ActionResponse> {
-  return hermesApi<ActionResponse>({ ...profileScoped(), path: '/api/ops/doctor', method: 'POST', body: {} })
+  return moorApi<ActionResponse>({ ...profileScoped(), path: '/api/ops/doctor', method: 'POST', body: {} })
 }
 
 export function runSecurityAudit(): Promise<ActionResponse> {
-  return hermesApi<ActionResponse>({
+  return moorApi<ActionResponse>({
     ...profileScoped(),
     path: '/api/ops/security-audit',
     method: 'POST',
@@ -262,7 +262,7 @@ export function runSecurityAudit(): Promise<ActionResponse> {
 }
 
 export function runBackup(): Promise<ActionResponse & { archive?: string }> {
-  return hermesApi<ActionResponse & { archive?: string }>({
+  return moorApi<ActionResponse & { archive?: string }>({
     ...profileScoped(),
     path: '/api/ops/backup',
     method: 'POST',
@@ -271,7 +271,7 @@ export function runBackup(): Promise<ActionResponse & { archive?: string }> {
 }
 
 export function runDebugShare(): Promise<DebugShareResponse> {
-  return hermesApi<DebugShareResponse>({
+  return moorApi<DebugShareResponse>({
     ...profileScoped(),
     path: '/api/ops/debug-share',
     method: 'POST',

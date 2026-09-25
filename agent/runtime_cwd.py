@@ -47,7 +47,7 @@ def clear_session_cwd() -> None:
 def scoped_session_cwd() -> str:
     """Return the current session's declared cwd without local path validation.
 
-    Remote and container paths may not exist on the Hermes host. Callers that only need
+    Remote and container paths may not exist on the Moor host. Callers that only need
     logical workspace identity should preserve the declared value instead of resolving it.
     """
     value = _SESSION_CWD.get()

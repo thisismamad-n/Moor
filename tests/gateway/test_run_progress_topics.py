@@ -464,19 +464,19 @@ def _make_runner(adapter):
 
 
 def test_tool_progress_mode_reads_profile_scope_not_process_environ(monkeypatch, tmp_path):
-    """HERMES_TOOL_PROGRESS_MODE must resolve through the active profile's secret scope, not
+    """MOOR_TOOL_PROGRESS_MODE must resolve through the active profile's secret scope, not
     process-wide ``os.environ``. Under gateway multiplexing ``os.environ`` carries whichever
     profile's ``.env`` loaded last, so a raw ``os.getenv`` here would leak that profile's setting
     into every other profile's turns (#116898)."""
     from agent import secret_scope
 
     gateway_run = importlib.import_module("gateway.run")
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_moor_home", tmp_path)
 
     # Simulates a leaked env var from whichever profile's process env loaded last.
-    monkeypatch.setenv("HERMES_TOOL_PROGRESS_MODE", "off")
+    monkeypatch.setenv("MOOR_TOOL_PROGRESS_MODE", "off")
     # This profile's OWN scoped value, which must win over the leaked process env.
-    token = secret_scope.set_secret_scope({"HERMES_TOOL_PROGRESS_MODE": "all"})
+    token = secret_scope.set_secret_scope({"MOOR_TOOL_PROGRESS_MODE": "all"})
     try:
         adapter = ProgressCaptureAdapter(platform=Platform.SLACK)
         runner = _make_runner(adapter)
@@ -496,15 +496,15 @@ def test_tool_progress_mode_follows_profile_through_the_real_scoping_seam(monkey
     (#116898)."""
     from agent import secret_scope
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     beta = root / "profiles" / "beta"
     beta.mkdir(parents=True)
     # Leaked value from whichever profile's process env loaded last under multiplexing.
-    monkeypatch.setenv("HERMES_TOOL_PROGRESS_MODE", "off")
-    (root / ".env").write_text("HERMES_TOOL_PROGRESS_MODE=log\n")
-    (beta / ".env").write_text("HERMES_TOOL_PROGRESS_MODE=verbose\n")
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setenv("MOOR_TOOL_PROGRESS_MODE", "off")
+    (root / ".env").write_text("MOOR_TOOL_PROGRESS_MODE=log\n")
+    (beta / ".env").write_text("MOOR_TOOL_PROGRESS_MODE=verbose\n")
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
 
     prev_multiplex = secret_scope.is_multiplex_active()
     secret_scope.set_multiplex_active(True)
@@ -534,7 +534,7 @@ async def test_run_agent_progress_uses_event_message_id_for_slack_dm(monkeypatch
     # Since PR #8006, Slack's built-in display tier sets tool_progress="off"
     # by default. Override via config so this test still exercises the
     # progress-callback path the Slack DM event_message_id threading depends on.
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"display": {"platforms": {"slack": {"tool_progress": "all"}}}}),
         encoding="utf-8",
@@ -584,7 +584,7 @@ async def test_run_agent_progress_uses_event_message_id_for_slack_dm(monkeypatch
 @pytest.mark.asyncio
 async def test_scheduled_heartbeat_suppresses_routine_progress_and_typing(monkeypatch, tmp_path):
     """A silent scheduled heartbeat must not create a visible progress surface."""
-    monkeypatch.setenv("HERMES_TOOL_PROGRESS_MODE", "all")
+    monkeypatch.setenv("MOOR_TOOL_PROGRESS_MODE", "all")
     fake_run_agent = types.ModuleType("run_agent")
     fake_run_agent.AIAgent = SilentHeartbeatAgent
     monkeypatch.setitem(sys.modules, "run_agent", fake_run_agent)
@@ -592,7 +592,7 @@ async def test_scheduled_heartbeat_suppresses_routine_progress_and_typing(monkey
     adapter = ProgressCaptureAdapter()
     runner = _make_runner(adapter)
     gateway_run = importlib.import_module("gateway.run")
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_moor_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"})
 
     source = SessionSource(
@@ -625,8 +625,8 @@ async def test_progress_carries_anchor_for_relay_discord_auto_thread(monkeypatch
     anchor (reply_to + metadata.reply_to_message_id) so they route into the
     SAME auto-thread as the final reply — otherwise the search-status updates
     leak into the parent channel (staging repro 2026-08-02)."""
-    monkeypatch.setenv("HERMES_TOOL_PROGRESS_MODE", "all")
-    import hermes_yaml as yaml
+    monkeypatch.setenv("MOOR_TOOL_PROGRESS_MODE", "all")
+    import moor_yaml as yaml
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"display": {"platforms": {"discord": {"tool_progress": "all"}}}}),
         encoding="utf-8",
@@ -684,8 +684,8 @@ async def test_progress_no_anchor_for_native_discord_thread_event(monkeypatch, t
     """A message ARRIVING in an existing Discord thread (not the relay
     auto-thread lane) must NOT get the synthetic prospective anchor — it already
     routes by its real thread. Guards against over-broadening the relay fix."""
-    monkeypatch.setenv("HERMES_TOOL_PROGRESS_MODE", "all")
-    import hermes_yaml as yaml
+    monkeypatch.setenv("MOOR_TOOL_PROGRESS_MODE", "all")
+    import moor_yaml as yaml
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"display": {"platforms": {"discord": {"tool_progress": "all"}}}}),
         encoding="utf-8",
@@ -768,7 +768,7 @@ def _run_long_preview_helper(monkeypatch, tmp_path, preview_length=0):
     that _run_agent reads — so the gateway picks it up the same way production does.
     """
     import asyncio
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     monkeypatch.setenv("MOOR_TOOL_PROGRESS_MODE", "all")
 
@@ -827,7 +827,7 @@ def test_all_mode_respects_custom_preview_length(monkeypatch, tmp_path):
 
 def test_discord_truncated_tool_url_links_to_full_destination(monkeypatch, tmp_path):
     """The real gateway path must retain the URL beyond its visible cap."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     monkeypatch.setenv("MOOR_TOOL_PROGRESS_MODE", "all")
 
@@ -1077,7 +1077,7 @@ async def _run_with_agent(
     scope_id=None,
 ):
     if config_data:
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         (tmp_path / "config.yaml").write_text(yaml.safe_dump(config_data), encoding="utf-8")
 
@@ -1802,7 +1802,7 @@ async def test_base_processing_stops_typing_before_hung_post_delivery_callback(
 
 @pytest.mark.asyncio
 async def test_run_agent_drops_tool_progress_after_generation_invalidation(monkeypatch, tmp_path):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"display": {"tool_progress": "all"}}),
@@ -1864,7 +1864,7 @@ async def test_run_agent_drops_tool_progress_after_generation_invalidation(monke
 
 @pytest.mark.asyncio
 async def test_run_agent_drops_interim_commentary_after_generation_invalidation(monkeypatch, tmp_path):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"display": {"tool_progress": "off", "interim_assistant_messages": True}}),

@@ -15,7 +15,7 @@ object_server, publisher = _fixture.object_server, _fixture.publisher
 
 
 def seed_manifest(pub, request, objects):
-    from hermes_cli.release_channels import build_prefix, canonical_json
+    from moor_cli.release_channels import build_prefix, canonical_json
     key = build_prefix(request["buildId"]) + "build.json"
     manifest = {"schema": 1, "receiverProtocol": 1, "request": request, "packages": [{"platform": "darwin", "arch": "arm64", "variant": "bundled",
         "artifact": {"key": build_prefix(request["buildId"]) + "darwin/package.zip", "sha256": "f" * 64, "size": 123},
@@ -32,7 +32,7 @@ def seed_manifest(pub, request, objects):
 
 
 def test_resolve_verifies_exact_manifest_and_preserves_retirement_constraints():
-    from hermes_cli.release_channels import ChannelReader, ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelReader, ChannelError, canonical_json
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
         for name in ("old-preview", "next-preview"):
@@ -42,7 +42,7 @@ def test_resolve_verifies_exact_manifest_and_preserves_retirement_constraints():
         manifest, record = seed_manifest(pub, request, objects)
         record["policy"] = "stable-release"
         objects["releases/channels/next-preview.json"] = canonical_json(record)
-        reader = ChannelReader(url + "/bucket", repository="example/hermes-agent")
+        reader = ChannelReader(url + "/bucket", repository="example/moor-agent")
         assert reader.resolve("next-preview").manifest == manifest
         old = pub._read("old-preview")[0]
         old.update(state="retired", destination="next-preview", minimumVersion="1.0.0",
@@ -67,19 +67,19 @@ def test_resolve_verifies_exact_manifest_and_preserves_retirement_constraints():
 
 @pytest.mark.parametrize("name", ["X", "../x", "two--parts", "a/b", "a%2fb", "a_1", "con", "nul", "x-", "x" * 33, " a", "a\n"])
 def test_names_are_validated_without_normalizing(name):
-    from hermes_cli.release_channels import ChannelError, validate_name
+    from moor_cli.release_channels import ChannelError, validate_name
     with pytest.raises(ChannelError):
         validate_name(name)
 
 
 def test_reader_rejects_cycles_identity_substitution_and_cross_authority():
-    from hermes_cli.release_channels import ChannelReader, ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelReader, ChannelError, canonical_json
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
         pub.create("alpha")
         request = pub.allocate("alpha", "a" * 40, "1.2.3")
         manifest, record = seed_manifest(pub, request, objects)
-        reader = ChannelReader(url + "/bucket", repository="example/hermes-agent")
+        reader = ChannelReader(url + "/bucket", repository="example/moor-agent")
         substituted = deepcopy(manifest)
         substituted["request"]["identity"]["appId"] = "ai.other.identity"
         raw = canonical_json(substituted)
@@ -88,11 +88,11 @@ def test_reader_rejects_cycles_identity_substitution_and_cross_authority():
         objects["releases/channels/alpha.json"] = canonical_json(record)
         with pytest.raises(ChannelError, match="identity"):
             reader.resolve("alpha")
-        record["repository"] = "other/hermes-agent"
+        record["repository"] = "other/moor-agent"
         objects["releases/channels/alpha.json"] = canonical_json(record)
         with pytest.raises(ChannelError, match="authority"):
             reader.resolve("alpha")
-        record["repository"] = "example/hermes-agent"
+        record["repository"] = "example/moor-agent"
         record.update(state="retired", destination="alpha", minimumVersion="1.0.0", lastHead=record["head"],
                       destinationHead=record["head"], receiverProtocol=1,
                       receiver={"kind": "discontinued"})
@@ -102,7 +102,7 @@ def test_reader_rejects_cycles_identity_substitution_and_cross_authority():
 
 
 def test_legacy_bootstrap_uses_real_archive_keys_and_source_main_has_no_bundle():
-    from hermes_cli.release_channels import canonical_json, ChannelError
+    from moor_cli.release_channels import canonical_json, ChannelError
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url, verify_build=lambda request, manifest: True)
         preview = pub.create("temporary")
@@ -122,7 +122,7 @@ def test_legacy_bootstrap_uses_real_archive_keys_and_source_main_has_no_bundle()
             pub.bootstrap(record, legacy, publish=True)
             assert pub.reader.resolve(name).manifest == legacy
             assert pub.request(legacy["request"]["buildId"]) == legacy["request"]
-            from hermes_cli.release_channels import validate_request
+            from moor_cli.release_channels import validate_request
             invalid_versions = ["2.1.0.65536", "65536.1.0.0", "2.1.0.-1", "2.1.0.1.0", "2.1.0.x"]
             if policy == "stable-release":
                 invalid_versions.append("2.0.0.10")
@@ -137,7 +137,7 @@ def test_legacy_bootstrap_uses_real_archive_keys_and_source_main_has_no_bundle()
 
 @pytest.mark.parametrize("sequence", [1, 65535, 65536, 2**32 - 1])
 def test_sequence_versions_remain_monotonic_at_native_rollover(sequence):
-    from hermes_cli.release_channels import package_versions
+    from moor_cli.release_channels import package_versions
     version, windows = package_versions(sequence)
     assert version == f"0.0.{sequence}"
     quad = tuple(map(int, windows.split(".")))
@@ -148,13 +148,13 @@ def test_sequence_versions_remain_monotonic_at_native_rollover(sequence):
 
 @pytest.mark.parametrize("sequence", [0, -1, True, 2**32, "1"])
 def test_sequence_exhaustion_never_wraps(sequence):
-    from hermes_cli.release_channels import package_versions, ChannelError
+    from moor_cli.release_channels import package_versions, ChannelError
     with pytest.raises(ChannelError):
         package_versions(sequence)
 
 
 def test_malformed_record_and_unqualified_retirement_never_resolve():
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelError, canonical_json
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
         pub.create("preview")
@@ -181,9 +181,9 @@ def test_malformed_record_and_unqualified_retirement_never_resolve():
 
 @pytest.mark.parametrize("field,value", [("policy", []), ("state", {}), ("revision", True), ("head", []), ("identity", None)])
 def test_malformed_wire_types_are_channel_errors(field, value):
-    from hermes_cli.release_channels import validate_record, ChannelError
+    from moor_cli.release_channels import validate_record, ChannelError
     from scripts.releases.channels import preview_identity
-    record = {"schema": 1, "name": "arbitrary", "repository": "example/hermes-agent", "policy": "preview",
+    record = {"schema": 1, "name": "arbitrary", "repository": "example/moor-agent", "policy": "preview",
               "state": "active", "revision": 1, "nextSequence": 1, "head": None,
               "identity": preview_identity("arbitrary", "a" * 16)}
     record[field] = value
@@ -194,7 +194,7 @@ def test_malformed_wire_types_are_channel_errors(field, value):
 def stable_request(version="1.2.3", archive_ref=None):
     from scripts.releases.channels import preview_identity
     request = {"schema": 1, "buildId": "a" * 32, "channel": "stable", "sequence": 1,
-               "repository": "example/hermes-agent", "commit": "b" * 40,
+               "repository": "example/moor-agent", "commit": "b" * 40,
                "sourceVersion": version, "version": version, "windowsVersion": version + ".0",
                "releaseTag": "v" + version, "identity": preview_identity("stable", "a" * 16),
                "bundleEnv": {}, "publicBase": "https://releases.example"}
@@ -204,11 +204,11 @@ def stable_request(version="1.2.3", archive_ref=None):
 
 
 def stable_manifest(request, archive_prefix):
-    from hermes_cli.release_channels import build_prefix
+    from moor_cli.release_channels import build_prefix
     manifest = {"schema": 1, "receiverProtocol": 1, "request": request, "packages": [
         {"platform": "darwin", "arch": "arm64", "variant": "bundled",
          "identity": request["identity"]["appId"], "version": request["version"], "teamId": "ABCDEFGHIJ",
-         "artifact": {"key": archive_prefix + "Hermes.dmg", "sha256": "d" * 64, "size": 100},
+         "artifact": {"key": archive_prefix + "Moor.dmg", "sha256": "d" * 64, "size": 100},
          "feed": {"key": archive_prefix + "stable-mac.yml", "channel": "stable"}}]}
     record = {"schema": 1, "name": request["channel"], "repository": request["repository"],
               "policy": "stable-release", "state": "active", "revision": 1, "nextSequence": 2,
@@ -219,7 +219,7 @@ def stable_manifest(request, archive_prefix):
 
 
 def test_archive_ref_names_the_protected_archive_prefix():
-    from hermes_cli.release_channels import validate_manifest, validate_request
+    from moor_cli.release_channels import validate_manifest, validate_request
     request = stable_request(archive_ref="rc.2-v1.2.3")
     validate_request(request, policy="stable-release")
     manifest, record = stable_manifest(request, "releases/tag/rc.2-v1.2.3/")
@@ -227,7 +227,7 @@ def test_archive_ref_names_the_protected_archive_prefix():
 
 
 def test_stable_manifest_without_archive_ref_fails_closed_outside_the_tag_prefix():
-    from hermes_cli.release_channels import validate_manifest, ChannelError
+    from moor_cli.release_channels import validate_manifest, ChannelError
     request = stable_request()
     manifest, record = stable_manifest(request, "releases/tag/rc.2-v1.2.3/")
     with pytest.raises(ChannelError, match="namespace"):
@@ -235,7 +235,7 @@ def test_stable_manifest_without_archive_ref_fails_closed_outside_the_tag_prefix
 
 
 def test_archive_ref_equal_to_the_release_tag_keeps_the_tag_prefix():
-    from hermes_cli.release_channels import validate_manifest, validate_request
+    from moor_cli.release_channels import validate_manifest, validate_request
     request = stable_request(archive_ref="v1.2.3")
     validate_request(request, policy="stable-release")
     manifest, record = stable_manifest(request, "releases/tag/v1.2.3/")
@@ -243,7 +243,7 @@ def test_archive_ref_equal_to_the_release_tag_keeps_the_tag_prefix():
 
 
 def test_archive_ref_must_name_the_release_version():
-    from hermes_cli.release_channels import validate_request, ChannelError
+    from moor_cli.release_channels import validate_request, ChannelError
     with pytest.raises(ChannelError, match="(?i)archive ref"):
         validate_request(stable_request(archive_ref="rc.2-v1.2.4"), policy="stable-release")
 
@@ -257,6 +257,6 @@ def test_attempt_ref_shapes_are_attempt_refs(ref):
 @pytest.mark.parametrize("ref", ["v0.21.5-rc", "v0.21.5-rc.1", "rc.01-v0.21.5", "rc.0-v0.21.5",
                                  "rc.1-v2026.9.21", "v0.21.5", "abandoned-rc.1-v0.21.5"])
 def test_non_attempt_ref_shapes_are_rejected_as_archive_refs(ref):
-    from hermes_cli.release_channels import validate_request, ChannelError
+    from moor_cli.release_channels import validate_request, ChannelError
     with pytest.raises(ChannelError, match="(?i)archive ref"):
         validate_request(stable_request(archive_ref=ref), policy="stable-release")

@@ -81,7 +81,7 @@ def test_fetch_models_with_pricing_copies_nested_original(monkeypatch):
     assert "original" not in result["free/model"]
 
 
-def test_fetch_models_with_pricing_copies_billing_mode_for_nous_only(monkeypatch):
+def test_fetch_models_with_pricing_copies_billing_mode_for_moor_only(monkeypatch):
     payload = {"data": [{"id": "a/b", "billing_mode": "subscription", "pricing": {"prompt": "0.000002", "completion": "0.00001"}}]}
     resp = MagicMock()
     resp.read.return_value = json.dumps(payload).encode()

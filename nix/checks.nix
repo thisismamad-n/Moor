@@ -159,7 +159,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         # next to these archives. `nix flake check` otherwise only evaluates
         # the pm derivations, so a sidecar leaking into srcs ("do not know
         # how to unpack") stayed green; build the two sidecar-bearing pins.
-        pm-packages-unpack = pkgs.runCommand "hermes-pm-packages-unpack" { } ''
+        pm-packages-unpack = pkgs.runCommand "moor-pm-packages-unpack" { } ''
           test -x ${self'.packages.pm-tirith}/tirith
           test -x ${self'.packages.pm-iron-proxy}/iron-proxy
           mkdir -p $out
@@ -177,7 +177,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
 
         # Inspect the shipped assets: successful JS compilation alone does
         # not prove Vite copied the generated public files into the package.
-        frontend-icons = pkgs.runCommand "hermes-frontend-icons" {
+        frontend-icons = pkgs.runCommand "moor-frontend-icons" {
           nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.pillow ])) ];
         } ''
           python3 - <<'PY'
@@ -185,10 +185,10 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           from PIL import Image
 
           desktop = Path('${self'.packages.desktop}/share')
-          dist = desktop / 'hermes-desktop/dist'
-          launcher = desktop / 'icons/hicolor/1024x1024/apps/hermes.png'
+          dist = desktop / 'moor-desktop/dist'
+          launcher = desktop / 'icons/hicolor/1024x1024/apps/moor.png'
           for path in [launcher, dist / 'apple-touch-icon.png',
-                       dist / 'nous-girl.png', dist / 'nous-girl-dark.png',
+                       dist / 'moor-girl.png', dist / 'moor-girl-dark.png',
                        Path('${self'.packages.web}/favicon.ico')]:
               with Image.open(path) as image:
                   image.load()
@@ -1047,18 +1047,18 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
 
         # Exercise every declared command and the environment delivered by
         # makeWrapper, plus the shared assembler's store-reference contract.
-        entry-points-sync = pkgs.runCommand "hermes-entry-points-sync" { } ''
-          ${hermes-agent.python}/bin/python3 ${./tests/agent-references.py} \
-            ${hermes-agent} ${../pyproject.toml} ${hermes-agent.agentInputsFile}
+        entry-points-sync = pkgs.runCommand "moor-entry-points-sync" { } ''
+          ${moor-agent.python}/bin/python3 ${./tests/agent-references.py} \
+            ${moor-agent} ${../pyproject.toml} ${moor-agent.agentInputsFile}
           mkdir -p $out
         '';
 
         # A pre-existing CLI install must not override the package's backend.
-        desktop-backend = pkgs.runCommand "hermes-desktop-backend" {
-          nativeBuildInputs = [ hermes-agent.python pkgs.cage ];
+        desktop-backend = pkgs.runCommand "moor-desktop-backend" {
+          nativeBuildInputs = [ moor-agent.python pkgs.cage ];
         } ''
           python3 ${./tests/desktop-backend.py} \
-            ${self'.packages.desktop}/bin/hermes-desktop ${hermes-agent}/bin/hermes
+            ${self'.packages.desktop}/bin/moor-desktop ${moor-agent}/bin/moor
           mkdir -p $out
         '';
 
@@ -1266,7 +1266,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           # Built with the lock-derived interpreter, so this check fails
           # loudly if the package set and the lock drift apart.
           testPkg = pythonLock.interpreter.pkgs.pyfiglet;
-          hermesWithExtra = hermes-agent.override {
+          moorWithExtra = moor-agent.override {
             extraPythonPackages = [ testPkg ];
           };
         in pkgs.runCommand "moor-extra-python-packages" { } ''
@@ -1293,12 +1293,12 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         '';
 
         # Exercise the actual uv2nix environment, not only the selector.
-        python-lock-derived = pkgs.runCommand "hermes-python-lock-derived" { } ''
+        python-lock-derived = pkgs.runCommand "moor-python-lock-derived" { } ''
           set -e
           echo "=== Checking Nix Python derives from pm/lock.json ==="
           family=${pythonLock.family}
           echo "locked family: $family"
-          if [ "$family" != "$(${hermesVenv}/bin/python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')" ]; then
+          if [ "$family" != "$(${moorVenv}/bin/python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')" ]; then
             echo "FAIL: selected interpreter major.minor does not match pm/lock.json"; exit 1
           fi
           echo "PASS: interpreter matches lock"
@@ -1316,7 +1316,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           missing = { };
           selected = selectPython lockedFamily matching;
           threw = !(builtins.tryEval (selectPython lockedFamily missing)).success;
-        in pkgs.runCommand "hermes-python-lock-no-fallback" { } ''
+        in pkgs.runCommand "moor-python-lock-no-fallback" { } ''
           set -e
           echo "=== Checking python selector has no silent fallback ==="
           if [ "${toString (selected == "fake-python-matching")}" != "1" ] || [ "${toString threw}" != "1" ]; then

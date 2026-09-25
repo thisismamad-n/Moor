@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# repro.sh -- reproduce desktop-update paths against a sandboxed HERMES_HOME.
+# repro.sh -- reproduce desktop-update paths against a sandboxed MOOR_HOME.
 #
-# Nothing here touches your real ~/.hermes or checkout. Each mode builds (or
+# Nothing here touches your real ~/.moor or checkout. Each mode builds (or
 # reuses) a disposable install under $TMPDIR and drives the REAL code path --
-# the actual installer, the actual orchestrator, the actual `hermes update`.
+# the actual installer, the actual orchestrator, the actual `moor update`.
 #
 #   repro.sh shim          shim UI only: success event after 6s
 #   repro.sh shim-fail     shim UI only: error event after 6s
@@ -95,8 +95,8 @@ case "$MODE" in
     # Pure-decision matrix for the linux relaunch gate. Builds a fake
     # checkout layout under $TMPDIR; --self-test-gate prints the decision and
     # exits without running an update.
-    G="$(mktemp -d -t hermes-gate-test.XXXXXX)"
-    UNPACKED="$G/hermes-agent/apps/desktop/release/linux-unpacked"
+    G="$(mktemp -d -t moor-gate-test.XXXXXX)"
+    UNPACKED="$G/moor-agent/apps/desktop/release/linux-unpacked"
     mkdir -p "$UNPACKED"
     touch "$UNPACKED/moor" && chmod +x "$UNPACKED/moor"
 
@@ -136,7 +136,7 @@ case "$MODE" in
     # of the outcome. Each case runs the REAL orchestrator (--no-ui) against
     # a fake install whose `moor` stub exits 0 instantly, so the flow
     # reaches finish() with FINAL_CODE=0 and exercises the launch leg.
-    L="$(mktemp -d -t hermes-launch-test.XXXXXX)"
+    L="$(mktemp -d -t moor-launch-test.XXXXXX)"
     fails=0
     expect_msg() { # name python-expr
       if python3 -c "import json,sys; d=json.load(open('$L/.moor-update-result.json')); sys.exit(0 if ($2) else 1)"; then

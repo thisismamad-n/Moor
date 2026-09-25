@@ -215,7 +215,7 @@ def _profile_create(args):
             print(f"Full copy from {source_label} (excluding session history, cron jobs, backups, and snapshots).")
         else:
             print(f"Cloned config, .env, SOUL.md, and skills from {source_label}.")
-            from hermes_cli.profile_memory_config import cloned_memory_provider
+            from moor_cli.profile_memory_config import cloned_memory_provider
             memory_provider = cloned_memory_provider(profile_dir)
             if memory_provider:
                 print(f"Cloned memory provider config ({memory_provider}) too.")
@@ -460,14 +460,14 @@ def _profile_purge_identity(args):
     """Retry the identity purge of a delete that already completed. Exits non-zero when a live
     gateway would not purge (it still owns the routing index in memory), or when a database rejected
     the delete (lock, partial failure)."""
-    from hermes_cli.profile_identity import purge_profile_identity
+    from moor_cli.profile_identity import purge_profile_identity
     try:
         purged = purge_profile_identity(args.profile_name)
     except ValueError as e:
         _die(f"Error: {e}")
     if not purged:
         _die(f"Error: session identity was not purged. Restart or stop the gateway, then run:\n"
-             f"    hermes profile purge-identity {args.profile_name}", err=True)
+             f"    moor profile purge-identity {args.profile_name}", err=True)
     print(f"✓ Session/routing identity purged: {args.profile_name}")
 
 

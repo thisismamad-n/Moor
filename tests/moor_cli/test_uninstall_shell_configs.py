@@ -64,7 +64,7 @@ class TestHappyPath:
         """Every rc name the shell-config resolver knows gets the PATH sweep.
 
         Guards the single resolver's coverage: an rc the resolver misses keeps
-        a stale Hermes PATH entry after uninstall.
+        a stale Moor PATH entry after uninstall.
         """
         names = (".bashrc", ".bash_profile", ".profile", ".zshrc", ".zprofile")
         for name in names:

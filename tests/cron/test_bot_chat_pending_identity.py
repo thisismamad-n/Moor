@@ -53,7 +53,7 @@ def test_deferred_destination_does_not_follow_root_changes(tmp_path, monkeypatch
             assert run.call_count == 1
             argv = run.call_args.args[0]
             assert "-p" not in argv
-            assert Path(run.call_args.args[1]["HERMES_HOME"]) == home
+            assert Path(run.call_args.args[1]["MOOR_HOME"]) == home
         elif recipient == "desktop":
             run.assert_not_called()
             receipt = read_delivery_result(home, key)

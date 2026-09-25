@@ -96,8 +96,8 @@ test('canImportMoorCli returns false when binary does not exist', async () => {
   assert.equal(await canImportMoorCli(ghost), false)
 })
 
-test('explicit Hermes override is authoritative', () => {
-  assert.equal(shouldTrustHermesOverride('/nix/store/abc/bin/hermes'), true)
+test('explicit Moor override is authoritative', () => {
+  assert.equal(shouldTrustMoorOverride('/nix/store/abc/bin/moor'), true)
 })
 
 test('empty Moor override is not authoritative', () => {
@@ -116,8 +116,8 @@ test('verifyMoorCli returns false when binary does not exist', async () => {
   assert.equal(await verifyMoorCli(ghost), false)
 })
 
-test('verifyHermesCli accepts an actual zero-exit executable', async (): Promise<void> => {
-  assert.equal(await verifyHermesCli(NODE_BIN), true)
+test('verifyMoorCli accepts an actual zero-exit executable', async (): Promise<void> => {
+  assert.equal(await verifyMoorCli(NODE_BIN), true)
 })
 
 test('default probe timeout is 15s (not the old 5s death-loop value)', () => {

@@ -73,20 +73,20 @@ Esto no es una barra de calidad — es una decisión de acoplamiento y mantenimi
 
 Se requieren Git y git-lfs. PM proporciona Python 3.14 (`>=3.14,<3.15`) y las herramientas fijadas.
 Sigue el [flujo de desarrollo de PM](website/docs/reference/package-management.md#developer-workflow).
-Selecciona un `HERMES_HOME` de desarrollo antes de preparar el checkout.
+Selecciona un `MOOR_HOME` de desarrollo antes de preparar el checkout.
 
 En Bash, desde la raíz del repositorio:
 
 ```bash
 source ./activate
-hermes --version
+moor --version
 ```
 
 En PowerShell:
 
 ```powershell
 . .\activate.ps1
-hermes --version
+moor --version
 ```
 
 ### Entorno independiente de pruebas
@@ -100,14 +100,14 @@ scripts/run_tests.sh tests/agent/ -v
 
 La ruta de salida no debe existir. Para regenerarla, detén sus procesos y elimina
 explícitamente solo ese entorno desechable. PM no elimina destinos existentes.
-No modifiques los entornos de Hermes con comandos directos de pip o uv.
+No modifiques los entornos de Moor con comandos directos de pip o uv.
 En Windows, ejecuta el script de pruebas mediante Bash.
 
 Si cambias `pyproject.toml`, regenera el lock, vuelve a cargar la activación y
 confirma `pyproject.toml` junto con `uv.lock`:
 
 ```bash
-hermes pm lock
+moor pm lock
 source ./activate
 ```
 
@@ -566,7 +566,7 @@ test(tools): añadir tests unitarios para file_operations
 
 ## Reportar Issues
 
-- Usa [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
+- Usa [GitHub Issues](https://github.com/thisismamad-n/Moor/issues)
 - Incluye: SO, versión de Python, versión de Moor (`moor --version`), traza de error completa
 - Incluye pasos para reproducir
 - Verifica los issues existentes antes de crear duplicados

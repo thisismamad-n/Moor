@@ -80,9 +80,9 @@ test('disk-full / ENOSPC phrasings are classified as disk-full, other storage fa
 test('notifyError posts the full error to desktop.log, not the summary', () => {
   const logLine = vi.fn()
 
-  const previous = (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  const previous = (window as unknown as { moorDesktop?: unknown }).moorDesktop
 
-  ;(window as unknown as { hermesDesktop: { logLine: typeof logLine } }).hermesDesktop = { logLine }
+  ;(window as unknown as { moorDesktop: { logLine: typeof logLine } }).moorDesktop = { logLine }
 
   try {
     const error = new Error('sqlite3.OperationalError: database is locked')
@@ -96,9 +96,9 @@ test('notifyError posts the full error to desktop.log, not the summary', () => {
     expect(logLine.mock.calls[0][0]).toContain('session.ts:12')
   } finally {
     if (previous === undefined) {
-      delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+      delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
     } else {
-      ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = previous
+      ;(window as unknown as { moorDesktop: unknown }).moorDesktop = previous
     }
   }
 })
@@ -107,7 +107,7 @@ test.each(['missing', 'closed'] as const)(
   'notifyError still shows a toast when the log bridge is %s',
   (state: 'missing' | 'closed'): void => {
     vi.stubGlobal(
-      'hermesDesktop',
+      'moorDesktop',
       state === 'missing'
         ? undefined
         : {
@@ -135,7 +135,7 @@ test('code-skew 503 unwraps to a restart-required summary, not raw IPC JSON', ()
     'Could not load models'
   )
 
-  expect(lastMessage()).not.toMatch(/hermes:api|systemctl|backend/i)
+  expect(lastMessage()).not.toMatch(/moor:api|systemctl|backend/i)
   const before = $backendRestartRequest.get()
   expect($notifications.get()[0]?.action?.label).toBe(en.notifications.actions.restartMoor)
   $notifications.get()[0]?.action?.onClick()

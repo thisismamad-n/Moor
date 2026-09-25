@@ -49,9 +49,9 @@ def _float_env(name: str, default: float) -> float:
 
 
 def _exit_watchdog_timeout() -> float:
-    """``HERMES_EXIT_WATCHDOG_S`` as a float (default 30; ``0`` disables)."""
+    """``MOOR_EXIT_WATCHDOG_S`` as a float (default 30; ``0`` disables)."""
     from cli import _float_env
-    return _float_env("HERMES_EXIT_WATCHDOG_S", 30.0)
+    return _float_env("MOOR_EXIT_WATCHDOG_S", 30.0)
 
 
 def _arm_exit_watchdog(timeout_s: float | None = None, *, from_signal: bool = False) -> None:
@@ -59,7 +59,7 @@ def _arm_exit_watchdog(timeout_s: float | None = None, *, from_signal: bool = Fa
 
     Backstop for a cleanup step wedged on network I/O and for interpreter teardown
     blocked joining non-daemon threads (ThreadPoolExecutor's atexit join). The daemon
-    timer survives ``Py_FinalizeEx``'s joins. ``HERMES_EXIT_WATCHDOG_S=0`` disables.
+    timer survives ``Py_FinalizeEx``'s joins. ``MOOR_EXIT_WATCHDOG_S=0`` disables.
 
     1. 2. Interpreter teardown blocked joining non-daemon threads — stdlib ``ThreadPoolExecutor`` workers
     are joined unconditionally by ``concurrent.futures``' atexit hook even after ``shutdown(wait=False)``,
@@ -170,7 +170,7 @@ def _should_emit_cleanup_session_finalize(session_id: str | None) -> bool:
 
 def _notify_session_finalize(*, session_id: str | None, platform: str = "cli", reason: str = "shutdown") -> None:
     with suppress(Exception):
-        from hermes_cli.lifecycle import finalize_session
+        from moor_cli.lifecycle import finalize_session
         finalize_session(session_id=session_id, platform=platform, reason=reason)
 
 
@@ -183,7 +183,7 @@ def _oneshot_agent_and_session(cli):
 def _invoke_interrupted_session_end(agent, session_id, reason: str, **extra) -> None:
     """Best-effort ``on_session_end`` hook for a turn cut short (never raises)."""
     with suppress(Exception):
-        from hermes_cli.lifecycle import invoke_hook as _invoke_hook
+        from moor_cli.lifecycle import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_end", session_id=session_id, completed=False, interrupted=True,
             model=getattr(agent, "model", None), platform=getattr(agent, "platform", None) or "cli",

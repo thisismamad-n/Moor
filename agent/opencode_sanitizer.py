@@ -21,7 +21,7 @@ ANTI_AGENT_PATTERN = re.compile(
     r"claude[._\s-]?code.+official.+cli|"
     r"anthropic.+official.+cli|"
     r"anxthxropic.+official.+cli|"
-    r"you are (?:cursor|windsurf|cline|aider|continue|copilot|cody|moor|hermes)|"
+    r"you are (?:cursor|windsurf|cline|aider|continue|copilot|cody|moor|moor)|"
     r"you are an? (?:ai )?(?:coding |code )?agent|"
     r"cc_entrypoint\s*=\s*(?:cli|vscode|jetbrains|gui)|"
     r"claude[._\s-]?code.+issues|"
@@ -50,7 +50,7 @@ _IDENTITY_PHRASES_RES: tuple[tuple[re.Pattern, str], ...] = (
         "You are an AI software engineering assistant.",
     ),
     (
-        re.compile(r"You are Hermes, an autonomous AI (?:coding )?agent[^\n.]*", re.IGNORECASE),
+        re.compile(r"You are Moor, an autonomous AI (?:coding )?agent[^\n.]*", re.IGNORECASE),
         "You are an AI software engineering assistant.",
     ),
     (

@@ -2,7 +2,7 @@
 
 Under rollback-journal mode a reader needs a SHARED lock that a sibling process's commit blocks for
 the length of its journal+db fsyncs. Readers used to fail after the writer connection's 1 s busy
-timeout, so the dashboard's /api/sessions returned 503 and ``hermes sessions list`` crashed while a
+timeout, so the dashboard's /api/sessions returned 503 and ``moor sessions list`` crashed while a
 gateway was writing. The holder here is a separate process, as in production.
 """
 
@@ -10,9 +10,9 @@ import subprocess
 import sys
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_state import SessionDB
+from moor_state import SessionDB
 
 _HOLD_S = 2.0  # longer than the old 1 s read budget, well inside the new one
 
@@ -28,10 +28,10 @@ conn.execute("COMMIT")
 
 @pytest.fixture()
 def delete_mode_db(tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
     (home / "config.yaml").write_text(yaml.safe_dump({"database": {"journal_mode": "delete"}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     db = SessionDB(db_path=home / "state.db")
     assert db._wal_active is False
     assert db._conn.execute("PRAGMA journal_mode").fetchone()[0].lower() == "delete"

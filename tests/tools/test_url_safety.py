@@ -463,7 +463,7 @@ class TestIPv4TranslatedIPv6SSRF:
     @pytest.fixture
     def declared(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.config.read_raw_config",
+            "moor_cli.config.read_raw_config",
             lambda: {"security": {"fake_ip_ranges": ["198.18.0.0/15"]}},
         )
         _reset_allow_private_cache()
@@ -482,7 +482,7 @@ class TestIPv4TranslatedIPv6SSRF:
         _reset_allow_private_cache()
         with _resolves_to("::ffff:0:a9fe:a9fe"):
             assert is_always_blocked_url("http://evil.example/") is True
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("MOOR_ALLOW_PRIVATE_URLS", "true")
         _reset_allow_private_cache()
         with _resolves_to("::ffff:0:a9fe:a9fe"):
             assert is_safe_url("http://evil.example/") is False
@@ -551,7 +551,7 @@ class TestDeclaredFakeIpSentinelRanges:
     @pytest.fixture
     def declared(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.config.read_raw_config",
+            "moor_cli.config.read_raw_config",
             lambda: {"security": {"fake_ip_ranges": ["198.18.0.0/15"]}},
         )
         _reset_allow_private_cache()
@@ -572,7 +572,7 @@ class TestDeclaredFakeIpSentinelRanges:
             assert is_safe_url("http://example.com/") is False
         # ...and the sentinel block itself is blocked again once the declaration is gone.
         _reset_allow_private_cache()
-        with patch("hermes_cli.config.read_raw_config", lambda: {}), _resolves_to("198.18.0.23"):
+        with patch("moor_cli.config.read_raw_config", lambda: {}), _resolves_to("198.18.0.23"):
             assert is_safe_url("https://example.com/file.jpg") is False
 
     @pytest.mark.parametrize(
@@ -591,7 +591,7 @@ class TestDeclaredFakeIpSentinelRanges:
         # loopback/RFC 1918/CGNAT/ULA/unspecified space — those classes stay blocked no matter
         # what the config says; the overlapping entry is dropped, it does not widen the guard.
         monkeypatch.setattr(
-            "hermes_cli.config.read_raw_config",
+            "moor_cli.config.read_raw_config",
             lambda: {"security": {"fake_ip_ranges": declared + ["198.18.0.0/15"]}},
         )
         _reset_allow_private_cache()

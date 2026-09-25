@@ -1,6 +1,6 @@
-"""``hermes update`` refreshes the installed macOS ``Hermes.app`` from the rebuilt bundle (#52339).
+"""``moor update`` refreshes the installed macOS ``Moor.app`` from the rebuilt bundle (#52339).
 
-``hermes desktop --build-only`` only packages into ``apps/desktop/release/``; Finder launches the
+``moor desktop --build-only`` only packages into ``apps/desktop/release/``; Finder launches the
 copy in ``/Applications``. These pin the contract of ``_install_rebuilt_macos_bundles``: a stale
 installed copy is replaced, a current one and a running one are never touched, and a failed swap
 leaves the previous bundle launchable.
@@ -11,13 +11,13 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import main_desktop
+from moor_cli import main_desktop
 
 
 def _bundle(root: Path, asar: bytes) -> Path:
-    app = root / "Hermes.app"
+    app = root / "Moor.app"
     (app / "Contents" / "MacOS").mkdir(parents=True)
-    (app / "Contents" / "MacOS" / "Hermes").write_bytes(b"\xcf\xfa\xed\xfe")
+    (app / "Contents" / "MacOS" / "Moor").write_bytes(b"\xcf\xfa\xed\xfe")
     (app / "Contents" / "Resources").mkdir()
     (app / "Contents" / "Resources" / "app.asar").write_bytes(asar)
     return app
@@ -43,13 +43,13 @@ def test_stale_bundle_is_replaced_current_and_running_are_left_alone(rebuilt, tm
     current_marker.write_text("untouched")
 
     installed, problems = main_desktop._install_rebuilt_macos_bundles(
-        rebuilt, [stale, current, running, tmp_path / "missing" / "Hermes.app"],
+        rebuilt, [stale, current, running, tmp_path / "missing" / "Moor.app"],
         running={running.resolve()})
 
     assert installed == [stale]
     assert _asar(stale) == b"rebuilt"
-    assert not (stale.parent / "Hermes.app.hermes-update-old").exists()
-    assert not (stale.parent / "Hermes.app.hermes-update-new").exists()
+    assert not (stale.parent / "Moor.app.moor-update-old").exists()
+    assert not (stale.parent / "Moor.app.moor-update-new").exists()
     assert current_marker.read_text() == "untouched"
     # A live app is reported, never swapped under.
     assert _asar(running) == b"older"
@@ -61,7 +61,7 @@ def test_failed_swap_keeps_the_previous_bundle_launchable(rebuilt, tmp_path, mon
     real_rename = Path.rename
 
     def fail_final_rename(self, target):
-        if self.name.endswith(".hermes-update-new"):
+        if self.name.endswith(".moor-update-new"):
             raise OSError("simulated rename failure")
         return real_rename(self, target)
     monkeypatch.setattr(Path, "rename", fail_final_rename)
@@ -71,4 +71,4 @@ def test_failed_swap_keeps_the_previous_bundle_launchable(rebuilt, tmp_path, mon
     assert installed == []
     assert len(problems) == 1
     assert stale.is_dir() and _asar(stale) == b"stale"
-    assert not (stale.parent / "Hermes.app.hermes-update-new").exists()
+    assert not (stale.parent / "Moor.app.moor-update-new").exists()

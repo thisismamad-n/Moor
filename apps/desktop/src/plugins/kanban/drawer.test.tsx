@@ -96,7 +96,7 @@ function openDrawer() {
 describe('task attachment compatibility', () => {
   it('downloads the persisted attachment through its original remote owner', async () => {
     const save = vi.fn().mockResolvedValue({ saved: true })
-    vi.stubGlobal('hermesDesktop', { saveGatewayFile: save })
+    vi.stubGlobal('moorDesktop', { saveGatewayFile: save })
     setApiRequestConnection('remote-owner')
     setApiRequestProfile('research')
     detail = {
@@ -121,11 +121,11 @@ describe('task attachment compatibility', () => {
 
   it('keeps a local-backend attachment on this computer after switching to a remote', async () => {
     const save = vi.fn().mockResolvedValue({ saved: true })
-    vi.stubGlobal('hermesDesktop', { saveGatewayFile: save })
+    vi.stubGlobal('moorDesktop', { saveGatewayFile: save })
     setApiRequestConnection('local')
     detail = {
       ...legacyDetail,
-      attachments: [{ id: 7, filename: 'notes.txt', stored_path: '/home/me/.hermes/kanban/notes.txt' }]
+      attachments: [{ id: 7, filename: 'notes.txt', stored_path: '/home/me/.moor/kanban/notes.txt' }]
     }
     openDrawer()
     const download = await screen.findByRole('button', { name: 'Download notes.txt' })
@@ -134,7 +134,7 @@ describe('task attachment compatibility', () => {
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith({
         connectionId: 'local',
-        path: '/home/me/.hermes/kanban/notes.txt',
+        path: '/home/me/.moor/kanban/notes.txt',
         suggestedName: 'notes.txt'
       })
     )
@@ -149,7 +149,7 @@ describe('task attachment compatibility', () => {
 
   it('reports a failed download and allows retry', async () => {
     const save = vi.fn().mockRejectedValue(new Error('File not found'))
-    vi.stubGlobal('hermesDesktop', { saveGatewayFile: save })
+    vi.stubGlobal('moorDesktop', { saveGatewayFile: save })
     detail = { ...legacyDetail, attachments: [{ id: 1, filename: 'gone.md', stored_path: '/persisted/gone.md' }] }
     openDrawer()
     const button = await screen.findByRole('button', { name: 'Download gone.md' })
@@ -177,7 +177,7 @@ describe('task attachment compatibility', () => {
         })
     )
 
-    vi.stubGlobal('hermesDesktop', { saveGatewayFile: save })
+    vi.stubGlobal('moorDesktop', { saveGatewayFile: save })
     detail = { ...legacyDetail, attachments: [{ id: 1, filename: 'report.md', stored_path: '/persisted/report.md' }] }
     openDrawer()
     const button = await screen.findByRole('button', { name: 'Download report.md' })
@@ -273,7 +273,7 @@ describe('task modal dialog', () => {
   })
 
   it('shows the workspace path as its own value, not prefixed with the raw kind', async () => {
-    const path = '/Users/example/.hermes/kanban/workspaces/a_very_long_directory_name_that_must_wrap'
+    const path = '/Users/example/.moor/kanban/workspaces/a_very_long_directory_name_that_must_wrap'
     detail = {
       ...legacyDetail,
       attachments: [],

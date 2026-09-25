@@ -333,7 +333,7 @@ def test_dashboard_lifecycle_flags_skip_limit_adjustment(monkeypatch, lifecycle_
     )
     monkeypatch.setattr(dashboard_procs, "_scan_dashboard_processes", lambda: [])
     monkeypatch.setattr(cli_main, "_find_stale_dashboard_pids", lambda **_: [])
-    monkeypatch.setattr(hermes_cli_main_dashboard, "_find_stale_dashboard_pids", lambda **_: [])
+    monkeypatch.setattr(moor_cli_main_dashboard, "_find_stale_dashboard_pids", lambda **_: [])
 
     args = SimpleNamespace(
         status=lifecycle_flag == "status",

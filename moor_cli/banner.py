@@ -7,10 +7,10 @@ import shutil
 import sys
 import threading
 from pathlib import Path
-from hermes_cli import source_check
+from moor_cli import source_check
 # Historical updater import (tests/compat/old_updater_surface.json). In-tree callers use the owner.
-from hermes_cli.source_check import _github_compare_behind  # noqa: F401
-from hermes_constants import get_hermes_home
+from moor_cli.source_check import _github_compare_behind  # noqa: F401
+from moor_constants import get_moor_home
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 # rich and prompt_toolkit are imported lazily: this module sits on the TUI gateway's critical
@@ -67,8 +67,8 @@ def _skin_color(key: str, fallback: str) -> str:
 
 # === ASCII Art & Branding ===
 
-from hermes_cli import __release_date__ as RELEASE_DATE
-from hermes_cli.version_info import get_version_info
+from moor_cli import __release_date__ as RELEASE_DATE
+from moor_cli.version_info import get_version_info
 
 MOOR_AGENT_LOGO = """[bold #38bdf8]███╗   ███╗   ██████╗    ██████╗   ██████╗ [/]
 [bold #3b82f6]████╗ ████║  ██╔═══██╗  ██╔═══██╗  ██╔══██╗[/]
@@ -93,6 +93,9 @@ MOOR_ANT_HERO = """[#06b6d4]⠀⠀⠀⠀⠀⠀⢀⡤⠖⠋⠀⠀⠀⠀⠀⠀⠀�
 
 # Backward compatibility alias for any caller expecting MOOR_CADUCEUS
 MOOR_CADUCEUS = MOOR_ANT_HERO
+
+_UPSTREAM_REPO_URL = "https://github.com/thisismamad-n/Moor.git"
+_OFFICIAL_REPO_CANONICAL = "github.com/thisismamad-n/Moor"
 
 # === Skills scanning ===
 
@@ -170,7 +173,7 @@ def get_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]:
 def _baked_banner_state() -> Optional[dict]:
     """Banner state from the baked build SHA (Docker image path), or None."""
     def _baked():
-        from hermes_cli.version_info import get_code_identity
+        from moor_cli.version_info import get_code_identity
         return get_code_identity().get("short_sha")
     baked = _quiet(_baked)
     return {"upstream": baked, "local": baked, "ahead": 0} if baked else None
@@ -205,13 +208,13 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
 def format_banner_version_label() -> str:
     """Return the version label shown in the startup banner title."""
-    from hermes_cli.config import get_project_root
-    from hermes_cli.steward import read_install_stamp
-    from hermes_cli.update_channel import is_canary_tag
+    from moor_cli.config import get_project_root
+    from moor_cli.steward import read_install_stamp
+    from moor_cli.update_channel import is_canary_tag
 
     stamp = read_install_stamp(get_project_root())
     if stamp.get("distribution") == "desktop-app":
-        label = f"Hermes Agent v{get_version_info().derived_version}"
+        label = f"Moor Agent v{get_version_info().derived_version}"
         if stamp.get("source") == "commit-build":
             return f"{label} · commit-build · {str(stamp.get('commit') or '')[:12]}"
         if stamp.get("tag"):
@@ -224,9 +227,9 @@ def format_banner_version_label() -> str:
             return f"{label} · installer"
         return label
 
-    base = f"Hermes Agent v{get_version_info().derived_version} ({RELEASE_DATE})"
-    from hermes_cli.config import load_config
-    from hermes_cli.update_channel import resolve_update_channel
+    base = f"Moor Agent v{get_version_info().derived_version} ({RELEASE_DATE})"
+    from moor_cli.config import load_config
+    from moor_cli.update_channel import resolve_update_channel
 
     channel = resolve_update_channel(_quiet(load_config), get_project_root())
     if channel != "main":
@@ -616,7 +619,7 @@ def _banner_left_lines(model: str, cwd: str, session_id, context_length, provide
     lines = []
     pin = " (pinned)" if context_pinned else ""
     ctx_str = _dim_sep(f"{_format_context_length(context_length)} context{pin}") if context_length else ""
-    nous_str = _dim_sep("Nous Research")
+    moor_str = _dim_sep("Moor inc.")
     if not (model or "").strip():
         # Credentials resolve lazily on the first message; the banner prints first. Ask the route
         # the same question so a fresh free-tier install shows its model, not a red "unconfigured".
@@ -712,7 +715,7 @@ def build_welcome_banner(
     text = _skin_color("banner_text", "#f1f5f9")
     # Use skin's custom hero art if provided
     _bskin = _quiet(_active_skin)
-    left_lines = ["", getattr(_bskin, "banner_hero", None) or HERMES_CADUCEUS, ""]
+    left_lines = ["", getattr(_bskin, "banner_hero", None) or MOOR_CADUCEUS, ""]
     left_lines += _banner_left_lines(model, cwd, session_id, context_length, provider, accent=accent, dim=dim,
                                      context_pinned=context_pinned)
     right_lines = _banner_tool_lines(

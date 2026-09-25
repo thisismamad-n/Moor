@@ -72,14 +72,14 @@ def _patch_topology(monkeypatch, homes, running, runtimes):
 
 class TestCollectProfileGatewayTopology:
     def test_running_standalone_profile_is_in_topology(self, tmp_path, monkeypatch):
-        from hermes_cli import profiles
+        from moor_cli import profiles
 
-        root = tmp_path / ".hermes"
+        root = tmp_path / ".moor"
         solo = root / "profiles" / "solo"
         solo.mkdir(parents=True)
         (solo / "config.yaml").write_text("gateway:\n  standalone: true\n")
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(root))
+        monkeypatch.setenv("MOOR_HOME", str(root))
         monkeypatch.setattr(profiles, "_check_gateway_running", lambda home: home == solo)
         topo = _collect_profile_gateway_topology()
         assert "solo" in topo["profiles"]

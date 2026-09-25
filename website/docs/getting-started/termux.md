@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: "Android / Termux"
-description: "Install Hermes Agent on Android from its signed Termux APT repository"
+description: "Install Moor Agent on Android from its signed Termux APT repository"
 ---
 
 # Moor on Android with Termux
@@ -12,17 +12,17 @@ ship soon. Until then, the steps below may fail or install a package that
 does not run.
 :::
 
-The Termux package runs Hermes on **aarch64 (arm64-v8a)** Android devices.
+The Termux package runs Moor on **aarch64 (arm64-v8a)** Android devices.
 Two APT channels are published under
 `https://hermes-assets.nousresearch.com/releases/termux/<channel>`:
 
 | Channel | APT suite | Contents |
 | --- | --- | --- |
-| `stable` | `hermes-stable` | Tagged `vMAJOR.MINOR.PATCH` releases that passed the stable release gate |
-| `canary` | `hermes-canary` | Prerelease builds from canary tags; versions carry `~canary.<timestamp>` |
+| `stable` | `moor-stable` | Tagged `vMAJOR.MINOR.PATCH` releases that passed the stable release gate |
+| `canary` | `moor-canary` | Prerelease builds from canary tags; versions carry `~canary.<timestamp>` |
 
 The steps below use `stable`. To follow prereleases, replace `stable` with
-`canary` and `hermes-stable` with `hermes-canary` in steps 2 and 4. Both
+`canary` and `moor-stable` with `moor-canary` in steps 2 and 4. Both
 channels are signed with the same key.
 
 The package includes Python, Node.js, npm, uv, ripgrep, ffmpeg, and their runtime libraries.
@@ -52,13 +52,13 @@ Do not use the desktop/server `install.sh` or a glibc Linux archive on this targ
    mkdir -p "$PREFIX/etc/apt/keyrings"
    curl -fsSL \
      https://hermes-assets.nousresearch.com/releases/termux/stable/key.asc \
-     -o "$PREFIX/etc/apt/keyrings/hermes-agent.asc"
+     -o "$PREFIX/etc/apt/keyrings/moor-agent.asc"
    ```
 
 3. Verify its primary fingerprint:
 
    ```bash
-   gpg --show-keys --with-fingerprint "$PREFIX/etc/apt/keyrings/hermes-agent.asc"
+   gpg --show-keys --with-fingerprint "$PREFIX/etc/apt/keyrings/moor-agent.asc"
    ```
 
    The repository key fingerprint is:
@@ -73,34 +73,34 @@ Do not use the desktop/server `install.sh` or a glibc Linux archive on this targ
 
    ```bash
    printf '%s\n' \
-     "deb [signed-by=$PREFIX/etc/apt/keyrings/hermes-agent.asc] https://hermes-assets.nousresearch.com/releases/termux/stable hermes-stable main" \
-     > "$PREFIX/etc/apt/sources.list.d/hermes-agent.list"
+     "deb [signed-by=$PREFIX/etc/apt/keyrings/moor-agent.asc] https://hermes-assets.nousresearch.com/releases/termux/stable moor-stable main" \
+     > "$PREFIX/etc/apt/sources.list.d/moor-agent.list"
    ```
 
-5. Install Hermes:
+5. Install Moor:
 
    ```bash
    pkg update
-   pkg install hermes-agent
+   pkg install moor-agent
    ```
 
 6. Configure a provider, then start the TUI:
 
    ```bash
-   hermes setup
-   hermes --tui
+   moor setup
+   moor --tui
    ```
 
-The `hermes`, `hermes-agent`, and `hermes-acp` commands use the packaged runtimes.
+The `moor`, `moor-agent`, and `moor-acp` commands use the packaged runtimes.
 They do not require Termux's `python` or `nodejs` packages.
 
 ## Files and updates
 
 | Contents | Location |
 | --- | --- |
-| Package files | `$PREFIX/lib/hermes-agent/` |
-| Command symlinks | `$PREFIX/bin/hermes`, `$PREFIX/bin/hermes-agent`, `$PREFIX/bin/hermes-acp` |
-| Configuration and user data | `~/.hermes/`, or the selected `HERMES_HOME` |
+| Package files | `$PREFIX/lib/moor-agent/` |
+| Command symlinks | `$PREFIX/bin/moor`, `$PREFIX/bin/moor-agent`, `$PREFIX/bin/moor-acp` |
+| Configuration and user data | `~/.moor/`, or the selected `MOOR_HOME` |
 
 Update through APT:
 
@@ -109,12 +109,12 @@ pkg update
 pkg upgrade moor-agent
 ```
 
-`hermes update` refuses to modify an APT-owned installation.
+`moor update` refuses to modify an APT-owned installation.
 It prints the package-manager command instead.
 Canary versions contain `~canary.<timestamp>` and sort before the corresponding
 stable version. Each suite only lists its own channel's packages; to move
-between channels, edit the channel path and suite in `hermes-agent.list`, then
-`pkg update && pkg upgrade hermes-agent`.
+between channels, edit the channel path and suite in `moor-agent.list`, then
+`pkg update && pkg upgrade moor-agent`.
 
 ## Gateway
 
@@ -122,14 +122,14 @@ This APT installation does not use systemd, launchd, or Windows Scheduled Tasks.
 Run the gateway in a Termux session:
 
 ```bash
-hermes gateway run
+moor gateway run
 ```
 
 For a background process:
 
 ```bash
-mkdir -p "${HERMES_HOME:-$HOME/.hermes}/logs"
-nohup hermes gateway run >> "${HERMES_HOME:-$HOME/.hermes}/logs/gateway.log" 2>&1 &
+mkdir -p "${MOOR_HOME:-$HOME/.moor}/logs"
+nohup moor gateway run >> "${MOOR_HOME:-$HOME/.moor}/logs/gateway.log" 2>&1 &
 ```
 
 :::warning Android process limits
@@ -157,7 +157,7 @@ or skill gated only to `linux` is not automatically available on Android.
 ## Uninstall
 
 ```bash
-pkg uninstall hermes-agent
+pkg uninstall moor-agent
 ```
 
 APT removes the package and its command symlinks. It preserves your configuration, sessions, skills, and memories.
@@ -167,7 +167,7 @@ APT removes the package and its command symlinks. It preserves your configuratio
 - **Package not found:** verify the repository entry, then run `pkg update`.
 - **Signature error:** verify the public key fingerprint. Do not use an unsigned repository or bypass the error.
 - **Missing command:** verify that `$PREFIX/bin` is on `PATH`, or reinstall the package.
-- **Missing library or TUI bundle:** report `hermes --version` and the complete error. The core package must not require a local rebuild.
+- **Missing library or TUI bundle:** report `moor --version` and the complete error. The core package must not require a local rebuild.
 - **Gateway stops with the screen off:** review Android's battery and background-process limits.
 
-For general diagnostics, run `hermes doctor`.
+For general diagnostics, run `moor doctor`.

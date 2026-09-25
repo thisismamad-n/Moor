@@ -178,7 +178,7 @@ def _configured_catalog_provider(
 def _models_dev_id(
     provider: str, *, config: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
-    """models.dev provider id for a Hermes provider id, or None. A custom provider reaches the
+    """models.dev provider id for a Moor provider id, or None. A custom provider reaches the
     catalog only through its configured ``catalog_provider`` alias (#112649)."""
     key = (provider or "").strip()
     mdev_id = PROVIDER_TO_MODELS_DEV.get(key)
@@ -190,7 +190,7 @@ def _models_dev_id(
             # A mistyped alias must not leak into ModelInfo.provider_id; the row stays on its own slug.
             if (key, alias) not in _UNKNOWN_CATALOG_PROVIDER_WARNED:
                 _UNKNOWN_CATALOG_PROVIDER_WARNED.add((key, alias))
-                logger.warning("providers.%s: catalog_provider %r is neither a Hermes provider id nor a "
+                logger.warning("providers.%s: catalog_provider %r is neither a Moor provider id nor a "
                                "models.dev id; ignoring", key, alias)
             mdev_id = None
     return mdev_id
@@ -202,7 +202,7 @@ _UNKNOWN_CATALOG_PROVIDER_WARNED: set = set()  # (provider, alias) warned once p
 def _cfg_get(*keys: str, default: Any, config: Optional[Dict[str, Any]] = None) -> Any:
     """``cfg_get`` over the read-only config; *default* on any failure."""
     try:
-        from hermes_cli.config import cfg_get, load_config_readonly
+        from moor_cli.config import cfg_get, load_config_readonly
         return cfg_get(config if config is not None else load_config_readonly(), *keys, default=default)
     except Exception:
         return default
@@ -511,7 +511,7 @@ def _registry_models(mdev_id: str, *, allow_network: bool) -> Optional[Dict[str,
 def _get_provider_models(
     provider: str, *, allow_network: bool = False, config: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Resolve a Hermes provider ID to its models dict, or None if unknown.
+    """Resolve a Moor provider ID to its models dict, or None if unknown.
     ``allow_network`` defaults to False — hot-path callers must never block."""
     mdev_id = _models_dev_id(provider, config=config)
     return _registry_models(mdev_id, allow_network=allow_network) if mdev_id else None
@@ -666,7 +666,7 @@ def _load_model_overrides(*, config: Optional[Dict[str, Any]] = None) -> Dict[st
 
 
 def _provider_override_section(provider: str, *, config: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-    """Override section for *provider* (keyed by Hermes OR models.dev id), or None."""
+    """Override section for *provider* (keyed by Moor OR models.dev id), or None."""
     overrides = (
         _load_model_overrides(config=config)
         if config is not None
@@ -792,7 +792,7 @@ def _merge_catalog_entry_with_override(raw: Dict[str, Any], override: Dict[str, 
 def _builtin_model_metadata(
     provider: str, model: str, *, config: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Built-in metadata for a provider/model pair, if Hermes has a vendor-specific entry."""
+    """Built-in metadata for a provider/model pair, if Moor has a vendor-specific entry."""
     provider_key = _models_dev_id(provider, config=config) or (provider or "").strip()
     return _BUILTIN_MODEL_METADATA.get((provider_key, (model or "").strip().lower()))
 
@@ -803,7 +803,7 @@ def _relay_vision_marker_metadata(provider: str, model: str) -> Optional[Dict[st
     ``-vision`` token is the vendor's own capability marker; without it ``image_input_mode: auto`` treats
     the model as text-only and detours images through the lossy describe path (#96066). Every other field
     keeps the unknown-model defaults, so only vision is claimed."""
-    from hermes_cli.models import opencode_provider_family
+    from moor_cli.models import opencode_provider_family
 
     if "-vision" not in (model or "").strip().lower() or opencode_provider_family(provider) is None:
         return None
@@ -952,7 +952,7 @@ def _parse_provider_info(provider_id: str, raw: Dict[str, Any]) -> ProviderInfo:
 def get_provider_info(
     provider_id: str, *, allow_network: bool = True, config: Optional[Dict[str, Any]] = None,
 ) -> Optional[ProviderInfo]:
-    """Provider metadata by Hermes or models.dev ID, or None if not cataloged. ``allow_network`` defaults to True (interactive setup)."""
+    """Provider metadata by Moor or models.dev ID, or None if not cataloged. ``allow_network`` defaults to True (interactive setup)."""
     mdev_id = _models_dev_id(provider_id, config=config) or provider_id
     raw = _registry_provider(mdev_id, allow_network)
     return _parse_provider_info(mdev_id, raw) if raw is not None else None
@@ -961,7 +961,7 @@ def get_provider_info(
 def get_model_info(
     provider_id: str, model_id: str, *, allow_network: bool = False, config: Optional[Dict[str, Any]] = None,
 ) -> Optional[ModelInfo]:
-    """Full model metadata by Hermes or models.dev provider ID (exact match, then case-insensitive), or
+    """Full model metadata by Moor or models.dev provider ID (exact match, then case-insensitive), or
     None if not found. EXPLICIT ``model_overrides`` patch known catalog models; ``_default`` fills the gap
     only for unknown ones. ``allow_network`` defaults to False — cost guard and inventory are hot paths.
 

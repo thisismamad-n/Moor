@@ -287,7 +287,7 @@ def test_resolve_keeps_catalog_meta_when_later_sources_do_not_fetch():
 
 def test_inspect_reuses_one_ssrf_safe_client_for_metadata_and_bundle(monkeypatch, tmp_path):
     """A preview's (and an install's) sequential resolver calls must share one guarded connection pool."""
-    import hermes_cli.skills_hub as cli_hub
+    import moor_cli.skills_hub as cli_hub
     import tools.skills_hub as hub
     import tools.skills_hub_search as search
     import tools.skills_hub_clawhub as clawhub
@@ -318,8 +318,8 @@ def test_inspect_reuses_one_ssrf_safe_client_for_metadata_and_bundle(monkeypatch
     class Source:
         def inspect(self, _identifier):
             hub._guarded_http_get("https://example.com/metadata")
-            # The Hermes-index fetch must ride the same pool (no cache → real GET).
-            assert search._load_hermes_index() == {"skills": []}
+            # The moor-index fetch must ride the same pool (no cache → real GET).
+            assert search._load_moor_index() == {"skills": []}
             return SkillMeta("example", "metadata", "test", "example/id", "community")
 
         def fetch(self, _identifier):
@@ -336,7 +336,7 @@ def test_inspect_reuses_one_ssrf_safe_client_for_metadata_and_bundle(monkeypatch
     monkeypatch.setattr(hub, "create_ssrf_safe_client", create_client, raising=False)
     monkeypatch.setattr(hub, "is_safe_url", lambda _url: True)
     monkeypatch.setattr(hub, "check_website_access", lambda _url: None)
-    monkeypatch.setattr(search, "_hermes_index_cache_file", lambda: tmp_path / "hermes-index.json")
+    monkeypatch.setattr(search, "_moor_index_cache_file", lambda: tmp_path / "moor-index.json")
     monkeypatch.setattr(search.httpx, "get", lambda *_a, **_k: pytest.fail("index fetch bypassed the pool"))
 
     result = cli_hub.inspect_skill("example/id")

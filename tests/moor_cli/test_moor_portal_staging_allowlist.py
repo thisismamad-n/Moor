@@ -31,8 +31,8 @@ from __future__ import annotations
 import json
 import logging
 
-from hermes_cli.auth import (
-    DEFAULT_NOUS_PORTAL_URL,
+from moor_cli.auth import (
+    DEFAULT_MOOR_PORTAL_URL,
 )
 
 

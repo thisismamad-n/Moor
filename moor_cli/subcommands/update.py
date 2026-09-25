@@ -7,7 +7,7 @@ from typing import Callable
 
 def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     """Attach the ``update`` subcommand to ``subparsers``."""
-    from hermes_cli.release_channels import validate_name
+    from moor_cli.release_channels import validate_name
     update_parser = subparsers.add_parser(
         "update", help="Update Moor Agent to the latest version",
         description="Pull the latest changes from git and reinstall dependencies")
@@ -28,7 +28,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
         "--list-venv-holders", action="store_true", default=False,
         help="Print the processes the Windows venv-holder guard would refuse on as a JSON list "
             "[{pid, exe, argv, kind}] and exit: 0 when the venv is free, 3 when holders are present. "
-            "Read-only; kind is gateway / backend (Desktop serve) / hermes:<subcommand> / python, so a "
+            "Read-only; kind is gateway / backend (Desktop serve) / moor:<subcommand> / python, so a "
             "scheduled update can stop exactly those PIDs instead of looping. Always [] off Windows.")
     update_parser.add_argument(
         "--no-backup", action="store_true", default=False,

@@ -1,4 +1,4 @@
-"""``hermes computer-use screen status`` shows the lease the way every RPC surface does: the holder's viewer
+"""``moor computer-use screen status`` shows the lease the way every RPC surface does: the holder's viewer
 id is a capability (whoever presents it co-drives or releases the lease), so only its short hash leaves the
 gateway. Regression for #110006."""
 
@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from hermes_cli.subcommands import computer_use_screen
+from moor_cli.subcommands import computer_use_screen
 from tools.bot_desktop import lease, runtime
 
 

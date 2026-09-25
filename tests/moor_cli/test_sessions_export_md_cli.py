@@ -106,16 +106,16 @@ def test_sessions_export_redact_scrubs_secrets(monkeypatch, tmp_path):
 
 
 def _real_store(monkeypatch, tmp_path):
-    import hermes_state
+    import moor_state
 
-    real_session_db = hermes_state.SessionDB
+    real_session_db = moor_state.SessionDB
     db_path = tmp_path / "state.db"
 
     class StoreAtTmp(real_session_db):
         def __init__(self, *args, **kwargs):
             super().__init__(db_path=db_path)
 
-    monkeypatch.setattr(hermes_state, "SessionDB", StoreAtTmp)
+    monkeypatch.setattr(moor_state, "SessionDB", StoreAtTmp)
     return StoreAtTmp
 
 
@@ -139,10 +139,10 @@ def _seed_six_turns(open_db, session_id, *, compact):
 
 
 def _export_delete(monkeypatch, out_dir, session_id, *extra):
-    import hermes_cli.main as main_mod
+    import moor_cli.main as main_mod
 
     monkeypatch.setattr(sys, "argv", [
-        "hermes", "sessions", "export", "--format", "md", "--session-id", session_id,
+        "moor", "sessions", "export", "--format", "md", "--session-id", session_id,
         "--delete-after-verified", "--yes", *extra, str(out_dir),
     ])
     main_mod.main()
@@ -167,7 +167,7 @@ def test_delete_after_verified_exports_compacted_display_history(monkeypatch, tm
 
 def test_delete_after_verified_rejects_same_count_content_change(monkeypatch, tmp_path, capsys):
     """A content rewrite is a real concurrent write that a count-only guard cannot see."""
-    import hermes_cli.session_export_md as session_export_md
+    import moor_cli.session_export_md as session_export_md
 
     open_db = _real_store(monkeypatch, tmp_path)
     _seed_six_turns(open_db, "s1", compact=False)

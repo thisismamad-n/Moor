@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.config import (
     reload_env,
@@ -20,17 +20,17 @@ from moor_cli.config import (
     OPTIONAL_ENV_VARS,
 )
 import gateway.status as _gw_status
-import hermes_cli.config as _cfg_mod
-import hermes_cli.web_routers.chat_ws as _rt_chat_ws
-import hermes_cli.web_server_chat as _web_server_chat
-import hermes_cli.web_server_config as _web_server_config
-import hermes_cli.web_server_dashboard as _web_server_dashboard
-import hermes_cli.web_server_files as _web_server_files
-import hermes_cli.web_server_gateway as _web_server_gateway
-import hermes_cli.web_server_lifecycle as _web_server_lifecycle
-import hermes_cli.web_server_memory as _web_server_memory
-import hermes_cli.web_server_messaging as _web_server_messaging
-import hermes_cli.web_server_sessions as _web_server_sessions
+import moor_cli.config as _cfg_mod
+import moor_cli.web_routers.chat_ws as _rt_chat_ws
+import moor_cli.web_server_chat as _web_server_chat
+import moor_cli.web_server_config as _web_server_config
+import moor_cli.web_server_dashboard as _web_server_dashboard
+import moor_cli.web_server_files as _web_server_files
+import moor_cli.web_server_gateway as _web_server_gateway
+import moor_cli.web_server_lifecycle as _web_server_lifecycle
+import moor_cli.web_server_memory as _web_server_memory
+import moor_cli.web_server_messaging as _web_server_messaging
+import moor_cli.web_server_sessions as _web_server_sessions
 
 
 # ---------------------------------------------------------------------------
@@ -261,8 +261,8 @@ class TestWebServerEndpoints:
         """Repeated GET-only polls must not checkpoint another writer's WAL."""
         import sqlite3
 
-        from hermes_constants import get_hermes_home
-        from hermes_state import SessionDB
+        from moor_constants import get_moor_home
+        from moor_state import SessionDB
 
         _web_server_sessions._last_auto_archive_check.clear()
         db_path = get_moor_home() / "state.db"
@@ -338,9 +338,9 @@ class TestWebServerEndpoints:
 
 
     def test_get_sessions_auto_archive_uses_maintenance_writer(self):
-        from hermes_cli.config import load_config, save_config
-        from hermes_constants import get_hermes_home
-        from hermes_state import SessionDB
+        from moor_cli.config import load_config, save_config
+        from moor_constants import get_moor_home
+        from moor_state import SessionDB
 
         db_path = get_moor_home() / "state.db"
         seed = SessionDB(db_path=db_path)
@@ -477,8 +477,8 @@ class TestWebServerEndpoints:
         """
         import sqlite3
 
-        from hermes_constants import get_hermes_home
-        from hermes_state import SessionDB
+        from moor_constants import get_moor_home
+        from moor_state import SessionDB
 
         db_path = get_moor_home() / "state.db"
         seed = SessionDB(db_path=db_path)
@@ -562,8 +562,8 @@ class TestWebServerEndpoints:
         would hammer the DB for nothing: serve reads probe-less instead, warn
         once, and never pay the writable open for that store again.
         """
-        from hermes_constants import get_hermes_home
-        from hermes_state import SessionDB
+        from moor_constants import get_moor_home
+        from moor_state import SessionDB
 
         db_path = get_moor_home() / "state.db"
         seed = SessionDB(db_path=db_path)
@@ -621,7 +621,7 @@ class TestWebServerEndpoints:
         """Unscoped SQLITE_CORRUPT must not escalate a dashboard read to writes."""
         import sqlite3
 
-        import hermes_state
+        import moor_state
 
         db_path = tmp_path / "state.db"
         db_path.write_bytes(b"not-empty")
@@ -642,7 +642,7 @@ class TestWebServerEndpoints:
         """UnicodeDecodeError — pysqlite failing to decode SQLite's own error
         message over corrupt file bytes (#98924) — must route through the
         same one-writable-open heal as malformed schema."""
-        import hermes_state
+        import moor_state
 
         db_path = tmp_path / "state.db"
         db_path.write_bytes(b"not-empty")
@@ -842,12 +842,12 @@ class FlatProvMemoryProvider(MemoryProvider):
             {"key": "mode", "label": "Mode", "choices": ["cloud", "local_external"], "default": "cloud"},
             {"key": "api_url", "label": "API URL", "default": ""},
             {"key": "api_key", "label": "API key", "secret": True, "env_var": "FLATPROV_API_KEY"},
-            {"key": "bank_id", "label": "Bank", "default": "hermes"},
+            {"key": "bank_id", "label": "Bank", "default": "moor"},
             {"key": "recall_budget", "label": "Budget", "choices": ["low", "mid", "high"], "default": "mid"},
         ]
 
-    def save_config(self, values, hermes_home):
-        path = Path(hermes_home) / "flatprov" / "config.json"
+    def save_config(self, values, moor_home):
+        path = Path(moor_home) / "flatprov" / "config.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         existing = json.loads(path.read_text()) if path.exists() else {}
         existing.update(values)
@@ -871,9 +871,9 @@ CONFIG_SCHEMA = ProviderConfigSchema(
 """
 
     def _install_flatprov(self):
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
-        plugin_dir = get_hermes_home() / "plugins" / "flatprov"
+        plugin_dir = get_moor_home() / "plugins" / "flatprov"
         plugin_dir.mkdir(parents=True, exist_ok=True)
         (plugin_dir / "__init__.py").write_text(self._FLATPROV_INIT, encoding="utf-8")
         (plugin_dir / "config_schema.py").write_text(self._FLATPROV_SCHEMA, encoding="utf-8")
@@ -899,7 +899,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         assert resp.json() == {"ok": True}
         assert load_env()["FLATPROV_API_KEY"] == "fp-declared-key"
 
-        config_path = get_hermes_home() / "flatprov" / "config.json"
+        config_path = get_moor_home() / "flatprov" / "config.json"
         provider_config = json.loads(config_path.read_text(encoding="utf-8"))
         assert provider_config["mode"] == "local_external"
         assert provider_config["api_url"] == "http://localhost:8888"
@@ -910,8 +910,8 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         """Dashboard dependency setup publishes through PM, never direct pip."""
         import subprocess as _subprocess
 
-        import hermes_cli.web_server as web_server
-        from hermes_cli import memory_setup
+        import moor_cli.web_server as web_server
+        from moor_cli import memory_setup
 
         prepared = []
         monkeypatch.setattr(
@@ -938,7 +938,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         data = resp.json()
         pip_rows = [row for row in data["results"] if row["kind"] == "pip"]
         assert pip_rows and pip_rows[0]["status"] == "installed"
-        assert pip_rows[0]["command"] == "hermes pm install"
+        assert pip_rows[0]["command"] == "moor pm install"
         assert prepared == ["honcho"]
 
 
@@ -965,7 +965,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         assert load_config()["memory"]["provider"] == "flatprov"
         assert load_env()["FLATPROV_API_KEY"] == "fp-test-key"
 
-        config_path = get_hermes_home() / "flatprov" / "config.json"
+        config_path = get_moor_home() / "flatprov" / "config.json"
         provider_config = json.loads(config_path.read_text(encoding="utf-8"))
         assert provider_config["mode"] == "local_external"
         assert provider_config["api_url"] == "http://localhost:8888"
@@ -1179,7 +1179,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         subagent run (``_delegate_from``) or a /branch fork (``_branched_from``) is its own conversation and
         never listed as a continuation, so following it parks the user's chat in a hidden row; only
         compression continuations are followed."""
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         db = SessionDB()
         try:
@@ -1202,7 +1202,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         assert resp.json()["session_id"] == "primary-cont"
 
 
-    def test_update_hermes_returns_docker_guidance_without_spawning(self, monkeypatch):
+    def test_update_moor_returns_docker_guidance_without_spawning(self, monkeypatch):
 
         spawned = False
 
@@ -1240,7 +1240,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         assert status_data["exit_code"] == 1
         assert status_data["pid"] is None
 
-    def test_update_hermes_returns_apt_guidance_without_spawning(self, monkeypatch):
+    def test_update_moor_returns_apt_guidance_without_spawning(self, monkeypatch):
 
         spawned = False
 
@@ -1339,7 +1339,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
             (["update"], "moor-update", {"MOOR_ACTION_ID": "a" * 32})
         ]
 
-    def test_update_hermes_reuses_running_action(self, monkeypatch):
+    def test_update_moor_reuses_running_action(self, monkeypatch):
 
         class Proc:
             pid = 24680
@@ -1406,10 +1406,10 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         (``provider_configured: false`` since a failed boot-time mint) must follow at once, with
         the ``setup.ready`` broadcast, or the web chat stays gated on "need setup" until a restart
         (setup.status answers from the record)."""
-        from hermes_cli import free_tier_bootstrap as fb
+        from moor_cli import free_tier_bootstrap as fb
 
         fb.reset_for_tests()
-        monkeypatch.setattr("hermes_cli.model_cost_guard.expensive_model_warning", lambda *_a, **_k: None)
+        monkeypatch.setattr("moor_cli.model_cost_guard.expensive_model_warning", lambda *_a, **_k: None)
         monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda: False)
         broadcasts = []
         monkeypatch.setattr(fb, "_broadcast", broadcasts.append)
@@ -1522,7 +1522,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
     def test_telegram_onboarding_apply_reports_restart_failure_after_save(
         self, monkeypatch
     ):
-        from hermes_cli.config import load_config, load_env
+        from moor_cli.config import load_config, load_env
 
         with _web_server_messaging._telegram_onboarding_lock:
             _web_server_messaging._telegram_onboarding_pairings.clear()
@@ -1763,7 +1763,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         """
         from urllib.parse import quote
 
-        from hermes_cli.config import get_config_path, load_config
+        from moor_cli.config import get_config_path, load_config
 
         get_config_path().write_text(
             "model:\n"
@@ -1813,7 +1813,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
     def test_unslugged_display_name_still_resolves_to_its_slug_key(self):
         """Compatibility fallback: a caller sending the display name reaches the
         dashboard-minted slug key; an unknown id is still a 404."""
-        from hermes_cli.config import get_config_path, load_config
+        from moor_cli.config import get_config_path, load_config
 
         get_config_path().write_text(
             "providers:\n"
@@ -1915,7 +1915,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         alias resolves to its canonical model + ``agent.reasoning_overrides`` instead of being
         saved as a literal upstream model id.
         """
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
 
         response = self.client.post(
             "/api/providers/custom-endpoints",
@@ -1960,7 +1960,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         the ``canonical_model`` / ``reasoning_effort`` a gateway advertises (#93622)."""
         import contextlib
 
-        from hermes_cli.web_routers import config_env
+        from moor_cli.web_routers import config_env
 
         class FakeResp:
             status_code = 200
@@ -1999,7 +1999,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         POST /chat/completions — the #93622 reporter's host."""
         import contextlib
 
-        from hermes_cli.web_routers import config_env
+        from moor_cli.web_routers import config_env
 
         class Resp:
             def __init__(self, status):
@@ -2054,7 +2054,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         secret by the time Save sees it. Migrating it would duplicate the
         user's secret into a second env var they never asked for.
         """
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         from moor_cli.config import custom_endpoint_key_env, get_config_path, get_env_value
 
@@ -2136,7 +2136,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
     def test_env_rejects_its_redacted_preview(self):
         """Invariant: a GET preview (sentinel or legacy bare mask) never gains write
         authority, even after another actor rotates the secret behind it."""
-        from hermes_cli.config import load_env, save_env_value
+        from moor_cli.config import load_env, save_env_value
 
         key = "OPENAI_API_KEY"
         real = "sk-live-secret-abcdef1234567890"
@@ -2159,7 +2159,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         """Invariant: preview rejection runs before any mutation (messaging clear+set),
         and custom-endpoint display strings (``${KEY_ENV}`` / legacy plaintext preview)
         are refused even after the entry rotated underneath them."""
-        from hermes_cli.config import load_config, load_env, save_config, save_env_value
+        from moor_cli.config import load_config, load_env, save_config, save_env_value
 
         key = "DISCORD_BOT_TOKEN"
         real = "discord-live-secret-abcdef1234567890"
@@ -2236,7 +2236,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         """A post-migration ``custom_providers:`` list entry is still routed by the
         runtime (``get_compatible_custom_providers``), so Custom Endpoints must show
         it — and Delete must remove it from the legacy list, not 404 (#114471)."""
-        from hermes_cli.config import load_config, save_config
+        from moor_cli.config import load_config, save_config
 
         cfg = load_config()
         cfg["providers"] = {
@@ -2263,7 +2263,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
     def test_activating_a_legacy_custom_providers_entry_promotes_it(self):
         """Use on a legacy row moves the entry under ``providers:`` (the v12+ shape the
         main slot names by key) instead of 404ing on a row the list just rendered."""
-        from hermes_cli.config import load_config, save_config
+        from moor_cli.config import load_config, save_config
 
         cfg = load_config()
         cfg["custom_providers"] = [
@@ -2698,7 +2698,7 @@ class TestConfigRoundTrip:
         round-trip. Deep-merge is required — a shallow merge would drop
         ``agent.<custom_key>`` when the frontend sends a partial ``agent``
         dict containing only schema-known sub-fields."""
-        from hermes_cli.config import read_raw_config, save_config
+        from moor_cli.config import read_raw_config, save_config
 
         # Seed config with a key under `agent` that isn't in the schema.
         # Use a sentinel name to avoid colliding with future schema fields.
@@ -3009,8 +3009,8 @@ class TestNewEndpoints:
         assert by_name["ElevenLabs"]["status"] == "needs_keys"
 
 
-    def test_select_managed_nous_provider_reports_needs_nous_auth(self, monkeypatch):
-        """Selecting a managed Nous row while logged out flags needs_nous_auth.
+    def test_select_managed_moor_provider_reports_needs_moor_auth(self, monkeypatch):
+        """Selecting a managed Moor row while logged out flags needs_moor_auth.
 
         Regression: the GUI PUT wrote browser.cloud_provider + use_gateway
         but skipped the Portal entitlement handshake the CLI runs inline
@@ -3094,7 +3094,7 @@ class TestNewEndpoints:
 
     def test_terminal_ssh_probe_ready_when_configured(self, monkeypatch):
         """SSH host + user in config.yaml -> ready."""
-        from hermes_cli.config import load_config, save_config
+        from moor_cli.config import load_config, save_config
 
         monkeypatch.setattr(shutil, "which", lambda name: None)
         config = load_config()
@@ -3234,18 +3234,18 @@ class TestDesktopHostRendezvousIsolation:
 
     def test_desktop_backend_does_not_claim_the_host_serve_record(self, monkeypatch, tmp_path):
         """A Desktop child must not block a separately supervised public dashboard, yet a
-        terminal `hermes plugins install` on a Desktop-only box must still find it (#119644):
+        terminal `moor plugins install` on a Desktop-only box must still find it (#119644):
         it publishes under its OWN role, which the attach ladder never reads."""
         import io
         import urllib.request
         from gateway import host_rendezvous as hr
-        import hermes_cli.web_server as web_server
-        from hermes_cli.main_dashboard import _host_backend_attachment
-        from hermes_cli.plugins_activation import notify_serve_backend
+        import moor_cli.web_server as web_server
+        from moor_cli.main_dashboard import _host_backend_attachment
+        from moor_cli.plugins_activation import notify_serve_backend
 
-        monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
+        monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("MOOR_DESKTOP", "1")
+        monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
         monkeypatch.setattr(web_server, "_SESSION_TOKEN", "desktop-spawn-token")
         monkeypatch.setattr(hr, "cleanup_on_exit", lambda role: None)
         dialed = []
@@ -3258,7 +3258,7 @@ class TestDesktopHostRendezvousIsolation:
                 return False
 
         def _fake_urlopen(request, timeout=None):
-            dialed.append((request.full_url, request.get_header("X-hermes-session-token")))
+            dialed.append((request.full_url, request.get_header("X-moor-session-token")))
             return _Reply(b'{"ok": true}')
 
         monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
@@ -3268,7 +3268,7 @@ class TestDesktopHostRendezvousIsolation:
             # Not a host owner: the supervised public dashboard's attach ladder sees nobody.
             assert hr.read_record(hr.ROLE_SERVE) is None
             assert _host_backend_attachment() is None
-            # ...but a terminal `hermes plugins install` still lights up its open chats.
+            # ...but a terminal `moor plugins install` still lights up its open chats.
             assert notify_serve_backend("demo", tmp_path) == {"ok": True}
             assert dialed == [("http://127.0.0.1:9231/api/dashboard/agent-plugins/activate",
                                "desktop-spawn-token")]
@@ -3278,12 +3278,12 @@ class TestDesktopHostRendezvousIsolation:
 
     def test_standalone_backend_still_claims_the_host_serve_record(self, monkeypatch):
         """The Desktop exclusion must not alter standalone dashboard discovery — including a
-        supervised service whose shell merely inherited HERMES_DESKTOP=1 without the token."""
+        supervised service whose shell merely inherited MOOR_DESKTOP=1 without the token."""
         from gateway import host_rendezvous as hr
-        import hermes_cli.web_server as web_server
+        import moor_cli.web_server as web_server
 
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
+        monkeypatch.setenv("MOOR_DESKTOP", "1")
+        monkeypatch.delenv("MOOR_DASHBOARD_SESSION_TOKEN", raising=False)
         claimed = []
         published = []
         monkeypatch.setattr(
@@ -3660,7 +3660,7 @@ class TestStatusInstallId:
         self.client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
 
     def test_status_reports_persistent_install_id(self, monkeypatch):
-        from hermes_constants import get_default_hermes_root
+        from moor_constants import get_default_moor_root
 
         monkeypatch.setattr(_gw_status, "get_running_pid_cached", lambda: None)
         monkeypatch.setattr(_gw_status, "read_runtime_status", lambda: None)
@@ -3934,7 +3934,7 @@ class TestDiscoverUserThemes:
     """Tests for _discover_user_themes() — scans ~/.moor/dashboard-themes/."""
 
     def test_returns_empty_when_dir_missing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         assert _web_server_dashboard._discover_user_themes() == []
 
     def test_loads_and_normalises_yaml(self, tmp_path, monkeypatch):
@@ -4420,8 +4420,8 @@ class TestDashboardPluginManifestExtensions:
         other = tmp_path / "other-profile"
         other.mkdir()
 
-        monkeypatch.setenv("HERMES_HOME", str(launch_home))
-        token = set_hermes_home_override(str(other))
+        monkeypatch.setenv("MOOR_HOME", str(launch_home))
+        token = set_moor_home_override(str(other))
         try:
             plugins = _web_server_dashboard._discover_dashboard_plugins()
         finally:
@@ -4442,7 +4442,7 @@ class TestDashboardPluginManifestExtensions:
             "entry": "dist/index.js",
         })
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("MOOR_HOME", str(profile_home))
         plugins = _web_server_dashboard._discover_dashboard_plugins()
         assert any(p["name"] == "meeting-intelligence" for p in plugins)
 
@@ -4465,7 +4465,7 @@ class TestDashboardPluginManifestExtensions:
             "entry": "dist/index.js",
         })
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("MOOR_HOME", str(profile_home))
         plugins = _web_server_dashboard._discover_dashboard_plugins()
         entries = [p for p in plugins if p["name"] == "dupe"]
         assert len(entries) == 1
@@ -4524,7 +4524,7 @@ class TestDashboardPluginManifestExtensions:
 # monkeypatch that hook.
 # ---------------------------------------------------------------------------
 
-from hermes_cli import main_tui_launch
+from moor_cli import main_tui_launch
 
 
 skip_on_windows = pytest.mark.skipif(
@@ -4960,13 +4960,13 @@ class TestDesktopCronTicker:
 
         return TestClient(app)
 
-    def test_ticker_runs_when_desktop(self, monkeypatch, _isolate_hermes_home):
+    def test_ticker_runs_when_desktop(self, monkeypatch, _isolate_moor_home):
         import cron.scheduler as sched
 
         called = threading.Event()
         monkeypatch.setattr(sched, "tick", lambda *a, **k: called.set())
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
+        monkeypatch.setenv("MOOR_DESKTOP", "1")
+        monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
 
         with self._client():
             assert called.wait(3.0), "expected cron tick under a Desktop-owned backend"
@@ -5362,14 +5362,14 @@ class TestSubmittedCustomEndpointSurvivesAssignment:
     replace what the user typed and had persisted."""
 
     def test_submitted_custom_endpoint_wins_over_an_env_endpoint(self, monkeypatch):
-        from hermes_cli.web_server_config import _apply_main_model_assignment, _validated_main_model_selection
+        from moor_cli.web_server_config import _apply_main_model_assignment, _validated_main_model_selection
 
         monkeypatch.setenv("CUSTOM_BASE_URL", "http://127.0.0.1:9999/v1")
         monkeypatch.setattr(
-            "hermes_cli.models_validate.validate_requested_model",
+            "moor_cli.models_validate.validate_requested_model",
             lambda *a, **k: {"accepted": True, "persist": True, "recognized": True, "message": None})
-        monkeypatch.setattr("hermes_cli.model_switch.get_model_info", lambda *a, **k: None)
-        monkeypatch.setattr("hermes_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
+        monkeypatch.setattr("moor_cli.model_switch.get_model_info", lambda *a, **k: None)
+        monkeypatch.setattr("moor_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
 
         cfg = {"model": {"provider": "openrouter", "default": "m"}}
         result = _validated_main_model_selection(

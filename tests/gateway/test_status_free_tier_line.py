@@ -39,7 +39,7 @@ def _jwt(**claims) -> str:
     }
     return f"{segment({'alg': 'RS256'})}.{segment(payload)}.sig"
 
-def _seed_nous(state: dict) -> None:
+def _seed_moor(state: dict) -> None:
     with _auth_store_lock():
         store = _load_auth_store()
         store.setdefault("providers", {})["moor"] = state

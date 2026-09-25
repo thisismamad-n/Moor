@@ -5,7 +5,7 @@ Holds the stateless atoms that every FAL-backed tool needs:
 * :func:`import_fal_client` — lazy import + ``pm.ensure_import`` so
   ``fal_client`` isn't pulled at cold start (it added ~64 ms per CLI
   invocation when imported eagerly).
-* :class:`_ManagedFalSyncClient` — wrapper that drives a Nous-managed
+* :class:`_ManagedFalSyncClient` — wrapper that drives a Moor-managed
   fal-queue gateway through the standard ``fal_client.SyncClient``
   primitives.
 * :func:`_normalize_fal_queue_url_format`, :func:`_extract_http_status`
@@ -127,7 +127,7 @@ def _managed_fal_retry_after_seconds(exc: BaseException) -> Optional[float]:
 def _managed_fal_rate_limit_message(what: str, name: str, retry_after: Optional[float]) -> str:
     hint = f"retry after {retry_after:g}s" if retry_after is not None else "no Retry-After given"
     return (
-        f"Nous Subscription gateway rate-limited {what} '{name}' (HTTP 429; {hint}). "
+        f"Moor Subscription gateway rate-limited {what} '{name}' (HTTP 429; {hint}). "
         "The model is enabled — retry later instead of switching models or setting FAL_KEY."
     )
 

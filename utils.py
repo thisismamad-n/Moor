@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Union
 from urllib.parse import urlparse
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 logger = logging.getLogger(__name__)
 
@@ -505,7 +505,7 @@ def atomic_roundtrip_yaml_save(path: Union[str, Path], new_state: dict, *,
     """Persist a full config-state dict while preserving comments and ordering.
 
     THE writer for ``config.yaml`` (every production caller reaches it through
-    ``hermes_cli.config.atomic_config_write``): the on-disk document is loaded through ruamel
+    ``moor_cli.config.atomic_config_write``): the on-disk document is loaded through ruamel
     round-trip mode and *new_state* is merged onto it, so comments, key order, quotes, blank
     lines and readable Unicode survive. Only nodes whose value actually changed are reassigned;
     an untouched scalar or list keeps its inline comments and formatting. Keys absent from
@@ -515,7 +515,7 @@ def atomic_roundtrip_yaml_save(path: Union[str, Path], new_state: dict, *,
     users' own comments (#92554).
     """
     from ruamel.yaml.comments import CommentedMap, CommentedSeq
-    from hermes_cli.config import require_readable_config_before_write
+    from moor_cli.config import require_readable_config_before_write
 
     path = Path(path)
     from moor_constants import mkdir_under_moor_home

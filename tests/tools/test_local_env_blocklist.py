@@ -13,7 +13,7 @@ import pytest
 from tests.tools._child_env_fixtures import child_env, observe_child, observe_terminal  # noqa: F401
 from tools.environments import local
 from tools.environments import local_pythonpath as pp
-from tools.environments.local_env_policy import _HERMES_PROVIDER_ENV_BLOCKLIST
+from tools.environments.local_env_policy import _MOOR_PROVIDER_ENV_BLOCKLIST
 
 
 def _running_venv_site_packages() -> Path:
@@ -25,7 +25,7 @@ def _running_venv_site_packages() -> Path:
 
 def _physical_repo_root(tmp_path: Path) -> Path:
     """Create the physical repo checkout directory for junction tests."""
-    physical_root = tmp_path / "physical-home" / "hermes-agent"
+    physical_root = tmp_path / "physical-home" / "moor-agent"
     physical_root.mkdir(parents=True)
     return physical_root
 
@@ -44,7 +44,7 @@ DISCORD_AUTO_THREAD SLACK_HOME_CHANNEL SLACK_HOME_CHANNEL_NAME SLACK_ALLOWED_USE
 WHATSAPP_ENABLED WHATSAPP_MODE WHATSAPP_ALLOWED_USERS SIGNAL_HTTP_URL SIGNAL_ACCOUNT
 SIGNAL_ALLOWED_USERS SIGNAL_GROUP_ALLOWED_USERS SIGNAL_HOME_CHANNEL SIGNAL_HOME_CHANNEL_NAME
 SIGNAL_IGNORE_STORIES HASS_TOKEN HASS_URL EMAIL_ADDRESS EMAIL_PASSWORD EMAIL_IMAP_HOST
-EMAIL_SMTP_HOST EMAIL_HOME_ADDRESS EMAIL_HOME_ADDRESS_NAME HERMES_DASHBOARD_SESSION_TOKEN
+EMAIL_SMTP_HOST EMAIL_HOME_ADDRESS EMAIL_HOME_ADDRESS_NAME MOOR_DASHBOARD_SESSION_TOKEN
 GATEWAY_ALLOWED_USERS GATEWAY_ALLOW_ALL_USERS GH_TOKEN GITHUB_APP_ID
 GITHUB_APP_PRIVATE_KEY_PATH GITHUB_APP_INSTALLATION_ID MODAL_TOKEN_ID MODAL_TOKEN_SECRET
 DAYTONA_API_KEY VERCEL_OIDC_TOKEN VERCEL_TOKEN VERCEL_PROJECT_ID VERCEL_TEAM_ID GATEWAY_RELAY_ID
@@ -66,8 +66,8 @@ def _running_site():
 
 
 def test_terminal_child_observes_declared_policy(child_env, monkeypatch):
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.config import OPTIONAL_ENV_VARS
+    from moor_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.config import OPTIONAL_ENV_VARS
     blocked = set(STATIC_BLOCKED)
     for config in PROVIDER_REGISTRY.values():
         blocked.update(config.api_key_env_vars)
@@ -76,7 +76,7 @@ def test_terminal_child_observes_declared_policy(child_env, monkeypatch):
     blocked.update(name for name, meta in OPTIONAL_ENV_VARS.items()
                    if meta.get("category") in {"tool", "messaging"}
                    or (meta.get("category") == "setting" and meta.get("password")))
-    blocked.discard("CLAUDE_CODE_OAUTH_TOKEN")  # operator's subscription, not Hermes inference
+    blocked.discard("CLAUDE_CODE_OAUTH_TOKEN")  # operator's subscription, not Moor inference
     for name in blocked | set(OPERATOR_ALLOWED):
         monkeypatch.setenv(name, "fake-" + name)
     before = dict(os.environ)
@@ -103,7 +103,7 @@ def test_builders_strip_runtime_markers_and_owned_paths(child_env, monkeypatch, 
         "foreground": lambda: local._make_run_env({}),
         "background": lambda: local._sanitize_subprocess_env(dict(os.environ), {"VIRTUAL_ENV": "/extra/venv"}),
         "factory": local.build_subprocess_env,
-        "nonterminal": local.hermes_subprocess_env,
+        "nonterminal": local.moor_subprocess_env,
     }
     before = dict(os.environ)
     actual = observe_child(factories[builder](), ["VIRTUAL_ENV", "CONDA_PREFIX", "PYTHONHOME", "PYTHONPATH", "HOME"])
@@ -125,22 +125,22 @@ def test_force_prefix_is_not_plugin_passthrough(child_env, monkeypatch, builder,
     assert not is_env_passthrough("AUXILIARY_VISION_API_KEY")
     assert is_env_passthrough("SERVICE_TOKEN")
     monkeypatch.setenv("OPENAI_API_KEY", "fake-parent")
-    monkeypatch.setenv("_HERMES_FORCE_OPENAI_API_KEY", "base-forced")
-    extra = {"_HERMES_FORCE_OPENAI_BASE_URL": "extra-forced",
-             "_HERMES_FORCE_AUXILIARY_VISION_API_KEY": "never-forward",
+    monkeypatch.setenv("_MOOR_FORCE_OPENAI_API_KEY", "base-forced")
+    extra = {"_MOOR_FORCE_OPENAI_BASE_URL": "extra-forced",
+             "_MOOR_FORCE_AUXILIARY_VISION_API_KEY": "never-forward",
              "AUXILIARY_VISION_API_KEY": "never-forward", "MY_CUSTOM_VAR": "caller-value"}
     factories = {
         "foreground": lambda: local._make_run_env(extra),
         "background": lambda: local._sanitize_subprocess_env(dict(os.environ), extra),
         "factory": lambda: local.build_subprocess_env(extra=extra),
-        "nonterminal": lambda: local.hermes_subprocess_env(base_env={**os.environ, **extra}),
+        "nonterminal": lambda: local.moor_subprocess_env(base_env={**os.environ, **extra}),
     }
     result = factories[builder]()
     assert result.get("OPENAI_API_KEY") == base_force
     assert result.get("OPENAI_BASE_URL") == extra_force
     assert result["MY_CUSTOM_VAR"] == "caller-value"
     assert "AUXILIARY_VISION_API_KEY" not in result
-    assert not any(k.startswith("_HERMES_FORCE_") for k in result)
+    assert not any(k.startswith("_MOOR_FORCE_") for k in result)
     # Even a buggy plugin hook cannot bypass dynamic-secret exclusion.
     with patch("tools.env_passthrough.is_env_passthrough", return_value=True):
         assert "AUXILIARY_VISION_API_KEY" not in factories[builder]()
@@ -166,7 +166,7 @@ def test_buzz_context_and_plain_process_value(child_env, monkeypatch, managed, p
         assert not any(is_env_passthrough(k) for k in buzz)
         for result in (local._make_run_env({}), local._sanitize_subprocess_env(dict(os.environ))):
             assert {k: result.get(k) for k in buzz} == (buzz if allowed else dict.fromkeys(buzz))
-        for result in (local.hermes_subprocess_env(), _scrub_child_env(os.environ)):
+        for result in (local.moor_subprocess_env(), _scrub_child_env(os.environ)):
             assert not set(buzz) & result.keys()
     finally:
         if scope_token is not None:
@@ -243,7 +243,7 @@ def test_profile_passthrough_in_terminal_child(child_env, monkeypatch, scoped, e
 def test_pythonpath_literal_policy(entries, expected):
     locations = {"REPO": str(Path(__file__).resolve().parents[2]), "SITE": str(_running_site())}
     env = {} if entries is None else {"PYTHONPATH": os.pathsep.join(locations.get(p, p) for p in entries)}
-    pp._strip_hermes_owned_pythonpath(env)
+    pp._strip_moor_owned_pythonpath(env)
     assert env.get("PYTHONPATH") == (os.pathsep.join(expected) if expected is not None else None)
 
 
@@ -252,7 +252,7 @@ def test_pythonpath_descendants_are_not_owned():
     entries = [str(site / "user-path"), str(repo / "tools"), str(repo / "tools/environments"),
                "/opt/other-venv/lib/python3.99/site-packages"]
     env = {"PYTHONPATH": os.pathsep.join(entries)}
-    pp._strip_hermes_owned_pythonpath(env)
+    pp._strip_moor_owned_pythonpath(env)
     assert env["PYTHONPATH"].split(os.pathsep) == entries
 
 
@@ -260,10 +260,10 @@ def test_pythonpath_descendants_are_not_owned():
 @pytest.mark.parametrize("link_at", ["home", "repo", "unrelated"])
 @pytest.mark.parametrize("profile", [False, True])
 def test_launcher_alias_provenance(child_env, monkeypatch, link_at, profile):
-    from hermes_cli.gateway_windows import _preserve_hermes_home_path
-    from hermes_cli.profiles import resolve_profile_env
+    from moor_cli.gateway_windows import _preserve_moor_home_path
+    from moor_cli.profiles import resolve_profile_env
     physical_home = child_env / "physical-home"
-    physical_root = physical_home / "hermes-agent"
+    physical_root = physical_home / "moor-agent"
     physical_root.mkdir(parents=True)
     configured = child_env / "configured-home"
     if link_at == "home":
@@ -271,29 +271,29 @@ def test_launcher_alias_provenance(child_env, monkeypatch, link_at, profile):
     else:
         configured.mkdir()
         if link_at == "repo":
-            _make_directory_link(configured / "hermes-agent", physical_root)
+            _make_directory_link(configured / "moor-agent", physical_root)
         else:
-            (configured / "hermes-agent").mkdir()
+            (configured / "moor-agent").mkdir()
     (configured / "profiles/coder").mkdir(parents=True)
     (configured / "profiles/coder/config.yaml").write_text("{}\n", encoding="utf-8")
-    unrelated = child_env / "user-tools/hermes-agent"
+    unrelated = child_env / "user-tools/moor-agent"
     unrelated.mkdir(parents=True)
-    lexical_root = configured / "hermes-agent"
-    monkeypatch.setenv("HERMES_HOME", str(configured))
+    lexical_root = configured / "moor-agent"
+    monkeypatch.setenv("MOOR_HOME", str(configured))
     assert Path(resolve_profile_env("default")) == configured
     assert Path(resolve_profile_env("coder")) == configured / "profiles/coder"
     if link_at == "home":
-        assert Path(_preserve_hermes_home_path(physical_root)) == lexical_root
+        assert Path(_preserve_moor_home_path(physical_root)) == lexical_root
     active_home = configured / "profiles/coder" if profile else configured
-    aliases = pp._build_hermes_repo_root_aliases(physical_root.resolve(), physical_root, active_home)
-    monkeypatch.setattr(local, "_hermes_repo_root_aliases", aliases)
+    aliases = pp._build_moor_repo_root_aliases(physical_root.resolve(), physical_root, active_home)
+    monkeypatch.setattr(local, "_moor_repo_root_aliases", aliases)
     nested = lexical_root / "user-data"
     entries = [str(lexical_root), str(nested), str(unrelated), str(active_home / "not-the-repo")]
     env = {"PYTHONPATH": os.pathsep.join(entries)}
-    pp._strip_hermes_owned_pythonpath(env)
+    pp._strip_moor_owned_pythonpath(env)
     assert env["PYTHONPATH"].split(os.pathsep) == (entries if link_at == "unrelated" else entries[1:])
     if profile:
-        assert active_home / "hermes-agent" not in aliases
+        assert active_home / "moor-agent" not in aliases
 
 
 @pytest.mark.parametrize("has_facts", [True, False])
@@ -313,9 +313,9 @@ def test_runtime_provenance_is_independent_of_aliases_and_virtual_env(child_env,
         facts.parent.mkdir(parents=True, exist_ok=True)
         facts.write_text(json.dumps({"packages": {"venv": {"environment": str(runtime)}}}), encoding="utf-8")
     monkeypatch.setattr(local, "_in_venv", False)
-    monkeypatch.setattr(local, "_hermes_site_packages", None)
+    monkeypatch.setattr(local, "_moor_site_packages", None)
     alias = child_env / "unrelated-repo-alias"
-    monkeypatch.setattr(local, "_hermes_repo_root_aliases", (alias,))
+    monkeypatch.setattr(local, "_moor_repo_root_aliases", (alias,))
     user_venv = child_env / "user-venv"
     user_site = user_venv / "Lib/site-packages"
     user_site.mkdir(parents=True)
@@ -329,32 +329,32 @@ def test_runtime_provenance_is_independent_of_aliases_and_virtual_env(child_env,
 
 
 @pytest.mark.parametrize("existing,expected", [
-    (["/usr/bin", "/bin"], ["/opt/hermes/bin", "/usr/bin", "/bin"]),
-    (["/usr/bin", "/opt/hermes/bin"], ["/usr/bin", "/opt/hermes/bin"]),
+    (["/usr/bin", "/bin"], ["/opt/moor/bin", "/usr/bin", "/bin"]),
+    (["/usr/bin", "/opt/moor/bin"], ["/usr/bin", "/opt/moor/bin"]),
 ])
-def test_background_hermes_path_repair_is_idempotent(child_env, monkeypatch, existing, expected):
-    monkeypatch.setattr(local, "_HERMES_BIN_DIR", "/opt/hermes/bin")
+def test_background_moor_path_repair_is_idempotent(child_env, monkeypatch, existing, expected):
+    monkeypatch.setattr(local, "_MOOR_BIN_DIR", "/opt/moor/bin")
     result = local._sanitize_subprocess_env({"PATH": os.pathsep.join(existing)})
     assert result["PATH"].split(os.pathsep) == expected
     assert local._sanitize_subprocess_env(result)["PATH"] == result["PATH"]
 
 
-def test_hermes_bin_resolution_and_unresolved_noop(child_env, monkeypatch):
+def test_moor_bin_resolution_and_unresolved_noop(child_env, monkeypatch):
     bin_dir = child_env / "bin"
     bin_dir.mkdir()
-    monkeypatch.setattr(local, "_HERMES_BIN_DIR", local._SENTINEL)
-    monkeypatch.setattr(local.shutil, "which", lambda name: str(bin_dir / "hermes") if name == "hermes" else None)
-    assert local._resolve_hermes_bin_dir() == str(bin_dir)
-    monkeypatch.setattr(local, "_HERMES_BIN_DIR", None)
-    assert local._prepend_hermes_bin_dir("/usr/bin") == "/usr/bin"
+    monkeypatch.setattr(local, "_MOOR_BIN_DIR", local._SENTINEL)
+    monkeypatch.setattr(local.shutil, "which", lambda name: str(bin_dir / "moor") if name == "moor" else None)
+    assert local._resolve_moor_bin_dir() == str(bin_dir)
+    monkeypatch.setattr(local, "_MOOR_BIN_DIR", None)
+    assert local._prepend_moor_bin_dir("/usr/bin") == "/usr/bin"
 
 
 @pytest.mark.platforms("posix")
 def test_foreground_minimal_path_preserves_operator_precedence(child_env, monkeypatch):
-    monkeypatch.setattr(local, "_HERMES_BIN_DIR", "/opt/hermes/bin")
+    monkeypatch.setattr(local, "_MOOR_BIN_DIR", "/opt/moor/bin")
     monkeypatch.setenv("PATH", "/custom/bin:/custom/bin::/usr/bin")
     result = local._make_run_env({})["PATH"].split(":")
-    assert result[:3] == ["/opt/hermes/bin", "/custom/bin", "/usr/bin"]
+    assert result[:3] == ["/opt/moor/bin", "/custom/bin", "/usr/bin"]
     assert "/opt/homebrew/bin" in result and "/opt/homebrew/sbin" in result
     assert "" not in result
     assert result.count("/custom/bin") == 1
@@ -390,12 +390,12 @@ def _make_directory_link(link: Path, target: Path) -> None:
 class TestNativeEnvironmentContracts:
     @pytest.fixture(autouse=True)
     def _no_bin_injection(self, monkeypatch):
-        monkeypatch.setattr(local, "_HERMES_BIN_DIR", None)
+        monkeypatch.setattr(local, "_MOOR_BIN_DIR", None)
 
     @pytest.mark.platforms("windows")
-    def test_windows_hermes_owned_paths_stripped(self):
-        """On Windows, a Hermes venv site-packages entry written with
-        backslashes is stripped by the same Hermes-owned check, while a
+    def test_windows_moor_owned_paths_stripped(self):
+        """On Windows, a Moor venv site-packages entry written with
+        backslashes is stripped by the same moor-owned check, while a
         user Windows path is preserved.  Windows-only: POSIX ``Path`` does
         not split on backslashes, so this cannot be meaningfully simulated
         on a POSIX host."""

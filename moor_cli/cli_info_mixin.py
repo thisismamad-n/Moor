@@ -692,7 +692,7 @@ class CLIInfoMixin:
             # Account limits (e.g. Codex subscription windows) need only the configured provider
             # plus on-disk credentials, so they render without a live agent too (#42904).
             shown = self._print_account_limits()
-            if self._print_nous_credits_block():
+            if self._print_moor_credits_block():
                 self._print_usage_cta()
             elif not shown:
                 print(fallback)
@@ -835,7 +835,7 @@ class CLIInfoMixin:
         cache** (the next message re-sends the full input prefix, expensive on long-context / high-reasoning
         models). See #1474.
         """
-        import hermes_yaml as _yaml
+        import moor_yaml as _yaml
 
         now = time.monotonic()
         if now - self._last_config_check < CONFIG_WATCH_INTERVAL:

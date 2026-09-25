@@ -40,13 +40,13 @@ def fake_scripts_dir(tmp_path):
     return scripts
 
 
-class TestHermesExeShims:
+class TestMoorExeShims:
     """The orphan sweep includes declared scripts and the legacy gateway shim."""
 
     def test_shims_include_declared_console_scripts(
         self, temp_pyproject, fake_scripts_dir
     ):
-        names = {path.name for path in main_install_repair._hermes_exe_shims(fake_scripts_dir)}
+        names = {path.name for path in main_install_repair._moor_exe_shims(fake_scripts_dir)}
 
         assert {"moor.exe", "moor-agent.exe", "moor-acp.exe"} <= names
         assert "moor-gateway.exe" in names

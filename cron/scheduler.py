@@ -35,13 +35,13 @@ from typing import Any, Callable, Dict, List, Optional, Protocol, Union
 # `moor update`) otherwise fail with ModuleNotFoundError for moor_time et al.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from hermes_constants import get_hermes_home, hermes_home_key
+from moor_constants import get_moor_home, moor_home_key
 from cron.env_settings import cron_env_setting
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.config import (
+from moor_cli._subprocess_compat import windows_hide_flags
+from moor_cli.config import (
     load_config, load_config_readonly)
-from hermes_cli.fallback_config import get_fallback_chain, scoped_fallback_chain
-from hermes_time import now as _hermes_now, safe_strftime
+from moor_cli.fallback_config import get_fallback_chain, scoped_fallback_chain
+from moor_time import now as _moor_now, safe_strftime
 from agent.interrupt_compat import request_hard_interrupt
 from agent.delegation_context import (
     enter_non_dispatcher_owned_context, exit_non_dispatcher_owned_context)
@@ -125,7 +125,7 @@ def _fallback_chain_phrase(job: Optional[dict] = None) -> str:
     if job is not None and _job_route_pinned(job):
         return (
             "This job is pinned to its own provider/model, so it does not fall back to "
-            f"`fallback_providers`; `hermes cron edit {job.get('id')} --unpin` lets it follow the "
+            f"`fallback_providers`; `moor cron edit {job.get('id')} --unpin` lets it follow the "
             "main model and its fallback chain."
         )
     try:
@@ -197,7 +197,7 @@ class CronTickYielded(RuntimeError):
     Raised by ``tick()`` BEFORE the tick lock when boot fingerprint ≠ disk, this process does NOT
     own the runtime lock and its live holder reports the disk revision — the stale process must
     stay out of the dispatch race (contention would starve the fresh ticker). Skew ``None`` never
-    yields (fail open). Raised, not returned, so ``record_ticker_error`` sees it and ``hermes cron
+    yields (fail open). Raised, not returned, so ``record_ticker_error`` sees it and ``moor cron
     status`` isn't green.
     """
 
@@ -216,7 +216,7 @@ _STALE_YIELD_RE = re.compile(r"stale code: booted on (\S+), disk is at (\S+)\)")
 def stale_code_yield_labels(recorded_error: str | None) -> tuple[str, str] | None:
     """``(boot_rev, disk_rev)`` when a persisted ``ticker_last_error`` is a ``CronTickYielded``.
 
-    ``hermes cron status`` runs in another process and only sees the marker text; a yielding
+    ``moor cron status`` runs in another process and only sees the marker text; a yielding
     ticker still refreshes its heartbeat, so this is the one signal that separates "stale code,
     firing nothing" from a healthy loop (#117275).
     """
@@ -258,7 +258,7 @@ def _should_yield_tick_to_fresh_gateway() -> tuple[str, str] | None:
     try:
         from cron.scheduler_ownership import live_gateway_ticking, owns_cron_tick_for
 
-        home = _get_hermes_home()
+        home = _get_moor_home()
         if owns_cron_tick_for(home):
             return None
         holder_status = live_gateway_ticking(home)
@@ -380,7 +380,7 @@ def _repeat_alert_withheld(incident: dict) -> bool:
         last = _ensure_aware(datetime.fromisoformat(str(alerted_at)))
     except (TypeError, ValueError):
         return False
-    return _elapsed_seconds(_hermes_now(), last) < hours * 3600
+    return _elapsed_seconds(_moor_now(), last) < hours * 3600
 
 
 def _upsert_incident_for_failure(
@@ -594,10 +594,10 @@ def _inflight_key(job_id: str, home: Optional[Union[Path, str]] = None) -> tuple
     profile's run read as a duplicate of the first and get skipped. ``home`` defaults to the
     active cron scope's home, which the ticker binds per profile for the whole tick.
     """
-    return (hermes_home_key(home) if home is not None else hermes_home_key(_get_hermes_home()), job_id)
+    return (moor_home_key(home) if home is not None else moor_home_key(_get_moor_home()), job_id)
 
 
-# Home key -> the real home Path that produced it. ``hermes_home_key`` normcases (it lower-cases on
+# Home key -> the real home Path that produced it. ``moor_home_key`` normcases (it lower-cases on
 # Windows), so ``Path(key[0])`` is a case-folded path that matches nothing else on disk; bookkeeping
 # that needs the profile home reads it here instead of reconstructing it from the key.
 _inflight_home_paths: Dict[str, Path] = {}
@@ -605,7 +605,7 @@ _inflight_home_paths: Dict[str, Path] = {}
 
 def _remember_inflight_home(home: Path) -> Path:
     """Record ``home`` under its key so a claim can be mapped back to a usable path."""
-    _inflight_home_paths[hermes_home_key(home)] = home
+    _inflight_home_paths[moor_home_key(home)] = home
     return home
 
 
@@ -732,7 +732,7 @@ def get_wedged_job_ids() -> "frozenset[str]":
         with contextlib.suppress(Exception):
             from cron.jobs import load_jobs
             by_id = {j.get("id"): j for j in load_jobs()}
-        local_home = hermes_home_key(_get_hermes_home())
+        local_home = moor_home_key(_get_moor_home())
         with _running_lock:
             for key in unresolved:
                 allowance = floor_seconds
@@ -774,9 +774,9 @@ def try_register_running_job(job_id: str) -> bool:
     and ``mark_running_jobs_interrupted``. Dedupe is per PROFILE: the key carries the active cron
     scope's home, so one multiplexing process never treats two profiles' same-named jobs as one.
     """
-    from hermes_cli.backend_retirement import retirement
+    from moor_cli.backend_retirement import retirement
 
-    key = _inflight_key(job_id, _remember_inflight_home(_get_hermes_home()))
+    key = _inflight_key(job_id, _remember_inflight_home(_get_moor_home()))
     with retirement.work() as admitted, _running_lock:
         if not admitted or key in _running_job_ids:
             return False
@@ -916,7 +916,7 @@ def _latest_executions_for_releasable_claims() -> dict:
 
     Scoped to the ACTIVE profile's claims: the executions ledger it queries is that home's.
     """
-    local_home = hermes_home_key(_get_hermes_home())
+    local_home = moor_home_key(_get_moor_home())
     with _running_lock:
         claim_futures = {
             key[1]: _running_futures.get(key)
@@ -1002,7 +1002,7 @@ def sweep_stale_inflight(due_jobs: Optional[list] = None) -> list:
     from cron.executions import _TERMINAL_STATES as _terminal_states
 
     _latest = _latest_executions_for_releasable_claims()
-    _local_home = hermes_home_key(_get_hermes_home())
+    _local_home = moor_home_key(_get_moor_home())
     # Compute intervals OUTSIDE _running_lock so croniter doesn't block try_register/release.
     _intervals = {jid: _job_interval_minutes(j) for jid, j in by_id.items()}
 
@@ -1180,7 +1180,7 @@ def _get_parallel_pool(max_workers: Optional[int]) -> concurrent.futures.ThreadP
     a single process-global pool is created by whichever profile the multiplexing gateway ticks
     first and then silently imposes that profile's limit on every other profile.
     """
-    home = hermes_home_key(_remember_inflight_home(_get_hermes_home()))
+    home = moor_home_key(_remember_inflight_home(_get_moor_home()))
     pool = _parallel_pools.get(home)
     if pool is None or _parallel_pool_max_workers.get(home) != max_workers:
         if pool is not None:
@@ -1585,9 +1585,9 @@ class _CronJobConfig:
 
 def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConfig:
     """Load config.yaml and resolve the run's model: per-job pin > cron.model (fleet default) >
-    the main agent model (config ``model:``, then HERMES_MODEL). Re-read every tick (no cache) so
-    ``hermes cron edit --model`` and ``hermes model`` both apply next tick."""
-    model = job.get("model") or cron_env_setting("HERMES_MODEL") or ""
+    the main agent model (config ``model:``, then MOOR_MODEL). Re-read every tick (no cache) so
+    ``moor cron edit --model`` and ``moor model`` both apply next tick."""
+    model = job.get("model") or cron_env_setting("MOOR_MODEL") or ""
     _cron_default_provider = ""
     _cfg: dict = {}
     _model_cfg: Any = {}
@@ -1724,7 +1724,7 @@ def _resolve_job_runtime(job: dict, job_id: str, jc: _CronJobConfig) -> tuple[di
     a paid primary model). Provider precedence: per-job pin > cron.model_provider > persisted
     global config (None lets resolve_runtime_provider read it). A pinned job has no chain here
     (``_job_fallback_chain``): its resolve failure is the job's failure."""
-    from hermes_cli.runtime_provider import (
+    from moor_cli.runtime_provider import (
         resolve_runtime_provider, format_runtime_provider_error)
     from moor_cli.auth import AuthError
 
@@ -1780,7 +1780,7 @@ def _resolve_job_runtime(job: dict, job_id: str, jc: _CronJobConfig) -> tuple[di
                     job_id, runtime.get("provider"), fb_model)
                 # Delivered with the job output (#74349): a cron agent has no status rail, so the
                 # switch would otherwise stay in the scheduler log only. run_job pops it.
-                from hermes_cli.fallback_config import pre_agent_fallback_notice
+                from moor_cli.fallback_config import pre_agent_fallback_notice
                 runtime["_fallback_notice"] = pre_agent_fallback_notice(
                     requested or (jc.model_cfg.get("provider") if isinstance(jc.model_cfg, dict) else ""),
                     model, runtime.get("provider"), fb_model)
@@ -2093,7 +2093,7 @@ def _finalize_cron_session(session_db, agent, job_id: str, job_name: str, cron_s
         # Title the cron session from the job (name -> id) and PERSIST it BEFORE end_session()/close() tear
         # the connection down, so the close can never run over an in-flight title write (#50536).
         _title_base = " ".join(job_name.split())[:60].strip() or f"cron {job_id}"
-        _cron_title = f"{_title_base} · {safe_strftime(_hermes_now(), '%b %d %H:%M')}"
+        _cron_title = f"{_title_base} · {safe_strftime(_moor_now(), '%b %d %H:%M')}"
         if not _set_cron_session_title(_session_db, _final_cron_session_id, _cron_title):
             _set_cron_session_title(_session_db, _final_cron_session_id, f"cron {job_id}")
     except (Exception, KeyboardInterrupt) as e:
@@ -2749,7 +2749,7 @@ def run_one_job(
     claim = job.get("fire_claim")
     fire_owner = str(claim.get("by") or "") if isinstance(claim, dict) else ""
     execution_token = object()
-    profile_home = _get_hermes_home().resolve()
+    profile_home = _get_moor_home().resolve()
     _fire_key = _inflight_key(job["id"])
     with _running_lock:
         _running_fire_owners.setdefault(_fire_key, {})[execution_token] = (
@@ -3179,7 +3179,7 @@ def _run_one_job_body(
         # get_secret() fails closed outside a scope; the ticker thread has none. Delivery adapters
         # resolve credentials, so the scope must span delivery too (reset in the outer finally).
         _scope_token = set_secret_scope(
-            build_profile_secret_scope(_get_hermes_home()), profile_home=str(_get_hermes_home()))
+            build_profile_secret_scope(_get_moor_home()), profile_home=str(_get_moor_home()))
         # Same for terminal policy (gateway/run.py _profile_runtime_scope): else the ticker reads
         # process-global TERMINAL_* env a concurrent profile pinned. Resolution failure installs a
         # refusal scope — terminal execution raises instead of using the launch process's policy.
@@ -3536,11 +3536,11 @@ def _launch_external_cron_worker(job: dict) -> bool:
         "MOOR_EXEC_ASK",
     ):
         worker_env.pop(_presence_var, None)
-    # `-m cron.scheduler` has no hermes_cli.main bootstrap; pin this checkout explicitly
+    # `-m cron.scheduler` has no moor_cli.main bootstrap; pin this checkout explicitly
     # (PYTHONSAFEPATH / stale editable mapping, #112729). See cron/scheduler_worker_env.py.
-    from cron.scheduler_worker_env import pin_hermes_tree_on_pythonpath
+    from cron.scheduler_worker_env import pin_moor_tree_on_pythonpath
     repo_root = Path(__file__).resolve().parent.parent
-    worker_env = pin_hermes_tree_on_pythonpath(worker_env, repo_root)
+    worker_env = pin_moor_tree_on_pythonpath(worker_env, repo_root)
     try:
         stderr_fd = os.open(stderr_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         try:
@@ -3696,7 +3696,7 @@ def _run_external_worker_payload(payload_path: Path, ack_path: Path) -> bool:
     previous_multiplex = is_multiplex_active()
     home_token = secret_token = None
     try:
-        home_token = set_hermes_home_override(profile_home)
+        home_token = set_moor_home_override(profile_home)
         multiplex_active = bool(payload.get("multiplex_active", False))
         set_multiplex_active(multiplex_active)
         hydrate_profile_secret_sources(profile_home)
@@ -3742,7 +3742,7 @@ def _run_external_worker_payload(payload_path: Path, ack_path: Path) -> bool:
                 if old_external_execution is None:
                     os.environ.pop("_MOOR_CRON_EXTERNAL_WORKER", None)
                 else:
-                    os.environ["_HERMES_CRON_EXTERNAL_WORKER"] = old_external_execution
+                    os.environ["_MOOR_CRON_EXTERNAL_WORKER"] = old_external_execution
                 # Post-ack the gateway never reads the stderr capture (it only
                 # serves the pre-ack death report) and may not outlive this run
                 # in the restart-safe topology, so the worker removes its own.
@@ -3753,7 +3753,7 @@ def _run_external_worker_payload(payload_path: Path, ack_path: Path) -> bool:
             reset_secret_scope(secret_token)
         set_multiplex_active(previous_multiplex)
         if home_token is not None:
-            reset_hermes_home_override(home_token)
+            reset_moor_home_override(home_token)
 
 
 def _notify_provider_jobs_changed() -> None:
@@ -3880,7 +3880,7 @@ def _maybe_run_worktree_maintenance() -> None:
             repos = _worktree_maintenance_repos()
             if not repos:
                 return
-            from hermes_cli.worktree_ops import _prune_stale_worktrees
+            from moor_cli.worktree_ops import _prune_stale_worktrees
 
             for repo in repos:
                 try:
@@ -3949,7 +3949,7 @@ def _maybe_reap_dead_owners() -> None:
     # the long-lived gateway ticker kept running — blocking every future run of that job. Reap provably-dead
     # owners periodically so stale claims auto-clear without a gateway restart. Throttled so idle 60s ticks
     # don't pay a ledger connection every cycle (#33612).
-    _reap_key = hermes_home_key(_get_hermes_home())
+    _reap_key = moor_home_key(_get_moor_home())
     _reap_now = time.monotonic()
     _last_reap = _last_dead_owner_reap_at.get(_reap_key)
     if (
@@ -3974,7 +3974,7 @@ def _maybe_reap_dead_owners() -> None:
 def _sweep_stale_inflight_for_tick(due_jobs: list) -> None:
     """Bound the in-flight set BEFORE the dedup guard so a leaked claim is force-released now
     rather than eating every later fire until restart. Skipped when nothing is in flight."""
-    _local_home = hermes_home_key(_get_hermes_home())
+    _local_home = moor_home_key(_get_moor_home())
     if not any(key[0] == _local_home for key in _running_job_ids):
         return
     _sweep_jobs = due_jobs
@@ -4083,7 +4083,7 @@ def _submit_with_guard(job: dict, pool: concurrent.futures.ThreadPoolExecutor, p
     # The home the claim was registered under. The pool worker's ``finally`` runs OUTSIDE
     # ``ctx.run``, where the per-profile cron scope is not bound, so releasing without it would
     # discard the LAUNCH home's key and leak every secondary profile's claim.
-    _claim_home = _get_hermes_home()
+    _claim_home = _get_moor_home()
     # Record the attempt before dispatch; recovery marks abandoned rows unknown (no retry).
     try:
         execution = create_execution(

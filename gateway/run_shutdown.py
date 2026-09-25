@@ -1401,9 +1401,9 @@ class GatewayShutdownMixin:
         # The watcher runs sys.executable (console python) under the CREATE_NO_WINDOW detach kwargs below:
         # it owns one hidden console, inherited by the `moor gateway restart` child, so nothing flashes.
         # See #54220, #56747.
-        from hermes_cli._launchers import runtime_command
+        from moor_cli._launchers import runtime_command
         watcher_argv = runtime_command(project_root,
-            [str(current_pid), str(restart_after_s), *hermes_cmd, "gateway", "restart"],
+            [str(current_pid), str(restart_after_s), *moor_cmd, "gateway", "restart"],
             code=_WINDOWS_RESTART_WATCHER)
         watcher_python = watcher_argv[0]
         popen_kwargs = dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=watcher_env)
@@ -1632,7 +1632,7 @@ class GatewayShutdownMixin:
         # may garbage-collect a still-pending task mid-flight. The cancel loop in _stop_impl explicitly
         # skips _restart_task for the same reason it skips _stop_task.
         # Empty Context: /restart is handled inside the requester's profile scope, and a copied context
-        # would run the HOST restart as that profile (watcher HERMES_HOME, stop()'s flushes).
+        # would run the HOST restart as that profile (watcher MOOR_HOME, stop()'s flushes).
         self._restart_task = Context().run(lambda: asyncio.create_task(_run_restart()))
         return True
 

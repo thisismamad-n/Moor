@@ -7,8 +7,8 @@ that the setup wizard correctly syncs config from disk after the call.
 
 from __future__ import annotations
 
-from hermes_cli.config import load_config, save_config
-from hermes_cli.setup import _print_setup_summary, setup_model_provider
+from moor_cli.config import load_config, save_config
+from moor_cli.setup import _print_setup_summary, setup_model_provider
 
 
 def _clear_provider_env(monkeypatch):
@@ -98,4 +98,4 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     output = capsys.readouterr().out
 
     assert "Browser Automation (Local browser)" not in output
-    assert "hermes pm install agent-browser" in output
+    assert "moor pm install agent-browser" in output

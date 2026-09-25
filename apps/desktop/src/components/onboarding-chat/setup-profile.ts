@@ -3,7 +3,7 @@
  *
  * The chat belongs to the setup profile, which the backend creates and marks (`onboarding.ensure_setup_profile`), so it
  * survives onboarding and can be found again. `setup` is the internal name throughout this module (the atoms, the hidden `[setup]` notes); the user
- * sees only Hermes and the title `Welcome to Hermes`.
+ * sees only Moor and the title `Welcome to Moor`.
  *
  * This module holds the pure pieces: names, souls, seed prompts, and the handoff request atom. The side effects
  * (session.create, the chat switch) run in the wiring's kickoff and handoff effects, which hold the

@@ -286,7 +286,7 @@ _POPEN_ERRORS = ((FileNotFoundError, "command not found"), (PermissionError, "co
 
 # A hook configured as a bare script path runs on POSIX because the kernel reads its shebang.
 # CreateProcess has no such mechanism and answers WinError 193 ("%1 is not a valid Win32
-# application") for a text file, so every ``command: "~/.hermes/agent-hooks/x.sh"`` example in
+# application") for a text file, so every ``command: "~/.moor/agent-hooks/x.sh"`` example in
 # the hooks docs — the canonical shape — fails on Windows while the same config works everywhere
 # else. Map the suffixes that shape uses to their interpreter; unmapped suffixes keep the OS
 # failure so a typo still reads as "command not found" rather than a mystery interpreter error.
@@ -445,7 +445,7 @@ def _parse_pre_tool_call(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     for verb, _, _, payload in _PRE_TOOL_DIALECTS:
         if data.get(verb) == "modify" and isinstance(data.get(payload), dict):
             return {"action": "modify", "args": data[payload]}
-    # Hermes-only escalation to the human-approval gate (#92553). Claude-Code's ``decision:
+    # moor-only escalation to the human-approval gate (#92553). Claude-Code's ``decision:
     # approve`` means auto-ALLOW, so it is deliberately not mapped onto this.
     if data.get("action") == "approve":
         directive: Dict[str, Any] = {"action": "approve"}

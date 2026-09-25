@@ -18,7 +18,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 import contextlib
 
-from hermes_cli.worktree_ops import release_lsp_clients
+from moor_cli.worktree_ops import release_lsp_clients
 
 if TYPE_CHECKING:
     from moor_cli.kanban_db import Task

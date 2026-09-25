@@ -196,7 +196,7 @@ GitHub 会针对多种 action 发送 `pull_request` 事件：`opened`、`synchro
 
 ## 使用 skill 保持一致的审查风格
 
-加载一个 [Hermes skill](../user-guide/features/skills.md) 以赋予 agent 一致的审查风格。在 `config.yaml` 的 `platforms.webhook.extra.routes` 中，向你的路由添加 `skills`：
+加载一个 [Moor skill](../user-guide/features/skills.md) 以赋予 agent 一致的审查风格。在 `config.yaml` 的 `platforms.webhook.extra.routes` 中，向你的路由添加 `skills`：
 
 ```yaml
 platforms:

@@ -47,7 +47,7 @@ import { fileURLToPath } from 'node:url';
  *   builds into the checkout without registering an OS entry point;
  *   packaged-app installs a signed bundle. Its native in-app update pair
  *   is declared separately, not crossed with source-checkout update methods.
- * @typedef {InstallMethod | 'hermes-update' | 'open-app-update' | 'hermes-desktop-app-update'} UpdateMethod
+ * @typedef {InstallMethod | 'moor-update' | 'open-app-update' | 'moor-desktop-app-update'} UpdateMethod
  *   Every install method doubles as an update method (re-run it over the
  *   existing install), plus the updater CLI and the two app-update
  *   variants. The variants differ by launch surface: open-app-update

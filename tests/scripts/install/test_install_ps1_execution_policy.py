@@ -17,12 +17,12 @@ pytestmark = pytest.mark.platforms("windows")
 INSTALLER = Path(__file__).resolve().parents[3] / "scripts" / "install.ps1"
 
 
-def test_installed_hermes_runs_under_restricted_policy(tmp_path):
+def test_installed_moor_runs_under_restricted_policy(tmp_path):
     powershell = shutil.which("powershell")
     assert powershell
     helper = tmp_path / "install" / "scripts" / "desktop-update" / "runtime.ps1"
     helper.parent.mkdir(parents=True)
-    helper.write_text("function Get-HermesRuntimeCommand([string]$InstallRoot) {\n"
+    helper.write_text("function Get-MoorRuntimeCommand([string]$InstallRoot) {\n"
                       "    @('cmd.exe', '/c', 'echo', 'runtime-from', $InstallRoot)\n}\n",
                       encoding="utf-8")
     install_dir = str(helper.parents[2]).replace("'", "''")
@@ -31,7 +31,7 @@ def test_installed_hermes_runs_under_restricted_policy(tmp_path):
     command = (f". '{str(INSTALLER).replace(chr(39), chr(39) * 2)}'; "
                "Set-ExecutionPolicy -Scope Process Restricted -Force; "
                f"$InstallDir = '{install_dir}'; "
-               "Invoke-InstalledHermes @('setup')")
+               "Invoke-InstalledMoor @('setup')")
     result = subprocess.run([powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
                              "-Command", command],
                             cwd=tmp_path, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60)

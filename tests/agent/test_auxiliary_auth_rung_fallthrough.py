@@ -37,7 +37,7 @@ import threading
 from typing import Optional
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 import agent.auxiliary_client as aux
 
@@ -74,7 +74,7 @@ class _ExplicitProviderClient:
     base_url = "https://vertex.example/v1"
 
 
-def _ladder(base_info=("https://%s/v1" % NOUS_HOST), resolved_provider="nous"):
+def _ladder(base_info=("https://%s/v1" % MOOR_HOST), resolved_provider="moor"):
     return aux._aux_recovery_ladder(
         _auth_error(),
         client=_FakeClient(),

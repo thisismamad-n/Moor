@@ -5,8 +5,8 @@
 # variables in .env take precedence over their corresponding settings.
 
 # Schema version of this file. The installers copy it to seed config.yaml, and
-# `hermes update` uses it to know which one-time migrations the file already
-# has. Hermes manages it: do not copy it into another config.
+# `moor update` uses it to know which one-time migrations the file already
+# has. Moor manages it: do not copy it into another config.
 _config_version: 46
 
 # =============================================================================
@@ -167,9 +167,9 @@ model:
   #     extra_headers:
   #       CF-Access-Client-Id: "xxxx.access"
   #       CF-Access-Client-Secret: "${CF_ACCESS_SECRET}"
-  #       X-Client-Name: "hermes-agent"
+  #       X-Client-Name: "moor-agent"
   #
-  # session_affinity_header: NAME of a header that carries Hermes' conversation
+  # session_affinity_header: NAME of a header that carries Moor' conversation
   # id on every request to that provider (all api_modes + auxiliary calls). Off
   # unless set. For session-aware proxies that otherwise treat each agent-loop
   # request as a new conversation and replay the whole history upstream.
@@ -725,8 +725,8 @@ compression:
   # gpt-5.6-family models on the DIRECT OpenAI API (api.openai.com) or a ChatGPT
   # Codex subscription, plus exact gpt-6-astra on official Codex OAuth, compact
   # server-side: OpenAI prunes older context into an
-  # encrypted checkpoint that Hermes replays on later turns. No other provider,
-  # route, or model is affected. Hermes' local compression stays armed as the
+  # encrypted checkpoint that Moor replays on later turns. No other provider,
+  # route, or model is affected. Moor' local compression stays armed as the
   # fallback and still handles every non-eligible session.
   codex_responses_native: false
 
@@ -1229,7 +1229,7 @@ agent:
 
   # Once api_max_retries AND the fallback chain are spent on a transient outage
   # (5xx, overloaded/529, connect/read timeouts) and nothing has been delivered
-  # yet, Hermes waits and retries this many more cycles (jittered 15/30/60/60/60s;
+  # yet, Moor waits and retries this many more cycles (jittered 15/30/60/60/60s;
   # a provider Retry-After wins, up to 120s) showing "Provider temporarily
   # unavailable — retrying automatically in Ns (cycle k/5); press Esc to stop"
   # instead of ending the turn. Auth/format/billing/policy errors never enter.
@@ -2103,16 +2103,16 @@ telemetry:
 # Login Policy (credentials themselves live in auth.json / .env)
 # =============================================================================
 auth:
-  # Borrow and refresh the Codex CLI (~/.codex/auth.json) and Claude Code logins when Hermes has
+  # Borrow and refresh the Codex CLI (~/.codex/auth.json) and Claude Code logins when Moor has
   # no usable login of its own. Their refresh tokens are single-use, so two programs on one login
-  # can log each other out; set false to make Hermes use only its own logins.
+  # can log each other out; set false to make Moor use only its own logins.
   adopt_external_logins: true
-  # How `hermes auth add openai-codex` / `hermes model` sign in to OpenAI Codex.
+  # How `moor auth add openai-codex` / `moor model` sign in to OpenAI Codex.
   #   device_code (default) — open a URL and enter a code.
   #   browser — authorization-code + PKCE on http://localhost:1455/auth/callback (the redirect
   #             OpenAI registered for the Codex client) for organizations that disable the
   #             device-code grant; falls back to device code when that port is busy.
-  # `hermes auth add openai-codex --browser` opts in for a single login without changing this.
+  # `moor auth add openai-codex --browser` opts in for a single login without changing this.
   codex_login_flow: device_code
 
 

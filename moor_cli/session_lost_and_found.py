@@ -16,8 +16,8 @@ from typing import Any, Callable, Optional, Sequence
 
 from moor_cli.session_schema_history import SCHEMA_HISTORY, reachable_physical_layouts
 
-from hermes_state_ids import SESSION_ID_PATTERN  # timestamp prefix: strongest sentinel for schema-less rows
-from hermes_cli.session_recovery import (
+from moor_state_ids import SESSION_ID_PATTERN  # timestamp prefix: strongest sentinel for schema-less rows
+from moor_cli.session_recovery import (
     _AUXILIARY_TABLE_SCHEMAS, _AUXILIARY_TABLES, _CANONICAL_TABLES, _DANGLING_TOOL_PIN, _count_rows,
     _immediate_transaction, _placeholder_titles, _quoted_columns, _table_columns,
 )
@@ -222,7 +222,7 @@ def _cli_recover_attempts(source: Path, lf_path: Path, sqlite3_bin: str, *, time
         # .recover reports per-page diagnostics on stderr; a heavily damaged source can emit
         # far more than a pipe buffer holds, so stderr drains to a temp file — an undrained
         # PIPE would block the dump child, stall load's stdin, and burn the whole timeout.
-        with tempfile.TemporaryFile(prefix="hermes-recover-dump-stderr-") as dump_stderr:
+        with tempfile.TemporaryFile(prefix="moor-recover-dump-stderr-") as dump_stderr:
             dump = subprocess.Popen(
                 [sqlite3_bin, "-readonly", str(source), command], stdout=subprocess.PIPE, stderr=dump_stderr
             )

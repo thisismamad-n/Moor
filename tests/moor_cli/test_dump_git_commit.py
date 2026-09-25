@@ -1,6 +1,6 @@
 """Tests for moor_cli.dump._get_git_commit — git SHA resolution for ``moor dump``.
 
-``hermes dump`` prints the running commit so support bug reports identify the
+``moor dump`` prints the running commit so support bug reports identify the
 exact version. Source installs resolve it live via git; packaged builds
 (Docker, Nix) use the install stamp via ``version_info`` — but ONLY when the
 requested project_root IS the running install, because version_info has no
@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.version_info import VersionInfo, _reset_version_info_cache
+from moor_cli.version_info import VersionInfo, _reset_version_info_cache
 
 
 def setup_function():
@@ -31,22 +31,22 @@ def setup_function():
     (None, None, '(unknown)', ''),
 ])
 def test_dump_uses_running_install_fallback_only(tmp_path, monkeypatch, sha, timestamp, expected, date):
-    from hermes_cli import dump
+    from moor_cli import dump
 
     monkeypatch.setattr(dump, 'get_project_root', lambda: tmp_path)
     info = VersionInfo('1.0', '1.0', None, sha, None, 'docker', False, timestamp)
-    monkeypatch.setattr('hermes_cli.version_info.get_version_info', lambda: info)
+    monkeypatch.setattr('moor_cli.version_info.get_version_info', lambda: info)
     assert dump._get_git_commit(tmp_path) == expected
     assert dump._get_git_commit_date(tmp_path) == date
 
 
 def test_dump_version_line_uses_derived_runtime_version(tmp_path, monkeypatch):
-    from hermes_cli import dump
+    from moor_cli import dump
 
     info = VersionInfo(
         "1.2.3", "1.2.3+4.gabcdef0", 4, "abcdef0" * 5 + "abcde", "main", "git"
     )
-    monkeypatch.setattr("hermes_cli.version_info.get_version_info", lambda: info)
+    monkeypatch.setattr("moor_cli.version_info.get_version_info", lambda: info)
     monkeypatch.setattr(dump, "_get_git_commit", lambda _root: "abcdef0")
     monkeypatch.setattr(dump, "_get_git_commit_date", lambda _root: "")
 
@@ -77,7 +77,7 @@ def test_get_git_commit_unknown_for_other_root_without_git(tmp_path):
 
 def test_get_git_commit_authoritative_for_real_temp_repo(tmp_path):
     """A real temp git repo reports ITS OWN commit, not the running install's."""
-    from hermes_cli import dump
+    from moor_cli import dump
 
     repo_dir = tmp_path / "scratch-repo"
     repo_dir.mkdir()
@@ -99,7 +99,7 @@ def test_get_git_commit_authoritative_for_real_temp_repo(tmp_path):
 
 def test_get_git_commit_date_unknown_for_other_root_without_git(tmp_path):
     """Same authority rule for the date helper: other root without git → ''."""
-    from hermes_cli import dump
+    from moor_cli import dump
 
     other_root = tmp_path / "plain-dir"
     other_root.mkdir()

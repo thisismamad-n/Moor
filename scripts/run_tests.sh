@@ -44,22 +44,22 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # inputs (scripts/_activation.sh) and re-sourced when stale, so a branch switch
 # or lock edit never runs the suite against the previous dependency set.
 #
-# Without an activation, an explicit HERMES_PYTHON that has pytest is honored:
+# Without an activation, an explicit MOOR_PYTHON that has pytest is honored:
 # the Nix devShell's editable venv and CI's minimal installer lanes provide
-# one on purpose. The import check matters: a wrapped `hermes` binary exports
-# HERMES_PYTHON pointing at a release venv without pytest.
+# one on purpose. The import check matters: a wrapped `moor` binary exports
+# MOOR_PYTHON pointing at a release venv without pytest.
 _has_pytest() { [ -n "$1" ] && [ -x "$1" ] && "$1" -c 'import pytest' 2>/dev/null; }
 # shellcheck source=scripts/_activation.sh
 . "$SCRIPT_DIR/_activation.sh"
-if [ -z "${__HERMES_ACTIVATED:-}" ] && _has_pytest "${HERMES_PYTHON:-}"; then
-  PYTHON="$HERMES_PYTHON"
-  echo "▶ not activated — using HERMES_PYTHON: $PYTHON"
+if [ -z "${__MOOR_ACTIVATED:-}" ] && _has_pytest "${MOOR_PYTHON:-}"; then
+  PYTHON="$MOOR_PYTHON"
+  echo "▶ not activated — using MOOR_PYTHON: $PYTHON"
 else
-  test_stamp="${__HERMES_ACTIVATED:-}"
+  test_stamp="${__MOOR_ACTIVATED:-}"
   test_stamp="${test_stamp//\\//}"
-  if ! hermes_activation_current "$REPO_ROOT" ||
+  if ! moor_activation_current "$REPO_ROOT" ||
      [ ! -f "${test_stamp%/*}/inputs/.test-environment" ] ||
-     ! _has_pytest "${__HERMES_TEST_PYTHON:-}"; then
+     ! _has_pytest "${__MOOR_TEST_PYTHON:-}"; then
     echo "▶ activating $REPO_ROOT (environment missing or stale)" >&2
     # activate is written for interactive shells, not errexit/nounset.
     set +euo pipefail
@@ -72,9 +72,9 @@ else
       exit 1
     fi
   fi
-  PYTHON="${__HERMES_TEST_PYTHON:-}"
+  PYTHON="${__MOOR_TEST_PYTHON:-}"
   if ! _has_pytest "$PYTHON"; then
-    echo "error: activation provided no test interpreter with pytest (__HERMES_TEST_PYTHON=${PYTHON:-unset})" >&2
+    echo "error: activation provided no test interpreter with pytest (__MOOR_TEST_PYTHON=${PYTHON:-unset})" >&2
     exit 1
   fi
 fi
@@ -139,24 +139,24 @@ _pf86="$(env | sed -n 's/^ProgramFiles(x86)=//p' | head -n1)"
 #     the build step just loaded; stripping it made every per-file pytest
 #     subprocess rebuild the 5GB image from a cold builder cache instead
 #     (~4 min per worker per run, and the rebuilt image lacked the
-#     HERMES_GIT_SHA build-arg the workflow bakes in).
-#   * HERMES_E2E_REQUIRE_TUI turns a missing Ink TUI build into a failure in
+#     MOOR_GIT_SHA build-arg the workflow bakes in).
+#   * MOOR_E2E_REQUIRE_TUI turns a missing Ink TUI build into a failure in
 #     tests/e2e/core/terminal instead of a skip (set by the e2e CI job).
 #   * CI / GITHUB_ACTIONS tell suites they run on a disposable runner (e.g.
 #     tests/e2e/core/upgrade runs the real updater unsandboxed only there).
 #
 # These are test-infrastructure knobs, not credentials — same class as the
-# HERMES_RUN_SLOW_PET_TESTS / HERMES_E2E_BROWSER / HERMES_RUN_E2E opt-ins
+# MOOR_RUN_SLOW_PET_TESTS / MOOR_E2E_BROWSER / MOOR_RUN_E2E opt-ins
 # forwarded below.
 # SSL_CERT_FILE/DIR are trust-store locations: the pinned interpreter's
 # OpenSSL has no compiled-in bundle path on NixOS, so network tests (PM
 # downloads, channel reads) need the host's pointer to verify TLS.
-# Keep this an explicit allowlist (no HERMES_TEST_* glob) so the "no
+# Keep this an explicit allowlist (no MOOR_TEST_* glob) so the "no
 # credential can leak" property stays auditable at a glance.
 TEST_ENV=()
-for _test_var in HERMES_TEST_IMAGE HERMES_TEST_WORKERS HERMES_TEST_PATHS \
-  HERMES_TEST_FILE_TIMEOUT HERMES_TEST_FILE_RETRIES HERMES_TEST_SLICE \
-  SSL_CERT_FILE SSL_CERT_DIR HERMES_GATEWAY_LOCK_DIR HERMES_E2E_REQUIRE_TUI CI GITHUB_ACTIONS; do
+for _test_var in MOOR_TEST_IMAGE MOOR_TEST_WORKERS MOOR_TEST_PATHS \
+  MOOR_TEST_FILE_TIMEOUT MOOR_TEST_FILE_RETRIES MOOR_TEST_SLICE \
+  SSL_CERT_FILE SSL_CERT_DIR MOOR_GATEWAY_LOCK_DIR MOOR_E2E_REQUIRE_TUI CI GITHUB_ACTIONS; do
   if [ -n "${!_test_var:-}" ]; then
     TEST_ENV+=("$_test_var=${!_test_var}")
   fi
@@ -189,9 +189,9 @@ exec env -i \
   LC_ALL=C.UTF-8 \
   PYTHONHASHSEED=0 \
   PYTHONUTF8=1 \
-  ${HERMES_RUN_SLOW_PET_TESTS:+HERMES_RUN_SLOW_PET_TESTS="$HERMES_RUN_SLOW_PET_TESTS"} \
-  ${HERMES_E2E_BROWSER:+HERMES_E2E_BROWSER="$HERMES_E2E_BROWSER"} \
-  ${HERMES_RUN_E2E:+HERMES_RUN_E2E="$HERMES_RUN_E2E"} \
+  ${MOOR_RUN_SLOW_PET_TESTS:+MOOR_RUN_SLOW_PET_TESTS="$MOOR_RUN_SLOW_PET_TESTS"} \
+  ${MOOR_E2E_BROWSER:+MOOR_E2E_BROWSER="$MOOR_E2E_BROWSER"} \
+  ${MOOR_RUN_E2E:+MOOR_RUN_E2E="$MOOR_RUN_E2E"} \
   ${EXTRA_PYTHONPATH:+PYTHONPATH="$EXTRA_PYTHONPATH"} \
   ${EXTRA_PYTEST_PLUGINS:+PYTEST_PLUGINS="$EXTRA_PYTEST_PLUGINS"} \
   "$PYTHON" "$SCRIPT_DIR/run_tests_parallel.py" "$@"

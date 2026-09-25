@@ -139,8 +139,8 @@ class TestHandleUpdateCommand:
 
         with patch("gateway.run._moor_home", moor_home), \
              patch("gateway.run.__file__", fake_file), \
-             patch("hermes_cli.config.detect_install_method", return_value="git"), \
-             patch("shutil.which", side_effect=lambda x: "/usr/bin/hermes" if x == "hermes" else "/usr/bin/setsid"), \
+             patch("moor_cli.config.detect_install_method", return_value="git"), \
+             patch("shutil.which", side_effect=lambda x: "/usr/bin/moor" if x == "moor" else "/usr/bin/setsid"), \
              patch("subprocess.Popen"):
             result = await runner._handle_update_command(event)
 
@@ -182,7 +182,7 @@ class TestHandleUpdateCommand:
 
         with patch("gateway.run._moor_home", moor_home), \
              patch("gateway.run.__file__", fake_file), \
-             patch("hermes_cli.config.detect_install_method", return_value="git"), \
+             patch("moor_cli.config.detect_install_method", return_value="git"), \
              patch("shutil.which", side_effect=which_no_setsid), \
              patch("subprocess.Popen", mock_popen):
             await runner._handle_update_command(event)
@@ -348,28 +348,28 @@ class TestSendUpdateNotification:
         notice outlived every restart, in every process.
         """
         runner = _make_runner()
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir()
+        moor_home = tmp_path / "moor"
+        moor_home.mkdir()
 
-        pending_path = hermes_home / ".update_pending.json"
+        pending_path = moor_home / ".update_pending.json"
         pending_path.write_text(json.dumps({
             "platform": "telegram",
             "chat_id": "67890",
             "user_id": "12345",
             "timestamp": (datetime.now() - timedelta(hours=2)).isoformat(),
         }))
-        (hermes_home / ".update_exit_code").write_text("0")
+        (moor_home / ".update_exit_code").write_text("0")
         # runner.adapters stays empty: no adapter for the target platform, ever.
 
-        with patch("gateway.run._hermes_home", hermes_home):
+        with patch("gateway.run._moor_home", moor_home):
             result = await runner._send_update_notification()
 
         # True is the definitive answer the startup caller keys off to stop rescheduling.
         assert result is True
         assert not pending_path.exists()
-        assert not (hermes_home / ".update_pending.claimed.json").exists()
-        assert not (hermes_home / ".update_output.txt").exists()
-        assert not (hermes_home / ".update_exit_code").exists()
+        assert not (moor_home / ".update_pending.claimed.json").exists()
+        assert not (moor_home / ".update_output.txt").exists()
+        assert not (moor_home / ".update_exit_code").exists()
         assert any("adapter never connected" in r.getMessage() for r in caplog.records)
 
     @pytest.mark.asyncio
@@ -380,19 +380,19 @@ class TestSendUpdateNotification:
         while, which is the case the defer path exists to cover.
         """
         runner = _make_runner()
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir()
+        moor_home = tmp_path / "moor"
+        moor_home.mkdir()
 
-        pending_path = hermes_home / ".update_pending.json"
+        pending_path = moor_home / ".update_pending.json"
         pending_path.write_text(json.dumps({
             "platform": "telegram",
             "chat_id": "67890",
             "user_id": "12345",
             "timestamp": (datetime.now() - timedelta(minutes=5)).isoformat(),
         }))
-        (hermes_home / ".update_exit_code").write_text("0")
+        (moor_home / ".update_exit_code").write_text("0")
 
-        with patch("gateway.run._hermes_home", hermes_home):
+        with patch("gateway.run._moor_home", moor_home):
             result = await runner._send_update_notification()
 
         assert result is False
@@ -599,8 +599,8 @@ class TestWatchUpdateProgress:
         sent = "\n".join(call.args[1] for call in mock_adapter.send.call_args_list)
         assert "ok before" in sent
         assert "continued after" in sent
-        assert "Hermes update finished" in sent
-        assert not (hermes_home / ".update_pending.json").exists()
+        assert "Moor update finished" in sent
+        assert not (moor_home / ".update_pending.json").exists()
 # ---------------------------------------------------------------------------
 # Install-method refusal gate
 # ---------------------------------------------------------------------------
@@ -608,21 +608,21 @@ class TestWatchUpdateProgress:
 
 class TestUpdateCommandInstallMethodRefusal:
     """/update on a non-git install refuses with the steward's own update
-    command instead of attempting a git-based `hermes update`."""
+    command instead of attempting a git-based `moor update`."""
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("method", ["docker", "nix"])
     async def test_refuses_non_git_install(self, tmp_path, method):
         runner = _make_runner()
         event = _make_event()
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir()
+        moor_home = tmp_path / "moor"
+        moor_home.mkdir()
         mock_popen = MagicMock()
 
-        with patch("gateway.run._hermes_home", hermes_home), \
-             patch("hermes_cli.config.detect_install_method",
+        with patch("gateway.run._moor_home", moor_home), \
+             patch("moor_cli.config.detect_install_method",
                    return_value=method), \
-             patch("hermes_cli.config.recommended_update_command_for_method",
+             patch("moor_cli.config.recommended_update_command_for_method",
                    return_value=f"steward-update --{method}"), \
              patch("subprocess.Popen", mock_popen):
             result = await runner._handle_update_command(event)
@@ -631,4 +631,4 @@ class TestUpdateCommandInstallMethodRefusal:
         assert f"Update with: steward-update --{method}" in result
         # No update attempt: nothing spawned, no pending marker written.
         mock_popen.assert_not_called()
-        assert not (hermes_home / ".update_pending.json").exists()
+        assert not (moor_home / ".update_pending.json").exists()

@@ -31,7 +31,7 @@ A Chinese-language walkthrough of the minimum install path is maintained on this
 The native Windows install runs in Windows directly: your Windows terminal (PowerShell, Windows Terminal, etc.), Windows filesystem paths (`C:\Users\…`), and Windows processes.  Moor uses Git Bash to run shell commands, which is how Claude Code and other agents handle Windows today — it sidesteps the POSIX-vs-Windows gap without a full rewrite.
 
 <!-- no-tmp: ok — lists /tmp as a POSIX feature WSL provides -->
-WSL2 runs a real Linux kernel in a lightweight VM, so Hermes inside it is essentially identical to running on Ubuntu.  That's valuable when you want a real POSIX environment: `fork`, `/tmp`, UNIX sockets, signal semantics, PTY-backed terminals, shells like `bash`/`zsh`, and tools like `rg`, `git`, `ffmpeg` that behave the way they do on Linux.
+WSL2 runs a real Linux kernel in a lightweight VM, so Moor inside it is essentially identical to running on Ubuntu.  That's valuable when you want a real POSIX environment: `fork`, `/tmp`, UNIX sockets, signal semantics, PTY-backed terminals, shells like `bash`/`zsh`, and tools like `rg`, `git`, `ffmpeg` that behave the way they do on Linux.
 
 Practical consequences of WSL2:
 
@@ -189,7 +189,7 @@ dos2unix path/to/script.sh
 
 Clone inside WSL. Always, unless you have a specific reason not to. A typical Moor workflow (`moor chat`, tool calls that `rg`/`ripgrep` the repo, file watchers, background gateway) will be dramatically faster and more reliable against `~/code/myrepo` than `/mnt/c/Users/you/myrepo`.
 
-One exception: **MCP bridges that launch Windows binaries.** If you're using `chrome-devtools-mcp` through `cmd.exe` (see [MCP guide: WSL → Windows Chrome](../guides/use-mcp-with-hermes.md#wsl2-bridge-hermes-in-wsl-to-windows-chrome)), Windows may complain with a `UNC` warning if Hermes's current working directory is `~`. In that case, start Hermes from somewhere under `/mnt/c/` so the Windows process has a drive-letter cwd.
+One exception: **MCP bridges that launch Windows binaries.** If you're using `chrome-devtools-mcp` through `cmd.exe` (see [MCP guide: WSL → Windows Chrome](../guides/use-mcp-with-moor.md#wsl2-bridge-moor-in-wsl-to-windows-chrome)), Windows may complain with a `UNC` warning if Moor's current working directory is `~`. In that case, start Moor from somewhere under `/mnt/c/` so the Windows process has a drive-letter cwd.
 
 ## Networking: WSL ↔ Windows
 
@@ -214,8 +214,8 @@ For the full table (Ollama / LM Studio / vLLM / SGLang bind addresses, firewall 
 
 This is the reverse direction and is less documented elsewhere, but it's what you need for:
 
-- Using the Hermes **web dashboard** from a Windows browser.
-- Using the **OpenAI-compatible API server** (exposed by `hermes gateway` when `API_SERVER_ENABLED=true`) from a Windows-side tool. See the [API Server feature page](./features/api-server.md).
+- Using the Moor **web dashboard** from a Windows browser.
+- Using the **OpenAI-compatible API server** (exposed by `moor gateway` when `API_SERVER_ENABLED=true`) from a Windows-side tool. See the [API Server feature page](./features/api-server.md).
 - Testing a **messaging gateway** (Telegram, Discord, etc.) where the platform pings a local webhook URL — usually you'd use `cloudflared`/`ngrok` rather than raw port forwarding.
 
 #### Subcase 2a: from the Windows host itself
@@ -259,7 +259,7 @@ For webhooks from cloud messaging providers (Telegram `setWebhook`, Slack events
 
 ## Running Moor services long-term on Windows
 
-The Hermes [Tool Gateway](./features/tool-gateway.md) and the API server are long-lived processes. In WSL2 you have a few options for keeping them up.
+The Moor [Tool Gateway](./features/tool-gateway.md) and the API server are long-lived processes. In WSL2 you have a few options for keeping them up.
 
 ### Desktop shortcut for opening Moor quickly
 
@@ -278,7 +278,7 @@ it on the Windows side and have it jump into WSL for you:
 That opens Windows Terminal, starts your WSL distro, drops you in your Linux
 home directory, and launches Moor. If `moor` is not on PATH yet, open WSL
 once manually and run `source ~/.bashrc`, or replace the command with
-`python hermes` inside your PM-activated project checkout.
+`python moor` inside your PM-activated project checkout.
 
 Optional polish:
 
@@ -355,5 +355,5 @@ WSL2 stores its VM disk as a sparse VHDX under `%LOCALAPPDATA%\Packages\...`. It
 
 - **[Installation](../getting-started/installation.md)** — actual install steps (Linux/WSL2 use the same installer).
 - **[Integrations → Providers → WSL2 Networking](../integrations/providers.md#wsl2-networking-windows-users)** — the canonical networking deep-dive for local model servers.
-- **[MCP guide → WSL → Windows Chrome](../guides/use-mcp-with-hermes.md#wsl2-bridge-hermes-in-wsl-to-windows-chrome)** — controlling your signed-in Windows Chrome from Hermes in WSL.
+- **[MCP guide → WSL → Windows Chrome](../guides/use-mcp-with-moor.md#wsl2-bridge-moor-in-wsl-to-windows-chrome)** — controlling your signed-in Windows Chrome from Moor in WSL.
 - **[Tool Gateway](./features/tool-gateway.md)** and **[Web Dashboard](./features/web-dashboard.md)** — the long-lived services you'll most often want to expose from WSL to the rest of your network.

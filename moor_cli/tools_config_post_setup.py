@@ -11,8 +11,8 @@ from typing import Set
 from moor_cli.cli_output import (
     print_error as _print_error, print_info as _print_info, print_success as _print_success,
     print_warning as _print_warning)
-from hermes_cli.config import get_env_value
-from hermes_cli.tools_config_cua import _cua_driver_install_ready, install_cua_driver
+from moor_cli.config import get_env_value
+from moor_cli.tools_config_cua import _cua_driver_install_ready, install_cua_driver
 
 
 def _info_lines(*lines: str) -> None:
@@ -37,7 +37,7 @@ def _ensure_browser_use_cli(*, verbose_hints: bool = False) -> None:
     else:
         for line in str(message).splitlines():
             _print_warning(f"    {line[:200]}")
-        _print_info("    Retry with: hermes tools post-setup browser_use_cli")
+        _print_info("    Retry with: moor tools post-setup browser_use_cli")
     if verbose_hints:
         _info_lines("Local Chrome needs remote debugging: chrome://inspect/#remote-debugging",
                     "Cloud browsers: browser-use auth login  (or set BROWSER_USE_API_KEY)")
@@ -65,7 +65,7 @@ def _post_setup_agent_browser(post_setup_key: str) -> None:
     try:
         from tools.browser_tool_install import (
             _browser_install_hint, _chromium_installed, _running_in_docker, _find_agent_browser)
-        from hermes_constants import is_termux
+        from moor_constants import is_termux
     except Exception as exc:  # pragma: no cover — defensive
         _print_warning(f"    Could not check Chromium status: {exc}")
         return
@@ -90,7 +90,7 @@ def _post_setup_agent_browser(post_setup_key: str) -> None:
         pm.ensure("agent-browser", explicit=True)
     except Exception as exc:
         _print_warning(f"    agent-browser install failed: {exc}")
-        _info_lines("Retry with: hermes tools post-setup " + post_setup_key)
+        _info_lines("Retry with: moor tools post-setup " + post_setup_key)
         return
     _print_success("    Managed agent-browser and Chromium are ready")
 
@@ -108,7 +108,7 @@ def _post_setup_agent_browser(post_setup_key: str) -> None:
 def _post_setup_camofox() -> None:
     from tools.browser_camofox import check_camofox_available
 
-    _info_lines("Camofox is an externally managed server; Hermes does not install or start it.")
+    _info_lines("Camofox is an externally managed server; Moor does not install or start it.")
     if check_camofox_available():
         _print_success("    Configured Camofox server is reachable")
         return
@@ -153,9 +153,9 @@ def _post_setup_python(spec: dict) -> None:
         pm.sync_venv([spec["extra"]], explicit=True)
     except (pm.InstallError, OSError, ValueError) as exc:
         _print_warning(f"    {label} install failed: {exc}")
-        _info_lines("Retry with: hermes tools")
+        _info_lines("Retry with: moor tools")
         return
-    _print_success(f"    {label} dependencies ready. Restart Hermes to use them.")
+    _print_success(f"    {label} dependencies ready. Restart Moor to use them.")
     _info_lines(*spec["on_install"], *spec["always"])
 
 
@@ -192,16 +192,16 @@ def _post_setup_langfuse() -> None:
         pm.sync_venv(["langfuse"], explicit=True)
     except (pm.InstallError, OSError, ValueError) as exc:
         _print_warning(f"    langfuse SDK install failed: {exc}")
-        _info_lines("Retry with: hermes tools")
+        _info_lines("Retry with: moor tools")
         return
     try:
-        from hermes_cli.plugins_cmd import cmd_enable
+        from moor_cli.plugins_cmd import cmd_enable
         cmd_enable("observability/langfuse")
     except (Exception, SystemExit) as exc:
         _print_warning(f"    Could not enable plugin automatically: {exc}")
-        _info_lines("Run manually: hermes plugins enable observability/langfuse")
+        _info_lines("Run manually: moor plugins enable observability/langfuse")
         return
-    _info_lines("Restart Hermes for tracing to take effect.", "Verify: hermes plugins list")
+    _info_lines("Restart Moor for tracing to take effect.", "Verify: moor plugins list")
 
 
 def _post_setup_xai_grok() -> None:
@@ -254,7 +254,7 @@ def _post_setup_xai_grok() -> None:
 def _codex_credentials_present() -> bool:
     """Cheap offline check for Codex/ChatGPT OAuth credentials (auth store + pool only)."""
     try:
-        from hermes_cli.auth import get_codex_auth_status
+        from moor_cli.auth import get_codex_auth_status
         return bool(get_codex_auth_status().get("logged_in"))
     except Exception:
         return False
@@ -268,11 +268,11 @@ def _post_setup_openai_codex() -> None:
         _print_success("    Image generation will use your existing Codex/ChatGPT OAuth credentials")
         return
 
-    relogin = "hermes auth add openai-codex"
+    relogin = "moor auth add openai-codex"
     _print_info("    OpenAI (Codex auth) needs credentials.")
     try:
-        from hermes_cli.auth import _codex_device_code_login, _save_codex_tokens
-        from hermes_cli.setup import is_noninteractive, prompt_choice
+        from moor_cli.auth import _codex_device_code_login, _save_codex_tokens
+        from moor_cli.setup import is_noninteractive, prompt_choice
     except Exception as exc:
         _print_warning(f"    Could not load setup helpers: {exc}")
         _info_lines(f"Run later: {relogin}")
@@ -300,7 +300,7 @@ def _post_setup_openai_codex() -> None:
 
 
 def _xai_credentials_ready() -> bool:
-    from hermes_cli.tools_config import _xai_credentials_present  # facade binding: tests patch it there
+    from moor_cli.tools_config import _xai_credentials_present  # facade binding: tests patch it there
     return _xai_credentials_present()
 
 

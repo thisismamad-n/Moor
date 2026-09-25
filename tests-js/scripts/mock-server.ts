@@ -425,7 +425,7 @@ function includesBatchClarifyTrigger(value: unknown): boolean {
  * history the mock falls through to the canned reply.
  */
 export const APPROVAL_COMMAND_TRIGGER = 'E2E_APPROVAL_COMMAND_TRIGGER'
-export const APPROVAL_COMMAND = 'rm -rf /tmp/hermes-e2e-approval-probe'
+export const APPROVAL_COMMAND = 'rm -rf /tmp/moor-e2e-approval-probe'
 
 const APPROVAL_COMMAND_TURN: ScriptedTurn = {
   text: '',
@@ -1359,9 +1359,9 @@ async function runDevLaunch(): Promise<void> {
   console.log(`  Mock server: ${mock.url}`)
 
   const sandbox = createDevSandbox()
-  writeMockProviderConfig(sandbox.hermesHome, mock.url)
-  writeEnvFile(sandbox.hermesHome)
-  console.log(`  HERMES_HOME: ${sandbox.hermesHome}`)
+  writeMockProviderConfig(sandbox.moorHome, mock.url)
+  writeEnvFile(sandbox.moorHome)
+  console.log(`  MOOR_HOME: ${sandbox.moorHome}`)
 
   const electronBin = findElectron(repoRoot)
 

@@ -14,14 +14,14 @@ import time
 
 import moor_cli.providers as providers_mod
 import pytest
-import hermes_yaml as yaml
-from hermes_cli.model_switch import list_authenticated_providers, switch_model
-from hermes_cli.model_switch_providers import (
+import moor_yaml as yaml
+from moor_cli.model_switch import list_authenticated_providers, switch_model
+from moor_cli.model_switch_providers import (
     _fetch_picker_live_models,
     _NativePickerModelList,
     _save_discovered_models_to_config,
 )
-from hermes_cli.providers import resolve_provider_full
+from moor_cli.providers import resolve_provider_full
 
 
 _MOCK_VALIDATION = {
@@ -79,14 +79,14 @@ def test_picker_native_catalog_is_admitted_to_the_shared_model_cache(monkeypatch
     synthesizes from the key — a keyed endpoint otherwise wrote a row nobody could read back.
     """
     monkeypatch.setattr(
-        "hermes_cli.models_local.should_use_ollama_native_catalog", lambda *a, **k: True
+        "moor_cli.models_local.should_use_ollama_native_catalog", lambda *a, **k: True
     )
-    monkeypatch.setattr("hermes_cli.models._get_ollama_native_headers", lambda *a, **k: {})
+    monkeypatch.setattr("moor_cli.models._get_ollama_native_headers", lambda *a, **k: {})
     monkeypatch.setattr(
-        "hermes_cli.models_local.fetch_ollama_local_models", lambda *a, **k: ["qwen3:8b"]
+        "moor_cli.models_local.fetch_ollama_local_models", lambda *a, **k: ["qwen3:8b"]
     )
 
-    from hermes_cli.models import cached_fetch_api_models
+    from moor_cli.models import cached_fetch_api_models
 
     url = "http://127.0.0.1:11434/v1"
     assert _fetch_picker_live_models("sk-ollama", url, "custom", False) == ["qwen3:8b"]
@@ -103,14 +103,14 @@ def test_picker_native_catalog_skips_cache_admission_when_cache_is_off(monkeypat
     minted and persisted outside the cache-entry decision that exists to avoid that.
     """
     monkeypatch.setattr(
-        "hermes_cli.models_local.should_use_ollama_native_catalog", lambda *a, **k: True
+        "moor_cli.models_local.should_use_ollama_native_catalog", lambda *a, **k: True
     )
-    monkeypatch.setattr("hermes_cli.models._get_ollama_native_headers", lambda *a, **k: {})
+    monkeypatch.setattr("moor_cli.models._get_ollama_native_headers", lambda *a, **k: {})
     monkeypatch.setattr(
-        "hermes_cli.models_local.fetch_ollama_local_models", lambda *a, **k: ["qwen3:8b"]
+        "moor_cli.models_local.fetch_ollama_local_models", lambda *a, **k: ["qwen3:8b"]
     )
 
-    from hermes_cli.models import cached_fetch_api_models
+    from moor_cli.models import cached_fetch_api_models
 
     url = "http://127.0.0.1:11434/v1"
     assert _fetch_picker_live_models(None, url, "custom", False, cache=False) == ["qwen3:8b"]
@@ -121,17 +121,17 @@ def test_picker_native_catalog_skips_cache_admission_when_cache_is_off(monkeypat
 def _native_picker_probe(monkeypatch, models_by_call):
     """Native Ollama detection on, ``/api/tags`` answering successive ``models_by_call``."""
     monkeypatch.setattr(
-        "hermes_cli.models_local.should_use_ollama_native_catalog", lambda *a, **k: True
+        "moor_cli.models_local.should_use_ollama_native_catalog", lambda *a, **k: True
     )
-    monkeypatch.setattr("hermes_cli.models._get_ollama_native_headers", lambda *a, **k: {})
+    monkeypatch.setattr("moor_cli.models._get_ollama_native_headers", lambda *a, **k: {})
     answers = iter(models_by_call)
     monkeypatch.setattr(
-        "hermes_cli.models_local.fetch_ollama_local_models", lambda *a, **k: next(answers)
+        "moor_cli.models_local.fetch_ollama_local_models", lambda *a, **k: next(answers)
     )
 
 
 def _age_cached_rows(seconds):
-    from hermes_cli import models as models_mod
+    from moor_cli import models as models_mod
 
     cache = models_mod._load_provider_models_cache()
     for row in cache.values():
@@ -147,7 +147,7 @@ def test_picker_native_catalog_uses_the_short_native_ttl(monkeypatch):
     ``cached_provider_model_ids`` clamps the built-in ``ollama`` slug the same way. Past the
     native TTL the row is stale: served once, with a background refresh scheduled.
     """
-    from hermes_cli.models_local import _OLLAMA_LOCAL_MODELS_CACHE_TTL
+    from moor_cli.models_local import _OLLAMA_LOCAL_MODELS_CACHE_TTL
 
     _native_picker_probe(monkeypatch, [["qwen3:8b"]])
     url = "http://127.0.0.1:11434/v1"
@@ -155,7 +155,7 @@ def test_picker_native_catalog_uses_the_short_native_ttl(monkeypatch):
 
     refreshes = []
     monkeypatch.setattr(
-        "hermes_cli.models._spawn_swr_refresh", lambda key, fn=None: refreshes.append(key)
+        "moor_cli.models._spawn_swr_refresh", lambda key, fn=None: refreshes.append(key)
     )
     _age_cached_rows(_OLLAMA_LOCAL_MODELS_CACHE_TTL + 1)
     assert _fetch_picker_live_models("sk-ollama", url, "custom", False) == ["qwen3:8b"]
@@ -168,7 +168,7 @@ def test_picker_empty_native_catalog_is_not_stale_served(monkeypatch):
     Beyond it the probe must run again, or an Ollama that was model-less at first open keeps
     an empty picker row for the whole 7-day stale window after models are pulled.
     """
-    from hermes_cli.models import _PROVIDER_MODELS_CACHE_TTL
+    from moor_cli.models import _PROVIDER_MODELS_CACHE_TTL
 
     _native_picker_probe(monkeypatch, [[], ["back:latest"]])
     url = "http://127.0.0.1:11434/v1"
@@ -483,16 +483,16 @@ def test_switch_to_bare_custom_from_another_provider_resolves_the_configured_end
     """#73680: the per-turn config sync adopting ``provider: custom`` from an OpenRouter session
     must land on the configured custom endpoint, not pair the new model with OpenRouter's URL
     and key."""
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
     (home / "config.yaml").write_text(
         "model:\n  default: qwen3:8b\n  provider: custom\n  base_url: http://127.0.0.1:11434/v1\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr("hermes_cli.models_validate.validate_requested_model", lambda *a, **k: _MOCK_VALIDATION)
-    monkeypatch.setattr("hermes_cli.model_switch.get_model_info", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setattr("moor_cli.models_validate.validate_requested_model", lambda *a, **k: _MOCK_VALIDATION)
+    monkeypatch.setattr("moor_cli.model_switch.get_model_info", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
 
     result = switch_model(
         raw_input="qwen3:8b",
@@ -515,14 +515,14 @@ def test_switch_to_bare_custom_with_no_configured_endpoint_keeps_the_current_one
     """#74143 shape on the switched-provider path: with no ``model.base_url`` the bare-custom
     resolver lands on OpenRouter's default whenever an OpenRouter key exists — a host the user
     never picked. An Anthropic session must stay on its own endpoint instead."""
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
     (home / "config.yaml").write_text("model:\n  default: m\n  provider: anthropic\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-env")
-    monkeypatch.setattr("hermes_cli.models_validate.validate_requested_model", lambda *a, **k: _MOCK_VALIDATION)
-    monkeypatch.setattr("hermes_cli.model_switch.get_model_info", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.models_validate.validate_requested_model", lambda *a, **k: _MOCK_VALIDATION)
+    monkeypatch.setattr("moor_cli.model_switch.get_model_info", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
 
     result = switch_model(
         raw_input="m2",
@@ -546,7 +546,7 @@ def test_openrouter_mirror_read_never_raises_without_a_secret_scope(monkeypatch)
     propagating out of ``switch_model``, where the resolver's own read of the same name is
     suppressed."""
     from agent import secret_scope
-    from hermes_cli.model_switch import _openrouter_mirror_base_url
+    from moor_cli.model_switch import _openrouter_mirror_base_url
 
     monkeypatch.setenv("OPENROUTER_BASE_URL", "https://mirror.example.com/v1")
     secret_scope.set_multiplex_active(True)
@@ -561,14 +561,14 @@ def test_switch_to_bare_custom_ignores_an_openrouter_mirror(monkeypatch, tmp_pat
     ``custom``, the ladder's last rung hands back that mirror — a host the user configured for
     OpenRouter — with the ``no-key-required`` placeholder. It must not replace the session's own
     endpoint and key (the switched arm used to adopt it, dropping a working credential)."""
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
     (home / "config.yaml").write_text("model:\n  default: m\n  provider: custom\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setenv("OPENROUTER_BASE_URL", "https://mirror.example.com/v1")
-    monkeypatch.setattr("hermes_cli.models_validate.validate_requested_model", lambda *a, **k: _MOCK_VALIDATION)
-    monkeypatch.setattr("hermes_cli.model_switch.get_model_info", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.models_validate.validate_requested_model", lambda *a, **k: _MOCK_VALIDATION)
+    monkeypatch.setattr("moor_cli.model_switch.get_model_info", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
 
     result = switch_model(
         raw_input="m2",
@@ -1390,13 +1390,13 @@ def test_lmstudio_bare_providers_block_does_not_hide_live_catalog(monkeypatch):
     discarding the full catalog `_build_curated_lists` had already fetched.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr(providers_mod, "HERMES_OVERLAYS", {})
+    monkeypatch.setattr(providers_mod, "MOOR_OVERLAYS", {})
     monkeypatch.delenv("LM_BASE_URL", raising=False)
     monkeypatch.delenv("LM_API_KEY", raising=False)
 
     live_catalog = ["model-a", "model-b", "model-c"]
     monkeypatch.setattr(
-        "hermes_cli.models_local.fetch_lmstudio_models",
+        "moor_cli.models_local.fetch_lmstudio_models",
         lambda api_key=None, base_url=None, timeout=5.0: list(live_catalog),
     )
 
@@ -1412,7 +1412,7 @@ def test_lmstudio_bare_providers_block_does_not_hide_live_catalog(monkeypatch):
     row = rows[0]
     assert sorted(row["models"]) == sorted(live_catalog)
     assert row["total_models"] == len(live_catalog)
-    assert row["source"] == "hermes"
+    assert row["source"] == "moor"
 
 
 def test_lmstudio_providers_block_with_explicit_endpoint_still_uses_section3(monkeypatch):
@@ -1421,12 +1421,12 @@ def test_lmstudio_providers_block_with_explicit_endpoint_still_uses_section3(mon
     custom-endpoint handling (section 3) remains the correct, unsurprising
     behavior and must not be shadowed by the built-in live probe."""
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr(providers_mod, "HERMES_OVERLAYS", {})
+    monkeypatch.setattr(providers_mod, "MOOR_OVERLAYS", {})
     monkeypatch.delenv("LM_BASE_URL", raising=False)
     monkeypatch.delenv("LM_API_KEY", raising=False)
 
     monkeypatch.setattr(
-        "hermes_cli.models_local.fetch_lmstudio_models",
+        "moor_cli.models_local.fetch_lmstudio_models",
         lambda api_key=None, base_url=None, timeout=5.0: ["should-not-be-used"],
     )
 
@@ -1434,7 +1434,7 @@ def test_lmstudio_providers_block_with_explicit_endpoint_still_uses_section3(mon
         return ["remote-model"], False
 
     monkeypatch.setattr(
-        "hermes_cli.model_switch_providers._discover_endpoint_models", _fake_discover
+        "moor_cli.model_switch_providers._discover_endpoint_models", _fake_discover
     )
 
     providers = list_authenticated_providers(

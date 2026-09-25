@@ -1,7 +1,7 @@
-"""`hermes gateway install --no-start-now` and the setup wizard's "Start the gateway now?" = No on launchd.
+"""`moor gateway install --no-start-now` and the setup wizard's "Start the gateway now?" = No on launchd.
 
 The plist carries RunAtLoad, so loading it (`launchctl bootstrap`) starts the gateway on the spot. A
-no-start install must therefore write the plist without loading it; `hermes gateway start` loads it later.
+no-start install must therefore write the plist without loading it; `moor gateway start` loads it later.
 """
 import argparse
 import plistlib
@@ -10,10 +10,10 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_cli.gateway as gateway_cli
-from hermes_cli.subcommands.gateway import build_gateway_parser
+import moor_cli.gateway as gateway_cli
+from moor_cli.subcommands.gateway import build_gateway_parser
 
-LABEL = "ai.hermes.gateway"
+LABEL = "ai.moor.gateway"
 DOMAIN = "gui/501"
 
 

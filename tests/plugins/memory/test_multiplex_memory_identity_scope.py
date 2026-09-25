@@ -2,7 +2,7 @@
 
 Under ``gateway.multiplex_profiles`` ``os.environ`` is the DEFAULT profile's ``.env``. When a secondary
 profile's scope does not define MEM0_USER_ID / SUPERMEMORY_CONTAINER_TAG / RETAINDB_PROJECT /
-OPENVIKING_* / HERMES_HONCHO_HOST, the provider must fall back to its own default
+OPENVIKING_* / MOOR_HONCHO_HOST, the provider must fall back to its own default
 (per-profile partition), NOT write the secondary's memories into the default profile's account.
 """
 from __future__ import annotations
@@ -18,7 +18,7 @@ _DEFAULT_ENV = {
     "RETAINDB_PROJECT": "proj-default", "RETAINDB_BASE_URL": "https://rdb.default",
     "OPENVIKING_API_KEY": "ov-default", "OPENVIKING_ACCOUNT": "acct-default", "OPENVIKING_USER": "user-default",
     "OPENVIKING_AGENT": "agent-default", "OPENVIKING_ENDPOINT": "http://ov.default",
-    "HERMES_HONCHO_HOST": "host-default", "HONCHO_BASE_URL": "https://honcho.default",
+    "MOOR_HONCHO_HOST": "host-default", "HONCHO_BASE_URL": "https://honcho.default",
     "OPENAI_API_KEY": "sk-default", "OPENAI_BASE_URL": "https://openai.default/v1",
 }
 

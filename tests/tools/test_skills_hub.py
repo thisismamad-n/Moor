@@ -933,7 +933,7 @@ def _make_index_source(skills):
     src._loaded = True
     return src
 
-class TestHermesIndexSearch:
+class TestMoorIndexSearch:
     def test_search_matches_identifier_and_provider(self):
         # NVIDIA skill whose name/description does NOT contain "nvidia" — only
         # the identifier and the provider label do. The old substring-only
@@ -1969,7 +1969,7 @@ class TestParallelSearchSourcesTimeout:
         assert any(r.source == "fast" for r in all_results)
 
 class TestIndexMissFallback:
-    """An available hermes-index stands in for the external registries; when it
+    """An available moor-index stands in for the external registries; when it
     has no match for a query the registries it displaced must still be asked
     (#112503: a skill live on skills.sh but not yet in the index returned zero
     results on every surface)."""
@@ -1979,7 +1979,7 @@ class TestIndexMissFallback:
                          identifier=f"{sid}/humanizar", trust_level="community")
 
     def _sources(self, index_results):
-        index = _FakeSource("hermes-index", results=index_results)
+        index = _FakeSource("moor-index", results=index_results)
         index.is_available = True
         skills_sh = _FakeSource("skills-sh", results=[self._meta("skills-sh")])
         github = _FakeSource("github", results=[self._meta("github")])
@@ -1992,7 +1992,7 @@ class TestIndexMissFallback:
             [index, skills_sh, github], query="humanizar", overall_timeout=5.0)
 
         assert [r.identifier for r in results] == ["skills-sh/humanizar"]
-        assert source_counts == {"hermes-index": 0, "skills-sh": 1}
+        assert source_counts == {"moor-index": 0, "skills-sh": 1}
         assert timed_out == []
         assert github.calls == 0  # one miss must not spend the unauthenticated GitHub budget
 
@@ -2002,13 +2002,13 @@ class TestIndexMissFallback:
         assert results == [] and skills_sh.calls == 0
 
     def test_index_hit_leaves_registries_untouched(self):
-        index, skills_sh, github = self._sources([self._meta("hermes-index")])
+        index, skills_sh, github = self._sources([self._meta("moor-index")])
 
         results, source_counts, _ = parallel_search_sources(
             [index, skills_sh, github], query="humanizar", overall_timeout=5.0)
 
-        assert [r.identifier for r in results] == ["hermes-index/humanizar"]
-        assert source_counts == {"hermes-index": 1}
+        assert [r.identifier for r in results] == ["moor-index/humanizar"]
+        assert source_counts == {"moor-index": 1}
         assert skills_sh.calls == 0 and github.calls == 0
 
     def test_provider_filter_miss_skips_registries_without_provider_data(self):
@@ -2023,7 +2023,7 @@ class TestIndexMissFallback:
 
         assert time.monotonic() - started < 1.0
         assert results == [] and timed_out == []
-        assert source_counts == {"hermes-index": 0}
+        assert source_counts == {"moor-index": 0}
         assert skills_sh.calls == 0 and clawhub.calls == 0
 
     def test_fallback_pass_has_its_own_short_budget(self, monkeypatch):
@@ -2039,14 +2039,14 @@ class TestIndexMissFallback:
 
         assert time.monotonic() - started < 2.0
         assert [r.identifier for r in results] == ["skills-sh/humanizar"]
-        assert source_counts == {"hermes-index": 0, "skills-sh": 1}
+        assert source_counts == {"moor-index": 0, "skills-sh": 1}
         assert timed_out == ["clawhub"]
 
 # ---------------------------------------------------------------------------
 # _load_moor_index — centralized index fetch (Browse-hub landing / search)
 # ---------------------------------------------------------------------------
 
-class TestLoadHermesIndex:
+class TestLoadMoorIndex:
     """Regression coverage for the Skills-Hub index fetch.
 
     The centralized index is a large body served with Content-Encoding: br.

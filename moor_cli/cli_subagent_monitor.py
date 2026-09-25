@@ -8,8 +8,8 @@ import time
 
 from prompt_toolkit.utils import get_cwidth
 
-from hermes_cli import cli_process_dock as procs
-from hermes_cli import cli_session_dock as session_rows
+from moor_cli import cli_process_dock as procs
+from moor_cli import cli_session_dock as session_rows
 
 
 def _clip(value, width):

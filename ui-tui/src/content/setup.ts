@@ -10,7 +10,7 @@ export const buildSetupRequiredSections = (): PanelSection[] => [
     rows: [
       ['/setup', 'run the first-time setup wizard in-place (adds a provider)'],
       ['/model', 'pick a model (needs a session — add a provider first)'],
-      ['Ctrl+C', 'exit and run `hermes setup` manually']
+      ['Ctrl+C', 'exit and run `moor setup` manually']
     ],
     title: 'Actions'
   },

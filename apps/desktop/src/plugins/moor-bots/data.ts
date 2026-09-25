@@ -685,7 +685,7 @@ async function fetchRosterSnapshot(activeConnectionId: null | string | undefined
   // carry a second copy. Older gateways lack the flag: keep appending.
   serverInjectsProtocol = Boolean(local?.bot_mode_protocol)
 
-  // Multi-source desktops (hermes-agent #86875) also expose the union
+  // Multi-source desktops (moor-agent #86875) also expose the union
   // agent roster across every registered connection. Merge agents from
   // OTHER sources in as additional rows. Feature-detected + best-effort:
   // an older Desktop build (no host.agents) or a roster hiccup leaves
@@ -934,7 +934,7 @@ function mergeMultiSourceRoster(
     profiles.push({
       name: profile,
       // A remote row's title/display_name ride the union enumeration; without
-      // them a remote default titled "CoS Bot" only ever tags as @hermes(-device)
+      // them a remote default titled "CoS Bot" only ever tags as @moor(-device)
       // and its title slug is unknown to the composer (#103731).
       ...(agent.profileMetadata || {}),
       handle: agent.handle,

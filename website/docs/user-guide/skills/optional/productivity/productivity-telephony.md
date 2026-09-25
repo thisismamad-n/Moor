@@ -14,7 +14,7 @@ Provision Twilio numbers, SMS/MMS, and AI outbound calls.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/productivity/telephony` |
+| Source | Optional — install with `moor skills install official/productivity/telephony` |
 | Path | `optional-skills/productivity/telephony` |
 | Version | `1.0.0` |
 | Author | Moor inc. |

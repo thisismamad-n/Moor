@@ -132,7 +132,7 @@ class TestBangExecution:
             return real_import(name, *args, **kwargs)
 
         with patch("builtins.__import__", block_sanitizer), \
-             patch("hermes_cli.bang_shell.subprocess.Popen") as popen:
+             patch("moor_cli.bang_shell.subprocess.Popen") as popen:
             code = run_bang_command("echo must-not-run", writer=lines.append)
 
         assert code == 127

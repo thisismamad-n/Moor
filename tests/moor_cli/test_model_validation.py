@@ -3,9 +3,9 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from hermes_cli.models import azure_foundry_model_api_mode, copilot_model_api_mode, curated_models_for_provider, fetch_api_models, normalize_provider, opencode_model_api_mode, parse_model_input, probe_api_models, provider_model_ids
-from hermes_cli.models_local import fetch_lmstudio_models
-from hermes_cli.models_validate import validate_requested_model
+from moor_cli.models import azure_foundry_model_api_mode, copilot_model_api_mode, curated_models_for_provider, fetch_api_models, normalize_provider, opencode_model_api_mode, parse_model_input, probe_api_models, provider_model_ids
+from moor_cli.models_local import fetch_lmstudio_models
+from moor_cli.models_validate import validate_requested_model
 
 
 # -- helpers -----------------------------------------------------------------
@@ -325,7 +325,7 @@ class TestNormalizeOpencodeBaseUrlFamilyPath:
         ("opencode-go", "anthropic_messages", "https://opencode.ai/zen/v1?x=1", "https://opencode.ai/zen/go?x=1"),
     ])
     def test_family_path_follows_the_resolved_provider(self, provider, api_mode, url, expected):
-        from hermes_cli.models import normalize_opencode_base_url
+        from moor_cli.models import normalize_opencode_base_url
         assert normalize_opencode_base_url(provider, api_mode, url) == expected
 
 
@@ -826,8 +826,8 @@ class TestProfileCatalogAuthoritative:
     def test_unavailable_profile_catalog_keeps_generic_fallback(self, relay_profile):
         """The profile's own catalog unreachable/empty (e.g. no credentials yet):
         the generic listing stays the validator, as before (#116667's carve-out)."""
-        with patch("hermes_cli.models.fetch_api_models", return_value=["other-vendor/model-a"]), \
-             patch("hermes_cli.models.provider_model_ids", return_value=[]):
+        with patch("moor_cli.models.fetch_api_models", return_value=["other-vendor/model-a"]), \
+             patch("moor_cli.models.provider_model_ids", return_value=[]):
             result = validate_requested_model(
                 "other-vendor/model-a", "relay-owned-catalog", api_key="k")
         assert result["accepted"] is True
@@ -885,7 +885,7 @@ class TestModelIdWhitespace:
         for provider in ("vllm", "ollama", "llamacpp", "local", "lmstudio"):
             model = "Meta Llama 3.1 8B"
             if provider == "lmstudio":
-                with patch("hermes_cli.models_local.probe_lmstudio_models", return_value=[model]):
+                with patch("moor_cli.models_local.probe_lmstudio_models", return_value=[model]):
                     result = validate_requested_model(model, provider)
             else:
                 result = _validate(
@@ -912,7 +912,7 @@ class TestModelIdWhitespace:
 def test_picker_payload_omits_ids_the_validator_rejects_for_whitespace():
     """Desktop model.options is this payload. A cloud row must not offer a spaced id;
     a self-hosted row and a user-configured base_url row must keep theirs."""
-    from hermes_cli.inventory import ConfigContext, build_models_payload
+    from moor_cli.inventory import ConfigContext, build_models_payload
 
     rows = [
         {
@@ -935,9 +935,9 @@ def test_picker_payload_omits_ids_the_validator_rejects_for_whitespace():
     ctx = ConfigContext(
         current_provider="anthropic", current_model="claude-opus-4.6",
         current_base_url="", user_providers={}, custom_providers=[])
-    with patch("hermes_cli.model_switch.list_authenticated_providers", return_value=rows), \
-         patch("hermes_cli.inventory._local_runtime_row", return_value=None), \
-         patch("hermes_cli.inventory._moa_provider_row", return_value=None):
+    with patch("moor_cli.model_switch.list_authenticated_providers", return_value=rows), \
+         patch("moor_cli.inventory._local_runtime_row", return_value=None), \
+         patch("moor_cli.inventory._moa_provider_row", return_value=None):
         payload = build_models_payload(ctx)
     by_slug = {row["slug"]: row["models"] for row in payload["providers"]}
     assert "claude opus" not in by_slug["anthropic"]

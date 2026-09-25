@@ -184,7 +184,7 @@ def test_release_orphaned_leases_sweeps_profile_runtime_registries(
     profile = root / "profiles" / "worker"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}\n")  # identity marker: a bare dir is not a profile
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
 
     root_lease, root_error = active_sessions.try_acquire_active_session(
         session_id="root-orphan", surface="desktop", config={}, registry_home=root
@@ -236,7 +236,7 @@ def test_release_under_profile_home_override_targets_acquisition_registry(
     profile = root / "profiles" / "worker"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}\n")  # identity marker: a bare dir is not a profile
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
 
     lease, error = active_sessions.try_acquire_active_session(
         session_id="agent:worker:telegram:dm:synthetic",
@@ -274,7 +274,7 @@ def test_transfer_under_profile_home_override_targets_acquisition_registry(
     profile = root / "profiles" / "worker"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}\n")  # identity marker: a bare dir is not a profile
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
 
     lease, error = active_sessions.try_acquire_active_session(
         session_id="before",
@@ -483,8 +483,8 @@ def test_unknown_sibling_liveness_only_fences_its_own_session(tmp_path, monkeypa
     """A desktop (liveness-tracked) claim, release and transfer survive an unrelated
     sibling whose owner pid exists but whose start time cannot be read (LXC /proc after
     a backend restart, #113683); the SAME session id still fails closed."""
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".moor"
+    monkeypatch.setenv("MOOR_HOME", str(home))
     state_path = home / "runtime" / "active_sessions.json"
     active_sessions._write_entries(state_path, [{
         "lease_id": "stale-sibling", "session_id": "old-chat", "surface": "desktop",
@@ -517,8 +517,8 @@ def test_unknown_sibling_does_not_block_guarded_release_or_orphan_sweep(tmp_path
     """Desktop automatic cleanup (orphan reap, disconnect, idle timeout) releases its
     lease through ``release_active_session_liveness_guard``; that path and the
     orphan sweep must tolerate an unknowable, unrelated sibling as well (#113683)."""
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".moor"
+    monkeypatch.setenv("MOOR_HOME", str(home))
     state_path = home / "runtime" / "active_sessions.json"
     active_sessions._write_entries(state_path, [{
         "lease_id": "stale-sibling", "session_id": "old-chat", "surface": "desktop",
@@ -741,7 +741,7 @@ def test_snapshot_prunes_after_lock_release_and_keeps_concurrent_lease(tmp_path,
     probes while holding the exclusive registry lock (one psutil round-trip per lease held
     under an unfair ``LK_LOCK`` starves every 2 Hz poller past ~7 leases), and the pruned
     write-back must not drop a lease acquired between the snapshot and the write."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     state_path = home / "runtime" / "active_sessions.json"
     lock_path = home / "runtime" / "active_sessions.lock"
     state_path.parent.mkdir(parents=True)

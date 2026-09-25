@@ -14,14 +14,14 @@ Import an OpenClaw setup (memories, skills) into Moor.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/migration/openclaw-migration` |
+| Source | Optional — install with `moor skills install official/migration/openclaw-migration` |
 | Path | `optional-skills/migration/openclaw-migration` |
 | Version | `1.0.0` |
 | Author | Moor Agent (Moor inc.) |
 | License | MIT |
 | Platforms | linux, macos, windows |
-| Tags | `Migration`, `OpenClaw`, `Hermes`, `Memory`, `Persona`, `Import` |
-| Related skills | [`hermes-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent.md) |
+| Tags | `Migration`, `OpenClaw`, `Moor`, `Memory`, `Persona`, `Import` |
+| Related skills | [`moor-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-moor-agent.md) |
 
 ## Reference: full SKILL.md
 
@@ -244,7 +244,7 @@ The helper script still supports category-level `--include` / `--exclude`, but t
 
 ## Commands
 
-Run the helper with Hermes' Python environment, which includes `ruamel.yaml`.
+Run the helper with Moor' Python environment, which includes `ruamel.yaml`.
 For a standalone Python environment, install `ruamel.yaml==0.18.17` first.
 
 Dry run with full discovery:

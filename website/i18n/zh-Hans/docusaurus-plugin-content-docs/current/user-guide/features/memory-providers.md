@@ -47,7 +47,7 @@ AI 原生的跨会话用户建模，具备辩证推理、会话范围上下文�
 | | |
 |---|---|
 | **适合场景** | 具有跨会话上下文的多 Agent 系统、用户-Agent 对齐 |
-| **依赖** | `hermes memory setup` 通过 PM 准备 Honcho SDK；[API key](https://app.honcho.dev) 或自托管实例 |
+| **依赖** | `moor memory setup` 通过 PM 准备 Honcho SDK；[API key](https://app.honcho.dev) 或自托管实例 |
 | **数据存储** | Honcho Cloud 或自托管 |
 | **费用** | Honcho 定价（云端）/ 免费（自托管） |
 
@@ -267,7 +267,7 @@ moor honcho sync
 | | |
 |---|---|
 | **适合场景** | 具有结构化浏览功能的自托管知识管理 |
-| **依赖** | 独立部署的 OpenViking 服务器；通过 `hermes memory setup` 准备 Hermes 端依赖 |
+| **依赖** | 独立部署的 OpenViking 服务器；通过 `moor memory setup` 准备 Moor 端依赖 |
 | **数据存储** | 自托管（本地或云端） |
 | **费用** | 免费（开源，AGPL-3.0） |
 
@@ -275,7 +275,7 @@ moor honcho sync
 
 **安装：**
 ```bash
-# 使用独立部署的 OpenViking 服务器，不要安装到 Hermes 的依赖环境
+# 使用独立部署的 OpenViking 服务器，不要安装到 Moor 的依赖环境
 openviking-server init
 openviking-server doctor
 openviking-server
@@ -301,7 +301,7 @@ echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.moor/.env
 | | |
 |---|---|
 | **适合场景** | 免维护的记忆管理——Mem0 自动处理提取 |
-| **依赖** | `hermes memory setup` 通过 PM 准备 Mem0 SDK；API key 或自托管/OSS 服务配置 |
+| **依赖** | `moor memory setup` 通过 PM 准备 Mem0 SDK；API key 或自托管/OSS 服务配置 |
 | **数据存储** | Mem0 Cloud |
 | **费用** | Mem0 定价 |
 
@@ -354,7 +354,7 @@ echo "HINDSIGHT_API_KEY=your-key" >> ~/.moor/.env
 | 键 | 默认值 | 描述 |
 |-----|---------|-------------|
 | `mode` | `cloud` | `cloud`、`local_embedded` 或 `local_external` |
-| `bank_id` | `hermes` | 记忆库标识符 |
+| `bank_id` | `moor` | 记忆库标识符 |
 | `recall_budget` | `mid` | 召回彻底程度：`low` / `mid` / `high` |
 | `memory_mode` | `hybrid` | `hybrid`（上下文 + 工具）、`context`（仅自动注入）、`tools`（仅工具） |
 | `auto_retain` | `true` | 自动保留对话轮次 |
@@ -367,7 +367,7 @@ echo "HINDSIGHT_API_KEY=your-key" >> ~/.moor/.env
 | `retain_assistant_prefix` | `Assistant` | 自动保留的对话记录中助手轮次前的标签 |
 | `recall_tags` | — | 召回时用于过滤的标签 |
 
-完整配置参考参见[插件 README](https://github.com/NousResearch/hermes-agent/blob/main/plugins/memory/hindsight/README.md)。
+完整配置参考参见[插件 README](https://github.com/thisismamad-n/Moor/blob/main/plugins/memory/hindsight/README.md)。
 
 ---
 
@@ -468,7 +468,7 @@ moor config set memory.provider byterover
 | | |
 |---|---|
 | **适合场景** | 带用户 profile 和会话级图谱构建的语义召回 |
-| **依赖** | `hermes memory setup` 通过 PM 准备 Supermemory SDK；[云端 API key](http://app.supermemory.ai/integrations?connect=hermes)，或[自托管服务器](https://supermemory.ai/docs/self-hosting/overview) |
+| **依赖** | `moor memory setup` 通过 PM 准备 Supermemory SDK；[云端 API key](http://app.supermemory.ai/integrations?connect=moor)，或[自托管服务器](https://supermemory.ai/docs/self-hosting/overview) |
 | **数据存储** | Supermemory 云端或自托管 |
 | **费用** | 云端按 Supermemory 定价 / 自托管免费 |
 

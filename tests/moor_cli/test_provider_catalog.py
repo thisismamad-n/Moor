@@ -6,7 +6,7 @@ catalog exposes, plus how each provider's ``auth_type`` maps to a desktop tab â€
 never a specific provider count or a frozen vendor list (both change over time).
 """
 
-from hermes_cli.provider_catalog import (
+from moor_cli.provider_catalog import (
     provider_catalog,
     provider_catalog_by_slug,
 )

@@ -18,8 +18,8 @@ from typing import Dict, Optional
 
 # Stale-module bridge: this module binds ``utils.file_signature`` at import time, so a fresh
 # import in a post-pull updater process (pre-handoff purge keeps root modules cached) dies
-# unless the stale ``utils`` is dropped first. See hermes_cli.stale_modules.
-from hermes_cli.stale_modules import drop_stale_root_modules
+# unless the stale ``utils`` is dropped first. See moor_cli.stale_modules.
+from moor_cli.stale_modules import drop_stale_root_modules
 
 drop_stale_root_modules()
 

@@ -4,7 +4,7 @@ Standalone subprocess spawned by ``process_manager.py``; configured via ``MOOR_M
 status + transcript written under ``$MOOR_MEET_OUT_DIR`` (filesystem is the only IPC).
 No WebRTC audio parsing: Meet's live captions are watched via a MutationObserver — lossy and
 English-biased, but deterministic (no STT billing) and stable thanks to the ARIA role.
-Debug: ``HERMES_MEET_URL=... HERMES_MEET_OUT_DIR=./meet-out HERMES_MEET_HEADED=1 \\
+Debug: ``MOOR_MEET_URL=... MOOR_MEET_OUT_DIR=./meet-out MOOR_MEET_HEADED=1 \\
     python -m plugins.google_meet.meet_bot``
 """
 
@@ -22,7 +22,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Optional
 
-from hermes_cli.browser_runtime import chromium_executable
+from moor_cli.browser_runtime import chromium_executable
 from utils import atomic_json_write
 
 # Short three-segment code, a lookup URL, or /new. Anything else is rejected.
@@ -228,7 +228,7 @@ def _start_pcm_pump(rt: dict, bridge_info: dict, pcm_path: Path, state: "_BotSta
     target = bridge_info.get("write_target")
     if platform_tag == "linux":
         cmd = ["paplay", "--raw", "--rate=24000", "--format=s16le", "--channels=1",
-               f"--device={target or 'hermes_meet_sink'}", "-"]
+               f"--device={target or 'moor_meet_sink'}", "-"]
         missing = "paplay not found — install pulseaudio-utils for realtime on Linux"
     elif platform_tag == "darwin":
         # User must have BlackHole as default input; ffmpeg targets it by audiotoolbox index.
@@ -458,7 +458,7 @@ def run_bot() -> int:
     except ImportError as e:
         state.set(error=f"playwright not installed: {e}", exited=True)
         sys.stderr.write("google_meet bot: playwright is not installed. Run "
-                         "`hermes meet install`\n")
+                         "`moor meet install`\n")
         if rt["bridge"]:
             rt["bridge"].teardown()
         return 3

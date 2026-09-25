@@ -12,7 +12,7 @@ import sys
 import time
 from datetime import datetime
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.cli_commands_mixin import CLICommandsMixin
 

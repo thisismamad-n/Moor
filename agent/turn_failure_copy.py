@@ -30,7 +30,7 @@ def stamp_failure(result: Dict[str, Any], reason: str, retryable: bool) -> Dict[
 
 
 # ---- failed-turn transcript boundary ----------------------------------------------------------
-# The Hermes-authored assistant row that closes a durable turn which ended without one. A
+# The moor-authored assistant row that closes a durable turn which ended without one. A
 # transcript boundary, NOT the model's answer: no provider/model error or refusal detail is
 # ever interpolated (that rides ``final_response``). Owned here so the core closer
 # (``agent/conversation_loop.py::run_conversation``) and the gateway's own writer
@@ -44,7 +44,7 @@ PARTIAL_FAILED_TURN_NOTICE = (
     "before resending."
 )
 # ``messages.display_kind`` of that row: display-only (stripped before every provider request),
-# so renderers show a Hermes notice and room pollers never read it as the model's reply.
+# so renderers show a Moor notice and room pollers never read it as the model's reply.
 FAILED_TURN_DISPLAY_KIND = "failed_turn"
 
 
@@ -304,10 +304,10 @@ _ONE_OFF_COPY: Dict[str, str] = {
     # message must stay in the transcript and the session must not be auto-reset.
     "server_context_rejection": (
         "The model server rejected this request as too large, but this conversation is only "
-        "about {tokens:,} tokens — well under the {window:,}-token window Hermes knows for "
+        "about {tokens:,} tokens — well under the {window:,}-token window Moor knows for "
         "{model} — so shrinking it would not help. Another request on the same server (for "
         "example a background memory review from an earlier session) was probably holding its "
-        "capacity, or the server runs {model} with a smaller window than Hermes assumes. Wait a "
+        "capacity, or the server runs {model} with a smaller window than Moor assumes. Wait a "
         "moment and send /retry; if it keeps happening, check the server's context setting."
     ),
     "stream_dropped_tool_call": (
@@ -355,7 +355,7 @@ def exhausted_copy(reason: str, *, label: str, attempts: int, summary: str, rese
         situation = f"it looks temporarily unavailable. {_NEXT_STEPS_RETRY}"
     return (
         f"{lead} — {situation} To avoid this in future, "
-        f"add a backup provider with `hermes fallback add`.\n\nProvider said: {summary}"
+        f"add a backup provider with `moor fallback add`.\n\nProvider said: {summary}"
     )
 
 
@@ -374,32 +374,32 @@ def limit_reset_copy(resets_at: float, now: Optional[float] = None) -> str:
 
 def oauth_relogin_command(provider: Any) -> str:
     """The exact re-login command for a rejected OAuth grant, naming the provider slug and the active
-    named profile: a profile's credentials are its own (93889b770da), so a bare ``hermes auth`` from
+    named profile: a profile's credentials are its own (93889b770da), so a bare ``moor auth`` from
     the root profile re-signs the wrong store and the goal judge, reading a bare 401, guesses which
     service revoked the token (#114012)."""
-    from hermes_constants import profile_cli_selector
+    from moor_constants import profile_cli_selector
 
     slug = str(provider or "").strip().lower()
-    if slug == "nous":
-        return f"hermes {profile_cli_selector()}portal"
-    return f"hermes {profile_cli_selector()}auth add {slug} --type oauth"
+    if slug == "moor":
+        return f"moor {profile_cli_selector()}portal"
+    return f"moor {profile_cli_selector()}auth add {slug} --type oauth"
 
 
 def relogin_command_hint(provider: Any) -> str:
     """Re-sign-in command for a rejected credential on surfaces that may not know the provider:
-    the exact OAuth command for a known OAuth slug, ``hermes auth add <slug>`` for a known API-key
+    the exact OAuth command for a known OAuth slug, ``moor auth add <slug>`` for a known API-key
     slug, and the ``<provider>`` placeholder when the slug is unknown — always carrying the
     ``-p <profile>`` selector so a profile user never re-signs the ROOT store (#114012)."""
-    from hermes_constants import profile_cli_selector
+    from moor_constants import profile_cli_selector
 
     slug = str(provider or "").strip().lower()
     if not slug:
-        return f"hermes {profile_cli_selector()}auth add <provider>"
+        return f"moor {profile_cli_selector()}auth add <provider>"
     from agent.error_surface import auth_kind
 
     if auth_kind(slug) == "oauth":
         return oauth_relogin_command(slug)
-    return f"hermes {profile_cli_selector()}auth add {slug}"
+    return f"moor {profile_cli_selector()}auth add {slug}"
 
 
 def nonretryable_copy(
@@ -418,7 +418,7 @@ def nonretryable_copy(
         f"'{prefix_suggestion}'?"
         if prefix_suggestion else ""
     )
-    body = template.format(label=label, model=model, home=display_hermes_home(), prefix_hint=prefix_hint,
+    body = template.format(label=label, model=model, home=display_moor_home(), prefix_hint=prefix_hint,
                            relogin=oauth_relogin_command(provider))
     return f"{body}\n\nProvider said: {summary}"
 

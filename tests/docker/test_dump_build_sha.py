@@ -3,19 +3,19 @@
 ``.dockerignore`` excludes ``.git``, so ``git rev-parse HEAD`` fails inside
 the published image. CI writes ``install-stamp.json`` before ``docker build``
 (scripts/write_install_stamp.py) and it is COPY'd to the canonical
-``/opt/hermes/install-stamp.json``. ``hermes dump`` reads the
-commit from that stamp through ``hermes_cli.version_info``.
+``/opt/moor/install-stamp.json``. ``moor dump`` reads the
+commit from that stamp through ``moor_cli.version_info``.
 
 A local ``docker build`` (the ``built_image`` fixture in
 ``tests/docker/conftest.py``) has no CI stamp — only the Dockerfile's
 distribution-only fallback, whose all-zero commit version_info skips. In
-that case ``hermes dump`` falls back to ``(unknown)``.
+that case ``moor dump`` falls back to ``(unknown)``.
 
 This test asserts both cases:
 
-* When the stamp exists in the image, ``hermes dump`` must show the first 8
+* When the stamp exists in the image, ``moor dump`` must show the first 8
   characters of its commit, not ``(unknown)``.
-* When the stamp is absent, ``hermes dump`` must show ``(unknown)`` — a guard
+* When the stamp is absent, ``moor dump`` must show ``(unknown)`` — a guard
   against the helper inventing a SHA from another source.
 """
 from __future__ import annotations
@@ -58,7 +58,7 @@ def _read_stamp_commit_from_image(image: str) -> str | None:
     r = subprocess.run(
         [
             "docker", "run", "--rm", "--entrypoint", "cat", image,
-            "/opt/hermes/install-stamp.json",
+            "/opt/moor/install-stamp.json",
         ],
         capture_output=True, text=True, timeout=30,
     )
@@ -86,7 +86,7 @@ def test_dump_reports_stamp_commit_when_present(built_image: str) -> None:
     # docker.yml writes this build input before building and testing the image.
     # Read the independent input: the canonical runner scrubs CI/GITHUB_SHA.
     source_stamp = Path(__file__).resolve().parents[2] / "install-stamp.json"
-    if os.environ.get("HERMES_TEST_IMAGE"):
+    if os.environ.get("MOOR_TEST_IMAGE"):
         assert source_stamp.is_file(), "prebuilt image requires its checkout build stamp"
     if source_stamp.is_file():
         expected = json.loads(source_stamp.read_text(encoding="utf-8-sig"))["commit"]
@@ -112,7 +112,7 @@ def test_dump_reports_stamp_commit_when_present(built_image: str) -> None:
         )
         return
 
-    # CI path: the stamp exists. ``hermes dump`` shows the first 8 chars.
+    # CI path: the stamp exists. ``moor dump`` shows the first 8 chars.
     assert reported != "(unknown)", (
         "install stamp present in image but dump still reported "
         f"'(unknown)' — the stamp fallback is broken. Stamp commit: {stamped!r}"

@@ -1,4 +1,4 @@
-"""``hermes sessions repair-profiles`` — the CLI face of :mod:`hermes_cli.sessions_repair_profiles`.
+"""``moor sessions repair-profiles`` — the CLI face of :mod:`moor_cli.sessions_repair_profiles`.
 
 Runs pre-DB (``_PRE_DB_HANDLERS``): it opens every profile's store itself rather than the one
 ambient ``SessionDB()``. Report-only unless ``--apply``; ``--json`` for automation.
@@ -9,7 +9,7 @@ import json
 import sys
 from typing import Dict, List
 
-from hermes_cli.sessions_repair_profiles import (
+from moor_cli.sessions_repair_profiles import (
     Finding, default_snapshot, enumerate_stores, live_gateway_homes, scan_stores,
 )
 
@@ -58,7 +58,7 @@ def cmd_repair_profiles(args) -> int:
         if live:
             names = ", ".join(f"{profile} (pid {pid})" for profile, pid in live)
             print(f"A gateway is running for: {names}. It holds the routing index in memory and would "
-                  "write it back over this repair. Stop it (`hermes gateway stop`), then re-run --apply.",
+                  "write it back over this repair. Stop it (`moor gateway stop`), then re-run --apply.",
                   file=sys.stderr)
             return 1
 
@@ -88,7 +88,7 @@ def cmd_repair_profiles(args) -> int:
             return 0
 
         if not getattr(args, "yes", False) and not as_json:
-            from hermes_cli.sessions_cmd import _confirm_prompt
+            from moor_cli.sessions_cmd import _confirm_prompt
             if not _confirm_prompt(f"\nApply {len(repairable)} repair(s)? A snapshot of every store is taken first. [y/N] "):
                 print("Aborted — nothing was changed.")
                 return 0

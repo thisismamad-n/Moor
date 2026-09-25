@@ -116,20 +116,20 @@ _PERSISTENCE_CAUSE_EXPLANATIONS: Dict[str, str] = {
     # The forensic runbook for both (WAL generations, manifest.json, sidecars) lives in the
     # logger.error at moor_state.py::_raise_if_db_replaced — never in the chat reply.
     "replaced": (
-        "the session database file was replaced while Hermes was running, so this "
-        "message was not saved (a copy is kept in {home}/sessions/). Stop Hermes "
-        "(`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor` — not "
-        "`hermes {profile_arg}doctor --fix`, which would repair the wrong file in place — "
+        "the session database file was replaced while Moor was running, so this "
+        "message was not saved (a copy is kept in {home}/sessions/). Stop Moor "
+        "(`moor {profile_arg}gateway stop`), run `moor {profile_arg}doctor` — not "
+        "`moor {profile_arg}doctor --fix`, which would repair the wrong file in place — "
         "then start it again and send your message once more. Advanced recovery steps are "
         "in the log."
     ),
     "deleted_wal": (
-        "another Hermes process still holds an old copy of the session database's write-ahead "
-        "log, so Hermes stopped writing to keep the file safe and this message was not saved (a "
-        "copy is kept in {home}/sessions/). Nothing is lost. Quit every Hermes process on this "
-        "profile (Desktop app, `hermes {profile_arg}gateway stop`, dashboard, cron), run "
-        "`hermes {profile_arg}doctor` — it names any process still holding the log — then start "
-        "Hermes again and send your message once more. Do not run `doctor --fix` or delete "
+        "another Moor process still holds an old copy of the session database's write-ahead "
+        "log, so Moor stopped writing to keep the file safe and this message was not saved (a "
+        "copy is kept in {home}/sessions/). Nothing is lost. Quit every Moor process on this "
+        "profile (Desktop app, `moor {profile_arg}gateway stop`, dashboard, cron), run "
+        "`moor {profile_arg}doctor` — it names any process still holding the log — then start "
+        "Moor again and send your message once more. Do not run `doctor --fix` or delete "
         "any state.db files while they run. Guide: {recovery_docs}"
     ),
     "corrupt": (
@@ -166,9 +166,9 @@ _PERSISTENCE_CAUSE_EXPLANATIONS: Dict[str, str] = {
     ),
 }
 _PERSISTENCE_DEFAULT_EXPLANATION = (
-    "Hermes couldn't save this conversation, so it stopped rather than lose your messages. "
-    "Possible causes: the drive is out of room, or another Hermes process is holding the "
-    "database. Close other Hermes windows, run `hermes {profile_arg}doctor` to check "
+    "Moor couldn't save this conversation, so it stopped rather than lose your messages. "
+    "Possible causes: the drive is out of room, or another Moor process is holding the "
+    "database. Close other Moor windows, run `moor {profile_arg}doctor` to check "
     "storage, then send your message again."
 )
 
@@ -373,23 +373,23 @@ class TurnExplainersMixin:
         if body is not None and "{model}" in body:
             body = body.format(model=model or "The model")
         if body is None and reason == "session_persistence_failed":
-            from hermes_constants import display_hermes_home, profile_cli_selector
-            from hermes_state_errors import STORAGE_RECOVERY_DOCS_URL
+            from moor_constants import display_moor_home, profile_cli_selector
+            from moor_state_errors import STORAGE_RECOVERY_DOCS_URL
 
-            # Copy-pasteable, so pin every `hermes` command to the profile whose store failed:
+            # Copy-pasteable, so pin every `moor` command to the profile whose store failed:
             # a multi-profile backend (Desktop serve) hosts sessions whose state.db is NOT the
-            # process default, and a bare `hermes` follows active_profile (#105887).
+            # process default, and a bare `moor` follows active_profile (#105887).
             body = (
                 _PERSISTENCE_CAUSE_EXPLANATIONS.get(
                     persistence_cause or "unknown", _PERSISTENCE_DEFAULT_EXPLANATION
                 )
-                .replace("{home}", display_hermes_home())
+                .replace("{home}", display_moor_home())
                 .replace("{profile_arg}", profile_cli_selector())
                 .replace("{recovery_docs}", STORAGE_RECOVERY_DOCS_URL)
             )
             if persistence_cause in ("corrupt", "fts_index"):
-                from hermes_constants import get_default_hermes_root
-                from hermes_state import _default_db_path
+                from moor_constants import get_default_moor_root
+                from moor_state import _default_db_path
 
                 body = body.replace("{db_path}", str(db_path or _default_db_path()))
                 body = body.replace(

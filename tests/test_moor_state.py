@@ -3228,7 +3228,7 @@ class TestCompressionChainProjection:
         ``_COMPRESSION_LINEAGE_CTE``. Resuming a reset fork of a compression-ended parent must
         re-key only the fork: the CTE has to stop at the reset child exactly like
         ``get_compression_lineage`` does, or the real lineage's ancestors land on the fork's peer."""
-        import hermes_state_gateway as gateway_mod
+        import moor_state_gateway as gateway_mod
 
         t0 = time.time() - 3600
         db.create_session("root", "cli")
@@ -5749,7 +5749,7 @@ class TestUnknownBlobColumnSurvivesRead:
     Every reader here does ``SELECT *``, so a BLOB column reaches the dict unfiltered. FastAPI's
     response encoder calls ``.decode()`` on any raw ``bytes`` value and dies with
     ``UnicodeDecodeError`` the moment the bytes are not valid utf-8 — this already happened for
-    the ``display_identity BLOB`` column (hermes_state_common.py) before it got an explicit pop;
+    the ``display_identity BLOB`` column (moor_state_common.py) before it got an explicit pop;
     the next binary column would repeat it with no reader-side defense. See #116510.
     """
 

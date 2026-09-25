@@ -23,10 +23,10 @@ from __future__ import annotations
 
 
 def _make_cli():
-    """Bare HermesCLI (no __init__): the detector only reads _agent_running."""
-    from cli import HermesCLI
+    """Bare MoorCLI (no __init__): the detector only reads _agent_running."""
+    from cli import MoorCLI
 
-    return HermesCLI.__new__(HermesCLI)
+    return MoorCLI.__new__(MoorCLI)
 
 
 class TestBackgroundInlineDetector:

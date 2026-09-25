@@ -754,7 +754,7 @@ test('registry local route: a concrete remote-only profile is refused on the for
   assert.match(String(named.refuse ?? ''), /Profile "inbox" no longer exists/)
   assert.equal(named.delegate, false)
 
-  // default is $HERMES_HOME, not profiles/default: a profiles/default probe
+  // default is $MOOR_HOME, not profiles/default: a profiles/default probe
   // reports absent, but This device -> default must still open locally.
   assert.deepEqual(resolveRegistryLocalRoute('default', { globalRemote: true, localProfileExists: false }), {
     delegate: false,
@@ -1134,7 +1134,7 @@ test('a cloud entry is saved as oauth even when the payload says token (#89529)'
   // entry with no credential and Test failing with "no saved session token".
   for (const authMode of [undefined, 'token'] as const) {
     const cloud = normalizeConnectionInput(
-      { kind: 'cloud', label: 'C', url: 'https://c.hermes.cloud', authMode, token: { enc: 'x' } },
+      { kind: 'cloud', label: 'C', url: 'https://c.moor.cloud', authMode, token: { enc: 'x' } },
       emptyRegistry()
     )
 
@@ -1154,12 +1154,12 @@ test('a stored cloud entry left on token auth with no token reads back as oauth 
     primary: 'local',
     connections: [
       { id: 'local', kind: 'local', label: 'This device' },
-      { id: 'cloud-bare', kind: 'cloud', label: 'Bare cloud', url: 'https://a.hermes.cloud', authMode: 'token' },
+      { id: 'cloud-bare', kind: 'cloud', label: 'Bare cloud', url: 'https://a.moor.cloud', authMode: 'token' },
       {
         id: 'cloud-keyed',
         kind: 'cloud',
         label: 'Keyed cloud',
-        url: 'https://b.hermes.cloud',
+        url: 'https://b.moor.cloud',
         authMode: 'token',
         token: { v: 1 }
       },

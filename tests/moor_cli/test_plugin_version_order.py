@@ -3,9 +3,9 @@ import json
 from types import SimpleNamespace
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_cli.plugins_updates import run_checks
+from moor_cli.plugins_updates import run_checks
 
 
 def _installed_feed_plugin(plugins):
@@ -56,12 +56,12 @@ def test_feed_and_pip_checks_use_the_same_version_order(tmp_path, current, offer
 
 
 def test_cadence_never_applies_an_unparseable_version(tmp_path, monkeypatch):
-    from hermes_cli.plugins_cadence import run_scheduled_check
+    from moor_cli.plugins_cadence import run_scheduled_check
     from pm import receipt
 
     home = tmp_path / 'home'
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setenv('HERMES_RUNTIME_DIR', str(tmp_path / 'tools'))
+    monkeypatch.setenv('MOOR_HOME', str(home))
+    monkeypatch.setenv('MOOR_RUNTIME_DIR', str(tmp_path / 'tools'))
     plugins = home / 'plugins'
     plugin, metadata, feed_url = _installed_feed_plugin(plugins)
     (plugin / 'plugin.yaml').write_text(

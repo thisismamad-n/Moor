@@ -88,7 +88,7 @@ ALLOWED_CATEGORIES = {
 _EMPTY_DIR_PROTECTED_TOP_LEVEL = frozenset({
     "logs", "memories", "sessions", "cron", "cronjobs",
     "cache", "skills", "plugins", "disk-cleanup", "optional-skills",
-    "hermes-agent", "backups", "profiles", ".worktrees",
+    "moor-agent", "backups", "profiles", ".worktrees",
     "patches", "projects", "skins", "themes", "contributors",
     # Per-profile user trees bootstrapped by ``profiles.py::_PROFILE_DIRS`` (#112859).
     "workspace", "plans", "home",
@@ -116,12 +116,12 @@ _NEVER_TRACK_TOP_LEVEL = frozenset({
 
 
 def _is_protected_dir(p: Path) -> bool:
-    """A tracked DIRECTORY that is HERMES_HOME itself or lives under a protected top-level tree
+    """A tracked DIRECTORY that is MOOR_HOME itself or lives under a protected top-level tree
     (``cache/terminal`` holds terminal snapshots) is never rmtree'd; only its files age out."""
     if not p.is_dir():
         return False
     with contextlib.suppress(ValueError, OSError):
-        rel = p.resolve().relative_to(get_hermes_home())
+        rel = p.resolve().relative_to(get_moor_home())
         return not rel.parts or rel.parts[0] in _EMPTY_DIR_PROTECTED_TOP_LEVEL
     return False
 
@@ -346,11 +346,11 @@ def _inside_git_worktree(path: Path) -> bool:
     Files there are Git-owned — a ``test_*`` file in a worktree is typically a committed
     regression test, not session scratch (#115295).
 
-    Only ``.git`` entries strictly BELOW ``HERMES_HOME`` count for in-home paths: a home kept
+    Only ``.git`` entries strictly BELOW ``MOOR_HOME`` count for in-home paths: a home kept
     in a dotfiles repo (``~/.git``) would otherwise make every scratch file look Git-owned."""
     parents = list(path.resolve().parents)
     with contextlib.suppress(ValueError):
-        parents = parents[: parents.index(get_hermes_home())]
+        parents = parents[: parents.index(get_moor_home())]
     return any((parent / ".git").exists() for parent in parents)
 
 

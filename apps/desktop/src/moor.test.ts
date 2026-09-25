@@ -29,7 +29,7 @@ import {
   setApiRequestProfile,
   speakText,
   triggerCronJob
-} from './hermes'
+} from './moor'
 import { $transcriptTailBySessionId, transcriptTailState } from './store/transcript-tail'
 
 const emptySessionsResponse = {

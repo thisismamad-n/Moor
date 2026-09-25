@@ -10,7 +10,7 @@ import json
 from unittest import mock
 
 import pytest
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.plugin_packs import (
     PackError,
@@ -166,7 +166,7 @@ def test_sanitized_entry_config_strips_forbidden_keys_at_any_depth():
         "rules": [{"name": "r1", "auth_token": "t"}],
         "voice": "nova",
     }}}}
-    with mock.patch("hermes_cli.config.load_config", return_value=fake_cfg):
+    with mock.patch("moor_cli.config.load_config", return_value=fake_cfg):
         assert real_sanitized_entry_config("tts") == {
             "smtp": {"host": "mail.example"}, "rules": [{"name": "r1"}], "voice": "nova"}
 

@@ -14,9 +14,9 @@ import sys
 
 import pytest
 
-from hermes_cli import backup_restore as backup_restore_mod
-from hermes_cli import update_cmd
-from hermes_cli.sqlite_safe_read import connect_tracked
+from moor_cli import backup_restore as backup_restore_mod
+from moor_cli import update_cmd
+from moor_cli.sqlite_safe_read import connect_tracked
 
 
 def _make_db(path, marker):

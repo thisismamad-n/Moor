@@ -20,7 +20,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, NamedTuple, Optional
 from agent.secret_scope import get_secret_str
-from hermes_cli.urllib_security import url_origin
+from moor_cli.urllib_security import url_origin
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("moor_cli.models")
@@ -668,7 +668,7 @@ def fetch_ollama_cloud_models(
     (freshest) merged with models.dev additions (deduped, live first) → stale cache → models.dev
     only → ``[]``. ``cache_only`` (GUI read path) never runs the 8s network probe and never writes
     the disk cache. Never None."""
-    from hermes_cli.models import fetch_api_models
+    from moor_cli.models import fetch_api_models
     if not force_refresh:
         cached = _load_ollama_cloud_cache()
         if cached is not None:

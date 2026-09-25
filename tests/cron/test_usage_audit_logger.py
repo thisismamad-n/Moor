@@ -72,7 +72,7 @@ class TestWriteUsageAudit:
         assert lines[0] == record
 
 
-    def test_writer_exception_swallowed(self, tmp_hermes_home):
+    def test_writer_exception_swallowed(self, tmp_moor_home):
         # Force json.dumps to raise — writer must NOT propagate.
         with patch("cron.scheduler.json.dumps", side_effect=RuntimeError("kaboom")):
             scheduler._write_usage_audit({"job_id": "x"})

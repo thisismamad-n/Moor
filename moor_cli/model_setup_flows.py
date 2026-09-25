@@ -871,8 +871,8 @@ def _api_key_provider_model_list(provider_id: str, pconfig, existing_key: str, k
     merged with ``fallback_models`` exactly like the ``/model`` picker's
     ``models._profile_live_catalog``; generic /models probe for unregistered providers).
     Providers in ``_SPECIAL_MODEL_LISTS`` have their own resolution."""
-    from hermes_cli.config import get_env_value
-    from hermes_cli.models import _PROVIDER_MODELS, fetch_api_models, probe_profile_catalog
+    from moor_cli.config import get_env_value
+    from moor_cli.models import _PROVIDER_MODELS, fetch_api_models, probe_profile_catalog
     curated = _PROVIDER_MODELS.get(provider_id, [])
     api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
 
@@ -1063,7 +1063,7 @@ def _model_flow_anthropic(config, current_model=""):
 # ── Generic flow for plugin providers without a bespoke `_model_flow_*` ────────────────────────────
 # The credential step is keyed by the profile's auth_type: each returns ``(base_url, api_key)`` or
 # None when the picker must stop (the helper already printed why). ``api_key`` providers keep
-# ``_model_flow_api_key_provider``; ``hermes_cli.main`` routes every registered profile missing
+# ``_model_flow_api_key_provider``; ``moor_cli.main`` routes every registered profile missing
 # from ``_PROVIDER_MODEL_FLOWS`` here, so an admitted plugin is never a silent no-op.
 
 def _external_process_login_gate(profile, status) -> bool:
@@ -1095,9 +1095,9 @@ def _external_process_login_gate(profile, status) -> bool:
 
 
 def _plugin_flow_external_process(provider_id: str, profile) -> tuple[str, str] | None:
-    from hermes_cli.auth import get_external_process_provider_status, resolve_external_process_provider_credentials
+    from moor_cli.auth import get_external_process_provider_status, resolve_external_process_provider_credentials
     status = get_external_process_provider_status(provider_id)
-    _say(f"  {profile.display_name or provider_id} delegates Hermes turns to a local `{status.get('command') or profile.process_command}` process.",
+    _say(f"  {profile.display_name or provider_id} delegates Moor turns to a local `{status.get('command') or profile.process_command}` process.",
          f"  Command: {status.get('resolved_command') or status.get('command') or '(not found)'}",
          f"  Backend marker: {status.get('base_url') or profile.base_url}", "")
     try:
@@ -1117,13 +1117,13 @@ def _plugin_flow_external_process(provider_id: str, profile) -> tuple[str, str] 
 
 
 def _plugin_flow_oauth(provider_id: str, profile) -> tuple[str, str] | None:
-    from hermes_cli.auth import get_auth_status
-    from hermes_cli.auth_plugin_providers import plugin_missing_auth_handler_error
+    from moor_cli.auth import get_auth_status
+    from moor_cli.auth_plugin_providers import plugin_missing_auth_handler_error
     status = get_auth_status(provider_id)
     if not status.get("logged_in"):
         missing = plugin_missing_auth_handler_error(provider_id, "add")
         _say(f"  ⚠ Not signed in to {profile.display_name or provider_id}.",
-             f"  {missing.code if missing else status.get('hint') or f'Run `hermes auth add {provider_id}` to sign in.'}")
+             f"  {missing.code if missing else status.get('hint') or f'Run `moor auth add {provider_id}` to sign in.'}")
         return None
     from agent.credential_pool import load_pool
     entry = load_pool(provider_id).select()
@@ -1140,7 +1140,7 @@ _PLUGIN_FLOW_CREDENTIALS = {
 
 def _is_profile_plugin_flow_provider(provider_id: str) -> bool:
     """True when *provider_id* is a registered profile whose auth_type the generic plugin flow handles."""
-    from hermes_cli.auth_plugin_providers import plugin_profile
+    from moor_cli.auth_plugin_providers import plugin_profile
     profile = plugin_profile(provider_id)
     return profile is not None and profile.auth_type in _PLUGIN_FLOW_CREDENTIALS
 
@@ -1160,10 +1160,10 @@ def _plugin_flow_live_rows(profile, api_key: str, base_url: str) -> tuple[list[s
 
 
 def _model_flow_plugin_provider(config, provider_id, current_model=""):
-    """Generic ``hermes model`` flow for a registered plugin profile: credential step by auth_type,
+    """Generic ``moor model`` flow for a registered plugin profile: credential step by auth_type,
     catalog via ``merge_profile_catalog`` (live ``fetch_models()`` ⊕ ``fallback_models``), persist."""
-    from hermes_cli.auth_plugin_providers import plugin_profile
-    from hermes_cli.models import merge_profile_catalog
+    from moor_cli.auth_plugin_providers import plugin_profile
+    from moor_cli.models import merge_profile_catalog
     del config
     profile = plugin_profile(provider_id)
     creds = _PLUGIN_FLOW_CREDENTIALS[profile.auth_type](provider_id, profile)

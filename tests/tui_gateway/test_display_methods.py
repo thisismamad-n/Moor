@@ -8,11 +8,11 @@ import threading
 
 import pytest
 
-from hermes_cli.dashboard_auth import ws_tickets
+from moor_cli.dashboard_auth import ws_tickets
 
 
 def test_install_worker_keeps_the_requested_profile_scope(tmp_path, monkeypatch):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     from tools.bot_desktop import install, runtime
     import tui_gateway.server as server
 
@@ -25,7 +25,7 @@ def test_install_worker_keeps_the_requested_profile_scope(tmp_path, monkeypatch)
     done = threading.Event()
 
     def fake_install(*, ask_password, on_line, timeout_seconds=900.0, claimed=False):
-        seen["home"] = str(get_hermes_home())
+        seen["home"] = str(get_moor_home())
         done.set()
         return 0
 
