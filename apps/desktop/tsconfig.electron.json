@@ -10,7 +10,7 @@
     "strictPropertyInitialization": false,
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false,
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "composite": true,
     "noEmit": false,
     "declaration": true,

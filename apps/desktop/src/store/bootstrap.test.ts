@@ -111,7 +111,12 @@ describe('bootstrap store', () => {
         platform: 'win32',
         activeRoot: 'C:\\Moor'
       })
-      expect(choiceState.setupChoice).toEqual({ platform: 'win32', activeRoot: 'C:\\Moor' })
+      expect(choiceState.setupChoice).toEqual({
+        platform: 'win32',
+        activeRoot: 'C:\\Moor',
+        local: 'none',
+        bundled: false
+      })
 
       const dismissedState = applyBootstrapEvent(choiceState, { type: 'dismissed' })
       expect(dismissedState).toEqual(EMPTY_BOOTSTRAP_STATE)
@@ -127,7 +132,7 @@ describe('bootstrap store', () => {
       expect(
         isBootstrapActive({
           ...EMPTY_BOOTSTRAP_STATE,
-          setupChoice: { platform: 'win32', activeRoot: 'C:\\Moor' }
+          setupChoice: { platform: 'win32', activeRoot: 'C:\\Moor', local: 'none', bundled: false }
         })
       ).toBe(true)
     })
@@ -157,7 +162,8 @@ describe('bootstrap store', () => {
 
       expect($desktopBootstrap.get().active).toBe(true)
 
-      listener?.({
+      const emit = listener as ((ev: DesktopBootstrapEvent) => void) | null
+      emit?.({
         type: 'failed',
         error: 'Install error'
       })
@@ -232,7 +238,7 @@ describe('bootstrap store', () => {
     it('suspends timeout countdown while setup-choice is pending', async () => {
       $desktopBootstrap.set({
         ...EMPTY_BOOTSTRAP_STATE,
-        setupChoice: { platform: 'win32', activeRoot: 'C:\\Moor' }
+        setupChoice: { platform: 'win32', activeRoot: 'C:\\Moor', local: 'none', bundled: false }
       })
 
       let resolveConn: (c: MoorConnection) => void

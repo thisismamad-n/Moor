@@ -34,7 +34,7 @@ import {
 } from 'electron'
 import type { Session } from 'electron'
 
-import { type ActiveRuntimeState, classifyActiveRuntime } from './active-runtime-state'
+import { type ActiveRuntimeState, classifyActiveRuntime, isRealCommitSha } from './active-runtime-state'
 import {
   destroyKeepaliveAgents,
   htmlResponseError,
@@ -3058,12 +3058,23 @@ function recentMoorLog() {
 
 // â”€â”€â”€ Self-update (git-pull against the running backend's moor root) â”€â”€â”€â”€â”€â”€
 
-function readDesktopUpdateConfig(): { branch: string; branchExplicit: boolean } {
-  try {
-    const parsed: { branch?: unknown } | null = JSON.parse(fs.readFileSync(DESKTOP_UPDATE_CONFIG_PATH, 'utf8'))
-    const branch: string = typeof parsed?.branch === 'string' ? parsed.branch.trim() : ''
+interface DesktopUpdateConfig {
+  branch: string
+  branchExplicit: boolean
+  repo?: string
+  pat?: string
+}
 
-    return { branch: branch || DEFAULT_UPDATE_BRANCH, branchExplicit: branch.length > 0 }
+function readDesktopUpdateConfig(): DesktopUpdateConfig {
+  try {
+    const parsed: { branch?: unknown; repo?: unknown; pat?: unknown } | null = JSON.parse(
+      fs.readFileSync(DESKTOP_UPDATE_CONFIG_PATH, 'utf8')
+    )
+    const branch: string = typeof parsed?.branch === 'string' ? parsed.branch.trim() : ''
+    const repo: string | undefined = typeof parsed?.repo === 'string' && parsed.repo.trim() ? parsed.repo.trim() : undefined
+    const pat: string | undefined = typeof parsed?.pat === 'string' && parsed.pat.trim() ? parsed.pat.trim() : undefined
+
+    return { branch: branch || DEFAULT_UPDATE_BRANCH, branchExplicit: branch.length > 0, repo, pat }
   } catch {
     return { branch: DEFAULT_UPDATE_BRANCH, branchExplicit: false }
   }
@@ -3077,7 +3088,7 @@ function writeFileAtomic(targetPath, data, encoding?: BufferEncoding) {
   fs.renameSync(tmp, targetPath)
 }
 
-function writeDesktopUpdateConfig(config) {
+function writeDesktopUpdateConfig(config: Partial<DesktopUpdateConfig>) {
   fs.mkdirSync(path.dirname(DESKTOP_UPDATE_CONFIG_PATH), { recursive: true })
   writeFileAtomic(DESKTOP_UPDATE_CONFIG_PATH, JSON.stringify(config, null, 2))
 }
@@ -13001,8 +13012,8 @@ async function runMoorStart({ supervisorRecovery = false }: { supervisorRecovery
     await advanceBootProgress('backend.port', 'Waiting for Moor backend to launch', 86)
     backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
-    // Discover the ephemeral port the child bound to, while completing identity claim in parallel
-    const [port] = await Promise.all([Promise.race([portAnnouncement, backendStartFailed]), claimTask])
+    // Discover the ephemeral port the child bound to
+    const port = await Promise.race([portAnnouncement, backendStartFailed])
     backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
     if (readyFile) {
@@ -17852,7 +17863,6 @@ ipcMain.handle('moor:updates:token:set', async (_event, payload: { pat?: string;
   updated.repo = source.repo
   updated.branch = source.branch
   writeDesktopUpdateConfig(updated)
-  writeUpdateCheckCache(null)
   return {
     branch: updated.branch,
     repo: updated.repo || '',

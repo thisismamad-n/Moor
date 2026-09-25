@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { en } from '@/i18n/en'
 import { $desktopBoot } from '@/store/boot'
+import { $desktopBootstrap, EMPTY_BOOTSTRAP_STATE } from '@/store/bootstrap'
 import { $notifications } from '@/store/notifications'
 import { $desktopOnboarding } from '@/store/onboarding'
 

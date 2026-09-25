@@ -23,9 +23,13 @@ const OUT_ZIP = join(OUT_DIR, 'repo.zip')
 
 // Directories to completely skip
 const EXCLUDED_DIRS = new Set([
+  '.cache',
   '.git',
   '.github',
   '.pytest_cache',
+  '.pytest-cache',
+  '.ruff_cache',
+  '.mypy_cache',
   '.venv',
   'venv',
   'node_modules',
@@ -34,6 +38,7 @@ const EXCLUDED_DIRS = new Set([
   'dist',
   'build',
   'apps', // apps/desktop and apps/bootstrap-installer are build-time containers
+  'website', // static documentation site, not needed in desktop repo bundle
   'tests', // keep repo lean for runtime
   'tests-js',
   'evals',
@@ -75,7 +80,15 @@ export function collectRepoFiles(rootDir = REPO_ROOT) {
       const relPath = relative(rootDir, fullPath).replace(/\\/g, '/')
 
       if (entry.isDirectory()) {
-        if (EXCLUDED_DIRS.has(name) || name.startsWith('.git') || name.startsWith('.venv')) {
+        if (
+          EXCLUDED_DIRS.has(name) ||
+          name.startsWith('.git') ||
+          name.startsWith('.venv') ||
+          name.startsWith('.cache') ||
+          name.startsWith('.pytest') ||
+          name.startsWith('.ruff_cache') ||
+          name.startsWith('.mypy_cache')
+        ) {
           continue
         }
         walk(fullPath)

@@ -26,7 +26,7 @@ import type {
 } from '@/global'
 import { useI18n } from '@/i18n'
 import { buildCommitChangelog, type CommitGroup } from '@/lib/commit-changelog'
-import { AlertCircle, Check, Copy, Terminal } from '@/lib/icons'
+import { AlertCircle, Check, Copy, KeyRound, Terminal } from '@/lib/icons'
 import { resolveUpdateCopy, type UpdateTarget } from '@/lib/update-copy'
 import { cn } from '@/lib/utils'
 import {
@@ -34,6 +34,9 @@ import {
   $backendUpdateChecking,
   $backendUpdateStatus,
   $desktopVersion,
+  $moorTokenConfig,
+  $moorTokenVerifying,
+  $moorTokenVerifyResult,
   $updateApply,
   $updateChecking,
   $updateOverlayOpen,
@@ -44,6 +47,7 @@ import {
   checkBackendUpdates,
   checkUpdates,
   dismissDiscontinuedNotice,
+  loadMoorTokenConfig,
   resetUpdateApplyState,
   saveMoorTokenConfig,
   setUpdateOverlayOpen,
@@ -143,7 +147,15 @@ export function UpdatesOverlay() {
           <ErrorView message={apply.message} onDismiss={() => handleClose(false)} onRetry={handleInstall} />
         ) : null}
 
-        {phase === 'idle' && !isBackend && status?.retirement?.state === 'discontinued' && (
+        {phase === 'idle' && (showTokenConfig || (!isBackend && status?.error === 'auth-required')) ? (
+          <TokenAuthView
+            message={status?.error === 'auth-required' ? status?.message : undefined}
+            onDone={() => {
+              setShowTokenConfig(false)
+              void check()
+            }}
+          />
+        ) : phase === 'idle' && !isBackend && status?.retirement?.state === 'discontinued' ? (
           <DiscontinuedNotice
             onDismiss={() => {
               dismissDiscontinuedNotice(status.retirement!)
@@ -151,21 +163,21 @@ export function UpdatesOverlay() {
             }}
             retirement={status.retirement}
           />
-        )}
-        {phase === 'idle' && (isBackend || !status?.retirement) && (
+        ) : phase === 'idle' && (isBackend || !status?.retirement) ? (
           <IdleView
             behind={behind}
             checking={checking}
             commits={status?.commits ?? []}
             onInstall={handleInstall}
             onLater={() => handleClose(false)}
+            onOpenTokenConfig={() => setShowTokenConfig(true)}
             onRetryCheck={() => void check()}
             status={status}
             target={target}
             updateAvailable={updateAvailable}
             version={desktopVersion}
           />
-        )}
+        ) : null}
       </DialogContent>
 
     </Dialog>

@@ -23,11 +23,29 @@ export interface ActiveRuntimeOptions {
 export interface ActiveRuntimeState {
   hasValidMarker: boolean
   shouldUseActiveRuntime: boolean
-  usabilityReason: 'usable' | 'unusable'
+  usabilityReason: 'usable' | 'unusable' | 'upgrade-needed'
   /** The canonical-root install stamp (written by the bootstrap), when the
    *  active runtime was desktop-installed. Populated by the caller
    *  (main.ts activeRuntimeState); undefined when never set. */
   canonicalInstallStamp?: { source?: unknown; commit?: unknown; branch?: unknown } | null
+}
+
+export function isRealCommitSha(commit: unknown): commit is string {
+  if (typeof commit !== 'string') {
+    return false
+  }
+
+  const trimmed = commit.trim()
+
+  if (trimmed.length < 7 || trimmed.length > 64) {
+    return false
+  }
+
+  if (/^0+$/.test(trimmed)) {
+    return false
+  }
+
+  return /^[0-9a-fA-F]+$/.test(trimmed)
 }
 
 export function hasValidBootstrapMarker(

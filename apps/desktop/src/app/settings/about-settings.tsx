@@ -1,12 +1,24 @@
 import { useStore } from '@nanostores/react'
-import { type ReactElement, useEffect } from 'react'
+import { type ReactElement, useEffect, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { UpdateStatusCard, VersionHero } from '@/components/update-status'
 import { VersionDetails } from '@/components/version-details'
 import { useI18n } from '@/i18n'
-import { RefreshCw } from '@/lib/icons'
+import { Check, KeyRound, Loader2, RefreshCw } from '@/lib/icons'
+import { cn } from '@/lib/utils'
 import { $connection } from '@/store/session'
-import { $desktopVersion, checkBackendUpdates, refreshDesktopVersion } from '@/store/updates'
+import {
+  $desktopVersion,
+  $moorTokenConfig,
+  $moorTokenVerifying,
+  $moorTokenVerifyResult,
+  checkBackendUpdates,
+  loadMoorTokenConfig,
+  refreshDesktopVersion,
+  saveMoorTokenConfig,
+  verifyMoorToken
+} from '@/store/updates'
 
 import { SectionHeading, SettingsContent } from './primitives'
 import { SETTING_IDS, settingElementId } from './settings-manifest'
@@ -61,6 +73,7 @@ function AppUpdatesSettings({ includeUninstall }: AppUpdatesSettingsProps): Reac
           {remote && <UpdateStatusCard showReleaseNotes={false} target="backend" />}
         </div>
         {version && <VersionDetails version={version} />}
+        <MoorPatConfigCard />
         {includeUninstall && <UninstallSection />}
       </div>
     </SettingsContent>

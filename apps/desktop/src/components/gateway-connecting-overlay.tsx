@@ -157,11 +157,12 @@ export function GatewayConnectingOverlay() {
           'size-full transition-all duration-400 ease-out',
           leaving ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         )}
-        cursor
-        loop
-        prefix={4}
-        text={TEXT}
-      />
+      >
+        <AntSwarmConnecting
+          active={phase === 'live' && (previewing || connecting)}
+          converging={leaving}
+        />
+      </div>
     </div>
   )
 }

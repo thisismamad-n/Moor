@@ -12,7 +12,8 @@ export const EMPTY_BOOTSTRAP_STATE: DesktopBootstrapState = {
   startedAt: null,
   completedAt: null,
   setupChoice: null,
-  unsupportedPlatform: null
+  unsupportedPlatform: null,
+  bundled: false
 }
 
 export function applyBootstrapEvent(
@@ -33,7 +34,9 @@ export function applyBootstrapEvent(
       setupChoice: ev.active
         ? {
             platform: ev.platform || state.setupChoice?.platform || 'unknown',
-            activeRoot: ev.activeRoot || state.setupChoice?.activeRoot || ''
+            activeRoot: ev.activeRoot || state.setupChoice?.activeRoot || '',
+            local: ev.local || state.setupChoice?.local || 'none',
+            bundled: ev.bundled ?? state.setupChoice?.bundled ?? false
           }
         : null,
       unsupportedPlatform: null

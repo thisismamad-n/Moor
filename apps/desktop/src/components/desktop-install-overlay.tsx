@@ -18,6 +18,7 @@ import { useI18n } from '@/i18n'
 import { AlertCircle, ChevronDown, ChevronRight, Globe, iconSize, Loader2, Monitor } from '@/lib/icons'
 import { capitalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
+import { $desktopBootstrap } from '@/store/bootstrap'
 
 import { localCardPresentation } from './desktop-install-local-card'
 import { FirstRunRemoteSetup } from './remote-setup/first-run'

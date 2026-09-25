@@ -29,6 +29,8 @@ test('collectRepoFiles excludes node_modules, venvs, and build artifacts', () =>
     assert.ok(!f.relPath.startsWith('.venv/'), `should not contain .venv: ${f.relPath}`)
     assert.ok(!f.relPath.startsWith('venv/'), `should not contain venv: ${f.relPath}`)
     assert.ok(!f.relPath.startsWith('.git/'), `should not contain .git: ${f.relPath}`)
+    assert.ok(!f.relPath.startsWith('.cache/'), `should not contain .cache: ${f.relPath}`)
+    assert.ok(!f.relPath.startsWith('website/'), `should not contain website: ${f.relPath}`)
     assert.ok(!f.relPath.startsWith('apps/desktop/release/'), `should not contain desktop release: ${f.relPath}`)
     assert.ok(!f.relPath.endsWith('.pyc'), `should not contain .pyc: ${f.relPath}`)
   }
