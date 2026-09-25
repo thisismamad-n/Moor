@@ -165,3 +165,7 @@ def merge_opencode_session_headers(
         kwargs["input"] = sanitize_opencode_input(kwargs["input"])
 
     return kwargs
+
+
+# Alias for backward and upstream compatibility
+merge_session_affinity_headers = merge_opencode_session_headers

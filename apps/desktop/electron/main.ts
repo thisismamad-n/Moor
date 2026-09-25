@@ -496,6 +496,7 @@ import {
 } from './translucency'
 import { waitForUpdateClearance } from './update-gate'
 import { readLiveUpdateMarker, updateHandoffConflict, writeUpdateMarker } from './update-marker'
+import { canonicalGitHubRemote, resolveMoorUpdateSource, resolveMoorUpdateEnv } from './update-remote'
 import {
   resolveUpdaterMechanism,
   type UpdaterApplyResultWire,
@@ -17818,6 +17819,130 @@ ipcMain.handle(
     return { branch }
   }
 )
+
+ipcMain.handle('moor:updates:token:get', async () => {
+  const cfg = readDesktopUpdateConfig()
+  return {
+    branch: cfg.branch,
+    repo: cfg.repo || resolveMoorUpdateSource().repo,
+    hasPat: Boolean(cfg.pat),
+    maskedPat: cfg.pat ? (cfg.pat.length > 8 ? `...${cfg.pat.slice(-4)}` : '••••••••') : ''
+  }
+})
+
+ipcMain.handle('moor:updates:token:set', async (_event, payload: { pat?: string; repo?: string }) => {
+  const current = readDesktopUpdateConfig()
+  const updated = {
+    ...current,
+    pat: typeof payload?.pat === 'string' ? payload.pat.trim() : current.pat,
+    repo: typeof payload?.repo === 'string' ? payload.repo.trim() : current.repo
+  }
+  if (payload?.pat === '') {
+    delete updated.pat
+  }
+  if (payload?.repo === '') {
+    delete updated.repo
+  }
+  const source = resolveMoorUpdateSource(updated.repo)
+  resolveMoorUpdateEnv(updated.pat)
+  updated.repo = source.repo
+  updated.branch = source.branch
+  writeDesktopUpdateConfig(updated)
+  writeUpdateCheckCache(null)
+  return {
+    branch: updated.branch,
+    repo: updated.repo || '',
+    hasPat: Boolean(updated.pat),
+    maskedPat: updated.pat ? (updated.pat.length > 8 ? `...${updated.pat.slice(-4)}` : '••••••••') : ''
+  }
+})
+
+ipcMain.handle('moor:updates:token:verify', async (_event, customPat?: string) => {
+  const cfg = readDesktopUpdateConfig()
+  const tokenToTest = typeof customPat === 'string' && customPat.trim() ? customPat.trim() : (cfg.pat || '')
+  if (!tokenToTest) {
+    return { ok: false, message: 'No Personal Access Token provided.' }
+  }
+  return await verifyGitHubToken(tokenToTest, resolveMoorUpdateSource(cfg.repo).repo)
+})
+
+async function verifyGitHubToken(
+  token: string,
+  repo?: string
+): Promise<{ ok: boolean; message?: string; login?: string; repoAccess?: boolean }> {
+  return new Promise(resolve => {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'moor-desktop-update-check',
+      Authorization: `Bearer ${token}`
+    }
+
+    const req = https.get('https://api.github.com/user', { headers, timeout: 8000 }, res => {
+      const chunks: Buffer[] = []
+      res.on('data', chunk => chunks.push(chunk))
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            const data = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+            const login = (data.login as string) || 'authenticated-user'
+
+            if (repo && repo.includes('/')) {
+              const cleanRepo = repo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '')
+              const repoReq = https.get(`https://api.github.com/repos/${cleanRepo}`, { headers, timeout: 8000 }, rRes => {
+                if (rRes.statusCode === 200) {
+                  resolve({
+                    ok: true,
+                    login,
+                    repoAccess: true,
+                    message: `Connected as @${login} with access to ${cleanRepo}`
+                  })
+                } else if (rRes.statusCode === 404) {
+                  resolve({
+                    ok: false,
+                    login,
+                    repoAccess: false,
+                    message: `Connected as @${login}, but "${cleanRepo}" was not found or lacks token permissions.`
+                  })
+                } else {
+                  resolve({
+                    ok: false,
+                    login,
+                    repoAccess: false,
+                    message: `Token verified for @${login}, but repo check returned HTTP ${rRes.statusCode}.`
+                  })
+                }
+              })
+              repoReq.on('error', () => resolve({ ok: true, login, message: `Connected as @${login}` }))
+              repoReq.on('timeout', () => {
+                repoReq.destroy()
+                resolve({ ok: true, login, message: `Connected as @${login}` })
+              })
+            } else {
+              resolve({ ok: true, login, message: `Successfully connected to GitHub as @${login}` })
+            }
+          } catch {
+            resolve({ ok: true, message: 'Valid token accepted by GitHub.' })
+          }
+        } else if (res.statusCode === 401) {
+          resolve({ ok: false, message: 'Invalid or expired GitHub Personal Access Token (401 Unauthorized).' })
+        } else if (res.statusCode === 403) {
+          resolve({ ok: false, message: 'GitHub API rate limit exceeded or access forbidden (403).' })
+        } else {
+          resolve({ ok: false, message: `GitHub responded with status ${res.statusCode}` })
+        }
+      })
+    })
+
+    req.on('error', err => {
+      resolve({ ok: false, message: `Network error verifying token: ${err.message}` })
+    })
+
+    req.on('timeout', () => {
+      req.destroy()
+      resolve({ ok: false, message: 'Timeout verifying token against GitHub API.' })
+    })
+  })
+}
 
 function resolveHermesVersion(scope: { connectionId?: string; profile?: string } = {}): Promise<string> {
   return resolveGatewayVersion(path => handleHermesApiRequest({ ...scope, path, timeoutMs: 5000 }))
