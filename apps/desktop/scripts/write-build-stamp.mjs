@@ -115,8 +115,9 @@ export function resolveRepoSlug({
   if (explicit) return explicit.replace(/\/+$/, "")
   const ciRepo = (env.GITHUB_REPOSITORY || "").trim()
   if (ciRepo && /^[^/\s]+\/[^/\s]+$/.test(ciRepo)) return ciRepo
-  const remote = execFn("git remote get-url origin", { cwd: repoRoot })
+  const remote = execFn(["git", "remote", "get-url", "origin"], { cwd: repoRoot })
   return parseRepoSlug(remote) || UPSTREAM_REPO
+
 }
 
 /**
@@ -129,11 +130,12 @@ export function resolveStamp({
   execFn = tryExec,
   fallbackBranch = FALLBACK_BRANCH
 } = {}) {
+  const repo = resolveRepoSlug({ env, repoRoot, execFn })
   const channelBuild = channelBuildRequest(env)
   if (channelBuild) {
     const local = fromLocalGit(repoRoot, execFn)
     if (!local || local.commit !== channelBuild.commit || local.dirty) throw new Error('Channel build identity does not match clean checkout HEAD')
-    return { ...local, branch: null, source: 'channel-build', baseVersion: channelBuild.sourceVersion, channelBuild }
+    return { ...local, branch: null, source: 'channel-build', baseVersion: channelBuild.sourceVersion, channelBuild, repo }
   }
   if (env.MOOR_BUILD_COMMIT) {
     if (!/^[a-f0-9]{40}$/.test(env.MOOR_BUILD_COMMIT) || env.MOOR_PAYLOAD_TAG) {
@@ -143,10 +145,12 @@ export function resolveStamp({
     if (!local || local.commit !== env.MOOR_BUILD_COMMIT) {
       throw new Error('Commit build identity does not match the checkout HEAD')
     }
-    return { ...local, branch: null, source: 'commit-build' }
+    return { ...local, branch: null, source: 'commit-build', repo }
   }
-  return fromCI(env) || fromLocalGit(repoRoot, execFn) || fromFallback(fallbackBranch)
+  const base = fromCI(env) || fromLocalGit(repoRoot, execFn) || fromFallback(fallbackBranch)
+  return { ...base, repo }
 }
+
 
 export function isFallbackCommit(commit) {
   return typeof commit === "string" && /^0{7,40}$/.test(commit)
@@ -265,6 +269,7 @@ export function buildStampPayload(stamp, env = process.env, platform = process.p
     schemaVersion: STAMP_SCHEMA_VERSION,
     commit: stamp.commit,
     branch: commitBuild || channelBuild ? null : stamp.branch,
+    repo: stamp.repo || resolveRepoSlug({ env }),
     builtAt: new Date().toISOString(),
     dirty: stamp.dirty,
     source: channelBuild ? 'channel-build' : commitBuild ? 'commit-build' : stamp.source,

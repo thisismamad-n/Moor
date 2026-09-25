@@ -33,7 +33,11 @@ const productOwner = 'moor-frontend-product-v1\n'
 const developerOutputs = ['ui-tui/dist', 'moor_cli/web_dist', 'apps/desktop/dist', 'apps/desktop/build/native-deps']
 
 function developerOutput(source, out) {
-  return source && developerOutputs.some(name => path.resolve(out) === path.join(path.resolve(source), name))
+  return source && developerOutputs.some(name => {
+    const resolved = path.resolve(out)
+    const expected = path.join(path.resolve(source), name)
+    return resolved === expected || (name === 'apps/desktop/build/native-deps' && resolved.startsWith(expected))
+  })
 }
 
 // A destination name alone does not confer ownership of its existing contents.
@@ -64,11 +68,12 @@ export function productOutput(source, out, inputs) {
   // In-tree products have explicit homes; everything else under source is an
   // input, even when this particular compiler does not read it.
   const generated = developerOutput(src, dest)
-    || ['.build', 'apps/desktop/build/products'].some(name => {
+    || ['.build', 'apps/desktop/build/products', 'apps/desktop/build/packager'].some(name => {
       const root = path.join(src, name)
       return dest !== root && contains(root, dest)
     })
   if (contains(src, dest) && !generated) throw new Error(`Output must be outside source or in a supported generated destination: ${out}`)
+
   requireOwnedOutput(out, src)
   return { source: src, out: dest }
 }

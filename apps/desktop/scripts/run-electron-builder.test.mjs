@@ -16,7 +16,21 @@ test('validate-only admits real prepared inputs without launching tools and reje
     fs.writeFileSync(electron, 'fixture archive')
     const toolsets = { sevenZip: path.join(out, 'sevenZip'), icons: path.join(out, 'icons') }
     for (const dir of Object.values(toolsets)) fs.mkdirSync(dir)
-    const manifest = await publishPackagingInputs({ source, out, target: `${process.platform}-${process.arch}`, formats: ['dir'], electron, toolsets })
+    let windows = null
+    if (process.platform === 'win32') {
+      toolsets.winCodeSign = path.join(out, 'winCodeSign')
+      fs.mkdirSync(toolsets.winCodeSign)
+      windows = {
+        makeappx: path.join(out, 'makeappx.exe'),
+        signtool: path.join(out, 'signtool.exe'),
+        dlib: null,
+        dotnetRoot: path.join(out, 'dotnet'),
+      }
+      fs.writeFileSync(windows.makeappx, '')
+      fs.writeFileSync(windows.signtool, '')
+      fs.mkdirSync(windows.dotnetRoot)
+    }
+    const manifest = await publishPackagingInputs({ source, out, target: `${process.platform}-${process.arch}`, formats: ['dir'], electron, toolsets, windows })
     const nativeDeps = path.join(out, 'native')
     fs.mkdirSync(path.join(nativeDeps, 'node-pty'), { recursive: true })
     fs.writeFileSync(path.join(nativeDeps, 'node-pty/package.json'), '{}')
@@ -65,4 +79,40 @@ test('strict builder refuses absent inputs before loading electron-builder', () 
   assert.notEqual(result.status, 0)
   assert.match(result.stderr, /run preparation again/)
   assert.doesNotMatch(result.stdout, /electron-builder\s+version/)
+})
+
+test('prepared packaging admits nsis and portable arguments when prepared', async () => {
+  const source = path.resolve(import.meta.dirname, '../../..')
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'builder-nsis-'))
+  try {
+    const electron = path.join(out, 'electron.zip')
+    fs.writeFileSync(electron, 'fixture archive')
+    const toolsets = { sevenZip: path.join(out, 'sevenZip'), icons: path.join(out, 'icons'), nsis: path.join(out, 'nsis') }
+    for (const dir of Object.values(toolsets)) fs.mkdirSync(dir)
+    let windows = null
+    if (process.platform === 'win32') {
+      toolsets.winCodeSign = path.join(out, 'winCodeSign')
+      fs.mkdirSync(toolsets.winCodeSign)
+      windows = {
+        makeappx: path.join(out, 'makeappx.exe'),
+        signtool: path.join(out, 'signtool.exe'),
+        dlib: null,
+        dotnetRoot: path.join(out, 'dotnet'),
+      }
+      fs.writeFileSync(windows.makeappx, '')
+      fs.writeFileSync(windows.signtool, '')
+      fs.mkdirSync(windows.dotnetRoot)
+    }
+    const manifest = await publishPackagingInputs({ source, out, target: `${process.platform}-${process.arch}`, formats: ['nsis', 'portable'], electron, toolsets, windows })
+    const nativeDeps = path.join(out, 'native')
+    fs.mkdirSync(path.join(nativeDeps, 'node-pty'), { recursive: true })
+    fs.writeFileSync(path.join(nativeDeps, 'node-pty/package.json'), '{}')
+    recordNativeInputs({ source, out: nativeDeps, platform: process.platform, arch: process.arch })
+    const args = ['--validate-only', '--prepared', manifest, '--native-deps', nativeDeps, '--win', 'nsis']
+    const options = { spawn: () => { throw new Error('validation must not launch tools') } }
+    assert.equal(runElectronBuilder(args, options), 0)
+    assert.equal(runElectronBuilder(['--validate-only', '--prepared', manifest, '--native-deps', nativeDeps, '--win', 'portable'], options), 0)
+  } finally {
+    fs.rmSync(out, { recursive: true, force: true })
+  }
 })

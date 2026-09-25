@@ -165,8 +165,9 @@ export function UpdatesOverlay() {
             updateAvailable={updateAvailable}
             version={desktopVersion}
           />
-        ) : null}
+        )}
       </DialogContent>
+
     </Dialog>
   )
 }

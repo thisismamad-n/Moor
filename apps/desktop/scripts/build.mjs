@@ -18,7 +18,9 @@ export function buildSourceDesktop({ source = repoRoot, icons, run = execFileSyn
     cpSync(join(icons, 'apps/desktop/assets'), join(app, 'assets'), { recursive: true })
   }
   step('apps/desktop/scripts/write-build-stamp.mjs')
+  step('apps/desktop/scripts/stage-offline-bundle.mjs')
   step('apps/desktop/scripts/stage-native-deps.mjs')
+
   step('scripts/build/desktop.mjs', ['--source', source, '--icons', icons,
     '--stamp', join(app, 'build/install-stamp.json'), '--native-deps', join(app, 'build/native-deps'), '--out', join(app, 'dist')])
 }

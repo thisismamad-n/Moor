@@ -4978,7 +4978,7 @@ async function ensureRuntime(
 
     let bootstrapResult: Awaited<ReturnType<typeof runBootstrap>>
     try {
-      const runPromise = runBootstrap({
+      bootstrapResult = await runBootstrap({
         installStamp: backend.installStamp,
         activeRoot: backend.activeRoot,
         sourceRepoRoot: SOURCE_REPO_ROOT,
@@ -4996,17 +4996,21 @@ async function ensureRuntime(
             void 0
           }
 
-        try {
-          broadcastBootstrapEvent(ev)
-        } catch {
-          void 0
-        }
-      },
-      writeMarker: writeBootstrapMarker,
-      gitBinary: resolveGitBinary()
-    })
+          try {
+            broadcastBootstrapEvent(ev)
+          } catch {
+            void 0
+          }
+        },
+        writeMarker: writeBootstrapMarker,
+        gitBinary: resolveGitBinary()
+      })
+    } finally {
+      if (bootstrapAbortController === currentAbortController) {
+        bootstrapAbortController = null
+      }
+    }
 
-    bootstrapAbortController = null
 
     if (bootstrapResult.cancelled) {
       const cancelledError = new Error('Moor install was cancelled.') as any

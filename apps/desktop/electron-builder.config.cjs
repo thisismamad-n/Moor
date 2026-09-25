@@ -126,6 +126,22 @@ module.exports = {
       from: 'build/install-stamp.json',
       to: 'install-stamp.json'
     },
+    {
+      from: 'build/offline-manifest.json',
+      to: 'offline-manifest.json'
+    },
+    {
+      from: 'build/repo.zip',
+      to: 'repo.zip'
+    },
+    {
+      from: 'build/offline-scripts/install.ps1',
+      to: 'scripts/install.ps1'
+    },
+    {
+      from: 'build/offline-scripts/install.sh',
+      to: 'scripts/install.sh'
+    },
     ...(['bundled', 'store'].includes(process.env.MOOR_DESKTOP_VARIANT || '')
       ? [{ from: 'build/agent-payload', to: 'agent-payload' }]
       : []),
@@ -134,6 +150,7 @@ module.exports = {
       to: 'icon.ico'
     }
   ],
+
   asar: {
     unpack: ['**/*.node', '**/prebuilds/**', 'dist/**']
   },

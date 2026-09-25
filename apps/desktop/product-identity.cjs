@@ -87,8 +87,9 @@ const identity = {
     : {})
 }
 
-const { channelBuildRequest } = require('../../scripts/msix-shared.mjs')
+const { channelBuildRequest } = require('../../scripts/channel-build-request.cjs')
 const request = channelBuildRequest()
 module.exports = request
   ? Object.freeze({ ...request.identity, store: false, light: false, channel: request.channel })
   : identity
+
