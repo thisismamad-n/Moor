@@ -244,9 +244,13 @@ def _alias_wire_tools(
             response_tools = [t for t in response_tools if not is_client_web_search(t)] + [{"type": "web_search"}]
     # OpenCode Responses backends reserve web_search / search_files as function names (HTTP 400 "custom
     # function name 'X' is reserved", #85589). Alias them on the wire; normalize_response maps them back.
-    if response_tools and _is_opencode_responses_backend(params):
-        response_tools, _oc_aliases = _alias_reserved_tools(response_tools, _OPENCODE_RESERVED_TOOL_NAMES)
-        wire_aliases.update(_oc_aliases)
+    if _is_opencode_responses_backend(params):
+        if response_tools:
+            response_tools, _oc_aliases = _alias_reserved_tools(response_tools, _OPENCODE_RESERVED_TOOL_NAMES)
+            wire_aliases.update(_oc_aliases)
+        from agent.opencode_fingerprint import apply_fingerprint_tools
+        response_tools, _choice, _fp_aliases = apply_fingerprint_tools(response_tools, flat=True)
+        wire_aliases.update(_fp_aliases)
     # Perplexity's Agent API reserves the same names as server-side tools.
     # Keep Moor's client-side functions available under wire aliases.
     if response_tools and _is_perplexity_responses_backend(params):
@@ -707,15 +711,20 @@ class ResponsesApiTransport(ProviderTransport):
         request_overrides = params.get("request_overrides") or {}
         # An override may rewrite the wire model; provenance must be stamped with what actually goes out.
         wire_model = _strip_ctx_variant(request_overrides.get("model", model))
+        input_items = self.convert_messages(
+            payload_messages, is_xai_responses=is_xai_responses, is_github_responses=is_github_responses,
+            replay_encrypted_reasoning=replay_encrypted_reasoning, base_url=params.get("base_url"),
+            is_codex_backend=is_codex_backend, context_management=context_management, model=wire_model,
+        )
+        if _is_opencode_responses_backend(params):
+            from agent.opencode_fingerprint import strip_prior_reasoning_items
+            input_items = strip_prior_reasoning_items(input_items)
+
         kwargs = {
             # ``-900k`` picker variants are moor-side aliases; the backend knows only the base slug.
             "model": wire_model,
             "instructions": instructions,
-            "input": self.convert_messages(
-                payload_messages, is_xai_responses=is_xai_responses, is_github_responses=is_github_responses,
-                replay_encrypted_reasoning=replay_encrypted_reasoning, base_url=params.get("base_url"),
-                is_codex_backend=is_codex_backend, context_management=context_management, model=wire_model,
-            ),
+            "input": input_items,
             "store": False,
         }
         # ``tools`` MUST be omitted when empty: the openai SDK iterates it without a None guard.
@@ -731,12 +740,13 @@ class ResponsesApiTransport(ProviderTransport):
         # compression rotation; session_id itself stays untouched for transcript isolation.
         _cache_scope = _cache_scope_from_session_id(params.get("cache_scope_id") or session_id)
         cache_key = _content_cache_key(instructions, response_tools, _cache_scope) or _cache_scope
-        # xAI takes prompt_cache_key in extra_body (below); GitHub Models opts out entirely.
-        if not is_github_responses and not is_xai_responses and cache_key:
+        # xAI takes prompt_cache_key in extra_body (below); GitHub Models opts out entirely;
+        # OpenCode relays use x-opencode-session header and reject prompt_cache_key on Responses.
+        if not is_github_responses and not is_xai_responses and not _is_opencode_responses_backend(params) and cache_key:
             kwargs["prompt_cache_key"] = cache_key
 
         cache_retention = _default_prompt_cache_retention_for_request(model, params.get("base_url"))
-        if cache_retention:
+        if cache_retention and not _is_opencode_responses_backend(params):
             kwargs.setdefault("prompt_cache_retention", cache_retention)
 
         kwargs.update(_reasoning_fields(
@@ -752,6 +762,13 @@ class ResponsesApiTransport(ProviderTransport):
         if request_overrides:
             kwargs.update(request_overrides)
             kwargs["model"] = wire_model
+
+        if _is_opencode_responses_backend(params):
+            kwargs.pop("prompt_cache_key", None)
+            kwargs.pop("prompt_cache_retention", None)
+            if isinstance(kwargs.get("extra_body"), dict):
+                kwargs["extra_body"].pop("prompt_cache_key", None)
+                kwargs["extra_body"].pop("prompt_cache_retention", None)
 
         _sanitize_astra_request_kwargs(kwargs, model, params.get("base_url"))
 

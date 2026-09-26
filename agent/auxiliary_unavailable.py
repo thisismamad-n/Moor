@@ -102,6 +102,8 @@ def missing_provider_credentials_message(provider_id: str) -> str:
     cooldown = pool_cooldown_message(provider_id)
     if cooldown:
         return cooldown
+    if provider_id == "opencode-free":
+        return f"Provider '{provider_id}' is keyless and requires no credentials. Run `moor model` to select a model."
     pconfig = None
     with contextlib.suppress(Exception):
         from moor_cli.auth import PROVIDER_REGISTRY

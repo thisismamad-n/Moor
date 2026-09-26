@@ -8,10 +8,9 @@ moor_cli.models.opencode_zen_free_runtime). Select via ``/model free``.
 
 from typing import Any
 
+from agent.opencode_emulation import opencode_zen_free_headers
 from agent.opencode_sanitizer import sanitize_opencode_messages
 from agent.reasoning_effort import ox_alpha_reasoning_extras
-from moor_cli import __version__ as _MOOR_VERSION
-from moor_cli.models import opencode_zen_free_headers
 from providers import register_provider
 from providers.base import ProviderProfile
 

@@ -694,6 +694,13 @@ class AIAgent(
                 return _should_use_copilot_responses_api(model)
             except Exception:
                 pass  # fall back to the generic GPT-5 rule
+        try:
+            from moor_cli.models import opencode_provider_family, opencode_model_api_mode
+            family = opencode_provider_family(provider)
+            if family:
+                return opencode_model_api_mode(family, model) == "codex_responses"
+        except Exception:
+            pass
         return AIAgent._model_requires_responses_api(model)
 
     def _max_tokens_param(self, value: int) -> dict:

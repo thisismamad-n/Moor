@@ -2243,6 +2243,10 @@ def resolve_api_key_provider_credentials(provider_id: str) -> Dict[str, Any]:
     if not api_key and provider_id == "actual" and is_actual_local_base_url(base_url):
         api_key = ACTUAL_LOCAL_NOAUTH_PLACEHOLDER
         key_source = key_source or "local-offline"
+    if not api_key and provider_id == "opencode-free":
+        from moor_cli.models import OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER
+        api_key = OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER
+        key_source = key_source or "keyless"
     return {
         "provider": provider_id, "api_key": api_key, "base_url": base_url.rstrip("/"),
         "source": key_source or "default"}

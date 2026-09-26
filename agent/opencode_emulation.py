@@ -146,3 +146,29 @@ def build_opencode_emulation_headers(
         headers["User-Agent"] = get_emulated_user_agent()
 
     return headers
+
+
+def opencode_zen_free_headers() -> dict[str, str]:
+    """Client default_headers for anonymous Zen free-tier requests.
+
+    Authorization: "" overrides the OpenAI SDK's Bearer <api_key> so the placeholder
+    never reaches the wire (the relay 401s any unknown bearer). Emulation headers
+    match the OpenCode CLI wire profile.
+    """
+    base: dict[str, str] = {
+        "Authorization": "",
+        "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
+        "X-Title": "Moor Agent",
+    }
+    if is_opencode_emulation_enabled():
+        base["User-Agent"] = get_emulated_user_agent()
+        base[OPENCODE_CLIENT_HEADER] = DEFAULT_OPENCODE_CLIENT_VALUE
+        base[OPENCODE_PROJECT_HEADER] = DEFAULT_OPENCODE_PROJECT_VALUE
+    else:
+        try:
+            from moor_cli import __version__ as _v
+        except Exception:
+            _v = "0"
+        base["User-Agent"] = f"MoorAgent/{_v}"
+    return base
+

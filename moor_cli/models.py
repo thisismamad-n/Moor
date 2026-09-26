@@ -2358,41 +2358,8 @@ def opencode_zen_free_headers() -> dict:
     """Client default_headers for anonymous Zen free-tier requests. ``Authorization: ""`` overrides the
     OpenAI SDK's ``Bearer <api_key>`` so the placeholder never reaches the wire (the relay 401s any
     unknown bearer). Emulation headers match the OpenCode CLI wire profile."""
-    try:
-        from agent.opencode_emulation import (
-            is_opencode_emulation_enabled,
-            get_emulated_user_agent,
-            DEFAULT_OPENCODE_CLIENT_VALUE,
-            DEFAULT_OPENCODE_PROJECT_VALUE,
-        )
-        emulate = is_opencode_emulation_enabled()
-    except Exception:
-        emulate = True
-
-    if emulate:
-        try:
-            ua = get_emulated_user_agent()
-        except Exception:
-            ua = "opencode/1.18.31"
-        return {
-            "Authorization": "",
-            "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
-            "X-Title": "Moor Agent",
-            "User-Agent": ua,
-            "x-opencode-client": DEFAULT_OPENCODE_CLIENT_VALUE,
-            "x-opencode-project": DEFAULT_OPENCODE_PROJECT_VALUE,
-        }
-
-    try:
-        from moor_cli import __version__ as _v
-    except Exception:
-        _v = "0"
-    return {
-        "Authorization": "",
-        "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
-        "X-Title": "Moor Agent",
-        "User-Agent": f"MoorAgent/{_v}",
-    }
+    from agent.opencode_emulation import opencode_zen_free_headers as _headers
+    return _headers()
 
 
 def _fetch_opencode_free_models(
@@ -2478,6 +2445,11 @@ def opencode_zen_free_runtime(provider_id: Optional[str], model_id: Optional[str
 # chat/completions); Claude (Zen), MiniMax (Go), Union Alpha, and Qwen use /v1/messages;
 # everything else falls through to /v1/chat/completions.
 _OPENCODE_API_MODE_PREFIXES: dict[str, tuple[tuple[tuple[str, ...], str], ...]] = {
+    "opencode-free": (
+        (("claude-", "union-alpha"), "anthropic_messages"),
+        (("gpt-", "grok-", "muse-spark"), "codex_responses"),
+        (("qwen",), "anthropic_messages"),
+    ),
     "opencode-go": (
         (("gpt-", "grok-", "muse-spark"), "codex_responses"),
         (("minimax-", "qwen", "union-alpha"), "anthropic_messages")),
@@ -2498,7 +2470,7 @@ def opencode_model_api_mode(provider_id: Optional[str], model_id: Optional[str])
 
 
 # Relay path per OpenCode family on opencode.ai hosts.
-_OPENCODE_FAMILY_PATHS = {"opencode-zen": "/zen", "opencode-go": "/zen/go"}
+_OPENCODE_FAMILY_PATHS = {"opencode-zen": "/zen", "opencode-go": "/zen/go", "opencode-free": "/zen"}
 
 
 def normalize_opencode_base_url(

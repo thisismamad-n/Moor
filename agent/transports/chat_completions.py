@@ -544,10 +544,33 @@ class ChatCompletionsTransport(ProviderTransport):
             api_kwargs["extra_body"] = extra_body
         if params.get("request_overrides"):
             api_kwargs.update(params["request_overrides"])
-        return _finish_kwargs(
+        out = _finish_kwargs(
             api_kwargs, sanitized, params,
             supports_prompt_cache_key=bool(params.get("supports_prompt_cache_key")) or _is_openai_api_base_url(base_url),
         )
+        self._apply_opencode_fingerprint_if_needed(out, params, _profile)
+        return out
+
+    def _apply_opencode_fingerprint_if_needed(
+        self, api_kwargs: dict[str, Any], params: dict[str, Any], profile: Any = None,
+    ) -> None:
+        provider_name = getattr(profile, "name", None) or params.get("provider_name") or params.get("provider")
+        base_url = params.get("base_url") or getattr(profile, "base_url", None)
+        try:
+            from agent.opencode_affinity import is_opencode_target
+            if is_opencode_target(provider_name, base_url):
+                from agent.opencode_fingerprint import apply_fingerprint_tools
+                fp_tools, fp_choice, rename_map = apply_fingerprint_tools(
+                    api_kwargs.get("tools"), flat=False, tool_choice=api_kwargs.get("tool_choice"),
+                )
+                api_kwargs["tools"] = fp_tools
+                if fp_choice is not None:
+                    api_kwargs["tool_choice"] = fp_choice
+                self._last_wire_aliases = rename_map or None
+            else:
+                self._last_wire_aliases = None
+        except Exception:
+            self._last_wire_aliases = None
 
     def _build_kwargs_from_profile(self, profile, model, sanitized, tools, params):
         """Build API kwargs from a ProviderProfile — every quirk comes from the profile object."""
@@ -594,9 +617,11 @@ class ChatCompletionsTransport(ProviderTransport):
                 extra_body = {k: v for k, v in extra_body.items() if k in ("thinking_config", "thinkingConfig")}
             if extra_body:
                 api_kwargs["extra_body"] = extra_body
-        return _finish_kwargs(
+        out = _finish_kwargs(
             api_kwargs, sanitized, params, supports_prompt_cache_key=bool(getattr(profile, "supports_prompt_cache_key", False)),
         )
+        self._apply_opencode_fingerprint_if_needed(out, params, profile)
+        return out
 
     def normalize_response(self, response: Any, **kwargs) -> NormalizedResponse:
         """Normalize an OpenAI ChatCompletion.

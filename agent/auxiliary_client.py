@@ -1533,17 +1533,21 @@ class _CodexCompletionsAdapter:
             # without concentrating unrelated sessions into one shared bucket (see #78941).
             from agent.transports.codex import _cache_scope_from_session_id, _content_cache_key
             from agent.transports.codex import _default_prompt_cache_retention_for_request
-            if not (is_xai or is_github) and "prompt_cache_key" not in resp_kwargs:
+            is_opencode = base_url_host_matches(host, "opencode.ai")
+            if not (is_xai or is_github or is_opencode) and "prompt_cache_key" not in resp_kwargs:
                 scope = _cache_scope_from_session_id(
                     _runtime_main_value("cache_scope") or _runtime_main_value("session_id")
                 )
                 cache_key = _content_cache_key(resp_kwargs["instructions"], resp_kwargs.get("tools"), scope)
                 if cache_key:
                     resp_kwargs["prompt_cache_key"] = cache_key
-            if "prompt_cache_retention" not in resp_kwargs:
+            if not is_opencode and "prompt_cache_retention" not in resp_kwargs:
                 cache_retention = _default_prompt_cache_retention_for_request(model, host)
                 if cache_retention:
                     resp_kwargs["prompt_cache_retention"] = cache_retention
+            if is_opencode:
+                resp_kwargs.pop("prompt_cache_key", None)
+                resp_kwargs.pop("prompt_cache_retention", None)
         except Exception:
             logger.debug("Codex auxiliary: prompt_cache_key derivation skipped", exc_info=True)
         # Last, like the main transport: caller extra_body must not put a rejected Astra field back.
@@ -5244,6 +5248,14 @@ def _resolve_api_key_branch(req: _ResolveRequest, pconfig: Any, resolve_creds: C
             if not api_key and is_actual_local_base_url(raw_base_url):
                 api_key = ACTUAL_LOCAL_NOAUTH_PLACEHOLDER
     if not api_key:
+        with contextlib.suppress(Exception):
+            from moor_cli.models import opencode_zen_free_runtime
+            rt = opencode_zen_free_runtime(provider, req.model)
+            if rt and rt.get("api_key"):
+                api_key = rt["api_key"]
+                if not req.explicit_base_url:
+                    raw_base_url = rt.get("base_url") or raw_base_url
+    if not api_key:
         tried_sources = list(pconfig.api_key_env_vars) + (["gh auth token"] if provider == "copilot" else [])
         logger.debug("resolve_provider_client: provider %s has no API key configured (tried: %s)",
                      provider, ", ".join(tried_sources))
@@ -5265,6 +5277,10 @@ def _resolve_api_key_branch(req: _ResolveRequest, pconfig: Any, resolve_creds: C
             logger.debug("resolve_provider_client: %s (%s)", provider, final_model)
             return _route_client(req, client, final_model)
     headers = _endpoint_default_headers(base_url, provider, is_vision=req.is_vision, xai=True)
+    if provider == "opencode-free" or api_key == "opencode-zen-free-keyless":
+        with contextlib.suppress(Exception):
+            from agent.opencode_emulation import opencode_zen_free_headers
+            headers = {**opencode_zen_free_headers(), **(headers or {})}
     client = _create_openai_client(api_key=api_key, base_url=base_url, **({"default_headers": headers} if headers else {}))
     # Copilot GPT-5+ models (except gpt-5-mini) are only reachable via the Responses API;
     # wrap so call_llm() transparently routes through responses.stream().

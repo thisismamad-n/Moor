@@ -1025,6 +1025,8 @@ def _status_403(c: _Ctx) -> Verdict:
     # 403 and on established block/challenge markers; any other 403 stays auth.
     if any(p in c.msg for p in _UPSTREAM_BLOCKED_PATTERNS):
         return _V_UPSTREAM_BLOCKED
+    if "freetiererror" in c.msg.lower() or ("opencode" in c.msg.lower() and "free tier" in c.msg.lower()):
+        return _V_UPSTREAM_BLOCKED
     return _V_AUTH_FALLBACK
 
 
