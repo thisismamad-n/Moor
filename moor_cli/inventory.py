@@ -791,7 +791,7 @@ def _filter_explicit_provider_rows(rows: list[dict], ctx: ConfigContext) -> list
         return (
             # Anthropic OAuth (device flow / Claude Code) and external-process CLIs (ACP agents) are
             # deliberate sign-ins that leave no trace in config/env; keep the rows discovery accepted.
-            or (slug == "anthropic" and _anthropic_oauth_credentials_present())
+            (slug == "anthropic" and _anthropic_oauth_credentials_present())
             or _external_process_signed_in(slug)
             or is_provider_explicitly_configured(slug)
         )
