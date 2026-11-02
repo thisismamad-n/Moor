@@ -30,9 +30,9 @@ def no_policy(monkeypatch):
 class TestLoginMoor:
 
     def _run(self, monkeypatch, tmp_path):
-        import moor_cli.auth as auth_mod
-        import moor_cli.auth_moor as auth_moor
-        import moor_cli.moor_subscription as ns
+        import hermes_cli.auth as auth_mod
+        from hermes_cli import auth_nous
+        import hermes_cli.nous_subscription as ns
 
         seen: dict = {}
         monkeypatch.setenv("MOOR_HOME", str(tmp_path))
@@ -72,7 +72,6 @@ class TestLoginMoor:
 
         def _capture(model_ids, **kwargs):
             seen["model_ids"] = list(model_ids)
-            return None
 
         monkeypatch.setattr(auth_mod, "_prompt_model_selection", _capture)
 

@@ -127,7 +127,7 @@ def test_corrupt_breadcrumb_returns_none(moor_home, monkeypatch, no_terminal_env
 def _make_session(home: Path, session_id: str):
     from moor_state import SessionDB
 
-    db = SessionDB()
+    db = SessionDB(db_path=home / "state.db")
     db.create_session(session_id, "cli")
     db.close()
 
@@ -172,7 +172,7 @@ def test_config_gate_off_disables_writes_and_resolution(
     tb.write_breadcrumb("20260815_120000_abc123")
     assert not (moor_home / "terminal-sessions").exists()
     # Even with a pre-existing breadcrumb, resolution must decline
-    monkeypatch.setattr(config_mod, "load_config", lambda: {})
+    monkeypatch.setattr(config_mod, "load_config", dict)
     tb.write_breadcrumb("20260815_120000_abc123")
     monkeypatch.setattr(
         config_mod, "load_config", lambda: {"session": {"terminal_continue": False}}

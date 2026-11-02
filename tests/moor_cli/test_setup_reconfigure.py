@@ -55,15 +55,15 @@ def _enter_existing_install_patches(stack, **extra):
     """
     # Unconditional mocks (no return values to assert against).
     for target, kwargs in [
-        ("moor_cli.setup.ensure_moor_home", {}),
-        ("moor_cli.setup.is_interactive_stdin", {"return_value": True}),
-        ("moor_cli.config.is_managed", {"return_value": False}),
-        ("moor_cli.setup.load_config", {"return_value": {}}),
-        ("moor_cli.setup.save_config", {}),
-        ("moor_cli.setup.get_env_value", {"return_value": None}),
-        ("moor_cli.auth.get_active_provider", {"return_value": "openrouter"}),
-        ("moor_cli.setup._print_setup_summary", {}),
-        ("moor_cli.setup._offer_openclaw_migration", {"return_value": False}),
+        ("hermes_cli.setup.ensure_hermes_home", {}),
+        ("hermes_cli.setup.is_interactive_stdin", {"return_value": True}),
+        ("hermes_cli.config.is_managed", {"return_value": False}),
+        ("hermes_cli.setup.load_config", {"return_value": {}}),
+        ("hermes_cli.setup.save_config", {}),
+        ("hermes_cli.setup.get_env_value", {"return_value": None}),
+        ("hermes_cli.auth.get_active_provider", {"return_value": "openrouter"}),
+        ("hermes_cli.setup._print_setup_summary", {}),
+        ("hermes_cli.setup.offer_agent_import", {"return_value": ""}),
     ]:
         stack.enter_context(patch(target, **kwargs))
 
@@ -76,14 +76,14 @@ def _enter_existing_install_patches(stack, **extra):
 
 def _enter_fresh_install_patches(stack, **extra):
     for target, kwargs in [
-        ("moor_cli.setup.ensure_moor_home", {}),
-        ("moor_cli.setup.is_interactive_stdin", {"return_value": True}),
-        ("moor_cli.config.is_managed", {"return_value": False}),
-        ("moor_cli.setup.load_config", {"return_value": {}}),
-        ("moor_cli.setup.save_config", {}),
-        ("moor_cli.auth.get_active_provider", {"return_value": None}),
-        ("moor_cli.setup.get_env_value", {"return_value": None}),
-        ("moor_cli.setup._offer_openclaw_migration", {"return_value": False}),
+        ("hermes_cli.setup.ensure_hermes_home", {}),
+        ("hermes_cli.setup.is_interactive_stdin", {"return_value": True}),
+        ("hermes_cli.config.is_managed", {"return_value": False}),
+        ("hermes_cli.setup.load_config", {"return_value": {}}),
+        ("hermes_cli.setup.save_config", {}),
+        ("hermes_cli.auth.get_active_provider", {"return_value": None}),
+        ("hermes_cli.setup.get_env_value", {"return_value": None}),
+        ("hermes_cli.setup.offer_agent_import", {"return_value": ""}),
     ]:
         stack.enter_context(patch(target, **kwargs))
 

@@ -35,10 +35,10 @@ def served_root(tmp_path, monkeypatch):
     # Never read the developer's / CI's REAL host rendezvous record (superseded by the
     # tests/conftest.py hook in #118097 once that lands).
     (tmp_path / "locks").mkdir()
-    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
-    import moor_constants
-    import gateway.status as status
-    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None)
+    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+    import hermes_constants
+    from gateway import status
+    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
     # Liveness is a VERIFIED identity: this pytest process stands in for the default gateway only
     # because its command line reads as one; any other PID keeps its real command line.
     real_cmdline = status._read_process_cmdline
@@ -107,22 +107,25 @@ def test_setup_gateway_service_step_skips_install_for_served_profile(served_root
     (#111958), and a named profile the live record does not list gets no unit/plist either — one host
     gateway serves every profile, so setup must not grow a standalone fleet member that
     ``gateway install`` refuses (#109417)."""
-    import moor_cli.gateway as gw
+    import hermes_cli.gateway as gw
+    from hermes_cli.gateway_setup_service import ensure_gateway_service
 
     calls: list[str] = []
+    # The orchestrator reads every service primitive through ``hermes_cli.gateway``; patch that binding.
     monkeypatch.setattr(gw, "supports_systemd_services", lambda: True)
     monkeypatch.setattr(gw, "_is_service_running", lambda: False)
-    monkeypatch.setattr(gw, "_is_service_installed", lambda: False)
+    monkeypatch.setattr(gw, "_is_service_installed", lambda: "install" in calls)
     monkeypatch.setattr(gw, "has_conflicting_systemd_units", lambda: False)
     monkeypatch.setattr(gw, "systemd_install", lambda **kwargs: calls.append("install"))
     monkeypatch.setattr(gw, "systemd_start", lambda *args, **kwargs: calls.append("start"))
 
-    assert gw.ensure_gateway_service(context="setup") is True
+    # Consent is explicit here; the served-profile early return must win before it matters.
+    assert ensure_gateway_service(context="setup", install=True) is True
     assert calls == []
     assert "already served by the default multiplexer" in capsys.readouterr().out
 
-    monkeypatch.setenv("MOOR_HOME", str(served_root / "profiles" / "other"))  # not in the live record
-    assert gw.ensure_gateway_service(context="setup") is True
+    monkeypatch.setenv("HERMES_HOME", str(served_root / "profiles" / "other"))  # not in the live record
+    assert ensure_gateway_service(context="setup", install=True) is True
     assert calls == []
     assert "Profile 'other' does not get a gateway of its own" in capsys.readouterr().out
 
@@ -132,9 +135,9 @@ def test_recycled_pid_does_not_lend_a_stale_record_its_served_profiles(served_ro
     line is not a gateway's) must not make its ``served_profiles`` authoritative: bare PID existence
     once did, so `moor -p coder gateway start` exited 78 for a multiplexer that was long gone."""
     import subprocess
-    import gateway.status as status
-    from moor_cli.gateway import named_profile_served_by_running_multiplexer
-    from moor_cli.gateway_multiplex_served import live_default_gateway_pid, recorded_served_profiles
+    from gateway import status
+    from hermes_cli.gateway import named_profile_served_by_running_multiplexer
+    from hermes_cli.gateway_multiplex_served import live_default_gateway_pid, recorded_served_profiles
     child = subprocess.Popen(["sleep", "60"])
     try:
         stale_start = (status._get_process_start_time(child.pid) or 10**9) - 4242

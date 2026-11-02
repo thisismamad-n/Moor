@@ -53,7 +53,7 @@ def test_save_conversation_writes_under_moor_home(moor_home, tmp_path, monkeypat
     for mod in [m for m in sys.modules if m.startswith("cli") or m == "moor_constants"]:
         sys.modules.pop(mod, None)
 
-    import cli  # noqa: F401  (module under test)
+    import cli
 
     stub = _make_stub_cli([
         {"role": "user", "content": "hi"},

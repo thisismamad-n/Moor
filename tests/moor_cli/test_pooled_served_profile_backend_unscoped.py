@@ -31,8 +31,8 @@ def pooled_served_process(tmp_path, monkeypatch):
         "platforms": {"api_server": {"state": "connected"}, "alpha:telegram": {"state": "connected"}}}))
     monkeypatch.setenv("MOOR_HOME", str(root / "profiles" / "alpha"))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
-    import moor_constants
-    import gateway.status as status
+    import hermes_constants
+    from gateway import status
     # Liveness is a verified identity; this pytest process passes as the default gateway only by
     # wearing a gateway command line.
     monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "moor gateway run")

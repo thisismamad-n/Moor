@@ -82,8 +82,8 @@ def conversation_tag(session_id: str) -> str:
     return f"conversation={session_id}"
 
 
-def moor_portal_tags(session_id: str | None = None) -> List[str]:
-    """Fresh list of the canonical Moor Portal tags.
+def nous_portal_tags(session_id: str | None = None) -> list[str]:
+    """Fresh list of the canonical Nous Portal tags.
 
     The ambient conversation context (lineage ROOT id) wins over the explicit
     ``session_id``, a fallback for callers outside any agent turn.

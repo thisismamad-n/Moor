@@ -78,10 +78,9 @@ def test_boot_replaces_incumbent_with_stale_presets(moor_home, monkeypatch):
 
     stopped = {}
     monkeypatch.setattr(
-        "moor_cli.local_runtime.endpoint._state_endpoint",
-        lambda: {"base_url": "http://127.0.0.1:18434/v1", "pid": 12345})
-    monkeypatch.setattr(boot, "_stop_state_server",
-                        lambda state: stopped.setdefault("pid", state["pid"]))
+        "hermes_cli.local_runtime.endpoint._state_endpoint",
+        lambda: {"base_url": "http://127.0.0.1:18434/v1", "api_key": "k"})
+    monkeypatch.setattr(boot, "_stop_state_server", lambda: stopped.setdefault("stopped", True))
 
     sentinel = object()
 
@@ -96,7 +95,7 @@ def test_boot_replaces_incumbent_with_stale_presets(moor_home, monkeypatch):
         "moor_cli.local_runtime.binaries.installed_engine", fake_boot)
 
     result = boot.ensure_local_runtime({"local_runtime": {"enabled": True}})
-    assert stopped.get("pid") == 12345, "stale incumbent was not stopped"
+    assert stopped.get("stopped"), "stale incumbent was not stopped"
     # Boot proceeded past adoption (our fake raised inside the try block,
     # which ensure_local_runtime swallows into a None return).
     assert result is None or result is sentinel
@@ -114,16 +113,15 @@ def test_refresh_bounces_an_adopted_server(moor_home, monkeypatch):
     stopped = {}
     monkeypatch.setattr(boot, "_SUPERVISOR", None)
     monkeypatch.setattr(
-        "moor_cli.local_runtime.endpoint._state_endpoint",
-        lambda: {"base_url": "http://127.0.0.1:18434/v1", "pid": 4242})
-    monkeypatch.setattr(boot, "_stop_state_server",
-                        lambda state: stopped.setdefault("pid", state["pid"]))
+        "hermes_cli.local_runtime.endpoint._state_endpoint",
+        lambda: {"base_url": "http://127.0.0.1:18434/v1", "api_key": "k"})
+    monkeypatch.setattr(boot, "_stop_state_server", lambda: stopped.setdefault("stopped", True))
     booted = {}
     monkeypatch.setattr(boot, "ensure_local_runtime",
                         lambda cfg, force=False: booted.setdefault("force", force) or object())
 
     assert boot.refresh_local_runtime() is True
-    assert stopped.get("pid") == 4242, "adopted server was not stopped"
+    assert stopped.get("stopped"), "adopted server was not stopped"
     assert booted.get("force") is True, "fresh boot did not follow the stop"
 
 

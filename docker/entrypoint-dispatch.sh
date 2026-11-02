@@ -15,7 +15,15 @@
 set -e
 
 if [ "$$" -eq 1 ]; then
-    exec /init /opt/moor/docker/main-wrapper.sh "$@"
+    # The interactive CMD owns the terminal. Supervised gateways and dashboard
+    # output must go to s6's logger instead of overwriting the TUI or shell.
+    # Resolve this before /init wires the service descriptors, leaving headless
+    # docker logs and explicit s6 settings unchanged.
+    if [ -t 0 ] && [ -t 1 ]; then
+        export S6_LOGGING="${S6_LOGGING:-2}"
+        export S6_CMD_USE_TERMINAL="${S6_CMD_USE_TERMINAL:-1}"
+    fi
+    exec /init /opt/hermes/docker/main-wrapper.sh "$@"
 fi
 
 echo "[moor] WARNING: container entrypoint is not PID 1; skipping s6-overlay /init and falling back to direct bootstrap. Supervised services are unavailable in this runtime, but the requested command will still run." >&2

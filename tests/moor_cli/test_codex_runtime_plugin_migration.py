@@ -459,7 +459,7 @@ class TestSameNameUserMcpTable:
         moor_cli/main.py stays pinned, and honour ``CODEX_HOME`` like every codex sibling."""
         import json
 
-        import moor_cli.main as main
+        from hermes_cli import main
 
         codex_home = tmp_path / "alt-codex"
         codex_home.mkdir()

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-import moor_cli.uninstall as uninstall
+from hermes_cli import uninstall
 
 
 @pytest.fixture

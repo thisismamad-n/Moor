@@ -6,8 +6,8 @@ import json
 
 # Keep this list aligned with the Desktop bundle banner and channel decoder.
 _ALLOWED = frozenset({
-    "MOOR_HOME", "MOOR_DATA_DIR_SUFFIX", "MOOR_DESKTOP_USER_DATA_DIR",
-    "MOOR_SHARED_AUTH_DIR", "MOOR_GUEST_ONBOARDING", "MOOR_SKIP_INTRO",
+    "HERMES_HOME", "HERMES_DATA_DIR_SUFFIX", "HERMES_DESKTOP_USER_DATA_DIR",
+    "HERMES_SHARED_AUTH_DIR", "HERMES_PREVIEW_FULL_CONNECTORS",
 })
 
 

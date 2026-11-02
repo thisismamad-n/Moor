@@ -19,8 +19,8 @@ Two invariants pinned here:
 import json
 import logging
 
-import moor_cli.auth as auth_mod
-import moor_cli.auth_moor as auth_moor
+import hermes_cli.auth as auth_mod
+from hermes_cli import auth_nous
 from agent.credential_pool import CredentialPool, PooledCredential
 
 from tests.moor_cli.test_auth_moor_provider import _invoke_jwt, _setup_moor_auth

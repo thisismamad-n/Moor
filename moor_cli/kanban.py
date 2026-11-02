@@ -16,13 +16,14 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from moor_cli import kanban_db as kb
-from moor_cli import kanban_db_connect as kbc
-from moor_cli import kanban_db_dispatch as kbd
-from moor_cli import kanban_db_workspace as kbw
-from moor_cli import kanban_db_notify as kbn
-from moor_cli import kanban_swarm as ks
-from moor_cli.kanban_output import (
+from hermes_cli import kanban_db as kb
+from hermes_cli import kanban_db_connect as kbc
+from hermes_cli import kanban_db_dispatch as kbd
+from hermes_cli import kanban_db_workspace as kbw
+from hermes_cli import kanban_db_notify as kbn
+from hermes_cli import kanban_swarm as ks
+from hermes_cli import kanban_workflow
+from hermes_cli.kanban_output import (
     _ATTACHMENT_FIELDS, _RUNS_RUN_FIELDS, _SHOW_RUN_FIELDS, _bulk_apply, _err,
     _fmt_counts, _fmt_task_line, _fmt_ts, _json_out, _obj_dict, _print_json,
     _task_to_dict,
@@ -31,7 +32,7 @@ from moor_cli.kanban_boards import _dispatch_boards
 from moor_cli.kanban_ops import (
     _cmd_daemon, _kanban_config, _cmd_dispatch, _cmd_gc, _cmd_repair, _cmd_tail, _cmd_watch,
 )
-from moor_cli.kanban_parser import build_parser  # noqa: F401  (re-exported: moor_cli.main, run_slash)
+from hermes_cli.kanban_parser import build_parser
 
 
 # --- Flag parsing helpers ---
@@ -1139,7 +1140,7 @@ def _cmd_stats(args: argparse.Namespace) -> int:
     if _json_out(args, stats):
         return 0
     print("By status:")
-    for k in ("triage", "todo", "scheduled", "ready", "running", "blocked", "done"):
+    for k in kanban_workflow.DEFAULT_WORKFLOW.keys():
         print(f"  {k:8s}  {stats['by_status'].get(k, 0)}")
     if stats["by_assignee"]:
         print("\nBy assignee:")
@@ -1433,11 +1434,3 @@ def run_slash(rest: str) -> str:
     if err and out:
         return f"{out}\n{err}"
     return err if err else (out or "(no output)")
-
-
-# ---- BEGIN PLUGIN-COMPAT (revert-scheduled; see COMPAT_MANIFEST.md) ----
-# Names external plugins imported from this module before the Sep 2026 decomposition.
-# Internal code MUST NOT use these (scripts/check_compat_pointers.py fails CI if it does).
-# The whole block is removed by reverting the commit that added it.
-from typing import Any  # noqa: F401,E402
-# ---- END PLUGIN-COMPAT ----

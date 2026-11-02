@@ -44,12 +44,12 @@ def _fresh_home():
 
 HOME = _fresh_home()
 
-# Import AFTER MOOR_HOME is set.
-import cron.scheduler as sched  # noqa: E402
+# Import AFTER HERMES_HOME is set.
+import cron.scheduler as sched
 from cron import scheduler_delivery as sched_delivery
-import gateway.mirror as mirror  # noqa: E402
-from gateway.config import GatewayConfig, Platform  # noqa: E402
-from gateway.session import SessionStore, SessionSource, build_session_key  # noqa: E402
+from gateway import mirror
+from gateway.config import GatewayConfig, Platform
+from gateway.session import SessionStore, SessionSource, build_session_key
 
 # Force mirror.py's module-level index path to our temp home (it may have bound
 # a different get_moor_home() at import if something imported it earlier).

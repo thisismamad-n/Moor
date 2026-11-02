@@ -144,10 +144,11 @@ Moor 有两种入口：用 `moor` 启动终端 UI，或运行网关从 Telegram�
 **安装后任意时间：**
 
 ```bash
-moor claw migrate              # 交互式迁移（完整预设）
-moor claw migrate --dry-run    # 预览将要迁移的内容
-moor claw migrate --preset user-data   # 仅迁移用户数据，不含密钥
-moor claw migrate --overwrite  # 覆盖已有冲突
+hermes plugins install agent-importers  # 一次即可：支持 OpenClaw、Claude Code、Codex 和 Cursor
+hermes claw migrate              # 交互式迁移（完整预设）
+hermes claw migrate --dry-run    # 预览将要迁移的内容
+hermes claw migrate --preset user-data   # 仅迁移用户数据，不含密钥
+hermes claw migrate --overwrite  # 覆盖已有冲突
 ```
 
 导入内容：

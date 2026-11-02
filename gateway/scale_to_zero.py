@@ -36,7 +36,7 @@ _malformed_sleep_url_logged = False
 # Short is safe: real work always blocks the suspend, resume is sub-second; longer bills idle RAM.
 DEFAULT_IDLE_TIMEOUT_MINUTES = 2
 _TRUTHY = {"1", "true", "yes", "on"}
-# Dashboard-client liveness marker, touched by the (separate) dashboard process on every /api/ws
+# Dashboard-client liveness marker, touched by every /api/ws client socket on each
 # connect and inbound frame. Folded into the inbound clock so an open client holds the box awake —
 # otherwise it suspends under the client, whose reconnect re-pokes the wake URL and the instance
 # flaps every ~60s. Deliberately NO staleness cutoff: is_idle decides whether the mtime is recent.
@@ -89,12 +89,15 @@ def is_idle(*, active_work_count: int, seconds_since_last_inbound: float,
             and seconds_since_last_inbound >= idle_timeout_seconds)
 
 
-def dashboard_client_heartbeat_path(moor_home: Optional[os.PathLike | str] = None):
-    """Path of the dashboard-client liveness marker under MOOR_HOME."""
-    if moor_home is None:
-        from moor_constants import get_moor_home
-        moor_home = get_moor_home()
-    return Path(moor_home) / DASHBOARD_CLIENT_HEARTBEAT_REL
+def dashboard_client_heartbeat_path(hermes_home: Optional[os.PathLike | str] = None):
+    """Path of the dashboard-client liveness marker under the process's own HERMES_HOME.
+
+    One marker per process, never per profile scope: the gateway's idle watcher reads it with no
+    override, so a socket served in a secondary profile's scope must stamp the same file."""
+    if hermes_home is None:
+        from hermes_constants import get_process_hermes_home
+        hermes_home = get_process_hermes_home()
+    return Path(hermes_home) / DASHBOARD_CLIENT_HEARTBEAT_REL
 
 
 def touch_dashboard_client_heartbeat(path: Optional[os.PathLike | str] = None) -> bool:
@@ -105,7 +108,7 @@ def touch_dashboard_client_heartbeat(path: Optional[os.PathLike | str] = None) -
         open(p, "a", encoding="utf-8").close()
         os.utime(p, None)
         return True
-    except Exception:  # noqa: BLE001 - liveness garnish must never break the WS
+    except Exception:
         logger.debug("scale-to-zero: dashboard heartbeat touch failed", exc_info=True)
         return False
 

@@ -22,7 +22,7 @@ description: "通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Emai
 | Signal | — | ✅ | ✅ | — | — | ✅ | ✅ |
 | SMS | — | — | — | — | — | — | — |
 | Email | — | ✅ | ✅ | ✅ | — | — | — |
-| Home Assistant | — | — | — | — | — | — | — |
+| Home Assistant（插件） | — | — | — | — | — | — | — |
 | Mattermost | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ |
 | Matrix | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | DingTalk | — | ✅ | ✅ | — | ✅ | — | ✅ |
@@ -425,29 +425,29 @@ launchd plist 是静态的——如果你在配置网关后安装了新工具（
 
 | 平台 | 工具集 | 功能 |
 |----------|---------|--------------|
-| CLI | `moor-cli` | 完全访问 |
-| Telegram | `moor-telegram` | 完整工具，包括终端 |
-| Discord | `moor-discord` | 完整工具，包括终端 |
-| WhatsApp | `moor-whatsapp` | 完整工具，包括终端 |
-| Slack | `moor-slack` | 完整工具，包括终端 |
-| Google Chat | `moor-google_chat` | 完整工具，包括终端 |
-| Signal | `moor-signal` | 完整工具，包括终端 |
-| SMS | `moor-sms` | 完整工具，包括终端 |
-| Email | `moor-email` | 完整工具，包括终端 |
-| Home Assistant | `moor-homeassistant` | 完整工具 + HA 设备控制（ha_list_entities、ha_get_state、ha_call_service、ha_list_services） |
-| Mattermost | `moor-mattermost` | 完整工具，包括终端 |
-| Matrix | `moor-matrix` | 完整工具，包括终端 |
-| DingTalk | `moor-dingtalk` | 完整工具，包括终端 |
-| Feishu/Lark | `moor-feishu` | 完整工具，包括终端 |
-| WeCom | `moor-wecom` | 完整工具，包括终端 |
-| WeCom Callback | `moor-wecom-callback` | 完整工具，包括终端 |
-| Weixin | `moor-weixin` | 完整工具，包括终端 |
-| BlueBubbles | `moor-bluebubbles` | 完整工具，包括终端 |
-| QQBot | `moor-qqbot` | 完整工具，包括终端 |
-| Yuanbao | `moor-yuanbao` | 完整工具，包括终端 |
-| Microsoft Teams | `moor-teams` | 完整工具，包括终端 |
-| API Server | `moor-api-server` | 完整工具（去除 `clarify`、`send_message`、`text_to_speech`——程序化访问没有交互用户） |
-| Webhooks | `moor-webhook` | 完整工具，包括终端 |
+| CLI | `hermes-cli` | 完全访问 |
+| Telegram | `hermes-telegram` | 完整工具，包括终端 |
+| Discord | `hermes-discord` | 完整工具，包括终端 |
+| WhatsApp | `hermes-whatsapp` | 完整工具，包括终端 |
+| Slack | `hermes-slack` | 完整工具，包括终端 |
+| Google Chat | `hermes-google_chat` | 完整工具，包括终端 |
+| Signal | `hermes-signal` | 完整工具，包括终端 |
+| SMS | `hermes-sms` | 完整工具，包括终端 |
+| Email | `hermes-email` | 完整工具，包括终端 |
+| Home Assistant（插件） | `hermes-homeassistant` | 完整工具 + HA 设备控制（ha_list_entities、ha_get_state、ha_call_service、ha_list_services），由插件目录中的 `homeassistant` 插件提供 |
+| Mattermost | `hermes-mattermost` | 完整工具，包括终端 |
+| Matrix | `hermes-matrix` | 完整工具，包括终端 |
+| DingTalk | `hermes-dingtalk` | 完整工具，包括终端 |
+| Feishu/Lark | `hermes-feishu` | 完整工具，包括终端 |
+| WeCom | `hermes-wecom` | 完整工具，包括终端 |
+| WeCom Callback | `hermes-wecom-callback` | 完整工具，包括终端 |
+| Weixin | `hermes-weixin` | 完整工具，包括终端 |
+| BlueBubbles | `hermes-bluebubbles` | 完整工具，包括终端 |
+| QQBot | `hermes-qqbot` | 完整工具，包括终端 |
+| Yuanbao | `hermes-yuanbao` | 完整工具，包括终端 |
+| Microsoft Teams | `hermes-teams` | 完整工具，包括终端 |
+| API Server | `hermes-api-server` | 完整工具（去除 `clarify`、`send_message`、`text_to_speech`——程序化访问没有交互用户） |
+| Webhooks | `hermes-webhook` | 完整工具，包括终端 |
 
 ## 运营多平台网关
 
@@ -552,7 +552,7 @@ display:
 - [Signal 配置](signal.md)
 - [SMS 配置（Twilio）](sms.md)
 - [Email 配置](email.md)
-- [Home Assistant 集成](homeassistant.md)
+- [Home Assistant 集成](homeassistant.md)（插件目录）
 - [Mattermost 配置](mattermost.md)
 - [Matrix 配置](matrix.md)
 - [DingTalk 配置](dingtalk.md)

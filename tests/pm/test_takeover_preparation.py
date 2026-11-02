@@ -22,7 +22,7 @@ def test_fresh_takeover_prepares_generation_and_runs_selected_python(tmp_path):
     root.mkdir()
     for name in ("pm", "moor_cli"):
         shutil.copytree(source / name, root / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-    for name in ("moor_constants.py", "moor_yaml.py", "utils.py", "moor_bootstrap.py"):
+    for name in ("hermes_constants.py", "hermes_dir_acl.py", "hermes_yaml.py", "utils.py", "hermes_bootstrap.py"):
         shutil.copy2(source / name, root / name)
     home, store, wheels = (tmp_path / name for name in ("home", "tools", "wheels"))
     for directory in (home, store, wheels):
@@ -79,8 +79,8 @@ def test_fresh_takeover_prepares_generation_and_runs_selected_python(tmp_path):
         encoding="utf-8")
     context, result = tmp_path / "context.json", tmp_path / "result.json"
     context.write_text(json.dumps({"root": str(root), "home": str(home)}), encoding="utf-8")
-    completed = subprocess.run([sys.executable, "-I", "-S", "-B", str(root / "moor_cli/_update_takeover.py"), str(context), str(result)],
-                               env=env, cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    completed = subprocess.run([sys.executable, "-I", "-S", "-B", str(root / "hermes_cli/_update_takeover.py"), str(context), str(result)],
+                               env=env, cwd=tmp_path, capture_output=True, text=True, timeout=120, check=False)
     assert completed.returncode == 0, completed.stdout + completed.stderr
     output = json.loads(result.read_text())
     assert Path(output['python']).is_relative_to(store)
@@ -95,21 +95,30 @@ def test_fresh_takeover_prepares_generation_and_runs_selected_python(tmp_path):
     # that graph to the new source inputs before normal bootstrap checks it.
     facts = next((home / "installs").glob("*/facts.json"))
     first_stamp = json.loads(facts.read_text())["packages"]["venv"]["stamp"]
+    generations = facts.parent / "environments"
+    first_generations = {path.resolve() for path in generations.iterdir() if path.is_dir()}
+    assert first_generations
+    for generation in first_generations:
+        marker = generation / ".lease-managed"
+        assert marker.is_file()
+        os.utime(marker, (0, 0))
     (facts.parent / ".repair-incomplete").write_text("{}", encoding="utf-8")
     with (root / "uv.lock").open("a", encoding="utf-8") as changed:
         changed.write("\n# changed source inputs\n")
-    repaired = subprocess.run([sys.executable, "-I", "-S", "-B", str(root / "moor_cli/_update_takeover.py"), str(context), str(result)],
-                              env=env, cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    repaired = subprocess.run([sys.executable, "-I", "-S", "-B", str(root / "hermes_cli/_update_takeover.py"), str(context), str(result)],
+                              env=env, cwd=tmp_path, capture_output=True, text=True, timeout=120, check=False)
     assert repaired.returncode == 0, repaired.stdout + repaired.stderr
     assert json.loads(facts.read_text())["packages"]["venv"]["stamp"] != first_stamp
+    remaining_generations = {path.resolve() for path in generations.iterdir() if path.is_dir()}
+    assert first_generations.isdisjoint(remaining_generations)
     assert not (facts.parent / ".repair-incomplete").exists()
 
     # A child which dies before acknowledging receipt ownership must not
     # leave the parent reporting success from its pre-handoff receipt.
     (root / "moor_cli/update_finish.py").write_text("raise SystemExit(7)\n", encoding="utf-8")
     result.unlink()
-    crashed = subprocess.run([sys.executable, "-I", "-S", "-B", str(root / "moor_cli/_update_takeover.py"), str(context), str(result)],
-                             env=env, cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    crashed = subprocess.run([sys.executable, "-I", "-S", "-B", str(root / "hermes_cli/_update_takeover.py"), str(context), str(result)],
+                             env=env, cwd=tmp_path, capture_output=True, text=True, timeout=120, check=False)
     assert crashed.returncode == 7
     assert json.loads(result.read_text())["receipt_handled"]
     crash_receipt = json.loads((home / "logs/update_receipts/latest.json").read_text())
@@ -121,8 +130,8 @@ def test_fresh_takeover_prepares_generation_and_runs_selected_python(tmp_path):
     before = facts.read_bytes()
     (root / "uv.lock").write_text("not valid TOML [", encoding="utf-8")
     result.unlink()
-    failed = subprocess.run([sys.executable, "-I", "-S", "-B", str(root / "moor_cli/_update_takeover.py"), str(context), str(result)],
-                            env=env, cwd=tmp_path, capture_output=True, text=True, timeout=120)
+    failed = subprocess.run([sys.executable, "-I", "-S", "-B", str(root / "hermes_cli/_update_takeover.py"), str(context), str(result)],
+                            env=env, cwd=tmp_path, capture_output=True, text=True, timeout=120, check=False)
     assert failed.returncode != 0
     assert facts.read_bytes() == before
     failure = json.loads(result.read_text())

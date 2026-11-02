@@ -63,7 +63,7 @@ class TestResolveAccessTokenEnvOverrideWins:
         return auth_file
 
     def _run_and_capture(self, monkeypatch, auth):
-        import moor_cli.auth_moor as auth_moor
+        from hermes_cli import auth_nous
         seen_portal_urls = []
 
         # The resolve memo is module-level state; clear it so each test's
@@ -100,7 +100,7 @@ class TestResolveAccessTokenEnvOverrideWins:
         a prior MOOR_AUTH_JSON_BOOTSTRAP seed), and the env var is set to
         the same staging host. Both must resolve to staging, and the
         allowlist-rejection warning must never fire."""
-        import moor_cli.auth as auth
+        from hermes_cli import auth
 
         staging_portal = "https://portal.staging-nousresearch.com"
         monkeypatch.setenv("MOOR_HOME", str(tmp_path))
@@ -121,7 +121,7 @@ class TestResolveAccessTokenEnvOverrideWins:
     ):
         """Baseline: no override, no staging state — prod is used and the
         allowlist never even logs a warning (nothing was rejected)."""
-        import moor_cli.auth as auth
+        from hermes_cli import auth
 
         monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         monkeypatch.delenv("MOOR_PORTAL_BASE_URL", raising=False)

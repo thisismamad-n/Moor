@@ -31,8 +31,8 @@ def test_fleet_config_migration_live_windows(tmp_path, monkeypatch):
     )
     monkeypatch.setenv("MOOR_HOME", str(active))
 
-    import moor_cli.update_cmd as update_cmd
-    from moor_cli.config import DEFAULT_CONFIG
+    from hermes_cli import update_cmd
+    from hermes_cli.config import DEFAULT_CONFIG
 
     latest = int(DEFAULT_CONFIG["_config_version"])
     migrated = update_cmd._migrate_sibling_profile_configs()

@@ -34,8 +34,9 @@ import {
   setSelectedStoredSessionId,
   setSessions
 } from '@/store/session'
-import { $focusedStoredSessionId, $sessionTiles, clearAllSessionStates } from '@/store/session-states'
-import type { SessionInfo } from '@/types/moor'
+import { $focusedStoredSessionId } from '@/store/session-focus'
+import { $sessionTiles, clearAllSessionStates } from '@/store/session-states'
+import type { SessionInfo } from '@/types/hermes'
 
 import { useSessionActions } from './use-session-actions'
 import { useSessionStateCache } from './use-session-state-cache'
@@ -82,6 +83,7 @@ function Harness() {
     getRouteToken: () => `${routedStoredId ? sessionRoute(routedStoredId) : '/'}::`,
     getRoutedStoredSessionId: () => routedStoredId,
     navigate: navigate as never,
+    routedSessionId: null,
     requestGateway,
     selectedStoredSessionId
   })

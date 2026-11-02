@@ -58,7 +58,7 @@ class TestSetMoaModelsPreservesUndeclaredKeys:
 
         saved_cfg = {}
 
-        def fake_load_config():
+        def fake_readable_config():
             return dict(existing_cfg)  # shallow copy
 
         def fake_save_config(cfg, **_kwargs):
@@ -67,9 +67,9 @@ class TestSetMoaModelsPreservesUndeclaredKeys:
         payload = _base_payload()
 
         with (
-            patch("moor_cli.config.load_config", side_effect=fake_load_config),
-            patch("moor_cli.config.save_config", side_effect=fake_save_config),
-            patch("moor_cli.web_server_profiles._profile_scope"),
+            patch("hermes_cli.config.require_readable_config_before_write", side_effect=fake_readable_config),
+            patch("hermes_cli.config.save_config", side_effect=fake_save_config),
+            patch("hermes_cli.web_server_profiles._profile_scope"),
         ):
             set_moa_models(payload)
 

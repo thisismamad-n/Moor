@@ -25,7 +25,7 @@ from moor_cli import plugins as plugins_mod
 from moor_constants import get_moor_home, get_moor_home_override
 from tools.daemon_pool import DaemonThreadPoolExecutor
 from tools.thread_context import propagate_context_to_thread
-import tui_gateway.server as server
+from tui_gateway import server
 from tui_gateway import launch_profile_policy as lpp
 
 
@@ -49,9 +49,8 @@ def two_homes(tmp_path, monkeypatch):
     def stub_pre_tool_call(**_kw):
         from moor_cli.config import load_config_readonly
         entry = ((load_config_readonly().get("plugins") or {}).get("entries") or {}).get("stub") or {}
-        seen.append({"home": get_moor_home().name, "x": (entry.get("settings") or {}).get("x"),
-                     "bound": get_moor_home_override() is not None})
-        return None
+        seen.append({"home": get_hermes_home().name, "x": (entry.get("settings") or {}).get("x"),
+                     "bound": get_hermes_home_override() is not None})
 
     # Plugin managers are keyed per home: each profile loads its own copy of the plugin.
     from moor_constants import reset_moor_home_override, set_moor_home_override

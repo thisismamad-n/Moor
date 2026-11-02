@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # ============================================================================
-# venv-style activation for the Moor dev environment (pm-managed tools).
+# venv-style activation of the Hermes dev environment for an interactive shell.
 #
-#   source ./activate      (bash / zsh, repo root)
-#   .\activate.ps1         (PowerShell)
+#   source ./activate       (bash / zsh, repo root)
+#   source ./activate.fish  (fish)
+#   .\activate.ps1          (PowerShell)
 #
-# Emits the composed pm env (PATH + tool vars) into the CURRENT shell, with
+# Applies the composed pm env (PATH + tool vars) to the CURRENT shell, with
 # save/restore: `deactivate` undoes exactly what activation changed.
 #
 # `moor` becomes a shell function for this checkout. It runs only while the
 # shell is inside this worktree and refuses outside it, so a sibling worktree
 # keeps its own command. A prompt prefix names the worktree.
+#
+# Scripts and other processes do not source this: they run under
+# `scripts/run-in-hermes-env`. Both build on scripts/_activation.sh.
 #
 # Sync through setup before selecting the environment. PM owns freshness;
 # activation does not maintain a second dependency stamp. It trusts the
@@ -42,17 +46,17 @@ if [ -n "$_moor_expect_extras" ]; then
     unset _moor_arg _moor_test_env _moor_expect_extras
     return 2 2>/dev/null || exit 2
 fi
-# Setup runs in a child: failures must not exit or partially activate the
-# caller's shell, and activation must not republish launchers or shell config.
-if ! (
-    unset PYTHONHOME PYTHONPATH VIRTUAL_ENV
-    bash "$_MOOR_REPO/setup-moor.sh" --runtime-only "$_moor_test_env"
-) >&2; then
+unset _hermes_arg _hermes_expect_extras
+
+# shellcheck source=scripts/_activation.sh
+. "$_HERMES_REPO/scripts/_activation.sh"
+
+if ! hermes_sync "$_HERMES_REPO" "$_hermes_test_env"; then
     printf '%s\n' 'activate: setup failed; shell environment unchanged' >&2
-    unset _moor_arg _moor_test_env _moor_expect_extras
+    unset _hermes_test_env
     return 1 2>/dev/null || exit 1
 fi
-unset _moor_arg _moor_test_env _moor_expect_extras
+unset _hermes_test_env
 
 # Guard against double-sourcing: venv activate precedent (re-activating is a
 # no-op re-save; we keep it idempotent by deactivating first). Key on the
@@ -62,38 +66,12 @@ if [ "$(type -t deactivate 2>/dev/null)" = "function" ]; then
     deactivate
 fi
 
-# Bootstrap Python only emits the environment; it does not install anything.
-_moor_repo="$_MOOR_REPO"
-_moor_py=""
-for _moor_candidate in "$_moor_repo/.venv/bin/python" "$_moor_repo/.venv/Scripts/python.exe" \
-                         "$_moor_repo/venv/bin/python" "$_moor_repo/venv/Scripts/python.exe"; do
-    [ -x "$_moor_candidate" ] && { _moor_py="$_moor_candidate"; break; }
-done
-if [ -z "$_moor_py" ]; then
-    for _moor_store in "${MOOR_RUNTIME_DIR:-}" "$_moor_repo/../tools" "${MOOR_HOME:-$HOME/.moor}/tools"; do
-        [ -n "$_moor_store" ] || continue
-        for _moor_candidate in "$_moor_store"/python-*/bin/python3 "$_moor_store"/python-*/python.exe "$_moor_store"/python-*/bin/python "$_moor_store"/python-*/bin/python.exe; do
-            [ -x "$_moor_candidate" ] && { _moor_py="$_moor_candidate"; break; }
-        done
-        [ -n "$_moor_py" ] && break
-    done
-fi
-if [ -z "$_moor_py" ]; then
-    echo "activate: no bootstrap Python found; run setup-moor.sh" >&2
+_hermes_script="$(hermes_compose_env "$_HERMES_REPO" sh)" || {
+    echo "activate: could not compose the environment (see above)" >&2
+    unset _hermes_script
     return 1 2>/dev/null || exit 1
-fi
-
-# --- emit export lines from `pm env` ---
-_moor_json="$(PYTHONHOME= PYTHONPATH="$_moor_repo" "$_moor_py" -m pm.environments)"
-if [ -z "$_moor_json" ] || [ "${_moor_json#*{}" = "$_moor_json" ]; then
-    echo "activate: could not read pm env (run ./setup-moor.sh first)" >&2
-    unset _moor_repo _moor_os _moor_arch _moor_target _moor_store _moor_py _moor_json
-    return 1 2>/dev/null || exit 1
-fi
-
-_moor_keys="$(printf '%s' "$_moor_json" | "$_moor_py" -c 'import json,sys; print(" ".join(json.load(sys.stdin)))' \
-    | tr ' ' '\n' | grep -E '^[A-Za-z_][A-Za-z0-9_]*$' | tr '\n' ' ')"
-[ -n "$_moor_keys" ] || _moor_keys="PATH"
+}
+_hermes_keys="$(printf '%s\n' "$_hermes_script" | sed -n 's/^export \([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' | tr '\n' ' ')"
 
 # --- snapshot what we are about to change (deactivate restores this) ---
 # __MOOR_ACTIVATED is part of the composed env below (it carries the
@@ -104,38 +82,15 @@ for _moor_k in $_moor_keys; do
     eval "__MOOR_SAVED_$_moor_k=\"\${$_moor_k+set}\""
     eval "__MOOR_PRIOR_$_moor_k=\${$_moor_k-__MOOR_UNSET__}"
 done
-
-# Resolved before the export below replaces PATH.
-_moor_cygpath="$(command -v cygpath 2>/dev/null || :)"
-
-eval "$(printf '%s' "$_moor_json" | "$_moor_py" -c '
-import json, sys, shlex, re
-for k, v in json.load(sys.stdin).items():
-    # Windows carries names like ProgramFiles(ARM) that are not valid
-    # bash identifiers — skip them (they pass through untouched).
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", k):
-        continue
-    print("export %s=%s" % (k, shlex.quote(str(v))))')"
-
-# The MSYS/Cygwin runtime hands a native Windows Python these variables in
-# Windows form (`C:\a;C:\b`) and converts them back only for its own children.
-# Exported verbatim, bash splits PATH on ':' and finds no commands.
-if [ -n "$_moor_cygpath" ]; then
-    PATH="$("$_moor_cygpath" -u -p "$PATH")"
-    for _moor_k in HOME TMPDIR TMP TEMP; do
-        if [ -n "${!_moor_k-}" ]; then
-            printf -v "$_moor_k" '%s' "$("$_moor_cygpath" -u "${!_moor_k}")"
-        fi
-    done
-fi
+hermes_apply_env "$_hermes_script"
 
 # This checkout, not whichever `moor` PATH finds. A function beats PATH, an
 # alias, and a hashed command, including the MSIX execution alias.
-__MOOR_WORKTREE="$_moor_repo"
+__HERMES_WORKTREE="$_HERMES_REPO"
 # The branch names the worktree. A checkout cannot share a branch with another.
-__MOOR_WORKTREE_NAME="$(git -C "$_moor_repo" rev-parse --abbrev-ref HEAD 2>/dev/null || :)"
-if [ -z "$__MOOR_WORKTREE_NAME" ] || [ "$__MOOR_WORKTREE_NAME" = HEAD ]; then
-    __MOOR_WORKTREE_NAME="$(basename "$_moor_repo")"
+__HERMES_WORKTREE_NAME="$(git -C "$_HERMES_REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || :)"
+if [ -z "$__HERMES_WORKTREE_NAME" ] || [ "$__HERMES_WORKTREE_NAME" = HEAD ]; then
+    __HERMES_WORKTREE_NAME="$(basename "$_HERMES_REPO")"
 fi
 __MOOR_SAVED_PS1="${PS1-__MOOR_UNSET__}"
 __MOOR_SAVED_PROMPT_COMMAND="${PROMPT_COMMAND-__MOOR_UNSET__}"
@@ -220,6 +175,7 @@ deactivate() {
 # remember the key list for deactivate (kept out of the loop vars above)
 __MOOR_KEY_LIST="$_moor_keys"
 
-unset _moor_repo _moor_os _moor_arch _moor_target _moor_store \
-      _moor_py _moor_json _moor_keys _moor_k _moor_entry _moor_venvpy \
-      _moor_winarch _moor_top _moor_cygpath
+# The composition library is not part of the user's shell.
+unset -f hermes_sync hermes_bootstrap_python hermes_compose_env hermes_apply_env \
+         hermes_activation_current hermes_ensure_env
+unset _HERMES_REPO _hermes_script _hermes_keys _hermes_k _hermes_top

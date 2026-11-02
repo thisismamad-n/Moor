@@ -40,7 +40,7 @@ def test_installer_post_pm_stages(tmp_path: Path, stage: str, expected: list[str
     env = {**os.environ, 'HOME': str(tmp_path), 'MOOR_HOME': str(tmp_path / 'home'), 'MOOR_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls)}
     # `curl | bash` and Docker builds have no terminal: the interactive stage is skipped, not failed.
     result = subprocess.run(command, cwd=tmp_path, env={**env, 'STAGE_EXIT': '9'}, capture_output=True, text=True,
-                            encoding='utf-8', timeout=20, start_new_session=True)
+                            encoding='utf-8', timeout=20, start_new_session=True, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     assert not calls.exists()
     master, slave = pty.openpty()
@@ -52,7 +52,7 @@ def test_installer_post_pm_stages(tmp_path: Path, stage: str, expected: list[str
         for code in [0, 9]:
             result = subprocess.run(command, cwd=tmp_path, env={**env, 'STAGE_EXIT': str(code)}, capture_output=True,
                                     text=True, encoding='utf-8', timeout=20, stdin=subprocess.DEVNULL,
-                                    preexec_fn=_with_controlling_terminal(tty_path))
+                                    preexec_fn=_with_controlling_terminal(tty_path), check=False)
             assert calls.exists(), (result.returncode, result.stdout, result.stderr)
             assert (result.returncode == 0) == (code == 0), result.stdout + result.stderr
             assert json.loads(calls.read_text()) == expected
@@ -80,9 +80,9 @@ def test_products_and_desktop_stages_share_the_completion_tail(tmp_path: Path, s
                f'source "$1" --manifest >/dev/null; INSTALL_DIR="$2"; INCLUDE_DESKTOP={flag}; '
                'bootstrap_python() { boot_py="$PYTHON_FOR_TEST"; }; "stage_$3"',
                'test', str(ROOT / 'scripts/install.sh'), str(install), stage]
-    env = {**os.environ, 'HOME': str(tmp_path), 'MOOR_HOME': str(tmp_path / 'home'),
-           'MOOR_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls), 'PYTHON_FOR_TEST': sys.executable}
-    result = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=20)
+    env = {**os.environ, 'HOME': str(tmp_path), 'HERMES_HOME': str(tmp_path / 'home'),
+           'HERMES_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls), 'PYTHON_FOR_TEST': sys.executable}
+    result = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=20, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     argv = json.loads(calls.read_text())
     assert argv[:2] == ['--source', str(install)]

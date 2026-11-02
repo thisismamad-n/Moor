@@ -11,13 +11,16 @@ import { atom } from 'nanostores'
 
 import { persistString, storedString } from '@/lib/storage'
 
-const KEY = 'moor.desktop.vibeHearts.v1'
+import { recordFeatureToggle } from './desktop-metrics'
+
+const KEY = 'hermes.desktop.vibeHearts.v1'
 
 // Absent key and anything other than "off" keep hearts on, matching the
 // pre-toggle always-on default for existing installs.
 export const $vibeHeartsEnabled = atom<boolean>(typeof window === 'undefined' ? true : storedString(KEY) !== 'off')
 
 export function setVibeHeartsEnabled(enabled: boolean): void {
+  recordFeatureToggle('vibe_hearts', $vibeHeartsEnabled.get(), enabled)
   $vibeHeartsEnabled.set(enabled)
 }
 

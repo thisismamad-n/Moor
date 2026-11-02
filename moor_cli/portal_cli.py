@@ -105,7 +105,7 @@ def _cmd_open(args) -> int:
 
 def _cmd_tools(args) -> int:
     """List the Tool Gateway catalog + current routing."""
-    from moor_cli.moor_subscription import get_moor_subscription_features
+    from hermes_cli.nous_subscription import get_nous_subscription_features, managed_image_partner
 
     config = load_config() or {}
     try:
@@ -121,6 +121,8 @@ def _cmd_tools(args) -> int:
 
     label_width = max(len(label) for _, label, _ in _CATALOG)
     for key, label, partner in _CATALOG:
+        if key == "image_gen":
+            partner = managed_image_partner(config) or partner
         feat = features.features.get(key)
         state = color("unknown", Colors.DIM) if feat is None else _feature_state(feat, via_moor="✓ via Moor Portal")
         print(f"  {label:<{label_width}}  partner: {partner:<14} {state}")

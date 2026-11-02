@@ -10,8 +10,8 @@ def _missing_package(monkeypatch):
     import pm
     import moor_constants
 
-    monkeypatch.setattr(moor_constants, "find_node_executable", lambda executable: None)
-    monkeypatch.setattr(moor_constants, "with_moor_node_path", lambda: {})
+    monkeypatch.setattr(hermes_constants, "find_node_executable", lambda executable: None)
+    monkeypatch.setattr(hermes_constants, "with_hermes_node_path", dict)
     monkeypatch.setattr(pm, "ensure", lambda package, explicit: SimpleNamespace(env={}))
     monkeypatch.setattr(pm, "installed_package", lambda package: None)
 

@@ -57,9 +57,7 @@ The repo ships these bundled plugins under `plugins/`. All are opt-in — enable
 |---|---|---|
 | `disk-cleanup` | hooks + slash command | Auto-track ephemeral files and clean them on session end |
 | `security-guidance` | hooks | Pattern-match dangerous code on `write_file`/`patch` and append a security warning (or block) — 25 rules (Apache-2.0 fork of Anthropic's `claude-plugins-official` patterns) |
-| `observability/langfuse` | hooks | Trace turns / LLM calls / tools to [Langfuse](https://langfuse.com) |
 | `teams_pipeline` | standalone | Microsoft Teams meeting pipeline — Graph-backed, transcript-first meeting summaries |
-| `spotify` | backend (7 tools) | Native Spotify playback, queue, search, playlists, albums, library |
 | `google_meet` | standalone | Join Meet calls, live-caption transcription, optional realtime duplex audio |
 | `image_gen/openai` | image backend | OpenAI GPT Image 2 and 2.5 Flare/Sunburst generation and editing (API key) |
 | `image_gen/openai-codex` | image backend | OpenAI image generation via Codex OAuth |
@@ -140,84 +138,28 @@ The file is still written. The model reads the warning in the next turn's tool m
 
 **What it does not do (yet):** the upstream Anthropic plugin has two more layers — an LLM diff review on each agent turn that touched files, and an agentic commit-time review that traces data flow across files. Neither is ported. The agent can already run those reviews on demand via `delegate_task`.
 
-### observability/langfuse
+### Langfuse (moved to the plugin catalog)
 
-Traces Moor turns, LLM calls, and tool invocations to [Langfuse](https://langfuse.com) — an open-source LLM observability platform. One span per turn, one generation per API call, one tool observation per tool call. Usage totals, per-type token counts, and cost estimates come out of Moor' canonical `agent.usage_pricing` numbers, so the Langfuse dashboard sees the same breakdown (input / output / `cache_read_input_tokens` / `cache_creation_input_tokens` / `reasoning_tokens`) that appears in `moor logs`.
-
-The plugin is fail-open: no SDK installed, no credentials, or a transient Langfuse error — all turn into a silent no-op in the hook. The agent loop is never impacted.
-
-**Setup (interactive — recommended):**
+Langfuse tracing is no longer bundled with Hermes. It ships as the official
+[`langfuse`](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse) catalog plugin, with the same hooks, `HERMES_LANGFUSE_*`
+environment variables and capture modes:
 
 ```bash
-moor tools          # → Langfuse Observability → Cloud or Self-Hosted
+hermes plugins install langfuse
 ```
 
-The wizard collects your keys, prepares the declared `langfuse` extra through PM
-when needed, and enables `observability/langfuse`. Restart Moor and the next
-turn ships a trace. If preparation fails, retry through `moor tools`; do not
-install the SDK into the selected environment with pip.
-
-**Setup (manual):**
-
-For a source checkout, first follow the [PM developer workflow](../../reference/package-management.md#developer-workflow)
-with the intended Moor home. Use the checkout's prepared Python:
-
-```bash
-python -c "import pm; pm.sync_venv(['langfuse'], explicit=True)"
-source ./activate
-python moor plugins enable observability/langfuse
-```
-
-Use `. .\activate.ps1` for PowerShell activation. Then put the credentials in
-the active home's `.env` (`$MOOR_HOME/.env`, normally `~/.moor/.env`):
-
-```bash
-MOOR_LANGFUSE_PUBLIC_KEY=pk-lf-...
-MOOR_LANGFUSE_SECRET_KEY=sk-lf-...
-MOOR_LANGFUSE_BASE_URL=https://cloud.langfuse.com   # or your self-hosted URL
-```
-
-**How it works:**
-
-| Hook | Behaviour |
-|---|---|
-| `pre_api_request` / `pre_llm_call` | Open (or reuse) a per-turn root span "Moor turn". Start a `generation` child observation for this API call with serialized recent messages as input. |
-| `post_api_request` / `post_llm_call` | Close the generation, attach `usage_details`, `cost_details`, `finish_reason`, assistant output + tool calls. If no tool calls and non-empty content, close the turn. |
-| `pre_tool_call` | Start a `tool` child observation with sanitized `args`. |
-| `post_tool_call` | Close the tool observation with sanitized `result`. `read_file` payloads get summarized (head + tail + omitted-line count) so a huge file read stays under `MOOR_LANGFUSE_MAX_CHARS`. |
-
-Session grouping keys off the Moor session ID (or task ID for sub-agents) via `langfuse.propagate_attributes`, so everything in a single `moor chat` session lives under one Langfuse session.
-
-**Verify:**
-
-```bash
-moor plugins list                 # observability/langfuse should show "enabled"
-moor chat -q "hello"              # check the Langfuse UI for a "Moor turn" trace
-```
-
-**Optional tuning** (in `.env`):
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `MOOR_LANGFUSE_ENV` | — | Environment tag on traces (`production`, `staging`, …) |
-| `MOOR_LANGFUSE_RELEASE` | — | Release/version tag |
-| `MOOR_LANGFUSE_SAMPLE_RATE` | `1.0` | Sampling rate passed to the SDK (0.0–1.0) |
-| `MOOR_LANGFUSE_MAX_CHARS` | `12000` | Per-field truncation for message content / tool args / tool results |
-| `MOOR_LANGFUSE_DEBUG` | `false` | Verbose plugin logging to `agent.log` |
-
-moor-prefixed and standard SDK env vars (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`) are both accepted — moor-prefixed wins when both are set.
-
-**Performance:** the Langfuse client is cached after the first hook call. If credentials or SDK are missing, that decision is also cached — subsequent hooks fast-return without re-checking env vars or reloading config.
-
-**Disabling:** `moor plugins disable observability/langfuse`. The plugin module is still discovered, but no module code runs until you re-enable.
+Profiles that had `observability/langfuse` enabled get the plugin installed and
+enabled automatically by `hermes update` (or on the first start after updating),
+and keep tracing to the same Langfuse project. Setup, tuning and capture modes
+are documented in the [plugin's README](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse).
 
 ### NeMo Relay native integration (migration note)
 
 NeMo Relay is no longer a bundled Moor plugin. Do not run `moor plugins enable observability/nemo_relay`; Moor core now owns the Relay session, turn, LLM, and tool lifecycles.
 
-To opt into Relay middleware or exporters, create a standard Relay `plugins.toml`, then set `MOOR_NEMO_RELAY_PLUGINS_TOML` to that file before starting Moor. The policy is process-wide for every profile hosted by that Moor process. See the [NeMo Relay observability configuration](https://docs.nvidia.com/nemo/relay/configure-plugins/observability/about) for ATOF, ATIF, and OpenTelemetry options.
+Configure Relay middleware or exporters through a standard Relay `plugins.toml`. Hermes loads Relay's user configuration (`~/.config/nemo-relay/plugins.toml`) and then its machine-wide system configuration (`/etc/nemo-relay/plugins.toml`, or `%ProgramData%\nemo-relay\plugins.toml` on Windows). Set `HERMES_NEMO_RELAY_PLUGINS_TOML` before starting Hermes only when you want an explicit file to replace the user configuration; the system configuration still has higher precedence. The policy is process-wide for every profile hosted by that Hermes process. Run `hermes doctor` to see which files apply. See the [NeMo Relay observability configuration](https://docs.nvidia.com/nemo/relay/configure-plugins/observability/about) for ATOF, ATIF, and OpenTelemetry options.
 
-The old `MOOR_NEMO_RELAY_ATOF_*` and `MOOR_NEMO_RELAY_ATIF_*` settings no longer activate exporters — a `.env` that still carries them (and no `MOOR_NEMO_RELAY_PLUGINS_TOML`) exports **nothing**, and the gateway logs one warning saying so. `moor doctor` reports these stale settings when no replacement `plugins.toml` is selected.
+The old `HERMES_NEMO_RELAY_ATOF_*` and `HERMES_NEMO_RELAY_ATIF_*` settings no longer configure exporters. When `HERMES_NEMO_RELAY_PLUGINS_TOML` is unset, the gateway warns about remaining legacy variables and `hermes doctor` reports them. Independently discovered Relay user or system exporters still apply.
 
 **Automatic migration.** `moor update` (and `moor migrate relay`, or `moor migrate relay --all-profiles` for every profile home) converts the legacy variables into `<moor home>/relay-plugins.toml`, sets `MOOR_NEMO_RELAY_PLUGINS_TOML` in that profile's `.env`, and comments the legacy lines out (nothing is deleted). Under a multiplexed gateway every profile home gets its own file. The generated file is validated through Relay before it is written; this is the shape it produces (note the `type = "file"` sink discriminator — a sink without it is rejected):
 
@@ -247,6 +189,10 @@ agent_name = "Moor Agent"
 model_name = "unknown"
 output_directory = "/home/you/.moor/telemetry/nemo-relay/atif"
 filename_template = "trajectory-{session_id}.json"
+
+[components.config.opentelemetry]
+enabled = false
+endpoints = []
 
 [components.config.policy]
 unknown_component = "warn"

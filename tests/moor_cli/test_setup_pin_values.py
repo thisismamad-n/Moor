@@ -47,8 +47,8 @@ def test_cold_setup_uses_exact_lock_values(tmp_path, missing_target, real_bash):
     env = dict(os.environ, HOME=tmp_path.as_posix(), MOOR_HOME=(tmp_path / "home").as_posix(),
                MOOR_RUNTIME_DIR=(tmp_path / "tools").as_posix(), BASH_ENV=hook.as_posix(),
                PROBE_ARGS=args.as_posix(), PROBE_DOWNLOAD=corrupt.as_posix())
-    result = subprocess.run([real_bash, str(checkout / "setup-moor.sh")], cwd=tmp_path,
-                            env=env, capture_output=True, text=True, encoding="utf-8", timeout=30)
+    result = subprocess.run([real_bash, str(checkout / "setup-hermes.sh")], cwd=tmp_path,
+                            env=env, capture_output=True, text=True, encoding="utf-8", timeout=30, check=False)
     assert result.returncode != 0, result.stdout + result.stderr
     if missing_target:
         assert not args.exists(), "a missing target must not select a sibling artifact"

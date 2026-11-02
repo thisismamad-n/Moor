@@ -26,7 +26,11 @@ def isolated_kanban_home_with_profiles(monkeypatch):
     for mod in list(sys.modules.keys()):
         if mod.startswith("moor_cli") or mod.startswith("moor_state") or mod == "moor_constants":
             del sys.modules[mod]
-    from moor_cli import kanban_db
+    from hermes_cli import kanban_db
+    from hermes_cli import kanban_db_dispatch
+    # The module purge above discards the conftest's memory-sample neutralizer;
+    # re-apply it so the host's live memory pressure cannot cap this tick.
+    monkeypatch.setattr(kanban_db_dispatch, "_system_memory_sample", dict)
     yield kanban_db
 
 
@@ -72,7 +76,7 @@ def test_capped_tasks_dispatched_on_subsequent_tick(isolated_kanban_home_with_pr
     from moor_cli import kanban_db_dispatch as kbd
     with kbc.connect_closing() as conn:
         kb.create_board(slug="default", name="Test")
-        ids = [kb.create_task(conn, title=f"a{i}", assignee="alpha") for i in range(3)]
+        [kb.create_task(conn, title=f"a{i}", assignee="alpha") for i in range(3)]
 
     # First tick: cap=1, only 1 alpha dispatched
     with kbc.connect_closing() as conn:

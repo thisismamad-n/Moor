@@ -72,7 +72,9 @@ function Install-MoorArm64OpenSSL {
     $required = @('include\openssl\ssl.h', 'lib\libcrypto.lib', 'lib\libssl.lib')
     $missing = @($required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $prefix $_) -PathType Leaf) })
     if ($missing.Count) {
-        Invoke-MoorBuildCommand $Vcpkg @('install', 'openssl:arm64-windows-static-md', '--classic', '--disable-metrics', "--x-install-root=$(Join-Path $Root 'installed')") 'Building static ARM64 OpenSSL via vcpkg (several minutes)'
+        # vcpkg refuses a binary cache directory that does not exist yet.
+        if ($env:VCPKG_DEFAULT_BINARY_CACHE) { New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null }
+        Invoke-HermesBuildCommand $Vcpkg @('install', 'openssl:arm64-windows-static-md', '--classic', '--disable-metrics', "--x-install-root=$(Join-Path $Root 'installed')") 'Building static ARM64 OpenSSL via vcpkg (several minutes)'
     } else {
         Write-MoorBuildNote "ARM64 OpenSSL development libraries found: $prefix"
     }
@@ -252,6 +254,11 @@ function Initialize-MoorArm64BuildTools {
         Invoke-MoorBuildCommand (Join-Path $vcpkgRoot 'bootstrap-vcpkg.bat') @('-disableMetrics') 'Building vcpkg'
     }
     $env:VCPKG_ROOT = $vcpkgRoot
+    # vcpkg resolves Visual Studio itself and takes the newest instance, which may lack the
+    # native arm64 toolset even though the instance above has it: the arm64-windows triplet
+    # then fails with "Unable to find a valid toolchain" and the whole update aborts. Point
+    # vcpkg at the instance VsDevCmd was initialized against, unless the caller pinned one.
+    if (-not $env:VCPKG_VISUAL_STUDIO_PATH) { $env:VCPKG_VISUAL_STUDIO_PATH = $vs }
     # The install tree can be cached independently of the discovered checkout.
     if (-not $OpenSSLRoot) { $OpenSSLRoot = $vcpkgRoot }
     $env:OPENSSL_DIR = Install-MoorArm64OpenSSL -Vcpkg (Join-Path $vcpkgRoot 'vcpkg.exe') -Root $OpenSSLRoot

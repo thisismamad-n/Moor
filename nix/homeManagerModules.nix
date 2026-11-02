@@ -101,12 +101,19 @@
       # The token is read at start time and never with `--set`. makeWrapper
       # writes a --set value into the Nix store, which all users can read.
       desktopRun = lib.optional desktopUsesService ''
-        if [ -r ${lib.escapeShellArg cfg.backend.sessionTokenFile} ]; then
-          MOOR_DESKTOP_REMOTE_TOKEN="$(tr -d '\r\n' < ${lib.escapeShellArg cfg.backend.sessionTokenFile})"
-          export MOOR_DESKTOP_REMOTE_TOKEN
+        _token_file=${lib.escapeShellArg cfg.backend.sessionTokenFile}
+
+        # Secret managers leave a "$XDG_RUNTIME_DIR" placeholder in secret
+        # paths for a shell to expand (agenix's Home Manager module does).
+        # escapeShellArg froze it into a literal, so expand it here.
+        _token_file=''${_token_file//\$\{XDG_RUNTIME_DIR\}/''${XDG_RUNTIME_DIR:-}}
+
+        if [ -r "$_token_file" ]; then
+          HERMES_DESKTOP_REMOTE_TOKEN="$(tr -d '\r\n' < "$_token_file")"
+          export HERMES_DESKTOP_REMOTE_TOKEN
         else
-          echo "moor-desktop: cannot read the session token at ${cfg.backend.sessionTokenFile}." >&2
-          echo "moor-desktop: the application starts its own backend instead of the one of the service." >&2
+          echo "hermes-desktop: cannot read the session token at $_token_file." >&2
+          echo "hermes-desktop: the application starts its own backend instead of the one of the service." >&2
         fi
       '';
 
@@ -122,6 +129,7 @@
         {
           description,
           argv,
+          environment ? { },
         }:
         {
           Unit = {
@@ -134,9 +142,12 @@
           Install.WantedBy = [ "default.target" ];
           Service = {
             Type = "simple";
-            Environment = (lib.mapAttrsToList (k: v: "${k}=${v}") processEnvironment) ++ [
-              "PATH=${unitPath}"
-            ];
+            Environment =
+              (lib.mapAttrsToList (k: v: "${k}=${v}") processEnvironment)
+              ++ (lib.mapAttrsToList (k: v: "${k}=${lib.escapeShellArg v}") environment)
+              ++ [
+                "PATH=${unitPath}"
+              ];
             ExecStart = lib.escapeShellArgs argv;
             WorkingDirectory = cfg.workingDirectory;
             Restart = cfg.restart;
@@ -150,15 +161,22 @@
         };
 
       mkAgent =
-        { argv, logName }:
+        {
+          argv,
+          logName,
+          environment ? { },
+        }:
         {
           enable = true;
           config = {
             Label = "org.nix-community.home.${logName}";
             ProgramArguments = argv;
-            EnvironmentVariables = processEnvironment // {
-              PATH = "${unitPath}:/usr/bin:/bin:/usr/sbin:/sbin";
-            };
+            EnvironmentVariables =
+              processEnvironment
+              // environment
+              // {
+                PATH = "${unitPath}:/usr/bin:/bin:/usr/sbin:/sbin";
+              };
             WorkingDirectory = cfg.workingDirectory;
             RunAtLoad = true;
             KeepAlive =
@@ -404,6 +422,7 @@
               systemd.user.services.moor-backend = mkUnit {
                 description = common.backendDescription cfg;
                 argv = common.backendArgv { inherit pkgs cfg; };
+                environment = common.backendSessionEnvironment { inherit cfg; };
               };
             })
 
@@ -418,7 +437,8 @@
             (lib.mkIf (isDarwin && cfg.backend.mode != "none") {
               launchd.agents.moor-backend = mkAgent {
                 argv = common.backendArgv { inherit pkgs cfg; };
-                logName = "moor-backend";
+                logName = "hermes-backend";
+                environment = common.backendSessionEnvironment { inherit cfg; };
               };
             })
           ]

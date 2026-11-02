@@ -18,6 +18,7 @@ def test_invalid_config_refuses_desktop_channel_probe(tmp_path, content):
         [sys.executable, "-m", "moor_cli.source_check", "--install-root", str(root), "--home", str(home)],
         cwd=root, env={**os.environ, "MOOR_HOME": str(home), "MOOR_IGNORE_USER_CONFIG": "0"},
         capture_output=True, text=True, timeout=30,
+        check=False,
     )
     assert result.returncode != 0, result.stdout + result.stderr
     assert '"channel": "main"' not in result.stdout

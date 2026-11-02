@@ -21,8 +21,8 @@ def _fake_multiplexer(monkeypatch, tmp_path, *, multiplex: bool, pid_file: bool 
     launch-service gateway whose ``gateway.pid`` was unlinked while it kept serving."""
     import json
 
-    import moor_constants
-    import gateway.status as status
+    import hermes_constants
+    from gateway import status
 
     (tmp_path / "profiles" / "beta").mkdir(parents=True)
     # A profile dir needs an identity marker to be listed/served (bare dirs are side-effect shells).

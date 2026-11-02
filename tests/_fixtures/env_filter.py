@@ -171,16 +171,17 @@ _MOOR_BEHAVIORAL_VARS = frozenset({
     # A Nix-wrapped `moor` on the developer's host exports the store's read-only plugins
     # tree; tests must discover the checkout's plugins/ (get_bundled_plugins_dir), not a
     # different release's.
-    "MOOR_BUNDLED_PLUGINS",
-    "MOOR_DEV",
-    "MOOR_CONTAINER",
-    "MOOR_EPHEMERAL_SYSTEM_PROMPT",
-    "MOOR_TIMEZONE",
-    "MOOR_REDACT_SECRETS",
-    "MOOR_BACKGROUND_NOTIFICATIONS",
-    "MOOR_EXEC_ASK",
-    "MOOR_HOME_MODE",
-    "MOOR_AGENT_USE_LEGACY_SESSION_KEYS",
+    "HERMES_BUNDLED_PLUGINS",
+    "HERMES_DEV",
+    "HERMES_CONTAINER",
+    "HERMES_EPHEMERAL_SYSTEM_PROMPT",
+    "HERMES_TIMEZONE",
+    "HERMES_REDACT_SECRETS",
+    "HERMES_BACKGROUND_NOTIFICATIONS",
+    "HERMES_EXEC_ASK",
+    "HERMES_HOME_MODE",
+    "HERMES_AGENT_USE_LEGACY_SESSION_KEYS",
+    "HERMES_NEMO_RELAY_PLUGINS_TOML",
     # Kanban path/board pins must never leak from a developer shell or
     # dispatched worker into tests; otherwise tests can write fake tasks to
     # the real ~/.moor/kanban.db instead of the per-test MOOR_HOME.

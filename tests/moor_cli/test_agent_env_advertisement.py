@@ -11,9 +11,9 @@ standard-var matching there is exact, so any other value is attributed to
 
 The terminal backends additionally export both vars inside every wrapped
 shell command (``BaseEnvironment._wrap_command``) so the marker reaches
-REMOTE backends (Docker/SSH/Modal/Daytona/Singularity/Vercel) whose exec
-environment does not inherit the Moor process env, and survives the
-cross-session leak guard that strips ``MOOR_SESSION_*`` from subprocess
+REMOTE backends (Docker/SSH/Modal/Daytona/Vercel, remote plugin backends) whose exec
+environment does not inherit the Hermes process env, and survives the
+cross-session leak guard that strips ``HERMES_SESSION_*`` from subprocess
 envs in engaged multi-session hosts.
 """
 
@@ -68,6 +68,7 @@ class TestWrapCommandAdvertisesHarness:
         out = subprocess.run(
             ["bash", "-c", wrapped], capture_output=True, text=True,
             env=clean_env, timeout=30,
+            check=False,
         )
         assert f"AI={HARNESS_ID} MOOR=true" in out.stdout
 
@@ -75,5 +76,6 @@ class TestWrapCommandAdvertisesHarness:
         out = subprocess.run(
             ["bash", "-c", wrapped], capture_output=True, text=True,
             env=outer_env, timeout=30,
+            check=False,
         )
         assert "AI=pi MOOR=false" in out.stdout

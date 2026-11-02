@@ -17,14 +17,24 @@ reasoning_effort into a live one that OpenAI 400s on the chat_completions path.
 
 from unittest.mock import patch
 
-from moor_cli.model_switch import switch_model
-from moor_cli.providers import host_mandated_api_mode
+import pytest
+
+from hermes_cli.model_switch import switch_model
+from hermes_cli.providers import host_mandated_api_mode
 
 _MOCK_VALIDATION = {
     "accepted": True,
     "persist": True,
     "recognized": True,
     "message": None,
+}
+
+# models.dev as the live catalog serves it: Meta's Model API is keyed ``meta``, the id the
+# bundled ``meta-ai`` plugin also claims as an alias. Tests seed the registry instead of
+# fetching it, so provider resolution never depends on the network or today's catalog.
+_MODELS_DEV_WITH_META = {
+    "meta": {"id": "meta", "name": "Meta", "env": ["META_MODEL_API_KEY"],
+             "api": "https://api.meta.ai/v1", "models": {}},
 }
 
 
@@ -35,11 +45,14 @@ def _run_openai_switch(
     explicit_provider: str = "openai-api",
     runtime_api_mode: str = "chat_completions",
     runtime_base_url: str = "https://api.openai.com/v1",
+    models_dev_registry: dict | None = None,
 ):
     """Run switch_model with OpenAI-direct mocks and return the result."""
+    registry = _MODELS_DEV_WITH_META if models_dev_registry is None else models_dev_registry
     with (
-        patch("moor_cli.model_switch.resolve_alias", return_value=None),
-        patch("moor_cli.model_switch.list_provider_models", return_value=[]),
+        patch("agent.models_dev.fetch_models_dev", lambda *a, **k: registry),
+        patch("hermes_cli.model_switch.resolve_alias", return_value=None),
+        patch("hermes_cli.model_switch.list_provider_models", return_value=[]),
         patch(
             "moor_cli.runtime_provider.resolve_runtime_provider",
             return_value={
@@ -100,13 +113,17 @@ def test_generic_endpoint_keeps_explicit_api_mode():
     assert host_mandated_api_mode("https://api.openai.com/v1") == "codex_responses"
     assert host_mandated_api_mode("https://api.anthropic.com") == "anthropic_messages"
 
-def test_stale_chat_overridden_on_meta_direct():
+@pytest.mark.parametrize("models_dev_registry", [_MODELS_DEV_WITH_META, {}], ids=["catalog", "offline"])
+def test_stale_chat_overridden_on_meta_direct(models_dev_registry):
     """Stale chat_completions on api.meta.ai → codex_responses (like openai direct).
 
     Switching from openrouter/chat_completions to muse-spark on meta's
-    endpoint must flip to Responses API for caching (0% vs 93-99%).
+    endpoint must flip to Responses API for caching (0% vs 93-99%). ``meta`` is an
+    alias of the bundled ``meta-ai`` plugin, so the switch lands on ``meta-ai``
+    whether or not models.dev (which keys the same API ``meta``) is reachable.
     """
     result = _run_openai_switch(
+        models_dev_registry=models_dev_registry,
         raw_input="muse-spark-1.2",
         current_provider="openrouter",
         current_model="anthropic/claude-opus-4.8",
@@ -115,7 +132,7 @@ def test_stale_chat_overridden_on_meta_direct():
         runtime_base_url="https://api.meta.ai/v1",
     )
     assert result.success, f"switch_model failed: {result.error_message}"
-    assert result.target_provider == "meta"
+    assert result.target_provider == "meta-ai"
     assert result.new_model == "muse-spark-1.2"
     assert result.api_mode == "codex_responses"
 

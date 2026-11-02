@@ -2,8 +2,8 @@
 // Real desktop + real backend. Isolated identity; no copied credentials.
 // Adds a fixed Vite port and CDP (9344) so the run can be driven and read
 // from outside. When you only want to click through it yourself:
-//   D=$(mktemp -d) && env -u MOOR_SHARED_AUTH_DIR MOOR_GUEST_ONBOARDING=1 MOOR_SKIP_INTRO=1 \
-//     MOOR_HOME="$D/home" MOOR_DESKTOP_USER_DATA_DIR="$D/userdata" moor desktop
+//   D=$(mktemp -d) && env -u HERMES_SHARED_AUTH_DIR \
+//     HERMES_HOME="$D/home" HERMES_DESKTOP_USER_DATA_DIR="$D/userdata" hermes desktop
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -27,11 +27,11 @@ await new Promise((resolve, reject) => {
 for (const dir of ['.moor/shared', 'electron', 'work']) fs.mkdirSync(path.join(sandbox, dir), { recursive: true })
 const env = Object.fromEntries(['PATH', 'TMPDIR', 'LANG', 'SHELL'].filter(key => process.env[key]).map(key => [key, process.env[key]]))
 Object.assign(env, {
-  HOME: sandbox, MOOR_HOME: path.join(sandbox, '.moor'), MOOR_SHARED_AUTH_DIR: path.join(sandbox, '.moor/shared'),
-  MOOR_DESKTOP_USER_DATA_DIR: path.join(sandbox, 'electron'), MOOR_DESKTOP_CWD: path.join(sandbox, 'work'),
-  MOOR_DESKTOP_MOOR_ROOT: root, MOOR_DESKTOP_PYTHON: python,
-  MOOR_DESKTOP_IGNORE_EXISTING: '1', MOOR_DESKTOP_APP_NAME: 'Moor Connector Rehearsal',
-  MOOR_GUEST_ONBOARDING: '1', MOOR_SKIP_INTRO: '1', MOOR_DESKTOP_DEV_SERVER: url, MOOR_DESKTOP_CDP_PORT: '9344'
+  HOME: sandbox, HERMES_HOME: path.join(sandbox, '.hermes'), HERMES_SHARED_AUTH_DIR: path.join(sandbox, '.hermes/shared'),
+  HERMES_DESKTOP_USER_DATA_DIR: path.join(sandbox, 'electron'), HERMES_DESKTOP_CWD: path.join(sandbox, 'work'),
+  HERMES_DESKTOP_HERMES_ROOT: root, HERMES_DESKTOP_PYTHON: python,
+  HERMES_DESKTOP_IGNORE_EXISTING: '1', HERMES_DESKTOP_APP_NAME: 'Hermes Connector Rehearsal',
+  HERMES_DESKTOP_DEV_SERVER: url, HERMES_DESKTOP_CDP_PORT: '9344'
 })
 const entry = path.join(desktop, 'dist/connector-rehearsal.mjs')
 fs.writeFileSync(entry, `import { app } from 'electron'\napp.setAsDefaultProtocolClient = () => false\napp.setAppPath(${JSON.stringify(desktop)})\nawait import('./electron-main.mjs')\n`)

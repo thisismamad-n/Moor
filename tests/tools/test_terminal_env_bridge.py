@@ -10,8 +10,8 @@ import os
 
 import pytest
 
-import tools.terminal_tool as terminal_tool
-from moor_constants import get_moor_home
+from tools import terminal_tool
+from hermes_constants import get_hermes_home
 
 
 @pytest.fixture(autouse=True)

@@ -7,34 +7,18 @@ chat_completions reasoning translations (GLM-5.2, Kimi K2, DeepSeek, Ox Alpha).
 from typing import Any
 
 from agent import reasoning_effort as re_
-from agent.opencode_sanitizer import sanitize_opencode_messages
-from moor_cli import __version__ as _MOOR_VERSION
+from hermes_cli.version_info import hermes_user_agent
 from providers import register_provider
-from providers.base import ProviderProfile
+from providers.base import LazyHeaders, ProviderProfile
+from datetime import UTC
 
-
-def opencode_zen_client_headers() -> dict[str, str]:
-    """Default headers for OpenCode Zen / Go requests."""
-    headers = {
-        "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
-        "X-Title": "Moor Agent",
-    }
-    try:
-        from agent.opencode_emulation import (
-            is_opencode_emulation_enabled,
-            get_emulated_user_agent,
-            DEFAULT_OPENCODE_CLIENT_VALUE,
-            DEFAULT_OPENCODE_PROJECT_VALUE,
-        )
-        if is_opencode_emulation_enabled():
-            headers["User-Agent"] = get_emulated_user_agent()
-            headers["x-opencode-client"] = DEFAULT_OPENCODE_CLIENT_VALUE
-            headers["x-opencode-project"] = DEFAULT_OPENCODE_PROJECT_VALUE
-            return headers
-    except Exception:
-        pass
-    headers["User-Agent"] = f"MoorAgent/{_MOOR_VERSION}"
-    return headers
+# Attribution headers (same values as OpenRouter / Vercel / Fireworks); via
+# default_headers so they survive model switches and credential rotation.
+_ATTRIBUTION_HEADERS = {
+    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+    "X-Title": "Hermes Agent",
+    "User-Agent": lambda: hermes_user_agent("HermesAgent"),
+}
 
 
 def _flat_model_name(model: str | None) -> str:
@@ -74,8 +58,39 @@ class OpenCodeGoProfile(ProviderProfile):
         cap = self._MODEL_MAX_TOKENS.get(_flat_model_name(model))
         return self.default_max_tokens if cap is None else cap
 
-    def build_client_kwargs_extras(self, *, base_url: str | None = None) -> dict[str, Any]:
-        return {"default_headers": opencode_zen_client_headers()}
+    def fetch_account_usage(self, *, base_url: str | None = None, api_key: str | None = None):
+        """Go subscription windows for /usage via ``/zen/go/v1/usage`` (anomalyco/opencode#16513).
+
+        Percent-based payload ``{"usage": {"rolling"|"weekly"|"monthly": {"percent", "resetsAt"}}}``.
+        Literal endpoint, NOT the runtime base_url: that one loses its /v1 suffix in
+        anthropic_messages mode and /usage only exists under /v1.
+        """
+        from datetime import datetime, timezone
+
+        import httpx
+
+        from agent.account_usage import AccountUsageSnapshot, AccountUsageWindow
+        from hermes_cli.runtime_provider import resolve_runtime_provider
+
+        runtime = resolve_runtime_provider(requested=self.name, explicit_base_url=base_url, explicit_api_key=api_key)
+        token = str(runtime.get("api_key", "") or "").strip()
+        if not token:
+            return None
+        with httpx.Client(timeout=10.0) as client:
+            response = client.get("https://opencode.ai/zen/go/v1/usage",
+                                  headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
+            response.raise_for_status()
+        usage = (response.json() or {}).get("usage") or {}
+        windows = []
+        for key, label in (("rolling", "Rolling window"), ("weekly", "Weekly"), ("monthly", "Monthly")):
+            window = usage.get(key) or {}
+            if window.get("percent") is None:
+                continue
+            reset_raw = str(window.get("resetsAt") or "").replace("Z", "+00:00")
+            reset_at = datetime.fromisoformat(reset_raw) if reset_raw else None
+            windows.append(AccountUsageWindow(label=label, used_percent=float(window["percent"]), reset_at=reset_at))
+        return AccountUsageSnapshot(provider=self.name, source="go_usage_api",
+                                    fetched_at=datetime.now(UTC), windows=tuple(windows))
 
     def build_api_kwargs_extras(
         self, *, reasoning_config: dict | None = None, model: str | None = None, **context
@@ -114,13 +129,13 @@ class OpenCodeZenProfile(ProviderProfile):
 
 opencode_zen = OpenCodeZenProfile(
     name="opencode-zen", aliases=("opencode", "opencode_zen", "zen"), env_vars=("OPENCODE_ZEN_API_KEY",),
-    base_url="https://opencode.ai/zen/v1", default_headers=opencode_zen_client_headers(),
+    base_url="https://opencode.ai/zen/v1", default_headers=LazyHeaders(_ATTRIBUTION_HEADERS),
     default_aux_model="gemini-3-flash",
 )
 
 opencode_go = OpenCodeGoProfile(
     name="opencode-go", aliases=("opencode_go", "go", "opencode-go-sub"), env_vars=("OPENCODE_GO_API_KEY",),
-    base_url="https://opencode.ai/zen/go/v1", default_headers=opencode_zen_client_headers(),
+    base_url="https://opencode.ai/zen/go/v1", default_headers=LazyHeaders(_ATTRIBUTION_HEADERS),
     default_aux_model="glm-5",
     supports_vision_tool_messages=False,
 )

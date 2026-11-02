@@ -42,7 +42,7 @@ def _no_dotenv(monkeypatch):
     """Keep the developer's real ~/.moor/.env out of these tests."""
     import moor_cli.config as config_mod
 
-    monkeypatch.setattr(config_mod, "load_env", lambda: {})
+    monkeypatch.setattr(config_mod, "load_env", dict)
     yield
 
 

@@ -137,8 +137,8 @@ class Home:
         return env
 
     def write(self, config: dict[str, Any], dotenv: dict[str, str] | None = None,
-              auth: dict[str, Any] | None = None) -> "Home":
-        self.moor_home.mkdir(parents=True, exist_ok=True)
+              auth: dict[str, Any] | None = None) -> Home:
+        self.hermes_home.mkdir(parents=True, exist_ok=True)
         self.project.mkdir(parents=True, exist_ok=True)
         base = {"updates": {"check": False}, "agent": {"api_max_retries": 2},
                 "terminal": {"cwd": str(self.project)}, "memory": {"memory_enabled": False}}
@@ -214,8 +214,8 @@ def oneshot(h: Home, prompt: str, *args: str, resume: str | None = None, timeout
     argv = ["-z", prompt, "--usage-file", str(usage_file), *args]
     if resume:
         argv += ["--resume", resume]
-    proc = subprocess.run(moor_argv(*argv), cwd=h.project, env=h.env(env), capture_output=True,
-                          text=True, encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
+    proc = subprocess.run(hermes_argv(*argv), cwd=h.project, env=h.env(env), capture_output=True,
+                          text=True, encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL, check=False)
     usage = json.loads(usage_file.read_text(encoding="utf-8")) if usage_file.exists() else {}
     return Run(proc, usage)
 

@@ -57,6 +57,7 @@ def test_standalone_without_moor_reports_setup_not_ambient_installs(command, tmp
         capture_output=True,
         text=True,
         timeout=15,
+        check=False,
     )
     assert result.returncode == 1
     assert "Moor environment" in result.stdout

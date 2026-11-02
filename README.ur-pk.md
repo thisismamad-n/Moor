@@ -187,10 +187,11 @@ moor setup --portal
 <div dir="ltr">
 
 ```bash
-moor claw migrate              # انٹرایکٹو مائیگریشن (مکمل پری سیٹ)
-moor claw migrate --dry-run    # جائزہ لیں کہ کیا کیا مائیگریٹ ہوگا
-moor claw migrate --preset user-data   # حساس معلومات (secrets) کے بغیر مائیگریٹ کریں
-moor claw migrate --overwrite  # موجودہ متصادم فائلوں کو اوور رائٹ کریں
+hermes plugins install agent-importers  # ایک بار: OpenClaw، Claude Code، Codex اور Cursor
+hermes claw migrate              # انٹرایکٹو مائیگریشن (مکمل پری سیٹ)
+hermes claw migrate --dry-run    # جائزہ لیں کہ کیا کیا مائیگریٹ ہوگا
+hermes claw migrate --preset user-data   # حساس معلومات (secrets) کے بغیر مائیگریٹ کریں
+hermes claw migrate --overwrite  # موجودہ متصادم فائلوں کو اوور رائٹ کریں
 ```
 
 </div>

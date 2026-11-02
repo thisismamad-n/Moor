@@ -47,8 +47,8 @@ async def test_model_picker_reads_routed_profile_config(tmp_path, monkeypatch):
         "model:\n  default: secondary-model\n  provider: secondary-provider\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(gateway_run, "_moor_home", default_home)
-    monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
+    monkeypatch.setattr(gateway_run, "_hermes_home", default_home)
+    monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
     monkeypatch.setattr(
         "moor_cli.model_switch_providers.list_picker_providers",
         lambda **_kwargs: [

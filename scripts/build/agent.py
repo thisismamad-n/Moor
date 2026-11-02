@@ -37,7 +37,9 @@ def plant_surfaces(repo: Path, frontends: dict[str, Path]) -> None:
         _copy(tui / "dist", destination, replace=True)
         _copy(tui / "package.json", destination / "package.json")
     if "web" in frontends:
-        _copy(frontends["web"], repo / "moor_cli/web_dist", replace=True)
+        _copy(frontends["web"], repo / "hermes_cli/web_dist", replace=True)
+    if "webapp" in frontends:
+        _copy(frontends["webapp"], repo / "apps/desktop/dist-webapp", replace=True)
 
 
 def write_metadata(project_path: Path, repo: Path) -> None:
@@ -121,8 +123,9 @@ def assemble(inputs: AgentInputs, out: Path) -> dict:
         env = {**inputs.env, "MOOR_PYTHON": str(inputs.python), "MOOR_INSTALL_ROOT": str(repo)}
         links = {RESOURCE_ENV[name]: (path, repo / name) for name, path in inputs.resources.items()}
         for name, path in inputs.frontends.items():
-            key, destination = {"tui": ("MOOR_TUI_DIR", out / "ui-tui"),
-                                "web": ("MOOR_WEB_DIST", repo / "web_dist")}[name]
+            key, destination = {"tui": ("HERMES_TUI_DIR", out / "ui-tui"),
+                                "web": ("HERMES_WEB_DIST", repo / "web_dist"),
+                                "webapp": ("HERMES_WEBAPP_DIST", repo / "webapp_dist")}[name]
             links[key] = (path, destination)
         for key, (source, destination) in links.items():
             destination.unlink(missing_ok=True)

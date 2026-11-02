@@ -46,8 +46,8 @@ def test_cli_commit_applies_effort_after_the_agent_swap(monkeypatch):
         model="old", provider="moor", requested_provider="moor", _explicit_api_key="", _explicit_base_url="",
         api_key="", base_url="", api_mode="", agent=agent, reasoning_config=None,
         _pending_one_turn_model_restore=None, _pending_model_switch_note="",
-        _snapshot_model_runtime=lambda: {}, _persist_model_switch_to_session=lambda *_a: None)
-    cli._stage_and_swap_model = lambda result, old: cli_mod.MoorCLI._stage_and_swap_model(cli, result, old)
+        _snapshot_model_runtime=dict, _persist_model_switch_to_session=lambda *_a: None)
+    cli._stage_and_swap_model = lambda result, old: cli_mod.HermesCLI._stage_and_swap_model(cli, result, old)
     monkeypatch.setattr(mixin, "_print_switch_summary", lambda *_a, **_k: None)
     monkeypatch.setattr(cli_mod.MoorCLI, "_persist_model_switch_to_session", lambda *_a: None)
     saved = {}

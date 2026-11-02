@@ -151,33 +151,36 @@ export function revokePairing(platform: string, userId: string, profile?: null |
 // shared JSON store the CLI/dashboard also drive. Enable mutates config and
 // best-effort restarts the gateway; subscription changes hot-reload.
 
-export function getWebhooks(): Promise<WebhooksResponse> {
-  return moorApi<WebhooksResponse>({
-    ...profileScoped(),
+/** `profile` = the backend owner this view captured at mount; omitted → the
+ *  ambient request scope. Keyed explicitly so a view that survives an active
+ *  profile switch keeps talking to the profile it belongs to (#71352). */
+export function getWebhooks(profile?: null | string): Promise<WebhooksResponse> {
+  return hermesApi<WebhooksResponse>({
+    ...profileScoped(profile),
     path: '/api/webhooks'
   })
 }
 
-export function enableWebhooks(): Promise<WebhookEnableResponse> {
-  return moorApi<WebhookEnableResponse>({
-    ...profileScoped(),
+export function enableWebhooks(profile?: null | string): Promise<WebhookEnableResponse> {
+  return hermesApi<WebhookEnableResponse>({
+    ...profileScoped(profile),
     path: '/api/webhooks/enable',
     method: 'POST'
   })
 }
 
-export function createWebhook(body: WebhookCreatePayload): Promise<WebhookCreateResponse> {
-  return moorApi<WebhookCreateResponse>({
-    ...profileScoped(),
+export function createWebhook(body: WebhookCreatePayload, profile?: null | string): Promise<WebhookCreateResponse> {
+  return hermesApi<WebhookCreateResponse>({
+    ...profileScoped(profile),
     path: '/api/webhooks',
     method: 'POST',
     body
   })
 }
 
-export function deleteWebhook(name: string): Promise<{ ok: boolean }> {
-  return moorApi<{ ok: boolean }>({
-    ...profileScoped(),
+export function deleteWebhook(name: string, profile?: null | string): Promise<{ ok: boolean }> {
+  return hermesApi<{ ok: boolean }>({
+    ...profileScoped(profile),
     path: `/api/webhooks/${encodeURIComponent(name)}`,
     method: 'DELETE'
   })
@@ -185,10 +188,11 @@ export function deleteWebhook(name: string): Promise<{ ok: boolean }> {
 
 export function setWebhookEnabled(
   name: string,
-  enabled: boolean
+  enabled: boolean,
+  profile?: null | string
 ): Promise<{ enabled: boolean; name: string; ok: boolean }> {
-  return moorApi<{ enabled: boolean; name: string; ok: boolean }>({
-    ...profileScoped(),
+  return hermesApi<{ enabled: boolean; name: string; ok: boolean }>({
+    ...profileScoped(profile),
     path: `/api/webhooks/${encodeURIComponent(name)}/enabled`,
     method: 'PUT',
     body: { enabled }

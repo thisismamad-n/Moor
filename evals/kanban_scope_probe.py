@@ -10,8 +10,8 @@ import tempfile
 repo = Path(sys.argv[1]).resolve()
 if len(sys.argv) == 2:
     with tempfile.TemporaryDirectory(prefix="kanban-transport-") as home:
-        env = {"HOME": home, "MOOR_HOME": home + "/moor", "PATH": os.environ["PATH"], "PYTHONDONTWRITEBYTECODE": "1"}
-        p = subprocess.run([sys.executable, __file__, str(repo), "isolated"], cwd=home, env=env, stdin=subprocess.DEVNULL)
+        env = {"HOME": home, "HERMES_HOME": home + "/hermes", "PATH": os.environ["PATH"], "PYTHONDONTWRITEBYTECODE": "1"}
+        p = subprocess.run([sys.executable, __file__, str(repo), "isolated"], cwd=home, env=env, stdin=subprocess.DEVNULL, check=False)
         sys.exit(p.returncode)
 sys.path.insert(0, str(repo))
 from moor_cli import kanban_db as kb

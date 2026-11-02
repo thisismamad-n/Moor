@@ -30,7 +30,8 @@ def _build_zip_with_symlink_member(zip_path: str, link_name: str, target: str) -
 def _build_normal_zip(zip_path: str) -> None:
     """Write a regular ZIP with a normal file member (no symlink)."""
     with zipfile.ZipFile(zip_path, "w") as zf:
-        zf.writestr("moor-agent-main/README.md", "ok\n")
+        zf.writestr("hermes-agent-main/README.md", "ok\n")
+        zf.comment = b"8192da90e0afb20010a1c2f5da83db305d05ac5a"  # git archive's commit identity
 
 
 def test_update_via_zip_rejects_symlink_member(tmp_path, monkeypatch):

@@ -6,7 +6,7 @@ description: "How to complete browser-based OAuth (Spotify, MCP servers) when Mo
 
 # OAuth over SSH / Remote Hosts
 
-Some Moor providers — **Spotify** and **remote MCP servers** (Linear, Sentry, Atlassian, Asana, Figma, …) — use a *loopback redirect* OAuth flow. The auth server redirects your browser to `http://127.0.0.1:<port>/callback` so a tiny HTTP listener started by Moor can grab the authorization code.
+Some Hermes providers — **Spotify** (the `spotify` catalog plugin) and **remote MCP servers** (Linear, Sentry, Atlassian, Asana, Figma, …) — use a *loopback redirect* OAuth flow. The auth server redirects your browser to `http://127.0.0.1:<port>/callback` so a tiny HTTP listener started by Hermes can grab the authorization code.
 
 This works perfectly when Moor and your browser are on the same machine. It breaks the moment they aren't: your laptop's browser tries to reach `127.0.0.1` on **your laptop**, but the listener is bound to `127.0.0.1` on **the remote server**.
 
@@ -21,8 +21,8 @@ The fix is a one-line SSH local-forward. For MCP servers on an interactive termi
 ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 
 # In your existing SSH session on the remote machine:
-moor auth spotify --no-browser
-# → Moor prints an authorize URL. Open it in a browser on your laptop.
+hermes spotify login --no-browser
+# → Hermes prints an authorize URL. Open it in a browser on your laptop.
 # → Your browser redirects to 127.0.0.1:43827/callback, the tunnel forwards
 #   the request to the remote listener, login completes.
 ```
@@ -101,7 +101,7 @@ ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 
 ```bash
 ssh user@remote-host
-moor auth spotify --no-browser
+hermes spotify login --no-browser
 ```
 
 Moor detects the SSH session, skips the browser auto-open, and prints an authorize URL plus a `Waiting for callback on http://127.0.0.1:<port>/callback` line.

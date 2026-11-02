@@ -7,8 +7,8 @@ entries under ``model.aliases`` (``localqwen: {model: ..., provider: ...}``)
 were silently dropped because only string values were parsed.
 """
 
-import moor_cli.models as models
-import moor_cli.model_switch as model_switch
+from hermes_cli import models
+from hermes_cli import model_switch
 
 
 class TestVendorPrefixRouting:

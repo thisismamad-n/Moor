@@ -11,14 +11,16 @@ def test_platform_modules_only_import_stdlib_and_moor_platform() -> None:
     code = """
 import sys
 before = set(sys.modules)
-import moor_platform.host.facts
-import moor_platform.host.runtime
-import moor_platform.host.products
-import moor_platform.declaration
-import moor_platform.resolver
-import moor_platform.resolver.app
-import moor_platform.resolver.availability
-import moor_platform.resolver.known_dirs
+import hermes_platform.host.facts
+import hermes_platform.host.gpu_adapters
+import hermes_platform.host.runtime
+import hermes_platform.host.products
+import hermes_platform.host.summary
+import hermes_platform.declaration
+import hermes_platform.resolver
+import hermes_platform.resolver.app
+import hermes_platform.resolver.availability
+import hermes_platform.resolver.known_dirs
 new_top_levels = {name.partition('.')[0] for name in set(sys.modules) - before}
 unexpected = sorted(
     name

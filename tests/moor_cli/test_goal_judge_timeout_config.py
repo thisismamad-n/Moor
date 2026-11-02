@@ -10,8 +10,8 @@ failures pointing at provider/key. The reader mirrors `_goal_judge_max_tokens`
 
 import pytest
 
-import moor_cli.goals as goals
-from moor_cli.goals import DEFAULT_JUDGE_TIMEOUT, _goal_judge_timeout
+from hermes_cli import goals
+from hermes_cli.goals import DEFAULT_JUDGE_TIMEOUT, _goal_judge_timeout
 
 
 def _patch_config(monkeypatch, cfg):

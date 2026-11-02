@@ -100,8 +100,8 @@ def _mcp_loop_exception_handler(loop, context):
         loop.default_exception_handler(context)
 
 
-def _wrap_with_home_override(coro: "Coroutine") -> "Coroutine":
-    """Carry the caller's context-local MOOR_HOME override into ``coro`` (task-local on the MCP
+def _wrap_with_home_override(coro: Coroutine) -> Coroutine:
+    """Carry the caller's context-local HERMES_HOME override into ``coro`` (task-local on the MCP
     loop, so concurrent scopes don't interfere)."""
     try:
         from moor_constants import get_moor_home_override, reset_moor_home_override, set_moor_home_override

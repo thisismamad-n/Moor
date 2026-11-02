@@ -9,6 +9,15 @@ not a client-local list.
 import json
 import sys
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def existing_store(tmp_path, monkeypatch):
+    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: tmp_path)
+    (tmp_path / "state.db").touch()
+
+
 class _FakeDB:
     def __init__(self, rows=None, known=("20260315_092437_c9a6ff",)):
         self.rows = rows or []
@@ -41,8 +50,12 @@ def _run(monkeypatch, capsys, argv_tail, db):
     import moor_cli.main as main_mod
     import moor_state
 
-    monkeypatch.setattr(moor_state, "SessionDB", lambda *args, **kwargs: db)
-    monkeypatch.setattr(sys, "argv", ["moor", "sessions", *argv_tail])
+    def open_db(**kwargs):
+        assert kwargs.get("read_only", False) == (argv_tail[0] == "pinned")
+        return db
+
+    monkeypatch.setattr(hermes_state, "SessionDB", open_db)
+    monkeypatch.setattr(sys, "argv", ["hermes", "sessions", *argv_tail])
     try:
         main_mod.main()
         code = 0

@@ -39,8 +39,8 @@ def test_build_keepalive_http_client_forwards_verify_context(clean_tls_env):
 
 
 def test_resolve_aux_verify_ssl_verify_false(clean_tls_env, monkeypatch):
-    import moor_cli.config as cfg
-    import moor_cli.config_providers as config_providers
+    import hermes_cli.config as cfg
+    from hermes_cli import config_providers
     from agent import auxiliary_client
 
     monkeypatch.setattr(

@@ -162,11 +162,22 @@ def refresh_moor_auth_keepalive_once(
         )
         if pool_result is not None:
             return pool_result
-        if not get_provider_auth_state("moor"):
+        state = get_provider_auth_state("nous")
+        if not state:
+            return False
+        # Mid-life twin of start_nous_auth_keepalive's guard (a guest minted after the thread
+        # started): its tokens are minted on demand, and an inference mint here would put a guest
+        # who only uses connectors through the free-inference challenge every tick.
+        from hermes_cli.anon_auth import is_guest_state
+        if is_guest_state(state):
             return False
         try:
-            resolve_moor_runtime_credentials(timeout_seconds=_timeout_seconds(timeout_seconds))
-            logger.debug("Moor auth keepalive: refreshed singleton auth state")
+            # Nobody is waiting on a keepalive tick: a free-tier browser challenge is announced to the
+            # desktop (so it can clear before a token is needed) but never waited on here.
+            from hermes_cli.anon_challenge import background_caller
+            with background_caller():
+                resolve_nous_runtime_credentials(timeout_seconds=_timeout_seconds(timeout_seconds))
+            logger.debug("Nous auth keepalive: refreshed singleton auth state")
             return True
         except Exception as exc:
             if isinstance(exc, AuthError) and exc.relogin_required:
@@ -198,7 +209,11 @@ def start_moor_auth_keepalive(
     initial_delay_seconds: int = MOOR_AUTH_KEEPALIVE_INITIAL_DELAY_SECONDS,
     min_key_ttl_seconds: int = MOOR_INVOKE_JWT_MIN_TTL_SECONDS, timeout_seconds: Optional[float] = None,
 ) -> Optional[threading.Thread]:
-    """Start the process-wide Moor auth keepalive thread (idempotent; None when disabled)."""
+    """Start the process-wide Nous auth keepalive thread (idempotent; None when disabled)."""
+    # Free-tier handoff retries run in every long-lived Nous process, guest or not and keepalive or
+    # not: a CLI sign-in in another process may have left a move this one has to finish.
+    from hermes_cli.guest_handoff import start_worker
+    start_worker()
     interval_seconds = _interval_seconds(interval_seconds)
     if interval_seconds <= 0:
         return None
@@ -232,6 +247,8 @@ def start_moor_auth_keepalive(
 
 def stop_moor_auth_keepalive(timeout: float = 5.0) -> None:
     """Stop the keepalive thread. Intended for graceful shutdown/tests."""
+    from hermes_cli.guest_handoff import stop_worker
+    stop_worker(timeout)
     global _keepalive_thread
     with _keepalive_lock:
         thread = _keepalive_thread

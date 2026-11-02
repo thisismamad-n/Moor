@@ -20,8 +20,8 @@ from cron.scheduler_delivery import _send_media_via_adapter
 
 class TestMediaSendTimeoutResolution:
     def test_default(self, monkeypatch):
-        monkeypatch.delenv("MOOR_CRON_MEDIA_SEND_TIMEOUT", raising=False)
-        monkeypatch.setattr("cron.scheduler.load_config", lambda: {})
+        monkeypatch.delenv("HERMES_CRON_MEDIA_SEND_TIMEOUT", raising=False)
+        monkeypatch.setattr("cron.scheduler.load_config", dict)
         assert _get_media_send_timeout() == _DEFAULT_MEDIA_SEND_TIMEOUT
 
     def test_env_wins(self, monkeypatch):
@@ -42,8 +42,8 @@ class TestMediaSendTimeoutResolution:
 
     @pytest.mark.parametrize("bad", ["abc", "-5", "0", ""])
     def test_invalid_env_falls_back(self, monkeypatch, bad):
-        monkeypatch.setenv("MOOR_CRON_MEDIA_SEND_TIMEOUT", bad)
-        monkeypatch.setattr("cron.scheduler.load_config", lambda: {})
+        monkeypatch.setenv("HERMES_CRON_MEDIA_SEND_TIMEOUT", bad)
+        monkeypatch.setattr("cron.scheduler.load_config", dict)
         assert _get_media_send_timeout() == _DEFAULT_MEDIA_SEND_TIMEOUT
 
     def test_invalid_config_falls_back(self, monkeypatch):

@@ -1,6 +1,7 @@
 import { withInkSuspended } from '@moor/ink'
 
-import { launchMoorCommand } from '../../../lib/externalCli.js'
+import { t } from '../../../i18n/runtime.js'
+import { launchHermesCommand } from '../../../lib/externalCli.js'
 import { runExternalSetup } from '../../setupHandoff.js'
 import type { SlashCommand } from '../types.js'
 
@@ -12,8 +13,8 @@ export const setupCommands: SlashCommand[] = [
       void runExternalSetup({
         args: ['setup', ...arg.split(/\s+/).filter(Boolean)],
         ctx,
-        done: 'setup complete — starting session…',
-        launcher: launchMoorCommand,
+        done: t('slashCmd.setup.setup.done'),
+        launcher: launchHermesCommand,
         suspend: withInkSuspended
       })
   }

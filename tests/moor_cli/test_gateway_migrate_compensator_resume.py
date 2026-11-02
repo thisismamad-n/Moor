@@ -66,8 +66,8 @@ def stranded(tmp_path, monkeypatch):
         if verb in ("start", "restart") and name == "default" and state.start_succeeds:
             _write_live_gateway(root, ["default", "coder", "ops"])
 
-    import gateway.status as status
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "moor gateway run")
+    from gateway import status
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "hermes gateway run")
     monkeypatch.setattr(gm, "_installed_services", lambda home: [])
     monkeypatch.setattr(gm, "_service_op", _service_op)
     monkeypatch.setattr(gm, "_host_supports_migration", lambda: None)

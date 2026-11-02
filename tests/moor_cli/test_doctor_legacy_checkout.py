@@ -5,14 +5,15 @@ import subprocess
 
 import pytest
 
-import moor_cli.doctor as doctor
-from moor_cli.doctor_state import check_legacy_desktop_checkout
+from hermes_cli import doctor
+from hermes_cli.doctor_state import check_legacy_desktop_checkout
 
 
 def _git(cwd, *args):
     result = subprocess.run(
         ["git", "-C", str(cwd), *args],
         capture_output=True, text=True, encoding="utf-8",
+        check=False,
     )
     assert result.returncode == 0, f"git {args} failed: {result.stderr}"
     return result.stdout.strip()

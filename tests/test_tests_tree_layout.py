@@ -31,9 +31,9 @@ TESTS_ROOT = REPO_ROOT / "tests"
 _NON_MIRROR_DIRS = {
     "compat", "installation", "_fixtures",
     "ci", "conformance", "dashboard", "desktop", "docker", "e2e", "evals",
-    "fakes", "fixtures", "honcho_plugin", "install", "integration", "manual",
-    "monitoring", "openviking_plugin", "perf_guards", "scripts", "secret_sources",
-    "security", "skills", "verify", "website", "computer_use", "moor_state",
+    "fakes", "fixtures", "install", "integration", "manual",
+    "monitoring", "perf_guards", "scripts", "secret_sources",
+    "security", "skills", "verify", "website", "computer_use", "hermes_state",
 }
 
 # Root-level modules whose tests sit directly in tests/ (no package to mirror).

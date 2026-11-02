@@ -7,4 +7,4 @@ the real install root through ``moor_constants`` and exits the process when that
 Importing it once here, before any window opens, keeps boot out of the mocked import.
 """
 
-import moor_bootstrap  # noqa: F401
+import hermes_bootstrap

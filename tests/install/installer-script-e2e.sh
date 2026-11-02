@@ -357,8 +357,9 @@ desktop_checkpoint old "$OLD_SHA" "$INSTALL_METHOD"
 # Produce the user's own state through the ordinary CLI, then snapshot what
 # must survive. Done as late as possible before the update so the window
 # verify() covers contains only the upgrade.
-MOOR="$(source_moor "$INSTALL_DIR")" || fail "no installed command to drive"
-source_build_env user_state_produce "$MOOR"
+HERMES="$(source_hermes "$INSTALL_DIR")" || fail "no installed command to drive"
+source_build_env pin_source_main_channel "$HERMES" || fail "could not record the main update channel"
+source_build_env user_state_produce "$HERMES"
 user_state_before_upgrade
 assert_redirect_is_transport_only
 # Configure the provider LAST, immediately before the snapshot. The steps above

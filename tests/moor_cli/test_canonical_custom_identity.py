@@ -42,8 +42,8 @@ def keyed_provider_config(monkeypatch):
         }
     }
     monkeypatch.setattr(rp, "load_config", lambda *a, **k: config)
-    monkeypatch.setattr("moor_cli.config.load_config", lambda *a, **k: config)
-    monkeypatch.setattr(rp, "_get_model_config", lambda: {})
+    monkeypatch.setattr("hermes_cli.config.load_config", lambda *a, **k: config)
+    monkeypatch.setattr(rp, "_get_model_config", dict)
     return config
 
 
@@ -94,8 +94,8 @@ def test_legacy_unkeyed_entry_keeps_its_name_identity(monkeypatch):
         ]
     }
     monkeypatch.setattr(rp, "load_config", lambda *a, **k: config)
-    monkeypatch.setattr("moor_cli.config.load_config", lambda *a, **k: config)
-    monkeypatch.setattr(rp, "_get_model_config", lambda: {})
+    monkeypatch.setattr("hermes_cli.config.load_config", lambda *a, **k: config)
+    monkeypatch.setattr(rp, "_get_model_config", dict)
 
     assert rp.canonical_custom_identity(config_provider="Legacy Endpoint") == "custom:legacy-endpoint"
 
@@ -140,8 +140,8 @@ class TestIsRoutableProvider:
             ]
         }
         monkeypatch.setattr(rp, "load_config", lambda *a, **k: config)
-        monkeypatch.setattr("moor_cli.config.load_config", lambda *a, **k: config)
-        monkeypatch.setattr(rp, "_get_model_config", lambda: {})
+        monkeypatch.setattr("hermes_cli.config.load_config", lambda *a, **k: config)
+        monkeypatch.setattr(rp, "_get_model_config", dict)
 
         assert rp.is_routable_provider("legacy-endpoint") is True
         assert rp.is_routable_provider("custom:legacy-endpoint") is True

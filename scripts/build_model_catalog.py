@@ -1,5 +1,5 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_moor-python" "$0" "$@"'
-"""Build the Moor Model Catalog — a centralized JSON manifest of curated models.
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
+"""Build the Hermes Model Catalog — a centralized JSON manifest of curated models.
 
 This script reads the in-repo hardcoded curated lists (``OPENROUTER_MODELS``,
 ``_PROVIDER_MODELS["moor"]``) and writes them to a JSON manifest that the
@@ -25,7 +25,7 @@ from __future__ import annotations
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
@@ -33,7 +33,7 @@ sys.path.insert(0, REPO_ROOT)
 # Ensure MOOR_HOME is set for imports that touch it at module level.
 os.environ.setdefault("MOOR_HOME", os.path.join(os.path.expanduser("~"), ".moor"))
 
-from moor_cli.models import (  # noqa: E402
+from hermes_cli.models import (
     OPENROUTER_MODELS,
     PREFERRED_SILENT_DEFAULT_MODEL,
     _PROVIDER_MODELS,
@@ -61,7 +61,7 @@ def _moor_entry(mid: str) -> dict:
 def build_catalog() -> dict:
     return {
         "version": CATALOG_VERSION,
-        "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "updated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "metadata": {
             "source": "moor-agent repo",
             "docs": "https://hermes-agent.nousresearch.com/docs/reference/model-catalog",

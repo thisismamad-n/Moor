@@ -69,6 +69,7 @@ export const useMoorConfigRecord = (profile?: ProfileScope) => {
   // getter-based key would freeze on the first gateway and keep serving its
   // record after a switch.
   const connectionId = useStore($activeConnectionId)
+
   const query = useQuery({
     queryKey: moorConfigKey(profile, connectionId),
     // null/undefined both mean "no override" → fetch with undefined so

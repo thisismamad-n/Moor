@@ -34,7 +34,6 @@
 
 import { execFileSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
-import fsp from 'node:fs/promises'
 import https from 'node:https'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -43,6 +42,7 @@ import { fileURLToPath } from 'node:url'
 // with no tsconfig path resolution (see scripts/bundle-electron-main.mjs).
 import { stripAnsi } from '../../shared/src/ansi'
 
+import { pathEnvKey, storeFirstPath } from './backend-env'
 import { hiddenWindowsChildOptions } from './windows-child-options'
 
 const IS_WINDOWS = process.platform === 'win32'
@@ -172,13 +172,14 @@ function resolveMarkerPinnedCommit(
 }
 
 /**
- * Map an install stamp to the GitHub ref used to fetch install.ps1/sh.
- * Real CI/git stamps pin an immutable SHA. Non-git fallback stamps carry an
- * all-zero placeholder -- treat those as an unpinned branch ref so bootstrap
- * never asks GitHub for commit 0000000... (#50823).
+ * Map an install stamp to the same source identity the installer stages use.
+ * Fresh installs use the packaged immutable SHA. Existing checkouts
+ * intentionally ignore that old app pin and follow the branch, so the script
+ * must follow the branch too or old installer code can drive a newer tree.
+ * Non-git fallback stamps also follow the branch (#50823).
  */
-function installRefForStamp(installStamp) {
-  if (installStamp && isPinnedCommit(installStamp.commit)) {
+function installRefForStamp(installStamp, { pinCommit = true } = {}) {
+  if (pinCommit && installStamp && isPinnedCommit(installStamp.commit)) {
     return {
       ref: installStamp.commit,
       cacheKey: installStamp.commit,
@@ -186,12 +187,17 @@ function installRefForStamp(installStamp) {
     }
   }
 
-  if (installStamp && typeof installStamp.commit === 'string' && FALLBACK_COMMIT_RE.test(installStamp.commit)) {
+  const validStamp =
+    installStamp &&
+    typeof installStamp.commit === 'string' &&
+    (isPinnedCommit(installStamp.commit) || FALLBACK_COMMIT_RE.test(installStamp.commit))
+
+  if (validStamp) {
     const ref = installStamp.branch || FALLBACK_BRANCH
 
     return {
       ref,
-      cacheKey: `fallback-${String(ref).replace(/[^0-9A-Za-z._-]/g, '_')}`,
+      cacheKey: `branch-${String(ref).replace(/[^0-9A-Za-z._-]/g, '_')}`,
       pinned: false
     }
   }
@@ -317,26 +323,6 @@ function bootstrapCacheDir(moorHome) {
   return path.join(moorHome, 'bootstrap-cache')
 }
 
-// The install.sh / install.ps1 that ships inside the already-installed agent
-// checkout under ~/.moor/moor-agent. Used as a last-resort fallback when
-// the pinned commit can't be fetched from GitHub (e.g. a locally-built desktop
-// app stamped to an unpushed HEAD).
-function installedAgentInstallScript(moorHome) {
-  if (!moorHome) {
-    return null
-  }
-
-  const candidate = path.join(moorHome, 'moor-agent', 'scripts', installScriptName())
-
-  try {
-    fs.accessSync(candidate, fs.constants.R_OK)
-
-    return candidate
-  } catch {
-    return null
-  }
-}
-
 function hasExistingGitCheckout(activeRoot) {
   if (!activeRoot) {
     return false
@@ -349,22 +335,14 @@ function hasExistingGitCheckout(activeRoot) {
   }
 }
 
-function cachedScriptPath(moorHome, commit) {
-  return path.join(bootstrapCacheDir(moorHome), `install-${commit}.${process.platform === 'win32' ? 'ps1' : 'sh'}`)
+function cachedScriptPath(hermesHome, cacheKey) {
+  return path.join(bootstrapCacheDir(hermesHome), `install-${cacheKey}.${process.platform === 'win32' ? 'ps1' : 'sh'}`)
 }
 
-function downloadInstallScript(ref, destPath, installStamp?: any) {
-  // Fetch from GitHub raw at the install ref. Normal production builds pass a
-  // pinned SHA (immutable). Non-git fallback builds pass an unpinned branch
-  // ref so local builds can still bootstrap without pretending the all-zero
-  // placeholder is a real GitHub commit.
-  //
-  // OFFLINE NOTE: this network path is the LAST resort. Packaged builds ship
-  // build/offline-scripts/install.ps1|sh + build/repo.zip as extraResources
-  // (see apps/desktop/scripts/stage-offline-bundle.mjs), which
-  // resolveInstallScript prefers as `bundled`. Reaching here on a packaged
-  // build means the .exe was built without the offline bundle — rebuild via
-  // the 1-click build-desktop-exe.bat. The wrapped errors below say so.
+function downloadInstallScript(ref, destPath) {
+  // Fetch from GitHub raw at the install ref: the packaged SHA for a fresh
+  // install, the branch for an existing checkout or a non-git fallback stamp
+  // (never the all-zero placeholder, which is not a real GitHub commit).
   const scriptName = installScriptName()
   const url = installScriptUrl(ref, scriptName, installStamp)
 
@@ -461,9 +439,9 @@ async function resolveInstallScript({
   sourceRepoRoot,
   moorHome,
   emit,
-  _download = downloadInstallScript,
-  _bundled = resolveBundledInstallScript
-}: any) {
+  pinCommit = true,
+  _download = downloadInstallScript
+}) {
   // 1. Dev shortcut: prefer a local checkout's installer so we can iterate
   //    without pushing. SOURCE_REPO_ROOT comes from main.ts (path.resolve
   //    of APP_ROOT/../..).
@@ -475,20 +453,11 @@ async function resolveInstallScript({
     return { path: localScript, source: 'local', kind: installScriptKind() }
   }
 
-  // 2. Bundled package shortcut: prefer installer shipped inside extraResources
-  const bundledScript = typeof _bundled === 'function' ? _bundled() : null
-  const installRef = installRefForStamp(installStamp)
-  const resolvedCommit = installRef?.pinned ? installRef.ref : null
+  // 2. Packaged path: download using the same identity policy as the stages.
+  // Fresh installs use the packaged commit; existing checkouts and non-git
+  // fallback builds follow the branch.
+  const installRef = installRefForStamp(installStamp, { pinCommit })
 
-  if (bundledScript) {
-    emit({ type: 'log', line: `[bootstrap] using bundled ${installScriptName()} at ${bundledScript}` })
-
-    return { path: bundledScript, source: 'bundled', commit: resolvedCommit, kind: installScriptKind() }
-  }
-
-  // 3. Packaged path: download from GitHub at the install stamp's ref.
-  // Non-git fallback builds carry an all-zero commit; treat that as an
-  // unpinned branch ref instead of trying to fetch a non-existent SHA.
   if (!installRef) {
     throw new Error(
       `Cannot resolve ${installScriptName()}: no SOURCE_REPO_ROOT and no install stamp. ` +
@@ -498,80 +467,20 @@ async function resolveInstallScript({
 
   const cached = cachedScriptPath(moorHome, installRef.cacheKey)
 
-  try {
-    await fsp.access(cached, fs.constants.R_OK)
-    emit({
-      type: 'log',
-      line: `[bootstrap] using cached ${installScriptName()} for ${installRef.ref.slice(0, 12)}`
-    })
-
-    return { path: cached, source: 'cache', commit: resolvedCommit, kind: installScriptKind() }
-  } catch {
-    // not cached; download
-  }
-
+  // The cache is only this run's -File target, never a source of truth.
+  // Refreshing also makes old Desktop builds pick up installer fixes instead
+  // of repeatedly executing bytes cached before those fixes existed.
   emit({
     type: 'log',
     line:
       `[bootstrap] fetching ${installScriptName()} for ${installRef.ref.slice(0, 12)} from GitHub` +
-      (installRef.pinned ? '' : ' (fallback, unpinned)')
+      (installRef.pinned ? '' : ' (unpinned branch)')
   })
 
-  try {
-    await _download(installRef.ref, cached, installStamp)
-    emit({ type: 'log', line: `[bootstrap] saved to ${cached}` })
+  await _download(installRef.ref, cached)
+  emit({ type: 'log', line: `[bootstrap] saved to ${cached}` })
 
-    return { path: cached, source: 'download', commit: resolvedCommit, kind: installScriptKind() }
-  } catch (err) {
-    if (bundledScript) {
-      emit({
-        type: 'log',
-        line:
-          `[bootstrap] GitHub fetch failed (${err.message}); ` +
-          `falling back to bundled ${installScriptName()} at ${bundledScript}`
-      })
-
-      return { path: bundledScript, source: 'bundled', commit: resolvedCommit, kind: installScriptKind() }
-    }
-
-    // The pinned commit may not be fetchable from GitHub -- most commonly a
-    // locally-built desktop app stamped to an unpushed HEAD (see
-    // write-build-stamp.mjs fromLocalGit). Fall back to the installer that
-    // ships inside the already-installed agent checkout so dev/self-builds can
-    // still bootstrap instead of dying with a fatal 404.
-    const installed = installedAgentInstallScript(moorHome)
-
-    if (installed) {
-      emit({
-        type: 'log',
-        line:
-          `[bootstrap] GitHub fetch failed (${err.message}); ` +
-          `falling back to installed agent ${installScriptName()} at ${installed}`
-      })
-
-      try {
-        fs.mkdirSync(path.dirname(cached), { recursive: true })
-        fs.copyFileSync(installed, cached)
-
-        return { path: cached, source: 'installed-agent', commit: resolvedCommit, kind: installScriptKind() }
-      } catch {
-        // Cache copy failed (read-only FS, etc.) -- use the source path directly.
-        return { path: installed, source: 'installed-agent', commit: resolvedCommit, kind: installScriptKind() }
-      }
-    }
-
-    // Fresh machine, no bundled script, no cache, no prior install, no
-    // network: say exactly that, and how to fix it (rebuild WITH the bundle).
-    const fetchMsg = err && err.message ? err.message : String(err)
-    if (/Failed to download/.test(fetchMsg)) {
-      throw err
-    }
-    throw new Error(
-      `Failed to download ${installScriptName()} (${fetchMsg}). ` +
-        'This build carries no bundled installer and the network fetch failed — ' +
-        'offline first-launch needs an .exe built with the offline bundle (build-desktop-exe.bat).'
-    )
-  }
+  return { path: cached, source: 'download', commit: resolvedCommit, kind: installScriptKind() }
 }
 
 // ---------------------------------------------------------------------------
@@ -640,7 +549,19 @@ function cleanInstallerLogLine(raw: string): string {
   return frames.length ? frames[frames.length - 1] : ''
 }
 
-function spawnPowerShell(scriptPath, args, { emit, stageName, abortSignal, moorHome }: any = {}) {
+// The installer drives Hermes's own toolchain (install.sh takes a uv from PATH
+// when it is new enough), so store dirs already on PATH stay ahead of the
+// login-shell entries shell-path.ts merged in front of them.
+function installerEnv(hermesHome) {
+  const env = { ...process.env, HERMES_HOME: hermesHome || process.env.HERMES_HOME || '' }
+  const key = pathEnvKey(env)
+
+  env[key] = storeFirstPath(env[key] || '', { currentEnv: env })
+
+  return env
+}
+
+function spawnPowerShell(scriptPath, args, { emit, stageName, abortSignal, hermesHome }: any = {}) {
   return new Promise<any>((resolve, reject) => {
     const ps = process.platform === 'win32' ? resolveWindowsPowerShell() : 'pwsh'
     const fullArgs = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...args]
@@ -650,14 +571,9 @@ function spawnPowerShell(scriptPath, args, { emit, stageName, abortSignal, moorH
       fullArgs,
       hiddenWindowsChildOptions({
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          // Pass MOOR_HOME through so install.ps1 respects the caller's
-          // choice rather than re-computing the default.
-          MOOR_HOME: moorHome || process.env.MOOR_HOME || '',
-          MOOR_RESOURCES: process.resourcesPath || process.env.MOOR_RESOURCES || '',
-          MOOR_BUNDLED_REPO: resolveBundledRepoZip() || ''
-        }
+        // Pass HERMES_HOME through so install.ps1 respects the caller's
+        // choice rather than re-computing the default.
+        env: installerEnv(hermesHome)
       })
     )
 
@@ -764,12 +680,7 @@ function spawnBash(scriptPath, args, { emit, stageName, abortSignal, moorHome }:
   return new Promise<any>((resolve, reject) => {
     const child = spawn('bash', [scriptPath, ...args], {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        MOOR_HOME: moorHome || process.env.MOOR_HOME || '',
-        MOOR_RESOURCES: process.resourcesPath || process.env.MOOR_RESOURCES || '',
-        MOOR_BUNDLED_REPO: resolveBundledRepoZip() || ''
-      }
+      env: installerEnv(hermesHome)
     })
 
     let stdout = ''
@@ -1141,7 +1052,9 @@ async function runBootstrap(opts) {
     }
 
     // 1. Resolve the platform installer.
-    const scriptInfo = await resolveInstallScript({ installStamp, sourceRepoRoot, moorHome, emit })
+    const scriptInfo = await resolveInstallScript({ installStamp, sourceRepoRoot, hermesHome, emit, pinCommit })
+    abortSignal?.throwIfAborted()
+
     const installerKind = scriptInfo.kind || 'powershell'
 
     // 2. Fetch manifest
@@ -1241,7 +1154,6 @@ export {
   cachedScriptPath,
   cleanInstallerLogLine,
   hasExistingGitCheckout,
-  installedAgentInstallScript,
   installRefForStamp,
   installScriptUrl,
   isPinnedCommit,

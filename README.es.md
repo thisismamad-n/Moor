@@ -158,10 +158,11 @@ Si vienes de OpenClaw, Moor puede importar automáticamente tu configuración, m
 **En cualquier momento después de instalar:**
 
 ```bash
-moor claw migrate              # Migración interactiva (preset completo)
-moor claw migrate --dry-run    # Vista previa de qué se migraría
-moor claw migrate --preset user-data   # Migrar sin secretos
-moor claw migrate --overwrite  # Sobreescribir conflictos existentes
+hermes plugins install agent-importers  # una vez: OpenClaw, Claude Code, Codex y Cursor
+hermes claw migrate              # Migración interactiva (preset completo)
+hermes claw migrate --dry-run    # Vista previa de qué se migraría
+hermes claw migrate --preset user-data   # Migrar sin secretos
+hermes claw migrate --overwrite  # Sobreescribir conflictos existentes
 ```
 
 Qué se importa:

@@ -130,8 +130,8 @@ def test_shared_moor_store_writes_0o600_with_0o700_parent(tmp_path, monkeypatch)
             "obtained_at": "2026-01-01T00:00:00Z",
             "expires_at": "2026-01-01T01:00:00Z",
         }
-        auth_mod._write_shared_moor_state(state)
-        path = auth_mod._moor_shared_store_path()
+        auth_mod._write_shared_nous_state(state, renewal=False)
+        path = auth_mod._nous_shared_store_path()
     finally:
         os.umask(old_umask)
 

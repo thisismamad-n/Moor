@@ -14,7 +14,6 @@ import logging
 import pytest
 
 from agent.agent_runtime_helpers import (
-    _INTERRUPTED_PLACEHOLDER,
     _empty_heal_log_state,
     _empty_heal_pending_notice,
     _empty_heal_user_notified,
@@ -23,7 +22,8 @@ from agent.agent_runtime_helpers import (
     get_sanitizer_heal_stats,
     repair_empty_non_final_messages,
 )
-from moor_logging import clear_session_context, set_session_context
+from agent.agent_runtime_helpers_placeholders import _INTERRUPTED_PLACEHOLDER
+from hermes_logging import clear_session_context, set_session_context
 
 
 @pytest.fixture(autouse=True)

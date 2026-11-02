@@ -79,9 +79,9 @@ def test_image_and_video_selectors_share_the_selection_contract(monkeypatch):
 
 def _quiet_reconfigure(monkeypatch):
     """Silence prints + model pickers for _reconfigure_provider paths."""
-    import moor_cli.tools_config as tc
-    import moor_cli.tools_config_post_setup as tools_config_post_setup
-    import moor_cli.tools_config_providers as tcp
+    import hermes_cli.tools_config as tc
+    from hermes_cli import tools_config_post_setup
+    import hermes_cli.tools_config_providers as tcp
 
     monkeypatch.setattr(tcp, "_print_success", lambda *a, **k: None)
     monkeypatch.setattr(tcp, "_print_info", lambda *a, **k: None, raising=False)

@@ -28,8 +28,8 @@ pytest.importorskip(
     reason="MCP SDK 1.26.0+ required for OAuth support",
 )
 
-from tools.mcp_oauth import (  # noqa: E402 — after the SDK availability gate
-    MoorTokenStorage,
+from tools.mcp_oauth import (
+    HermesTokenStorage,
     _CIMD_CLIENT_METADATA_URL,
     _CIMD_PORTS,
     _CIMD_REDIRECT_HOSTS,

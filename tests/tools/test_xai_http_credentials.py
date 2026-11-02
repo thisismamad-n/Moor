@@ -2,8 +2,8 @@ import pytest
 
 
 def _set_xai_oauth_unavailable(monkeypatch):
-    from moor_cli import auth
-    import moor_cli.auth_xai as auth_xai
+    from hermes_cli import auth
+    from hermes_cli import auth_xai
 
     monkeypatch.setattr(auth, "resolve_xai_oauth_runtime_credentials", lambda **_: {})
     monkeypatch.setattr(auth_xai, "resolve_xai_oauth_runtime_credentials", lambda **_: {})

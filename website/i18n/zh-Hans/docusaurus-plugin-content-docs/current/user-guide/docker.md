@@ -283,8 +283,8 @@ docker run -d \
 - 预构建的 TUI/dashboard 和 Photon sidecar 依赖，以及 s6-overlay。
 
 Chromium 由 PM 准备，不使用 `npx playwright install`。
-实际可执行路径记录在 `/etc/moor/agent-browser-executable-path`。
-`PLAYWRIGHT_BROWSERS_PATH` 指向 `/opt/moor/tools`，不在数据卷内。
+实际可执行路径记录在 `/etc/hermes/chromium-executable-path`，Hermes 启动浏览器时读取该文件。
+`PLAYWRIGHT_BROWSERS_PATH` 指向 `/opt/hermes/tools`，不在数据卷内。
 
 所有镜像（包括不带 `-desktop` 后缀的标签）都携带完整 Chromium，而不是 Playwright
 更轻量的 headless shell：同一个固定且校验过的浏览器同时服务无头浏览和有界面的
@@ -586,7 +586,7 @@ chmod -R 755 ~/.moor
 
 ### 浏览器工具无法使用
 
-Playwright 需要共享内存。在 Docker run 命令中添加 `--shm-size=1g`：
+Chromium 需要共享内存。在 Docker run 命令中添加 `--shm-size=1g`：
 
 ```sh
 docker run -d \

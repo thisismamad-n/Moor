@@ -5,9 +5,9 @@ from unittest.mock import patch, mock_open
 
 import pytest
 
-import moor_cli.gateway as gateway
-import moor_constants
-from moor_platform.host import runtime as host_runtime
+from hermes_cli import gateway
+import hermes_constants
+from hermes_platform.host import runtime as host_runtime
 
 # =============================================================================
 # is_wsl() in moor_constants

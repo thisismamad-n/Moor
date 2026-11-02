@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import argparse
 
-import moor_cli.config_defaults as config_defaults
-from moor_cli.subcommands import gateway as gateway_subcommands
+from hermes_cli import config_defaults
+from hermes_cli.subcommands import gateway as gateway_subcommands
 
 
 def _build_parser() -> argparse.ArgumentParser:

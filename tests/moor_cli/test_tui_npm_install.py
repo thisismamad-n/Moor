@@ -6,8 +6,8 @@ import shutil
 import subprocess
 
 import pytest
-from moor_cli import main_tui_launch
-from tests.moor_cli.test_source_build import source_checkout, source_products, _events  # noqa: F401
+from hermes_cli import main_tui_launch
+from tests.hermes_cli.test_source_build import source_checkout, source_products, _events
 
 
 def _touch_tui_entry(root: Path) -> None:

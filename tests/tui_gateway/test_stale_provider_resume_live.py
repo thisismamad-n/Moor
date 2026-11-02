@@ -80,8 +80,8 @@ def live_home(monkeypatch):
                 except Exception:
                     pass
 
-    import moor_state
-    import tui_gateway.server as server
+    import hermes_state
+    from tui_gateway import server
 
     # The launch DB handle and the module-level home snapshot are import-time
     # caches — repoint both at the isolated home for the duration of the test
