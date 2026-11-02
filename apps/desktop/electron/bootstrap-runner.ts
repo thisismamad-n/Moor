@@ -37,6 +37,7 @@ import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import https from 'node:https'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Relative, not `@moor/shared/ansi`: the electron bundle is built by esbuild
 // with no tsconfig path resolution (see scripts/bundle-electron-main.mjs).
@@ -233,6 +234,18 @@ function resolveLocalInstallScript(sourceRepoRoot) {
   }
 }
 
+function getCurrentDir(): string {
+  if (typeof __dirname !== 'undefined') {
+    return __dirname
+  }
+
+  try {
+    return path.dirname(fileURLToPath(import.meta.url))
+  } catch {
+    return process.cwd()
+  }
+}
+
 function resolveBundledInstallScript(customPath?: string | null): string | null {
   if (customPath) {
     try {
@@ -245,13 +258,14 @@ function resolveBundledInstallScript(customPath?: string | null): string | null 
   }
 
   const scriptName = installScriptName()
+  const currentDir = getCurrentDir()
   const candidates: (string | null | undefined)[] = [
     process.resourcesPath ? path.join(process.resourcesPath, 'scripts', scriptName) : null,
     process.resourcesPath ? path.join(process.resourcesPath, scriptName) : null,
     process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'scripts', scriptName) : null,
-    path.join(__dirname, '..', '..', 'scripts', scriptName),
-    path.join(__dirname, '..', 'scripts', scriptName),
-    path.join(__dirname, 'scripts', scriptName),
+    path.join(currentDir, '..', '..', 'scripts', scriptName),
+    path.join(currentDir, '..', 'scripts', scriptName),
+    path.join(currentDir, 'scripts', scriptName),
     path.join(process.cwd(), 'scripts', scriptName),
     path.join(process.cwd(), 'resources', 'scripts', scriptName),
   ]
@@ -272,6 +286,7 @@ function resolveBundledInstallScript(customPath?: string | null): string | null 
 }
 
 function resolveBundledRepoZip(): string | null {
+  const currentDir = getCurrentDir()
   const candidates: (string | null | undefined)[] = [
     process.env.MOOR_BUNDLED_REPO,
     process.resourcesPath ? path.join(process.resourcesPath, 'repo.zip') : null,
@@ -280,9 +295,9 @@ function resolveBundledRepoZip(): string | null {
     path.join(process.cwd(), 'resources', 'repo.zip'),
     path.join(process.cwd(), 'build', 'repo.zip'),
     path.join(process.cwd(), 'apps', 'desktop', 'build', 'repo.zip'),
-    path.join(__dirname, '..', 'build', 'repo.zip'),
-    path.join(__dirname, '..', '..', 'build', 'repo.zip'),
-    path.join(__dirname, '..', '..', 'resources', 'repo.zip'),
+    path.join(currentDir, '..', 'build', 'repo.zip'),
+    path.join(currentDir, '..', '..', 'build', 'repo.zip'),
+    path.join(currentDir, '..', '..', 'resources', 'repo.zip'),
   ]
   for (const cand of candidates) {
     if (cand) {

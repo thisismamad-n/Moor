@@ -2301,7 +2301,8 @@ def _print_version_info(*, check_updates: bool = True) -> None:
 
 def cmd_version(args):
     """Show version (--version/-V flag)."""
-    _print_version_info(check_updates=True)
+    skip_updates = os.environ.get("MOOR_NO_UPDATE_CHECK") == "1" or os.environ.get("MOOR_UPDATE_CHECK") == "0"
+    _print_version_info(check_updates=not skip_updates)
 
 
 def cmd_uninstall(args):

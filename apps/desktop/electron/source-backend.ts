@@ -46,13 +46,14 @@ export async function resolveSourceInstallationBackend(
   try {
     await execProbe(command, ['--version'], {
       cwd: root,
-      env: { ...process.env, ...options.env, ...env },
+      env: { ...process.env, ...options.env, ...env, MOOR_NO_UPDATE_CHECK: '1', MOOR_UPDATE_CHECK: '0' },
       shell,
       stdio: 'ignore',
       timeout: PROBE_TIMEOUT_MS,
       windowsHide: true
     })
-  } catch {
+  } catch (err) {
+    console.warn(`[moor] [source-backend] Runtime probe failed for ${command} at ${root}:`, err)
     return null
   }
 

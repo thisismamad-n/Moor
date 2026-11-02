@@ -4842,9 +4842,21 @@ async function resolveMoorBackend(backendArgs: string[]): Promise<ResolvedMoorBa
   //    builds could leave a healthy install behind without the marker. If the
   //    active runtime is usable, launch it directly; only fall through to
   //    bootstrap when the runtime itself is unusable.
-  const activeBackend: SourceBackend | null = await resolveSourceInstallationBackend(ACTIVE_MOOR_ROOT, backendArgs, {
+  let activeBackend: SourceBackend | null = await resolveSourceInstallationBackend(ACTIVE_MOOR_ROOT, backendArgs, {
     moorHome: MOOR_HOME
   })
+
+  if (!activeBackend && isMoorSourceRoot(ACTIVE_MOOR_ROOT)) {
+    const pythonForRoot: string | null = await findPythonForRoot(ACTIVE_MOOR_ROOT)
+
+    if (pythonForRoot) {
+      activeBackend = createSourcePythonBackend(ACTIVE_MOOR_ROOT, pythonForRoot, backendArgs)
+
+      if (activeBackend) {
+        rememberLog(`[bootstrap] Adopting active Moor source backend via python at ${pythonForRoot}`)
+      }
+    }
+  }
 
   const activeRuntime: ActiveRuntimeState = activeRuntimeState(activeBackend)
 

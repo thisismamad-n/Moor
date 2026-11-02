@@ -39,37 +39,32 @@ export function resolveInstallationLauncher(
     }
   }
 
-  // Earlier PM installers published only to user-bin. Trust that historical
-  // launcher only after its existing version surface proves exact source identity.
-  if (stagedFileExists(path.join(updateRoot, 'moor_cli', '_launchers.py'))) {
-    const defaultHome: string = platformDefaultMoorHome(os.homedir(), process.env, isWindows ? 'win32' : 'linux')
+  // Canonical user-bin launchers:
+  const defaultHome: string = platformDefaultMoorHome(os.homedir(), process.env, isWindows ? 'win32' : 'linux')
 
-    const dirs: string[] = isWindows
-      ? [
-          path.join(moorHome || defaultHome, 'bin'),
-          path.join(defaultHome, 'bin'),
-          path.join(path.dirname(updateRoot), 'bin')
-        ]
-      : [path.join(os.homedir(), '.local', 'bin'), path.join(moorHome || defaultHome, 'bin')]
+  const dirs: string[] = isWindows
+    ? [
+        path.join(moorHome || defaultHome, 'bin'),
+        path.join(defaultHome, 'bin'),
+        path.join(path.dirname(updateRoot), 'bin')
+      ]
+    : [path.join(os.homedir(), '.local', 'bin'), path.join(moorHome || defaultHome, 'bin')]
 
-    for (const dir of new Set(dirs)) {
-      for (const name of names) {
-        const candidate: string = path.join(dir, name)
+  for (const dir of new Set(dirs)) {
+    for (const name of names) {
+      const candidate: string = path.join(dir, name)
 
-        if (stagedFileExists(candidate) && launcherTargetsInstallation(candidate, updateRoot)) {
-          return candidate
-        }
+      if (stagedFileExists(candidate) && launcherTargetsInstallation(candidate, updateRoot)) {
+        return candidate
       }
     }
   }
 
-  // An old shim is a migration rung, never a damaged PM install fallback.
-  if (!existsSync(path.join(updateRoot, 'pm'))) {
-    const legacy: string = path.join(updateRoot, 'venv', isWindows ? 'Scripts' : 'bin', names[0])
+  // Virtual environment launcher inside the checkout root:
+  const legacy: string = path.join(updateRoot, 'venv', isWindows ? 'Scripts' : 'bin', names[0])
 
-    if (stagedFileExists(legacy)) {
-      return legacy
-    }
+  if (stagedFileExists(legacy)) {
+    return legacy
   }
 
   return null
@@ -100,7 +95,7 @@ export function launcherTargetsInstallation(launcher: string, root: string): boo
       timeout: 15000,
       windowsHide: true,
       windowsVerbatimArguments: viaCmd,
-      env: { ...process.env, MOOR_INSTALL_ROOT: root }
+      env: { ...process.env, MOOR_INSTALL_ROOT: root, MOOR_NO_UPDATE_CHECK: '1', MOOR_UPDATE_CHECK: '0' }
     })
 
     if (probe.error || probe.status !== 0) {

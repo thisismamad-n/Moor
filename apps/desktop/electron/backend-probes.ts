@@ -4,8 +4,8 @@ import { spawn } from 'node:child_process'
 
 import { buildDesktopBackendEnv } from './backend-env'
 
-/** Default probe budget. 5s false-negativeed healthy Windows cold starts (#61764). */
-const DEFAULT_PROBE_TIMEOUT_MS = 15_000
+/** Default probe budget. 5s/15s false-negativeed healthy Windows cold starts (#61764). */
+const DEFAULT_PROBE_TIMEOUT_MS = process.platform === 'win32' ? 30_000 : 15_000
 
 /**
  * Resolve the backend probe timeout (ms).
@@ -71,7 +71,12 @@ async function execProbe(
 ): Promise<void> {
   const run = () =>
     new Promise<void>((resolve, reject) => {
-      const child = spawn(command, args, options)
+      const env: NodeJS.ProcessEnv = {
+        ...options.env,
+        MOOR_NO_UPDATE_CHECK: '1',
+        MOOR_UPDATE_CHECK: '0'
+      }
+      const child = spawn(command, args, { ...options, env })
       child.once('error', reject)
       child.once('close', (code, signal) => {
         // A timed-out probe may handle SIGTERM and exit zero; it is still a timeout.
